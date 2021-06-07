@@ -1,6 +1,6 @@
 mod aoc_2020;
 
-use clap::{crate_version, value_t, App, Arg};
+use clap::{crate_version, value_t_or_exit, App, Arg};
 
 fn main() {
     let matches = App::new("Advent of Code Solutions")
@@ -15,7 +15,7 @@ fn main() {
              .required(true))
         .get_matches();
 
-    let year = value_t!(matches, "YEAR", u32).unwrap_or_else(|e| e.exit());
-    let day = value_t!(matches, "DAY", u32).unwrap_or_else(|e| e.exit());
+    let year = value_t_or_exit!(matches, "YEAR", u32);
+    let day = value_t_or_exit!(matches, "DAY", u32);
     println!("Year: {} Day: {}", year, day);
 }
