@@ -1,46 +1,27 @@
 use std::error::Error;
 use std::fmt;
+use nom::{IResult, error::VerboseError};
 
 #[derive(Debug, Clone)]
-pub struct ParseProblem {
-    object: &'static str,
-    string: Option<String>,
+pub enum AocError<'a> {
+    Parse(ParseError<&'a str>),
 }
 
-impl ParseProblem {
-    pub fn new(object: &'static str, string: Option<String>) -> ParseProblem {
-        ParseProblem { object, string }
-    }
-
-}
-
-#[derive(Debug, Clone)]
-pub enum AocError {
-    Parse(ParseProblem),
-}
-
-impl From<ParseProblem> for AocError {
-    fn from(pp: ParseProblem) -> AocError {
-        AocError::Parse(pp)
-    }
-}
-
-impl fmt::Display for AocError {
+impl fmt::Display for AocError<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}",
-               match self {
-                   AocError::Parse(p) => {
-                       let s = match p.string {
-                           Some(s) => format!(" from {}", s),
-                           None => 
-                               
-                               
-                               format!("Could not parse {}{}", p.object,
-                               }
-                       ),
-                   }
-               )
+        match self {
+            AocError::Parse(e) => e.fmt(f)
         }
     }
+}
 
-    impl Error for AocError {}
+impl Error for AocError<'_> {
+    
+}
+
+/// Parse error type
+pub type ParseError<T> = VerboseError<T>;
+
+/// Type containing the result of a nom parser
+pub type ParseResult<T, U> = IResult<T, U, ParseError<T>>;
+

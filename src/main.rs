@@ -23,14 +23,14 @@ fn main() -> Result<()> {
     let input_path = format!("input/{}/day_{:02}.txt", cli.year, cli.day);
     let input_content = fs::read_to_string(&input_path)
         .with_context(|| format!("Could not read input file {}", input_path))?;
-    let input_content = input_content.trim_end();
+    let input = input_content.trim_end();
 
     // Dispatch solution function
     // This should really be done in a better way, ideally using macro tags for the functions
     let result = match cli.year {
         2020 => {
             match cli.day {
-                2 => aoc_2020::password_philosophy(input_content),
+                2 => aoc_2020::password_philosophy(input),
                 _ => bail!("Day {} is not yet implemented", cli.day),
             }
         },
