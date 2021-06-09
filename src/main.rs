@@ -1,21 +1,41 @@
 mod aoc_2020;
 
-use clap::{crate_version, value_t_or_exit, App, Arg};
+use std::fs;
+use structopt::StructOpt;
+use anyhow::{bail, Context, Result};
 
-fn main() {
-    let matches = App::new("Advent of Code Solutions")
-        .version(crate_version!())
-        .author("Dan Whitman <dwhitman44@gmail.com>")
-        .about("Run the Advent of Code solution for a particular year and day.")
-        .arg(Arg::with_name("YEAR")
-             .help("Year to run")
-             .required(true))
-        .arg(Arg::with_name("DAY")
-             .help("Day to run (typically 1-25)")
-             .required(true))
-        .get_matches();
+#[derive(Debug, StructOpt)]
+#[structopt(name = "Advent of Code Solutions", author = "Dan Whitman <dwhitman44@gmail.com>", about = "Run the Advent of Code solution for a particular year and day.")]
+struct Cli {
+    /// Year to run (2015-2020)
+    #[structopt(name = "YEAR")]
+    year: u32,
+    /// Day to run (1-25)
+    #[structopt(name = "DAY")]
+    day: u32,
+}
 
-    let year = value_t_or_exit!(matches, "YEAR", u32);
-    let day = value_t_or_exit!(matches, "DAY", u32);
-    println!("Year: {} Day: {}", year, day);
+fn main() -> Result<()> {
+    // Parse command line arguments
+    let cli = Cli::from_args();
+
+    // Read input for the problem
+    let input_path = format!("input/{}/day_{:02}.txt", cli.year, cli.day);
+    let input_content = fs::read_to_string(&input_path)
+        .with_context(|| format!("Could not read input file {}", input_path))?;
+    let input_content = input_content.trim_end();
+
+    // Dispatch solution function
+    // This should really be done in a better way, ideally using macro tags for the functions
+    let result = match cli.year {
+        2020 => {
+            match cli.day {
+                2 => aoc_2020::password_philosophy(input_content),
+                _ => bail!("Day {} is not yet implemented", cli.day),
+            }
+        },
+        _ => bail!("The year {} is not yet implemented", cli.year),
+    }.with_context(|| "Problem when running the solution")?;
+
+    Ok(())
 }
