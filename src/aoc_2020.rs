@@ -1,9 +1,7 @@
-#[path = "aoc.rs"]
-mod aoc;
-
-use aoc::{AocError, ParseResult};
+use super::aoc::{AocError, ParseError, ParseResult};
 use std::ops::RangeInclusive;
 use nom::{
+    Parser,
     error::context,
     sequence::separated_pair,
     character::complete::digit1,
@@ -16,7 +14,7 @@ use nom::{
 mod tests{
     use super::*;
     
-    /*#[test]
+    #[test]
     fn year_2020_day_02() {
         let input = "1-3 a: abcde\
                      1-3 b: cdefg\
@@ -27,7 +25,7 @@ mod tests{
             Ok(v) => assert_eq!(v, 2),
             Err(e) => panic!("{}", e),
         }
-    }*/
+    }
 }
 
 type CountRange = RangeInclusive<u32>;
@@ -38,8 +36,8 @@ struct PasswordPolicy {
     character: char,
 }
 
-impl PasswordPolicy {
-    fn parser(input: &str) -> ParseResult<&str, PasswordPolicy> {
+/*impl PasswordPolicy {
+    fn parse(input: &str) -> ParseResult<PasswordPolicy> {
         context(
             "password policy",
             separated_pair(
@@ -55,7 +53,7 @@ impl PasswordPolicy {
             })
         })
     }
-}
+}*/
 
 #[derive(Debug)]
 struct Password {
@@ -63,11 +61,12 @@ struct Password {
     password: String,
 }
 
+/*
 impl Password {
-    fn parser(input: &str) -> ParseResult<&str, Password> {
+    fn parse(input: &str) -> ParseResult<Password> {
         context(
             "password",
-            separated_pair(PasswordPolicy::parser, tag(": "), rest),
+            separated_pair(PasswordPolicy::parse, tag(": "), rest),
         )(input).map(|(next, res)| {
             // Note that we can unwraps safely here because the range bounds should be digits
             (next, Password{
@@ -76,11 +75,34 @@ impl Password {
             })
         })
     }
+}*/
+
+impl Password {
+    fn parse(input: &str) -> ParseResult<Password> {
+        context(
+            "password",
+            rest,
+        )(input).map(|(next, res)| {
+            // Note that we can unwrap safely here because the range bounds should be digits
+            (next, Password {
+                policy: PasswordPolicy {
+                    count_range: 0..=10,
+                    character: 'a',
+                },
+                password: res.to_string(),
+            })
+        })
+    }
+}
+
+fn wtf(input: &str) -> Result<Password, nom::Err<ParseError>> {
+    Password::parse(input).map(|t| t.1)
 }
 
 pub fn password_philosophy(input: &str) -> Result<u32, AocError> {
     // Generation
-    //let mut results: Result<Vec<_>, _> = input.lines().map(|l| Password::from_str(l)).collect();
+    let results: Vec<Password> = input.lines()
+        .map(|l| wtf(l)).collect::<Result<Vec<Password>, nom::Err<ParseError>>>()?;
 
     // I feel like this is done in a very non-Rustic way but I'm not sure how to fix it
     // and keep error handling. I feel like this would actually be easier with traditional
