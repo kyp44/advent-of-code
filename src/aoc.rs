@@ -1,38 +1,43 @@
 use std::error::Error;
 use std::fmt;
-use nom::{IResult, error::VerboseError, error::ErrorKind};
+use nom::{IResult, Err as NomErr, error::VerboseError, error::ErrorKind};
 
 #[derive(Debug, Clone)]
 pub enum AocError {
     NoYear(u32),
     NoDay(u32),
-    Parse(nom::Err<ParseError>),
+    Parse(NomErr<ParseError>),
 }
-
 impl fmt::Display for AocError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AocError::Parse(e) => e.fmt(f),
+            AocError::Parse(ne) => {
+                write!(f, "Parsing problem: ")?;
+                match ne {
+                    NomErr::Incomplete(_) => write!(f, "Incomplete parse"),
+                    NomErr::Error(e) | NomErr::Failure(e) => write!(f, "{}", e),
+                }
+            },
             AocError::NoYear(y) => write!(f, "Year {} is not yet implemented", y),
             AocError::NoDay(d) => write!(f, "Day {} is not yet implemented", d),
         }
     }
 }
-
 impl Error for AocError {}
-
-impl From<nom::Err<ParseError>> for AocError {
-    fn from(e: nom::Err<ParseError>) -> Self {
+impl From<NomErr<ParseError>> for AocError {
+    fn from(e: NomErr<ParseError>) -> Self {
         AocError::Parse(e)
     }
 }
 
-/// TODO describe why this is needed.
+/// This custom parse error type is needed because the desired Nom VerboseError
+/// keeps references to the input string where that could not be parsed.
+/// This does not play well with anyhow, which requires that its errors have
+/// static lifetime since the error chain is passed out of main().
 #[derive(Debug, Clone)]
 pub struct ParseError {
     verbose_error: VerboseError<String>
 }
-
 impl nom::error::ParseError<&str> for ParseError {
     fn from_error_kind(input: &str, kind: ErrorKind) -> Self {
         ParseError {
