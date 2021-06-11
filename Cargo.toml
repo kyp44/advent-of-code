@@ -10,4 +10,8 @@ edition = "2018"
 structopt = "0.3"
 anyhow = "1.0"
 nom = "6.1.2"
-ansi_term = "0.12"
+# Would like to use this to get better nom parsing errors but it doesn't
+# implement Clone on its ErrorTree so I can't (and I can't implement
+# a foreign trait on a foreign struct).
+#nom-supreme = "0.4.4"
+itertools = "0.10.1"

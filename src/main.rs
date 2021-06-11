@@ -29,15 +29,23 @@ fn main() -> Result<()> {
 
     // Dispatch solution function
     // This should really be done in a better way, ideally using macro tags for the functions
-    let result = match cli.year {
+    let results = match cli.year {
         2020 => {
             match cli.day {
+                1 => aoc_2020::report_repair(input),
                 2 => aoc_2020::password_philosophy(input),
                 _ => Err(AocError::NoDay(cli.day)),
             }
         },
         _ => Err(AocError::NoYear(cli.year)),
     }.with_context(|| "Problem when running the solution")?;
+
+    for (pc, result) in ('a'..'z').zip(results.iter()) {
+        if results.len() > 1 {
+            println!("Part {})", pc);
+        }
+        println!("Answer: {}", result);
+    }
 
     Ok(())
 }
