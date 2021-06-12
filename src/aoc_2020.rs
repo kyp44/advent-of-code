@@ -31,6 +31,22 @@ mod tests{
                      2-9 c: ccccccccc";
         test_result(password_philosophy(input), vec![2, 1]);
     }
+
+    #[test]
+    fn year_2020_day_03() {
+        let input = "..##.......
+#...#...#..
+.#....#..#.
+..#.#...#.#
+.#...##..#.
+..#.##.....
+.#.#.#....#
+.#........#
+#.##...#...
+#...##....#
+.#..#...#.#";
+        test_result(toboggan_trajectory(input), vec![7]);
+    }
 }
 
 pub fn report_repair(input: &str) -> Result<Vec<u32>, AocError> {
@@ -168,4 +184,8 @@ pub fn password_philosophy(input: &str) -> Result<Vec<u32>, AocError> {
     add_filter_count!(|p| p.valid_part_b());
 
     Ok(answers)
+}
+
+pub fn toboggan_trajectory(input: &str) -> Result<Vec<u32>, AocError> {
+    Ok(vec![0])
 }

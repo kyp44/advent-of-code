@@ -34,6 +34,7 @@ fn main() -> Result<()> {
             match cli.day {
                 1 => aoc_2020::report_repair(input),
                 2 => aoc_2020::password_philosophy(input),
+                3 => aoc_2020::toboggan_trajectory(input),
                 _ => Err(AocError::NoDay(cli.day)),
             }
         },
