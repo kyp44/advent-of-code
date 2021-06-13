@@ -1,27 +1,30 @@
 use std::error::Error;
-use std::fmt;
+use std::{fmt, fs};
 use nom::{IResult, Err as NomErr, error::VerboseError, error::ErrorKind};
+use anyhow::{Context, Result};
 
 /// Custom error type for AoC problem functions.
 #[derive(Debug, Clone)]
 pub enum AocError {
     NoYear(u32),
     NoDay(u32),
-    Parse(NomErr<ParseError>),
+    NomParse(NomErr<ParseError>),
+    InvalidInput(String),
     Process(String),
 }
 impl fmt::Display for AocError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            AocError::NoYear(y) => write!(f, "Year {} is not yet implemented", y),
-            AocError::NoDay(d) => write!(f, "Day {} is not yet implemented", d),
-            AocError::Parse(ne) => {
+            AocError::NoYear(y) => write!(f, "Year {} is not yet solved", y),
+            AocError::NoDay(d) => write!(f, "Day {} is not yet solved", d),
+            AocError::NomParse(ne) => {
                 write!(f, "Parsing problem: ")?;
                 match ne {
                     NomErr::Incomplete(_) => write!(f, "Incomplete parse"),
                     NomErr::Error(e) | NomErr::Failure(e) => write!(f, "{}", e),
                 }
             },
+            AocError::InvalidInput(s) => write!(f, "Invalid input: {}", s),
             AocError::Process(s) => write!(f, "Error while processing: {}", s),
 
         }
@@ -30,7 +33,7 @@ impl fmt::Display for AocError {
 impl Error for AocError {}
 impl From<NomErr<ParseError>> for AocError {
     fn from(e: NomErr<ParseError>) -> Self {
-        AocError::Parse(e)
+        AocError::NomParse(e)
     }
 }
 
@@ -72,7 +75,7 @@ pub trait Parseable {
         Self::parse(input).map(|t| t.1)
     }
 
-    /// Gathers a vector of items from an iterator with item being a string to parse
+    /// Gathers a vector of items from an iterator with each item being a string to parse
     fn gather<'a, I>(strs: I) -> Result<Vec<Self>, NomErr<ParseError>>
     where
         Self: Sized,
@@ -86,11 +89,59 @@ pub trait Parseable {
 /// Type containing the result of a nom parsing
 pub type ParseResult<'a, U> = IResult<&'a str, U, ParseError>;
 
-/// Tests a result to panic with the error if there is an issue
-#[cfg(test)]
-pub fn test_result(result: Result<Vec<u32>, super::AocError>, correct: Vec<u32>) {
-    match result {
-        Ok(v) => assert_eq!(v, correct),
-        Err(e) => panic!("{}", e),
+/// Represents the solver for a day's puzzle.
+pub struct Solution {
+    pub day: u32,
+    pub name: &'static str,
+    pub solver: fn(&str) -> Result<Vec<u32>, AocError>,
+}
+impl Solution {
+    /// Reads the input, runs the solver, and outputs the answer(s).
+    pub fn run(&self, year: u32) -> Result<()> {
+        // Read input for the problem
+        let input_path = format!("input/{}/day_{:02}.txt", year, self.day);
+        let input = fs::read_to_string(&input_path)
+            .with_context(|| format!("Could not read input file {}", input_path))?;
+
+        let results = (self.solver)(&input).with_context(|| "Problem when running the solution")?;
+
+        println!("{} Day {}: {}", year, self.day, self.name);
+        for (pc, result) in ('a'..'z').zip(results.iter()) {
+            if results.len() > 1 {
+                println!("Part {})", pc);
+            }
+            println!("Answer: {}", result);
+        }
+
+        Ok(())
+    }
+
+}
+
+/// Package of solutions of a year's puzzles.
+pub struct YearSolutions {
+    pub year: u32,
+    pub solutions: Vec<Solution>,
+}
+impl YearSolutions {
+    pub fn get_day(&self, day: u32) -> Option<&Solution> {
+        self.solutions.iter()
+            .find(|s| s.day == day)
+    }
+}
+
+/// Convenience macro to build the example test for a solution.
+#[macro_export]
+macro_rules! solution_test {
+    ($test: ident, $sol: ident, $in: literal, $cor: expr) => {
+        #[test]
+        fn $test() {
+            let input = $in;
+            
+            match ($sol.solver)(input) {
+                Ok(v) => assert_eq!(v, $cor),
+                Err(e) => panic!("{}", e),
+            }
+        }
     }
 }

@@ -2,9 +2,7 @@ mod aoc;
 mod aoc_2020;
 
 use aoc::AocError;
-use std::fs;
 use structopt::StructOpt;
-use anyhow::{Context, Result};
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "Advent of Code Solutions", author = "Dan Whitman <dwhitman44@gmail.com>", about = "Run the Advent of Code solution for a particular year and day.")]
@@ -17,36 +15,18 @@ struct Cli {
     day: u32,
 }
 
-fn main() -> Result<()> {
+fn main() -> anyhow::Result<()> {
     // Parse command line arguments
     let cli = Cli::from_args();
 
-    // Read input for the problem
-    let input_path = format!("input/{}/day_{:02}.txt", cli.year, cli.day);
-    let input_content = fs::read_to_string(&input_path)
-        .with_context(|| format!("Could not read input file {}", input_path))?;
-    let input = input_content.trim_end();
+    // Get solution or produce errors if it is not implemented
+    let all_year_solutions = vec![&aoc_2020::YEAR_SOLUTIONS];
+    let year_solutions = all_year_solutions.iter()
+        .find(|ys| ys.year == cli.year).ok_or(AocError::NoYear(cli.year))?;
+    let solution = year_solutions.get_day(cli.day).ok_or(AocError::NoDay(cli.day))?;
 
-    // Dispatch solution function
-    // This should really be done in a better way, ideally using macro tags for the functions
-    let results = match cli.year {
-        2020 => {
-            match cli.day {
-                1 => aoc_2020::report_repair(input),
-                2 => aoc_2020::password_philosophy(input),
-                3 => aoc_2020::toboggan_trajectory(input),
-                _ => Err(AocError::NoDay(cli.day)),
-            }
-        },
-        _ => Err(AocError::NoYear(cli.year)),
-    }.with_context(|| "Problem when running the solution")?;
-
-    for (pc, result) in ('a'..'z').zip(results.iter()) {
-        if results.len() > 1 {
-            println!("Part {})", pc);
-        }
-        println!("Answer: {}", result);
-    }
+    // Run the solution
+    solution.run(year_solutions.year)?;
 
     Ok(())
 }
