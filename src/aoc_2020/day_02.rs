@@ -1,13 +1,13 @@
 use super::super::aoc::{
-    ParseResult,
+    CountFilter,
     Parseable,
+    ParseResult,
     Solution,
-    CountFilter
 };
 use nom::{
     bytes::complete::{tag, take},
     character::complete::digit1,
-    combinator::rest,
+    combinator::{map, rest},
     error::context,
     sequence::separated_pair,
 };
@@ -37,19 +37,21 @@ impl Parseable for PasswordPolicy {
     fn parse(input: &str) -> ParseResult<Self> {
         context(
             "password policy",
-            separated_pair(
-                separated_pair(digit1, tag("-"), digit1),
-                tag(" "),
-                take(1usize),
+            map(
+                separated_pair(
+                    separated_pair(digit1, tag("-"), digit1),
+                    tag(" "),
+                    take(1usize),
+                ),
+                |res: ((&str, &str), &str)| {
+                    PasswordPolicy{
+                        a: res.0.0.parse().unwrap(),
+                        b: res.0.1.parse().unwrap(),
+                        character: res.1.chars().next().unwrap(),
+                    }
+                }
             )
-        )(input).map(|(next, res)| {
-            // Note that we can unwrap safely here because the range bounds should be digits
-            (next, PasswordPolicy{
-                a: res.0.0.parse().unwrap(),
-                b: res.0.1.parse().unwrap(),
-                character: res.1.chars().next().unwrap(),
-            })
-        })
+        )(input.trim())
     }
 }
 

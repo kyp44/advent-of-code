@@ -1,11 +1,12 @@
 use super::super::aoc::{
     AocError,
-    ParseResult,
     Parseable,
+    ParseResult,
     Solution,
 };
 use nom::{
     character::complete::digit1,
+    combinator::map,
     error::context,
 };
 
@@ -32,10 +33,13 @@ impl Parseable for Expense {
     fn parse(input: &str) -> ParseResult<Self> {
         context(
             "expense",
-            digit1,
-        )(input.trim()).map(|(next, res)| {
-            (next, res.parse().unwrap())
-        })
+            map(
+                digit1,
+                |ns: &str| {
+                    ns.parse().unwrap()
+                }
+            )
+        )(input.trim())
     }
 }
 
