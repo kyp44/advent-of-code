@@ -45,10 +45,11 @@ impl FromStr for Map {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut liter = s.lines();
         fn parse_row(line: &str) -> Vec<bool> {
-            line.trim().chars().map(|c| !(c == '.')).collect()
+            line.trim().chars().map(|c| c != '.').collect()
         }
-        let first_row = parse_row(liter.next()
-                                  .ok_or(AocError::InvalidInput("No lines".to_string()))?);
+        let first_row = parse_row(liter.next().ok_or_else(
+            || AocError::InvalidInput("No lines".to_string()))?
+        );
         let width = first_row.len();
         if width < 1 {
             return Err(AocError::InvalidInput("First map line has no content!".to_string()));

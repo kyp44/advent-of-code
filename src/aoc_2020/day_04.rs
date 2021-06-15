@@ -14,7 +14,7 @@ use nom::{
     multi::separated_list1,
     sequence::{pair, separated_pair, tuple, preceded},
 };
-use std::{collections::HashMap, iter::FromIterator};
+use std::{collections::HashMap};
 use strum::IntoEnumIterator;
 use strum_macros::{EnumString, EnumIter};
 
@@ -111,20 +111,20 @@ impl PassportField {
         match self {
             BirthYear => {
                 match value.parse::<u32>() {
-                    Ok(b) => 1920 <= b && b <= 2002,
-                    Err(_) => false
+                    Ok(b) => (1920..=2002).contains(&b),
+                    Err(_) => false,
                 }
             },
             IssueYear => {
                 match value.parse::<u32>() {
-                    Ok(b) => 2010 <= b && b <= 2020,
-                    Err(_) => false
+                    Ok(b) => (2010..=2020).contains(&b),
+                    Err(_) => false,
                 }
             },
             ExpirationYear => {
                 match value.parse::<u32>() {
-                    Ok(b) => 2020 <= b && b <= 2030,
-                    Err(_) => false
+                    Ok(b) => (2020..=2030).contains(&b),
+                    Err(_) => false,
                 }
             },
             Height => {
@@ -139,8 +139,8 @@ impl PassportField {
                     Ok((_, (h, u))) => {
                         let h = h.parse::<u32>().unwrap();
                         match u {
-                            "cm" => 150 <= h && h <= 193,
-                            _ => 59 <= h && h <= 76,
+                            "cm" => (150..=193).contains(&h),
+                            _ => (59..=76).contains(&h),
                         }
                     },
                     Err(_) => false,
@@ -199,13 +199,13 @@ fn parse_passport<'a>(input: &'a str) -> ParseResult<Passport<'a>> {
                 )
             ),
             |v: Vec<(&str, &str)>| {
-                HashMap::from_iter(v.iter().filter_map(|(k, v)| {
+                v.iter().filter_map(|(k, v)| {
                     let pfr: Result<PassportField, strum::ParseError> = k.parse();
                     match pfr {
                         Ok(pf) => Some((pf, *v)),
                         Err(_) => None
                     } 
-                }))
+                }).collect()
             }
         )
     )(input)
@@ -254,9 +254,10 @@ pub const SOLUTION: Solution = Solution {
         )(input.trim_end()).finish().map(|(_, pd)| pd)?;
 
         // Processing
-        let mut answers = vec![];
-        answers.push(passports.iter().filter_count(|p| passport_valid_part_a(p)));
-        answers.push(passports.iter().filter_count(|p| passport_valid_part_b(p)));
+        let answers = vec![
+            passports.iter().filter_count(|p| passport_valid_part_a(p)),
+            passports.iter().filter_count(|p| passport_valid_part_b(p)),
+        ];
 
         Ok(answers)
     }

@@ -101,9 +101,10 @@ pub const SOLUTION: Solution = Solution {
         let passwords = Password::gather(input.lines())?;
 
         // Processing
-        let mut answers = vec![];
-        answers.push(passwords.iter().filter_count(|p| p.valid_part_a()));
-        answers.push(passwords.iter().filter_count(|p| p.valid_part_b()));
+        let answers = vec![
+            passwords.iter().filter_count(|p| p.valid_part_a()),
+            passwords.iter().filter_count(|p| p.valid_part_b()),
+        ];
 
         Ok(answers)
     }
