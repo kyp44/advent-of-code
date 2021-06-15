@@ -1,14 +1,14 @@
 use std::error::Error;
 use std::{fmt, fs};
-use nom::{IResult, Err as NomErr, error::VerboseError, error::ErrorKind};
-use anyhow::{Context, Result};
+use nom::{IResult, error::VerboseError, error::ErrorKind, Finish};
+use anyhow::Context;
 
 /// Custom error type for AoC problem functions.
 #[derive(Debug, Clone)]
 pub enum AocError {
     NoYear(u32),
     NoDay(u32),
-    NomParse(NomErr<ParseError>),
+    NomParse(ParseError),
     InvalidInput(String),
     Process(String),
 }
@@ -17,13 +17,7 @@ impl fmt::Display for AocError {
         match self {
             AocError::NoYear(y) => write!(f, "Year {} is not yet solved", y),
             AocError::NoDay(d) => write!(f, "Day {} is not yet solved", d),
-            AocError::NomParse(ne) => {
-                write!(f, "Parsing problem: ")?;
-                match ne {
-                    NomErr::Incomplete(_) => write!(f, "Incomplete parse"),
-                    NomErr::Error(e) | NomErr::Failure(e) => write!(f, "{}", e),
-                }
-            },
+            AocError::NomParse(e) => write!(f, "{}", e),
             AocError::InvalidInput(s) => write!(f, "Invalid input: {}", s),
             AocError::Process(s) => write!(f, "Error while processing: {}", s),
 
@@ -31,8 +25,8 @@ impl fmt::Display for AocError {
     }
 }
 impl Error for AocError {}
-impl From<NomErr<ParseError>> for AocError {
-    fn from(e: NomErr<ParseError>) -> Self {
+impl From<ParseError> for AocError {
+    fn from(e: ParseError) -> Self {
         AocError::NomParse(e)
     }
 }
@@ -65,24 +59,27 @@ impl fmt::Display for ParseError {
     }
 }
 
-/// Trait for types to be parsable with Nom
+/// Trait for types to be parsable with Nom.
+/// Note that we cannot simply implement FromStr for types that implement this trait
+/// because this breaks the potential foreign trait on a foreign type rules.
+/// See here: https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299
 pub trait Parseable {
     /// Parser function for nom 
     fn parse(input: &str) -> ParseResult<Self> where Self: Sized;
 
     /// Runs the parser and gets the result, stripping out the input from the nom parser
-    fn from_str(input: &str) -> Result<Self, NomErr<ParseError>> where Self: Sized {
-        Self::parse(input).map(|t| t.1)
+    fn from_str(input: &str) -> Result<Self, ParseError> where Self: Sized {
+        Self::parse(input).finish().map(|t| t.1)
     }
 
     /// Gathers a vector of items from an iterator with each item being a string to parse
-    fn gather<'a, I>(strs: I) -> Result<Vec<Self>, NomErr<ParseError>>
+    fn gather<'a, I>(strs: I) -> Result<Vec<Self>, ParseError>
     where
         Self: Sized,
         I: Iterator<Item = &'a str>,
     {
         strs.map(|l| Self::from_str(l))
-            .collect::<Result<Vec<Self>, NomErr<ParseError>>>()
+            .collect::<Result<Vec<Self>, ParseError>>()
     }
 }
 
@@ -97,7 +94,7 @@ pub struct Solution {
 }
 impl Solution {
     /// Reads the input, runs the solver, and outputs the answer(s).
-    pub fn run(&self, year: u32) -> Result<()> {
+    pub fn run(&self, year: u32) -> anyhow::Result<Vec<u32>> {
         // Read input for the problem
         let input_path = format!("input/{}/day_{:02}.txt", year, self.day);
         let input = fs::read_to_string(&input_path)
@@ -113,7 +110,7 @@ impl Solution {
             println!("Answer: {}", result);
         }
 
-        Ok(())
+        Ok(results)
     }
 
 }
@@ -130,18 +127,36 @@ impl YearSolutions {
     }
 }
 
+/// Convenience function to count from a filtered Iterator
+pub trait CountFilter<T> {
+    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> u32;
+}
+impl<T, I> CountFilter<T> for I
+where I: Iterator<Item = T>
+{
+    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> u32 {
+        self.filter(f).count() as u32
+    }
+}
+
 /// Convenience macro to build the example test for a solution.
 #[macro_export]
 macro_rules! solution_test {
-    ($test: ident, $sol: ident, $in: literal, $cor: expr) => {
+    ($in: literal, $core: expr) => {
+        solution_test!{$in, $core, vec![]}
+    };
+    ($in: literal, $core: expr, $cora: expr) => {
         #[test]
-        fn $test() {
+        fn example() {
             let input = $in;
             
-            match ($sol.solver)(input) {
-                Ok(v) => assert_eq!(v, $cor),
-                Err(e) => panic!("{}", e),
-            }
+            assert_eq!((SOLUTION.solver)(input).unwrap(), $core);
         }
-    }
+
+        #[test]
+        #[ignore]
+        fn actual() {
+            assert_eq!(SOLUTION.run(super::super::YEAR_SOLUTIONS.year).unwrap(), $cora);
+        }
+    };
 }
