@@ -43,8 +43,12 @@ b
 
 type Questions = HashSet<char>;
 
-fn make_questions_parser(reducer: fn(Questions, Questions) -> Questions) ->
-impl Fn(&str) -> ParseResult<Questions>
+// Note this could have been done per the solution to my StackExchange question by adding the Copy trait bound:
+// https://stackoverflow.com/questions/68007717/rust-nested-closure-moves-and-multiple-owners
+// However, this results in a different error about the the closure type when calling this with two different closures.
+// It sounds like this could be fixed by "boxing your closure and/or using it as a trait object", but it's
+// probably just more efficient to accept an fn instead (certainly rather than boxing).
+fn make_questions_parser(reducer: fn(Questions, Questions) -> Questions) -> impl Fn(&str) -> ParseResult<Questions>
 {
     move |input| {
         context(
@@ -77,10 +81,10 @@ pub const SOLUTION: Solution = Solution {
             )(input.trim_end()).finish().map(|(_, pd)| pd)
         };
         let part_questions = vec![
-            parse_input(|a, b| {
+            parse_input(|a: Questions, b: Questions| {
                 a.union(&b).copied().collect()
             })?,
-            parse_input(|a, b| {
+            parse_input(|a: Questions, b: Questions| {
                 a.intersection(&b).copied().collect()
             })?,
         ];
