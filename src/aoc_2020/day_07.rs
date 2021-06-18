@@ -161,7 +161,7 @@ pub const SOLUTION: Solution = Solution {
         };
 
         // Part b)
-        fn count_containing_bags(rules: &Vec<BagRule>, id: u32) -> u32 {
+        fn count_containing_bags(rules: &[BagRule], id: u32) -> u32 {
             match rules.iter().find(|r| r.bag_id == id) {
                 None => 0,
                 Some(rule) => {
