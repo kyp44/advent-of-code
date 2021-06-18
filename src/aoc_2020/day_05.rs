@@ -89,7 +89,7 @@ pub const SOLUTION: Solution = Solution {
             ids
         };
 
-        // Part b: find the missing id
+        // Part b) find the missing id
         let missing_id = match ids.iter().find(|id| !ids.contains(&(*id + 1)) && ids.contains(&(*id + 2))) {
             Some(id) => *id + 1,
             None => 0

@@ -122,9 +122,9 @@ pub const SOLUTION: Solution = Solution {
         let count_slope = |x, y| {
             MapDownhill::new(&map, x, y).filter_count(|t| *t)
         };
-        // Part a
+        // Part a)
         answers.push(count_slope(3, 1));
-        // Part b
+        // Part b)
         const SLOPES: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
         answers.push(
             SLOPES.iter().map(|(x,y)| count_slope(*x,  *y)).product()

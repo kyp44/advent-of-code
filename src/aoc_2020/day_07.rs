@@ -17,10 +17,10 @@ use bimap::hash::BiHashMap;
 #[cfg(test)]
 mod tests{
     use super::*;
-    use crate::solution_test;
 
-    solution_test! {
-        "light red bags contain 1 bright white bag, 2 muted yellow bags.
+    #[test]
+    fn example() {
+        let input = "light red bags contain 1 bright white bag, 2 muted yellow bags.
 dark orange bags contain 3 bright white bags, 4 muted yellow bags.
 bright white bags contain 1 shiny gold bag.
 muted yellow bags contain 2 shiny gold bags, 9 faded blue bags.
@@ -28,9 +28,25 @@ shiny gold bags contain 1 dark olive bag, 2 vibrant plum bags.
 dark olive bags contain 3 faded blue bags, 4 dotted black bags.
 vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
 faded blue bags contain no other bags.
-dotted black bags contain no other bags.",
-        vec![4],
-        vec![316]
+dotted black bags contain no other bags.";
+        
+        assert_eq!((SOLUTION.solver)(input).unwrap(), vec![4, 32]);
+
+        let input = "shiny gold bags contain 2 dark red bags.
+dark red bags contain 2 dark orange bags.
+dark orange bags contain 2 dark yellow bags.
+dark yellow bags contain 2 dark green bags.
+dark green bags contain 2 dark blue bags.
+dark blue bags contain 2 dark violet bags.
+dark violet bags contain no other bags.";
+
+        assert_eq!((SOLUTION.solver)(input).unwrap(), vec![0, 126]);
+    }
+
+    #[test]
+    #[ignore]
+    fn actual() {
+        assert_eq!(SOLUTION.run(super::super::YEAR_SOLUTIONS.year).unwrap(), vec![316, 11310]);
     }
 }
 
@@ -124,21 +140,41 @@ pub const SOLUTION: Solution = Solution {
         } */
 
         // Processing
-        let mut containing_bags = HashSet::new();
-        containing_bags.insert(bag_table.get_or_add_bag("shiny gold"));
-        let num_containers = loop {
-            let last_count = containing_bags.len();
-            for rule in rules.iter() {
-                if rule.contains.iter().any(|cont| containing_bags.contains(&cont.bag_id)) {
-                    containing_bags.insert(rule.bag_id);
+        let id = bag_table.get_or_add_bag("shiny gold");
+
+        // Part a)
+        let num_containers = {
+            let mut containing_bags = HashSet::new();
+            containing_bags.insert(id);
+
+            loop {
+                let last_count = containing_bags.len();
+                for rule in rules.iter() {
+                    if rule.contains.iter().any(|cont| containing_bags.contains(&cont.bag_id)) {
+                        containing_bags.insert(rule.bag_id);
+                    }
+                }
+                if containing_bags.len() == last_count {
+                    break (last_count - 1) as u32;
                 }
             }
-            if containing_bags.len() == last_count {
-                break (last_count - 1) as u32;
-            }
         };
+
+        // Part b)
+        fn count_containing_bags(rules: &Vec<BagRule>, id: u32) -> u32 {
+            match rules.iter().find(|r| r.bag_id == id) {
+                None => 0,
+                Some(rule) => {
+                    rule.contains.iter().map(|c| c.count*(1 + count_containing_bags(rules, c.bag_id))).sum()
+                }
+            }
+        }
+        let containing_count = count_containing_bags(&rules, id);
         
-        let answers = vec![num_containers];
+        let answers = vec![
+            num_containers,
+            containing_count,
+        ];
         
         Ok(answers)
     }

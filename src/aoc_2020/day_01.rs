@@ -51,7 +51,7 @@ pub const SOLUTION: Solution = Solution {
         let values = Expense::gather(input.lines())?;
 
         // Processing
-        // Part a
+        // Part a)
         let mut answers: Vec<u32> = vec![];
         answers.push({
             let mut i = itertools::iproduct!(values.iter(), values.iter());
@@ -68,7 +68,7 @@ pub const SOLUTION: Solution = Solution {
                 }
             }
         });
-        // Part b
+        // Part b)
         answers.push({
             let mut i = itertools::iproduct!(values.iter(), values.iter(), values.iter());
             loop {
