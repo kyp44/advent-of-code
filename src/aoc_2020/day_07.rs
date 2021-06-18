@@ -1,17 +1,17 @@
 use super::super::aoc::{
-    ParseResult,
+    ParseError,
     Solution,
 };
 use nom::{
     Finish,
-    branch::alt,
-    bytes::complete::is_not,
-    character::complete::{line_ending, space0, space1},
-    combinator::{all_consuming, map},
+    bytes::complete::{is_not, tag, take_until},
+    character::complete::{digit1, space1},
+    combinator::map,
     error::context,
-    multi::separated_list1,
-    sequence::{pair, tuple},
+    multi::separated_list0,
+    sequence::{separated_pair, tuple},
 };
+use std::collections::HashSet;
 use bimap::hash::BiHashMap;
 
 #[cfg(test)]
@@ -29,12 +29,13 @@ dark olive bags contain 3 faded blue bags, 4 dotted black bags.
 vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
 faded blue bags contain no other bags.
 dotted black bags contain no other bags.",
-        vec![11],
-        vec![]
+        vec![4],
+        vec![316]
     }
 }
 
 /// Associates a string bag color with an ID for more efficient comparisons
+#[derive(Debug)]
 struct BagTable<'a> {
     next_id: u32,
     bimap: BiHashMap<u32, &'a str>,
@@ -56,30 +57,51 @@ impl<'a> BagTable<'a> {
             }
         }
     }
-
-    fn get_bag(&self, bag_id: u32) -> Option<&str> {
-        self.bimap.get_by_left(&bag_id).map(|s| *s)
-    }
 }
 
-struct BagfContains {
+#[derive(Debug)]
+struct BagContains {
     count: u32,
     bag_id: u32,
 }
-struct BagRule<'a> {
-    bag_table: &'a BagTable,
+
+#[derive(Debug)]
+struct BagRule {
     bag_id: u32,
     contains: Vec<BagContains>,
 }
 
 impl BagRule {
-    fn parse(bag_table: &BagTable, input: &str) -> Result<Self, ParseError> {
+    fn parse<'a>(bag_table: &mut BagTable<'a>, input: &'a str) -> Result<Self, ParseError> {
         context(
             "bag rule",
-            separated_pair(
-                
+            map(
+                separated_pair(
+                    take_until(" bags"),
+                    tag(" bags contain "),
+                    separated_list0(
+                        tag(", "),
+                        tuple((
+                            digit1,
+                            space1,
+                            take_until(" bag"),
+                            is_not(",."),
+                        ))
+                    ),
+                ),
+                |(bs, vec)| {
+                    BagRule {
+                        bag_id: bag_table.get_or_add_bag(bs),
+                        contains: vec.iter().map(|(ids, _, bs, _)| {
+                            BagContains {
+                                count: ids.parse().unwrap(),
+                                bag_id: bag_table.get_or_add_bag(bs),
+                            }
+                        }).collect(),
+                    }
+                }
             )
-        )(input.trim()).map(|(_, r)| r)
+        )(input.trim()).finish().map(|(_, r)| r)
     }
 }
 
@@ -88,9 +110,35 @@ pub const SOLUTION: Solution = Solution {
     name: "Handy Haversacks",
     solver: |input| {
         // Generation
+        let mut bag_table = BagTable::new();
+        let rules: Vec<BagRule> = input.trim_end().lines()
+            .map(|line| BagRule::parse(&mut bag_table, line))
+            .collect::<Result<Vec<BagRule>, ParseError>>()?;
+
+        // Print things out for testing
+        /*
+        println!("{}", input);
+        println!("{:?}", bag_table);
+        for rule in rules.iter() {
+            println!("{:?}", rule);
+        } */
 
         // Processing
-        let answers = vec![];
+        let mut containing_bags = HashSet::new();
+        containing_bags.insert(bag_table.get_or_add_bag("shiny gold"));
+        let num_containers = loop {
+            let last_count = containing_bags.len();
+            for rule in rules.iter() {
+                if rule.contains.iter().any(|cont| containing_bags.contains(&cont.bag_id)) {
+                    containing_bags.insert(rule.bag_id);
+                }
+            }
+            if containing_bags.len() == last_count {
+                break (last_count - 1) as u32;
+            }
+        };
+        
+        let answers = vec![num_containers];
         
         Ok(answers)
     }
