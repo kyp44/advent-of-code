@@ -93,6 +93,11 @@ pub struct Solution {
     pub solver: fn(&str) -> Result<Vec<u32>, AocError>,
 }
 impl Solution {
+    /// Constructs the title
+    pub fn title(&self, year: u32) -> String {
+        format!("{} Day {}: {}", year, self.day, self.name)
+    }
+    
     /// Reads the input, runs the solver, and outputs the answer(s).
     pub fn run(&self, year: u32) -> anyhow::Result<Vec<u32>> {
         // Read input for the problem
@@ -102,7 +107,7 @@ impl Solution {
 
         let results = (self.solver)(&input).with_context(|| "Problem when running the solution")?;
 
-        println!("{} Day {}: {}", year, self.day, self.name);
+        println!("{}", self.title(year));
         for (pc, result) in ('a'..'z').zip(results.iter()) {
             if results.len() > 1 {
                 println!("Part {})", pc);
@@ -124,6 +129,12 @@ impl YearSolutions {
     pub fn get_day(&self, day: u32) -> Option<&Solution> {
         self.solutions.iter()
             .find(|s| s.day == day)
+    }
+
+    pub fn print_solution_list(&self) {
+        for solution in self.solutions.iter() {
+            println!("{}", solution.title(self.year));
+        }
     }
 }
 
