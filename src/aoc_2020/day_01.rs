@@ -1,7 +1,6 @@
 use super::super::aoc::{
     AocError,
     Parseable,
-    ParseResult,
     Solution,
 };
 use itertools::Itertools;
@@ -35,14 +34,14 @@ pub const SOLUTION: Solution = Solution {
 
         // Processing
         // Part a)
-        let mut answers: Vec<u32> = vec![];
+        let mut answers: Vec<u64> = vec![];
         answers.push({
             let mut i = values.iter().combinations(2);
             loop {
                 match i.next() {
                     Some(v) => {
                         if v[0] + v[1] == 2020 {
-                            break v[0]*v[1];
+                            break (v[0]*v[1]).into();
                         }
                     },
                     None => {
@@ -58,7 +57,7 @@ pub const SOLUTION: Solution = Solution {
                 match i.next() {
                     Some(v) => {
                         if v[0] + v[1] + v[2] == 2020 {
-                            break v[0]*v[1]*v[2];
+                            break (v[0]*v[1]*v[2]).into();
                         }
                     },
                     None => {

@@ -90,7 +90,7 @@ pub const SOLUTION: Solution = Solution {
         ];
 
         // Processing
-        let answers = part_questions.iter().map(|v| v.iter().map(|q| q.len() as u32).sum()).collect();
+        let answers = part_questions.iter().map(|v| v.iter().map(|q| q.len() as u64).sum()).collect();
         
         Ok(answers)
     }

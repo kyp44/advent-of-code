@@ -255,8 +255,8 @@ pub const SOLUTION: Solution = Solution {
 
         // Processing
         let answers = vec![
-            passports.iter().filter_count(|p| passport_valid_part_a(p)),
-            passports.iter().filter_count(|p| passport_valid_part_b(p)),
+            passports.iter().filter_count(|p| passport_valid_part_a(p)).into(),
+            passports.iter().filter_count(|p| passport_valid_part_b(p)).into(),
         ];
 
         Ok(answers)

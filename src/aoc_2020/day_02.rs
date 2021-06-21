@@ -104,8 +104,8 @@ pub const SOLUTION: Solution = Solution {
 
         // Processing
         let answers = vec![
-            passwords.iter().filter_count(|p| p.valid_part_a()),
-            passwords.iter().filter_count(|p| p.valid_part_b()),
+            passwords.iter().filter_count(|p| p.valid_part_a()).into(),
+            passwords.iter().filter_count(|p| p.valid_part_b()).into(),
         ];
 
         Ok(answers)

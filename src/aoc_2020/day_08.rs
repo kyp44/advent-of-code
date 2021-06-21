@@ -189,7 +189,7 @@ pub const SOLUTION: Solution = Solution {
             _ => {
                 return Err(AocError::Process("Program execution did not result in an infinite loop".to_string()));
             }
-        };
+        }.into();
         let mut part_b = None;
         for prog in program.variations() {
             if let ProgramEndStatus::Terminated(acc) = prog.execute() {
@@ -197,7 +197,7 @@ pub const SOLUTION: Solution = Solution {
                 break;
             }
         }
-        let part_b = part_b.ok_or_else(|| AocError::Process("No modified programs terminated!".to_string()))?;
+        let part_b = part_b.ok_or_else(|| AocError::Process("No modified programs terminated!".to_string()))?.into();
         
         Ok(vec![part_a, part_b])
     }

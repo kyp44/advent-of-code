@@ -118,17 +118,16 @@ pub const SOLUTION: Solution = Solution {
         let map = Map::from_str(input)?;
 
         // Process
-        let mut answers = vec![];
         let count_slope = |x, y| {
             MapDownhill::new(&map, x, y).filter_count(|t| *t)
         };
-        // Part a)
-        answers.push(count_slope(3, 1));
-        // Part b)
         let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
-        answers.push(
-            slopes.iter().map(|(x,y)| count_slope(*x,  *y)).product()
-        );
+        let answers = vec![
+            // Part a)
+            count_slope(3, 1).into(),
+            // Part b)
+            slopes.iter().map(|(x,y)| count_slope(*x,  *y)).product::<u32>().into(),
+        ];
         
         Ok(answers)
     }

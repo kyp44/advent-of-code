@@ -95,8 +95,8 @@ pub const SOLUTION: Solution = Solution {
             None => 0
         };
         let answers = vec![
-            ids.iter().fold(0, |o, n| o.max(*n)),
-            missing_id,
+            ids.iter().fold(0, |o, n| o.max(*n)).into(),
+            missing_id.into(),
         ];
         
         Ok(answers)

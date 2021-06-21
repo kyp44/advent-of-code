@@ -1,11 +1,12 @@
 use std::error::Error;
 use std::{fmt, fs};
+use std::str::FromStr;
 use nom::{IResult, error::VerboseError, error::ErrorKind, Finish};
 use anyhow::Context;
+use num::Unsigned;
 use nom::{
     character::complete::digit1,
     combinator::map,
-    error::context,
 };
 
 /// Custom error type for AoC problem functions.
@@ -89,16 +90,16 @@ pub trait Parseable {
 }
 
 /// Parseable for input that is just a basic list of numbers
-impl Parseable for u32 {
+impl<T: Unsigned + FromStr> Parseable for T {
     fn parse(input: &str) -> ParseResult<Self> {
-        context(
-            "expense",
-            map(
-                digit1,
-                |ns: &str| {
-                    ns.parse().unwrap()
+        map(
+            digit1,
+            |ns: &str| {
+                match ns.parse() {
+                    Ok(v) => v,
+                    Err(_) => panic!("nom did not parse a numeric value correctly"),
                 }
-            )
+            }
         )(input.trim())
     }
 }
@@ -110,7 +111,7 @@ pub type ParseResult<'a, U> = IResult<&'a str, U, ParseError>;
 pub struct Solution {
     pub day: u32,
     pub name: &'static str,
-    pub solver: fn(&str) -> Result<Vec<u32>, AocError>,
+    pub solver: fn(&str) -> Result<Vec<u64>, AocError>,
 }
 impl Solution {
     /// Constructs the title
@@ -119,7 +120,7 @@ impl Solution {
     }
     
     /// Reads the input, runs the solver, and outputs the answer(s).
-    pub fn run(&self, year: u32) -> anyhow::Result<Vec<u32>> {
+    pub fn run(&self, year: u32) -> anyhow::Result<Vec<u64>> {
         // Read input for the problem
         let input_path = format!("input/{}/day_{:02}.txt", year, self.day);
         let input = fs::read_to_string(&input_path)

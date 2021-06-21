@@ -172,8 +172,8 @@ pub const SOLUTION: Solution = Solution {
         let containing_count = count_containing_bags(&rules, id);
         
         let answers = vec![
-            num_containers,
-            containing_count,
+            num_containers.into(),
+            containing_count.into(),
         ];
         
         Ok(answers)
