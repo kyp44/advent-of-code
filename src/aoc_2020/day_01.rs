@@ -4,11 +4,7 @@ use super::super::aoc::{
     ParseResult,
     Solution,
 };
-use nom::{
-    character::complete::digit1,
-    combinator::map,
-    error::context,
-};
+use itertools::Itertools;
 
 #[cfg(test)]
 mod tests{
@@ -29,19 +25,6 @@ mod tests{
 }
 
 type Expense = u32;
-impl Parseable for Expense {
-    fn parse(input: &str) -> ParseResult<Self> {
-        context(
-            "expense",
-            map(
-                digit1,
-                |ns: &str| {
-                    ns.parse().unwrap()
-                }
-            )
-        )(input.trim())
-    }
-}
 
 pub const SOLUTION: Solution = Solution {
     day: 1,
@@ -54,12 +37,12 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         let mut answers: Vec<u32> = vec![];
         answers.push({
-            let mut i = itertools::iproduct!(values.iter(), values.iter());
+            let mut i = values.iter().combinations(2);
             loop {
                 match i.next() {
-                    Some((v1, v2)) => {
-                        if v1 + v2 == 2020 {
-                            break v1*v2;
+                    Some(v) => {
+                        if v[0] + v[1] == 2020 {
+                            break v[0]*v[1];
                         }
                     },
                     None => {
@@ -70,12 +53,12 @@ pub const SOLUTION: Solution = Solution {
         });
         // Part b)
         answers.push({
-            let mut i = itertools::iproduct!(values.iter(), values.iter(), values.iter());
+            let mut i = values.iter().combinations(3);
             loop {
                 match i.next() {
-                    Some((v1, v2, v3)) => {
-                        if v1 + v2 + v3 == 2020 {
-                            break v1*v2*v3;
+                    Some(v) => {
+                        if v[0] + v[1] + v[2] == 2020 {
+                            break v[0]*v[1]*v[2];
                         }
                     },
                     None => {

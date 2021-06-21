@@ -125,9 +125,9 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         answers.push(count_slope(3, 1));
         // Part b)
-        const SLOPES: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
+        let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
         answers.push(
-            SLOPES.iter().map(|(x,y)| count_slope(*x,  *y)).product()
+            slopes.iter().map(|(x,y)| count_slope(*x,  *y)).product()
         );
         
         Ok(answers)

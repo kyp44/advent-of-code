@@ -2,6 +2,11 @@ use std::error::Error;
 use std::{fmt, fs};
 use nom::{IResult, error::VerboseError, error::ErrorKind, Finish};
 use anyhow::Context;
+use nom::{
+    character::complete::digit1,
+    combinator::map,
+    error::context,
+};
 
 /// Custom error type for AoC problem functions.
 #[derive(Debug, Clone)]
@@ -80,6 +85,21 @@ pub trait Parseable {
     {
         strs.map(|l| Self::from_str(l))
             .collect::<Result<Vec<Self>, ParseError>>()
+    }
+}
+
+/// Parseable for input that is just a basic list of numbers
+impl Parseable for u32 {
+    fn parse(input: &str) -> ParseResult<Self> {
+        context(
+            "expense",
+            map(
+                digit1,
+                |ns: &str| {
+                    ns.parse().unwrap()
+                }
+            )
+        )(input.trim())
     }
 }
 
