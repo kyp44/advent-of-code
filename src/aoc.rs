@@ -1,13 +1,10 @@
-use std::error::Error;
-use std::{fmt, fs};
-use std::str::FromStr;
-use nom::{IResult, error::VerboseError, error::ErrorKind, Finish};
 use anyhow::Context;
+use nom::{character::complete::digit1, combinator::map};
+use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
 use num::Unsigned;
-use nom::{
-    character::complete::digit1,
-    combinator::map,
-};
+use std::error::Error;
+use std::str::FromStr;
+use std::{fmt, fs};
 
 /// Custom error type for AoC problem functions.
 #[derive(Debug, Clone)]
@@ -26,7 +23,6 @@ impl fmt::Display for AocError {
             AocError::NomParse(e) => write!(f, "{}", e),
             AocError::InvalidInput(s) => write!(f, "Invalid input: {}", s),
             AocError::Process(s) => write!(f, "Error while processing: {}", s),
-
         }
     }
 }
@@ -43,18 +39,18 @@ impl From<ParseError> for AocError {
 /// static lifetime since the error chain is passed out of main().
 #[derive(Debug, Clone)]
 pub struct ParseError {
-    verbose_error: VerboseError<String>
+    verbose_error: VerboseError<String>,
 }
 impl nom::error::ParseError<&str> for ParseError {
     fn from_error_kind(input: &str, kind: ErrorKind) -> Self {
         ParseError {
-            verbose_error: VerboseError::from_error_kind(input.to_string(), kind)
+            verbose_error: VerboseError::from_error_kind(input.to_string(), kind),
         }
     }
 
     fn append(input: &str, kind: ErrorKind, other: Self) -> Self {
         ParseError {
-            verbose_error: VerboseError::append(input.to_string(), kind, other.verbose_error)
+            verbose_error: VerboseError::append(input.to_string(), kind, other.verbose_error),
         }
     }
 }
@@ -70,11 +66,16 @@ impl fmt::Display for ParseError {
 /// because this breaks the potential foreign trait on a foreign type rules.
 /// See here: https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299
 pub trait Parseable {
-    /// Parser function for nom 
-    fn parse(input: &str) -> ParseResult<Self> where Self: Sized;
+    /// Parser function for nom
+    fn parse(input: &str) -> ParseResult<Self>
+    where
+        Self: Sized;
 
     /// Runs the parser and gets the result, stripping out the input from the nom parser
-    fn from_str(input: &str) -> Result<Self, ParseError> where Self: Sized {
+    fn from_str(input: &str) -> Result<Self, ParseError>
+    where
+        Self: Sized,
+    {
         Self::parse(input).finish().map(|t| t.1)
     }
 
@@ -92,15 +93,10 @@ pub trait Parseable {
 /// Parseable for input that is just a basic list of numbers
 impl<T: Unsigned + FromStr> Parseable for T {
     fn parse(input: &str) -> ParseResult<Self> {
-        map(
-            digit1,
-            |ns: &str| {
-                match ns.parse() {
-                    Ok(v) => v,
-                    Err(_) => panic!("nom did not parse a numeric value correctly"),
-                }
-            }
-        )(input.trim())
+        map(digit1, |ns: &str| match ns.parse() {
+            Ok(v) => v,
+            Err(_) => panic!("nom did not parse a numeric value correctly"),
+        })(input.trim())
     }
 }
 
@@ -118,7 +114,7 @@ impl Solution {
     pub fn title(&self, year: u32) -> String {
         format!("{} Day {}: {}", year, self.day, self.name)
     }
-    
+
     /// Reads the input, runs the solver, and outputs the answer(s).
     pub fn run(&self, year: u32) -> anyhow::Result<Vec<u64>> {
         // Read input for the problem
@@ -138,7 +134,6 @@ impl Solution {
 
         Ok(results)
     }
-
 }
 
 /// Package of solutions of a year's puzzles.
@@ -148,8 +143,7 @@ pub struct YearSolutions {
 }
 impl YearSolutions {
     pub fn get_day(&self, day: u32) -> Option<&Solution> {
-        self.solutions.iter()
-            .find(|s| s.day == day)
+        self.solutions.iter().find(|s| s.day == day)
     }
 
     pub fn print_solution_list(&self) {
@@ -164,7 +158,8 @@ pub trait CountFilter<T> {
     fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> u32;
 }
 impl<T, I> CountFilter<T> for I
-where I: Iterator<Item = T>
+where
+    I: Iterator<Item = T>,
 {
     fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> u32 {
         self.filter(f).count() as u32
@@ -175,20 +170,23 @@ where I: Iterator<Item = T>
 #[macro_export]
 macro_rules! solution_test {
     ($in: literal, $core: expr) => {
-        solution_test!{$in, $core, vec![]}
+        solution_test! {$in, $core, vec![]}
     };
     ($in: literal, $core: expr, $cora: expr) => {
         #[test]
         fn example() {
             let input = $in;
-            
+
             assert_eq!((SOLUTION.solver)(input).unwrap(), $core);
         }
 
         #[test]
         #[ignore]
         fn actual() {
-            assert_eq!(SOLUTION.run(super::super::YEAR_SOLUTIONS.year).unwrap(), $cora);
+            assert_eq!(
+                SOLUTION.run(super::super::YEAR_SOLUTIONS.year).unwrap(),
+                $cora
+            );
         }
     };
 }

@@ -1,9 +1,4 @@
-use super::super::aoc::{
-    CountFilter,
-    Parseable,
-    ParseResult,
-    Solution,
-};
+use super::super::aoc::{CountFilter, ParseResult, Parseable, Solution};
 use nom::{
     bytes::complete::{tag, take},
     character::complete::digit1,
@@ -13,7 +8,7 @@ use nom::{
 };
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
     use crate::solution_test;
 
@@ -43,14 +38,12 @@ impl Parseable for PasswordPolicy {
                     tag(" "),
                     take(1usize),
                 ),
-                |res: ((&str, &str), &str)| {
-                    PasswordPolicy{
-                        a: res.0.0.parse().unwrap(),
-                        b: res.0.1.parse().unwrap(),
-                        character: res.1.chars().next().unwrap(),
-                    }
-                }
-            )
+                |res: ((&str, &str), &str)| PasswordPolicy {
+                    a: res.0 .0.parse().unwrap(),
+                    b: res.0 .1.parse().unwrap(),
+                    character: res.1.chars().next().unwrap(),
+                },
+            ),
         )(input.trim())
     }
 }
@@ -66,11 +59,15 @@ impl Parseable for Password {
         context(
             "password",
             separated_pair(PasswordPolicy::parse, tag(": "), rest),
-        )(input.trim()).map(|(next, res)| {
-            (next, Password{
-                policy: res.0,
-                password: res.1.to_string(),
-            })
+        )(input.trim())
+        .map(|(next, res)| {
+            (
+                next,
+                Password {
+                    policy: res.0,
+                    password: res.1.to_string(),
+                },
+            )
         })
     }
 }
@@ -109,5 +106,5 @@ pub const SOLUTION: Solution = Solution {
         ];
 
         Ok(answers)
-    }
+    },
 };

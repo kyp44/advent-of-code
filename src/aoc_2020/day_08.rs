@@ -1,29 +1,23 @@
-use super::super::aoc::{
-    AocError,
-    Parseable,
-    ParseError,
-    ParseResult,
-    Solution,
-};
+use super::super::aoc::{AocError, ParseError, ParseResult, Parseable, Solution};
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{digit1, space1, one_of},
+    character::complete::{digit1, one_of, space1},
     combinator::map,
     error::context,
-    sequence::{separated_pair, pair},
+    sequence::{pair, separated_pair},
 };
 use std::collections::HashSet;
-use std::str::FromStr;
 use std::iter::Enumerate;
 use std::iter::Filter;
 use std::slice::Iter;
+use std::str::FromStr;
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
     use crate::solution_test;
-    
+
     solution_test! {
         "nop +0
 acc +1
@@ -68,8 +62,8 @@ impl Parseable for Instruction {
                         "jmp" => Instruction::Jmp(n),
                         _ => panic!(),
                     }
-                }
-            )
+                },
+            ),
         )(input)
     }
 }
@@ -90,7 +84,7 @@ impl FromStr for Program {
     type Err = ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Program {
-            instructions: Instruction::gather(s.lines())?
+            instructions: Instruction::gather(s.lines())?,
         })
     }
 }
@@ -99,15 +93,17 @@ impl Program {
     fn variations(&self) -> ProgramVariations {
         ProgramVariations {
             original: self,
-            iter: self.instructions.iter()
-                .enumerate().filter(|(_, inst)| {
-                    matches!(inst, Instruction::Nop(_) | Instruction::Jmp(_))
-                }),
+            iter: self
+                .instructions
+                .iter()
+                .enumerate()
+                .filter(|(_, inst)| matches!(inst, Instruction::Nop(_) | Instruction::Jmp(_))),
         }
     }
 }
 
-type VariationsIterator<'a> = Filter<Enumerate<Iter<'a, Instruction>>, fn(&(usize, &Instruction)) -> bool>;
+type VariationsIterator<'a> =
+    Filter<Enumerate<Iter<'a, Instruction>>, fn(&(usize, &Instruction)) -> bool>;
 struct ProgramVariations<'a> {
     original: &'a Program,
     iter: VariationsIterator<'a>,
@@ -115,7 +111,7 @@ struct ProgramVariations<'a> {
 
 impl Iterator for ProgramVariations<'_> {
     type Item = Program;
-    
+
     fn next(&mut self) -> Option<Self::Item> {
         // Look for the next NOP or JMP instruction
         self.iter.next().map(|(pc, inst)| {
@@ -127,7 +123,7 @@ impl Iterator for ProgramVariations<'_> {
                 Jmp(v) => Nop(*v),
                 _ => panic!(),
             };
-            
+
             new_program
         })
     }
@@ -175,21 +171,27 @@ pub const SOLUTION: Solution = Solution {
     solver: |input| {
         // Generation
         let program: Program = input.parse()?;
-        
+
         // Processing
         fn check_acc(acc: i32) -> Result<u32, AocError> {
             if acc < 0 {
-                return Err(AocError::Process(format!("Accumulator ended up negative as {}, which is a problem", acc)))
+                return Err(AocError::Process(format!(
+                    "Accumulator ended up negative as {}, which is a problem",
+                    acc
+                )));
             }
             Ok(acc as u32)
         }
-        
+
         let part_a = match program.execute() {
             ProgramEndStatus::Infinite(acc) => check_acc(acc)?,
             _ => {
-                return Err(AocError::Process("Program execution did not result in an infinite loop".to_string()));
+                return Err(AocError::Process(
+                    "Program execution did not result in an infinite loop".to_string(),
+                ));
             }
-        }.into();
+        }
+        .into();
         let mut part_b = None;
         for prog in program.variations() {
             if let ProgramEndStatus::Terminated(acc) = prog.execute() {
@@ -197,8 +199,10 @@ pub const SOLUTION: Solution = Solution {
                 break;
             }
         }
-        let part_b = part_b.ok_or_else(|| AocError::Process("No modified programs terminated!".to_string()))?.into();
-        
+        let part_b = part_b
+            .ok_or_else(|| AocError::Process("No modified programs terminated!".to_string()))?
+            .into();
+
         Ok(vec![part_a, part_b])
-    }
+    },
 };

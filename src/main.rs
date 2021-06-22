@@ -5,7 +5,11 @@ use aoc::AocError;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "Advent of Code Solutions", author = "Dan Whitman <dwhitman44@gmail.com>", about = "Run the Advent of Code solution for a particular year and day.")]
+#[structopt(
+    name = "Advent of Code Solutions",
+    author = "Dan Whitman <dwhitman44@gmail.com>",
+    about = "Run the Advent of Code solution for a particular year and day."
+)]
 struct Cli {
     /// List the implemented solutions
     #[structopt(short, long)]
@@ -23,7 +27,7 @@ fn main() -> anyhow::Result<()> {
     let cli = Cli::from_args();
 
     let all_year_solutions = vec![&aoc_2020::YEAR_SOLUTIONS];
-    
+
     if cli.list {
         // List all implemented solutions
         for year_solutions in all_year_solutions {
@@ -33,8 +37,10 @@ fn main() -> anyhow::Result<()> {
         // Get solution or produce errors if it is not implemented
         let year = cli.year.unwrap();
         let day = cli.day.unwrap();
-        let year_solutions = all_year_solutions.iter()
-            .find(|ys| ys.year == year).ok_or(AocError::NoYear(year))?;
+        let year_solutions = all_year_solutions
+            .iter()
+            .find(|ys| ys.year == year)
+            .ok_or(AocError::NoYear(year))?;
         let solution = year_solutions.get_day(day).ok_or(AocError::NoDay(day))?;
 
         // Run the solution

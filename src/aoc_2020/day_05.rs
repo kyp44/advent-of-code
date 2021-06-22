@@ -1,8 +1,4 @@
-use super::super::aoc::{
-    Parseable,
-    ParseResult,
-    Solution,
-};
+use super::super::aoc::{ParseResult, Parseable, Solution};
 use nom::{
     bytes::complete::take_while_m_n,
     combinator::{all_consuming, map},
@@ -11,7 +7,7 @@ use nom::{
 };
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
     use crate::solution_test;
 
@@ -34,44 +30,38 @@ impl Parseable for Seat {
     fn parse(input: &str) -> ParseResult<Self> {
         // Creates a parser closure for a letter-coded binary value of a
         // certain number of bits.
-        fn binary_parser(bit0: char, bit1: char, len: usize) -> impl FnMut(&str) -> ParseResult<u32> {
+        fn binary_parser(
+            bit0: char,
+            bit1: char,
+            len: usize,
+        ) -> impl FnMut(&str) -> ParseResult<u32> {
             move |input| {
                 map(
                     take_while_m_n(len, len, |c: char| c == bit0 || c == bit1),
                     |s: &str| {
-                        let bs: String = s.chars().map(|c| {
-                            if c == bit0 {
-                                '0'
-                            } else {
-                                '1'
-                            }
-                        }).collect();
+                        let bs: String = s
+                            .chars()
+                            .map(|c| if c == bit0 { '0' } else { '1' })
+                            .collect();
                         u32::from_str_radix(&bs, 2).unwrap()
-                    }
+                    },
                 )(input)
             }
         }
-        
+
         context(
             "seat",
             map(
-                all_consuming(
-                    pair(
-                        binary_parser('F', 'B', 7),
-                        binary_parser('L', 'R', 3),
-                    )
-                ),
-                |(row, column)| {
-                    Seat { row, column }
-                }
-            )
+                all_consuming(pair(binary_parser('F', 'B', 7), binary_parser('L', 'R', 3))),
+                |(row, column)| Seat { row, column },
+            ),
         )(input.trim())
     }
 }
 
 impl Seat {
     fn id(&self) -> u32 {
-        self.row*8 + self.column
+        self.row * 8 + self.column
     }
 }
 
@@ -90,15 +80,18 @@ pub const SOLUTION: Solution = Solution {
         };
 
         // Part b) find the missing id
-        let missing_id = match ids.iter().find(|id| !ids.contains(&(*id + 1)) && ids.contains(&(*id + 2))) {
+        let missing_id = match ids
+            .iter()
+            .find(|id| !ids.contains(&(*id + 1)) && ids.contains(&(*id + 2)))
+        {
             Some(id) => *id + 1,
-            None => 0
+            None => 0,
         };
         let answers = vec![
             ids.iter().fold(0, |o, n| o.max(*n)).into(),
             missing_id.into(),
         ];
-        
+
         Ok(answers)
-    }
+    },
 };

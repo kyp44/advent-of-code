@@ -1,21 +1,18 @@
-use super::super::aoc::{
-    ParseError,
-    Solution,
-};
+use super::super::aoc::{ParseError, Solution};
+use bimap::hash::BiHashMap;
 use nom::{
-    Finish,
     bytes::complete::{is_not, tag, take_until},
     character::complete::{digit1, space1},
     combinator::map,
     error::context,
     multi::separated_list0,
     sequence::{separated_pair, tuple},
+    Finish,
 };
 use std::collections::HashSet;
-use bimap::hash::BiHashMap;
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
 
     #[test]
@@ -29,7 +26,7 @@ dark olive bags contain 3 faded blue bags, 4 dotted black bags.
 vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
 faded blue bags contain no other bags.
 dotted black bags contain no other bags.";
-        
+
         assert_eq!((SOLUTION.solver)(input).unwrap(), vec![4, 32]);
 
         let input = "shiny gold bags contain 2 dark red bags.
@@ -46,7 +43,10 @@ dark violet bags contain no other bags.";
     #[test]
     #[ignore]
     fn actual() {
-        assert_eq!(SOLUTION.run(super::super::YEAR_SOLUTIONS.year).unwrap(), vec![316, 11310]);
+        assert_eq!(
+            SOLUTION.run(super::super::YEAR_SOLUTIONS.year).unwrap(),
+            vec![316, 11310]
+        );
     }
 }
 
@@ -59,9 +59,12 @@ struct BagTable<'a> {
 
 impl<'a> BagTable<'a> {
     fn new() -> Self {
-        BagTable { next_id: 0, bimap: BiHashMap::new() }
+        BagTable {
+            next_id: 0,
+            bimap: BiHashMap::new(),
+        }
     }
-    
+
     fn get_or_add_bag(&mut self, bag_str: &'a str) -> u32 {
         match self.bimap.get_by_right(bag_str) {
             Some(id) => *id,
@@ -97,27 +100,23 @@ impl BagRule {
                     tag(" bags contain "),
                     separated_list0(
                         tag(", "),
-                        tuple((
-                            digit1,
-                            space1,
-                            take_until(" bag"),
-                            is_not(",."),
-                        ))
+                        tuple((digit1, space1, take_until(" bag"), is_not(",."))),
                     ),
                 ),
-                |(bs, vec)| {
-                    BagRule {
-                        bag_id: bag_table.get_or_add_bag(bs),
-                        contains: vec.iter().map(|(ids, _, bs, _)| {
-                            BagContains {
-                                count: ids.parse().unwrap(),
-                                bag_id: bag_table.get_or_add_bag(bs),
-                            }
-                        }).collect(),
-                    }
-                }
-            )
-        )(input.trim()).finish().map(|(_, r)| r)
+                |(bs, vec)| BagRule {
+                    bag_id: bag_table.get_or_add_bag(bs),
+                    contains: vec
+                        .iter()
+                        .map(|(ids, _, bs, _)| BagContains {
+                            count: ids.parse().unwrap(),
+                            bag_id: bag_table.get_or_add_bag(bs),
+                        })
+                        .collect(),
+                },
+            ),
+        )(input.trim())
+        .finish()
+        .map(|(_, r)| r)
     }
 }
 
@@ -127,7 +126,9 @@ pub const SOLUTION: Solution = Solution {
     solver: |input| {
         // Generation
         let mut bag_table = BagTable::new();
-        let rules: Vec<BagRule> = input.trim_end().lines()
+        let rules: Vec<BagRule> = input
+            .trim_end()
+            .lines()
             .map(|line| BagRule::parse(&mut bag_table, line))
             .collect::<Result<Vec<BagRule>, ParseError>>()?;
 
@@ -150,7 +151,11 @@ pub const SOLUTION: Solution = Solution {
             loop {
                 let last_count = containing_bags.len();
                 for rule in rules.iter() {
-                    if rule.contains.iter().any(|cont| containing_bags.contains(&cont.bag_id)) {
+                    if rule
+                        .contains
+                        .iter()
+                        .any(|cont| containing_bags.contains(&cont.bag_id))
+                    {
                         containing_bags.insert(rule.bag_id);
                     }
                 }
@@ -164,18 +169,17 @@ pub const SOLUTION: Solution = Solution {
         fn count_containing_bags(rules: &[BagRule], id: u32) -> u32 {
             match rules.iter().find(|r| r.bag_id == id) {
                 None => 0,
-                Some(rule) => {
-                    rule.contains.iter().map(|c| c.count*(1 + count_containing_bags(rules, c.bag_id))).sum()
-                }
+                Some(rule) => rule
+                    .contains
+                    .iter()
+                    .map(|c| c.count * (1 + count_containing_bags(rules, c.bag_id)))
+                    .sum(),
             }
         }
         let containing_count = count_containing_bags(&rules, id);
-        
-        let answers = vec![
-            num_containers.into(),
-            containing_count.into(),
-        ];
-        
+
+        let answers = vec![num_containers.into(), containing_count.into()];
+
         Ok(answers)
-    }
+    },
 };

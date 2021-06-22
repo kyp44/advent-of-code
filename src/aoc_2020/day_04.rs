@@ -1,25 +1,21 @@
-use super::super::aoc::{
-    ParseResult,
-    Solution,
-    CountFilter
-};
+use super::super::aoc::{CountFilter, ParseResult, Solution};
 use nom::{
-    Finish,
     branch::alt,
     bytes::complete::{is_not, tag, take_while_m_n},
-    character::{is_digit, is_hex_digit},
     character::complete::{digit1, line_ending, space0, space1},
+    character::{is_digit, is_hex_digit},
     combinator::{all_consuming, map},
     error::context,
     multi::separated_list1,
-    sequence::{pair, separated_pair, tuple, preceded},
+    sequence::{pair, preceded, separated_pair, tuple},
+    Finish,
 };
-use std::{collections::HashMap};
+use std::collections::HashMap;
 use strum::IntoEnumIterator;
-use strum_macros::{EnumString, EnumIter};
+use strum_macros::{EnumIter, EnumString};
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
 
     #[test]
@@ -37,8 +33,8 @@ hgt:179cm
 
 hcl:#cfa07d eyr:2025 pid:166559648
 iyr:2011 ecl:brn hgt:59in";
-        
-        assert_eq!((SOLUTION.solver)(input).unwrap(), vec![2,2]);
+
+        assert_eq!((SOLUTION.solver)(input).unwrap(), vec![2, 2]);
     }
 
     #[test]
@@ -57,7 +53,7 @@ hgt:59cm ecl:zzz
 eyr:2038 hcl:74454a iyr:2023
 pid:3556412378 byr:2007";
 
-        assert_eq!((SOLUTION.solver)(input).unwrap(), vec![4,0]);
+        assert_eq!((SOLUTION.solver)(input).unwrap(), vec![4, 0]);
     }
 
     #[test]
@@ -74,15 +70,18 @@ pid:545766238 ecl:hzl
 eyr:2022
 
 iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719";
-        
-        assert_eq!((SOLUTION.solver)(input).unwrap(), vec![4,4]);
+
+        assert_eq!((SOLUTION.solver)(input).unwrap(), vec![4, 4]);
     }
 
     #[test]
     #[ignore]
     fn actual() {
-        assert_eq!(SOLUTION.run(super::super::YEAR_SOLUTIONS.year).unwrap(), vec![202, 137]);
-    }    
+        assert_eq!(
+            SOLUTION.run(super::super::YEAR_SOLUTIONS.year).unwrap(),
+            vec![202, 137]
+        );
+    }
 }
 
 #[derive(PartialEq, Eq, Hash, Debug, EnumString, EnumIter)]
@@ -109,32 +108,21 @@ impl PassportField {
     fn valid(&self, value: &str) -> bool {
         use PassportField::*;
         match self {
-            BirthYear => {
-                match value.parse::<u32>() {
-                    Ok(b) => (1920..=2002).contains(&b),
-                    Err(_) => false,
-                }
+            BirthYear => match value.parse::<u32>() {
+                Ok(b) => (1920..=2002).contains(&b),
+                Err(_) => false,
             },
-            IssueYear => {
-                match value.parse::<u32>() {
-                    Ok(b) => (2010..=2020).contains(&b),
-                    Err(_) => false,
-                }
+            IssueYear => match value.parse::<u32>() {
+                Ok(b) => (2010..=2020).contains(&b),
+                Err(_) => false,
             },
-            ExpirationYear => {
-                match value.parse::<u32>() {
-                    Ok(b) => (2020..=2030).contains(&b),
-                    Err(_) => false,
-                }
+            ExpirationYear => match value.parse::<u32>() {
+                Ok(b) => (2020..=2030).contains(&b),
+                Err(_) => false,
             },
             Height => {
-                let res: ParseResult<(&str, &str)> = all_consuming(
-                    pair(
-                        digit1,
-                        alt((tag("cm"), tag("in")))
-
-                    )
-                )(value);
+                let res: ParseResult<(&str, &str)> =
+                    all_consuming(pair(digit1, alt((tag("cm"), tag("in")))))(value);
                 match res {
                     Ok((_, (h, u))) => {
                         let h = h.parse::<u32>().unwrap();
@@ -142,39 +130,35 @@ impl PassportField {
                             "cm" => (150..=193).contains(&h),
                             _ => (59..=76).contains(&h),
                         }
-                    },
+                    }
                     Err(_) => false,
                 }
-            },
+            }
             HairColor => {
-                let res: ParseResult<&str> = all_consuming(
-                    preceded(
-                        tag("#"),
-                        take_while_m_n(6, 6, |c: char| c.is_ascii() && is_hex_digit(c as u8)),
-                    )
-                )(value);
+                let res: ParseResult<&str> = all_consuming(preceded(
+                    tag("#"),
+                    take_while_m_n(6, 6, |c: char| c.is_ascii() && is_hex_digit(c as u8)),
+                ))(value);
                 res.is_ok()
-            },
+            }
             EyeColor => {
-                let res: ParseResult<&str> = all_consuming(
-                    alt((
-                        tag("amb"),
-                        tag("blu"),
-                        tag("brn"),
-                        tag("gry"),
-                        tag("grn"),
-                        tag("hzl"),
-                        tag("oth"),
-                    ))
-                )(value);
+                let res: ParseResult<&str> = all_consuming(alt((
+                    tag("amb"),
+                    tag("blu"),
+                    tag("brn"),
+                    tag("gry"),
+                    tag("grn"),
+                    tag("hzl"),
+                    tag("oth"),
+                )))(value);
                 res.is_ok()
-            },
+            }
             PassportId => {
-                let res: ParseResult<&str> = all_consuming(
-                    take_while_m_n(9, 9, |c: char| c.is_ascii() && is_digit(c as u8))
-                )(value);
+                let res: ParseResult<&str> = all_consuming(take_while_m_n(9, 9, |c: char| {
+                    c.is_ascii() && is_digit(c as u8)
+                }))(value);
                 res.is_ok()
-            },
+            }
             CountryId => true,
         }
     }
@@ -192,22 +176,20 @@ fn parse_passport<'a>(input: &'a str) -> ParseResult<Passport<'a>> {
         map(
             separated_list1(
                 alt((pair(space0, line_ending), pair(space1, space0))),
-                separated_pair(
-                    is_not(": \n\r"),
-                    tag(":"),
-                    is_not(" \t\n\r"),
-                )
+                separated_pair(is_not(": \n\r"), tag(":"), is_not(" \t\n\r")),
             ),
             |v: Vec<(&str, &str)>| {
-                v.iter().filter_map(|(k, v)| {
-                    let pfr: Result<PassportField, strum::ParseError> = k.parse();
-                    match pfr {
-                        Ok(pf) => Some((pf, *v)),
-                        Err(_) => None
-                    } 
-                }).collect()
-            }
-        )
+                v.iter()
+                    .filter_map(|(k, v)| {
+                        let pfr: Result<PassportField, strum::ParseError> = k.parse();
+                        match pfr {
+                            Ok(pf) => Some((pf, *v)),
+                            Err(_) => None,
+                        }
+                    })
+                    .collect()
+            },
+        ),
     )(input)
 }
 
@@ -229,9 +211,7 @@ fn passport_valid_part_b(passport: &Passport) -> bool {
     let mut valid = true;
     for field in PassportField::iter() {
         valid = match passport.get(&field) {
-            Some(v) => {
-                field.valid(v)
-            },
+            Some(v) => field.valid(v),
             None => field == PassportField::CountryId,
         };
         if !valid {
@@ -246,19 +226,25 @@ pub const SOLUTION: Solution = Solution {
     name: "Passport Processing",
     solver: |input| {
         // Generation
-        let passports = all_consuming(
-            separated_list1(
-                tuple((space0, line_ending, space0, line_ending)),
-                parse_passport,
-            )
-        )(input.trim_end()).finish().map(|(_, pd)| pd)?;
+        let passports = all_consuming(separated_list1(
+            tuple((space0, line_ending, space0, line_ending)),
+            parse_passport,
+        ))(input.trim_end())
+        .finish()
+        .map(|(_, pd)| pd)?;
 
         // Processing
         let answers = vec![
-            passports.iter().filter_count(|p| passport_valid_part_a(p)).into(),
-            passports.iter().filter_count(|p| passport_valid_part_b(p)).into(),
+            passports
+                .iter()
+                .filter_count(|p| passport_valid_part_a(p))
+                .into(),
+            passports
+                .iter()
+                .filter_count(|p| passport_valid_part_b(p))
+                .into(),
         ];
 
         Ok(answers)
-    }
+    },
 };

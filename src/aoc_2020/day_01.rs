@@ -1,12 +1,8 @@
-use super::super::aoc::{
-    AocError,
-    Parseable,
-    Solution,
-};
+use super::super::aoc::{AocError, Parseable, Solution};
 use itertools::Itertools;
 
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
     use crate::solution_test;
 
@@ -41,9 +37,9 @@ pub const SOLUTION: Solution = Solution {
                 match i.next() {
                     Some(v) => {
                         if v[0] + v[1] == 2020 {
-                            break (v[0]*v[1]).into();
+                            break (v[0] * v[1]).into();
                         }
-                    },
+                    }
                     None => {
                         return Err(AocError::Process("No two values add to 2020".to_string()));
                     }
@@ -57,9 +53,9 @@ pub const SOLUTION: Solution = Solution {
                 match i.next() {
                     Some(v) => {
                         if v[0] + v[1] + v[2] == 2020 {
-                            break (v[0]*v[1]*v[2]).into();
+                            break (v[0] * v[1] * v[2]).into();
                         }
-                    },
+                    }
                     None => {
                         return Err(AocError::Process("No three values add to 2020".to_string()));
                     }
