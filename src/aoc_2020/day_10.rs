@@ -116,7 +116,7 @@ pub const SOLUTION: Solution = Solution {
             );
             variations.insert(*v, var);
             last_var = var;
-            println!("{} {} {}", i, v, var);
+            //println!("{} {} {}", i, v, var);
         }
         answers.push(last_var);
 

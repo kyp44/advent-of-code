@@ -51,14 +51,11 @@ pub const SOLUTION: Solution = Solution {
             let mut i = values.iter().combinations(3);
             loop {
                 match i.next() {
-                    Some(v) => {
-                        if v[0] + v[1] + v[2] == 2020 {
-                            break (v[0] * v[1] * v[2]).into();
-                        }
-                    }
+                    Some(v) if v[0] + v[1] + v[2] == 2020 => break (v[0] * v[1] * v[2]).into(),
                     None => {
                         return Err(AocError::Process("No three values add to 2020".to_string()));
-                    }
+                    },
+                    _ => (),
                 }
             }
         });
