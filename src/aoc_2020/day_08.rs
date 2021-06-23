@@ -19,6 +19,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
+    vec![1087, 780],
         "nop +0
 acc +1
 jmp +4
@@ -28,8 +29,7 @@ acc -99
 acc +1
 jmp -4
 acc +6",
-        vec![5, 8],
-        vec![1087, 780]
+        vec![5, 8]
     }
 }
 

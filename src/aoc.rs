@@ -167,26 +167,26 @@ where
 }
 
 /// Convenience macro to build the example test for a solution.
+/// Also creates an ignored test to test the main problem solutions.
 #[macro_export]
 macro_rules! solution_test {
-    ($in: literal, $core: expr) => {
-        solution_test! {$in, $core, vec![]}
-    };
-    ($in: literal, $core: expr, $cora: expr) => {
-        #[test]
-        fn example() {
-            let input = $in;
-
-            assert_eq!((SOLUTION.solver)(input).unwrap(), $core);
-        }
-
+    ($actual: expr, $($input:literal, $exp: expr), +) => {
         #[test]
         #[ignore]
         fn actual() {
             assert_eq!(
                 SOLUTION.run(super::super::YEAR_SOLUTIONS.year).unwrap(),
-                $cora
+                $actual
             );
+        }
+
+        #[test]
+        fn example() {
+	    $(
+		let input = $input;
+
+		assert_eq!((SOLUTION.solver)(input).unwrap(), $exp);
+	    )+
         }
     };
 }

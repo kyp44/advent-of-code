@@ -4,10 +4,11 @@ use std::collections::HashMap;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::solution_test;
 
-    #[test]
-    fn example() {
-        let input = "16
+    solution_test! {
+    vec![2100, 16198260678656],
+    "16
 10
 15
 5
@@ -17,10 +18,9 @@ mod tests {
 19
 6
 12
-4";
-        assert_eq!((SOLUTION.solver)(input).unwrap(), vec![35, 8]);
-
-        let input = "28
+4",
+    vec![35, 8],
+"28
 33
 18
 42
@@ -50,17 +50,8 @@ mod tests {
 2
 34
 10
-3";
-        assert_eq!((SOLUTION.solver)(input).unwrap(), vec![220, 19208]);
-    }
-
-    #[test]
-    #[ignore]
-    fn actual() {
-        assert_eq!(
-            SOLUTION.run(super::super::YEAR_SOLUTIONS.year).unwrap(),
-            vec![2100, 16198260678656]
-        );
+3",
+    vec![220, 19208]
     }
 }
 

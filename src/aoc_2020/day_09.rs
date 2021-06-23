@@ -15,6 +15,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
+        vec![542529149, 75678618],
         "previous: 5
 35
 20
@@ -36,8 +37,7 @@ mod tests {
 277
 309
 576",
-        vec![127, 62],
-        vec![542529149, 75678618]
+        vec![127, 62]
     }
 }
 

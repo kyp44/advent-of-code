@@ -12,11 +12,11 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
+        vec![970, 587],
         "BFFFBBFRRR
 FFFBBBFRRR
 BBFFBBFRLL",
-        vec![820, 0],
-        vec![970, 587]
+        vec![820, 0]
     }
 }
 

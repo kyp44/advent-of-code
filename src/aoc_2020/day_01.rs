@@ -7,6 +7,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
+    vec![63616, 67877784],
         "1721
 979
 366
@@ -14,8 +15,7 @@ mod tests {
 675
 1456
 ",
-        vec![514579, 241861950],
-        vec![63616, 67877784]
+        vec![514579, 241861950]
     }
 }
 
@@ -54,7 +54,7 @@ pub const SOLUTION: Solution = Solution {
                     Some(v) if v[0] + v[1] + v[2] == 2020 => break (v[0] * v[1] * v[2]).into(),
                     None => {
                         return Err(AocError::Process("No three values add to 2020".to_string()));
-                    },
+                    }
                     _ => (),
                 }
             }

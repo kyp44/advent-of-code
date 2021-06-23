@@ -13,11 +13,11 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
+            vec![378, 280],
         "1-3 a: abcde
 1-3 b: cdefg
 2-9 c: ccccccccc",
-        vec![2, 1],
-        vec![378, 280]
+        vec![2, 1]
     }
 }
 

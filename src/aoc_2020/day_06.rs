@@ -17,6 +17,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
+        vec![6335, 3392],
         "abc
 
 a
@@ -33,8 +34,7 @@ a
 
 b
 ",
-        vec![11, 6],
-        vec![6335, 3392]
+        vec![11, 6]
     }
 }
 
