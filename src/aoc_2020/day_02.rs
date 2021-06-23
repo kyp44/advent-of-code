@@ -1,4 +1,5 @@
 use super::super::aoc::{CountFilter, ParseResult, Parseable, Solution};
+use crate::aoc::SaturateInto;
 use nom::{
     bytes::complete::{tag, take},
     character::complete::digit1,
@@ -74,7 +75,11 @@ impl Parseable for Password {
 
 impl Password {
     fn valid_part_a(&self) -> bool {
-        let char_count = self.password.matches(self.policy.character).count() as u32;
+        let char_count = self
+            .password
+            .matches(self.policy.character)
+            .count()
+            .saturate_into();
         (self.policy.a..=self.policy.b).contains(&char_count)
     }
 

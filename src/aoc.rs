@@ -2,6 +2,7 @@ use anyhow::Context;
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
 use num::Unsigned;
+use std::convert::TryInto;
 use std::error::Error;
 use std::str::FromStr;
 use std::{fmt, fs};
@@ -103,6 +104,19 @@ impl<T: Unsigned + FromStr> Parseable for T {
 /// Type containing the result of a nom parsing
 pub type ParseResult<'a, U> = IResult<&'a str, U, ParseError>;
 
+/// Convenience function to count from a filtered Iterator
+pub trait CountFilter<T> {
+    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> u32;
+}
+impl<T, I> CountFilter<T> for I
+where
+    I: Iterator<Item = T>,
+{
+    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> u32 {
+        self.filter(f).count().saturate_into()
+    }
+}
+
 /// Represents the solver for a day's puzzle.
 pub struct Solution {
     pub day: u32,
@@ -150,19 +164,6 @@ impl YearSolutions {
         for solution in self.solutions.iter() {
             println!("{}", solution.title(self.year));
         }
-    }
-}
-
-/// Convenience function to count from a filtered Iterator
-pub trait CountFilter<T> {
-    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> u32;
-}
-impl<T, I> CountFilter<T> for I
-where
-    I: Iterator<Item = T>,
-{
-    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> u32 {
-        self.filter(f).count() as u32
     }
 }
 

@@ -1,3 +1,5 @@
+use crate::aoc::SaturateInto;
+
 use super::super::aoc::{AocError, ParseError, ParseResult, Parseable, Solution};
 use nom::{
     branch::alt,
@@ -7,11 +9,11 @@ use nom::{
     error::context,
     sequence::{pair, separated_pair},
 };
-use std::collections::HashSet;
 use std::iter::Enumerate;
 use std::iter::Filter;
 use std::slice::Iter;
 use std::str::FromStr;
+use std::{collections::HashSet, convert::TryInto};
 
 #[cfg(test)]
 mod tests {
@@ -144,10 +146,10 @@ impl Program {
             let inst = self.instructions.get(pc).unwrap();
 
             // Let instruction affect the program counter and accumulator
-            let mut ipc = pc as i32;
+            let mut ipc: i32 = pc.try_into().unwrap();
             if let Instruction::Jmp(d) = inst {
                 ipc += d;
-                if ipc < 0 || ipc > self.instructions.len() as i32 {
+                if ipc < 0 || ipc > self.instructions.len().saturate_into() {
                     break ProgramEndStatus::JumpedOut(acc);
                 }
             } else {

@@ -1,5 +1,8 @@
+use itertools::iproduct;
+
+use super::super::aoc::SaturateInto;
 use super::super::aoc::{AocError, Solution};
-use std::{collections::HashSet, fmt::Display, str::FromStr};
+use std::{cmp::min, collections::HashSet, fmt::Display, str::FromStr};
 
 #[cfg(test)]
 mod tests {
@@ -22,6 +25,7 @@ L.LLLLL.LL",
     }
 }
 
+#[derive(Clone)]
 enum Seat {
     Floor,
     Empty,
@@ -48,6 +52,7 @@ impl From<&Seat> for char {
     }
 }
 
+#[derive(Clone)]
 struct Area {
     width: usize,
     height: usize,
@@ -106,9 +111,28 @@ impl Display for Area {
     }
 }
 
-enum SimluationStatus {
-    Stable,
-    Infinite,
+enum SimulationStatus {
+    Stable(Area),
+    Infinite(Area),
+}
+
+impl Area {
+    fn adjacent_occupied(&self, x: usize, y: usize) -> u32 {
+        let range = |v: usize, b: usize| min((v - 1).saturating_sub(1), b)..min(b, v + 2);
+        iproduct!(range(x, self.width), range(y, self.height))
+            .count()
+            .saturate_into()
+    }
+
+    fn next(&self) -> Area {
+        let next = self.clone();
+
+        next
+    }
+
+    fn simulate(&self) -> SimulationStatus {
+        SimulationStatus::Stable(self.next())
+    }
 }
 
 struct Simulation {

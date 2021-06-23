@@ -1,3 +1,5 @@
+use crate::aoc::SaturateInto;
+
 use super::super::aoc::{ParseError, Solution};
 use bimap::hash::BiHashMap;
 use nom::{
@@ -133,7 +135,7 @@ pub const SOLUTION: Solution = Solution {
         let id = bag_table.get_or_add_bag("shiny gold");
 
         // Part a)
-        let num_containers = {
+        let num_containers: u32 = {
             let mut containing_bags = HashSet::new();
             containing_bags.insert(id);
 
@@ -149,7 +151,7 @@ pub const SOLUTION: Solution = Solution {
                     }
                 }
                 if containing_bags.len() == last_count {
-                    break (last_count - 1) as u32;
+                    break (last_count - 1).saturate_into();
                 }
             }
         };
