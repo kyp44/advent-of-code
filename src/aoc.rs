@@ -2,8 +2,10 @@ use anyhow::Context;
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
 use num::Unsigned;
+use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::error::Error;
+use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 use std::{fmt, fs};
 
@@ -16,8 +18,8 @@ pub enum AocError {
     InvalidInput(String),
     Process(String),
 }
-impl fmt::Display for AocError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Display for AocError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
             AocError::NoYear(y) => write!(f, "Year {} is not yet solved", y),
             AocError::NoDay(d) => write!(f, "Day {} is not yet solved", d),
@@ -56,9 +58,9 @@ impl nom::error::ParseError<&str> for ParseError {
     }
 }
 impl nom::error::ContextError<&str> for ParseError {}
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.verbose_error.fmt(f)
+impl Display for ParseError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        Display::fmt(&self.verbose_error, f)
     }
 }
 
@@ -105,15 +107,16 @@ impl<T: Unsigned + FromStr> Parseable for T {
 pub type ParseResult<'a, U> = IResult<&'a str, U, ParseError>;
 
 /// Convenience function to count from a filtered Iterator
-pub trait CountFilter<T> {
-    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> u32;
+pub trait FilterCount<T, O> {
+    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> O;
 }
-impl<T, I> CountFilter<T> for I
+impl<T, I, O: TryFrom<usize>> FilterCount<T, O> for I
 where
     I: Iterator<Item = T>,
+    <O as TryFrom<usize>>::Error: Debug,
 {
-    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> u32 {
-        self.filter(f).count().saturate_into()
+    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> O {
+        self.filter(f).count().try_into().unwrap()
     }
 }
 

@@ -1,5 +1,3 @@
-use crate::aoc::SaturateInto;
-
 use super::super::aoc::{AocError, ParseError, ParseResult, Parseable, Solution};
 use nom::{
     branch::alt,
@@ -149,7 +147,7 @@ impl Program {
             let mut ipc: i32 = pc.try_into().unwrap();
             if let Instruction::Jmp(d) = inst {
                 ipc += d;
-                if ipc < 0 || ipc > self.instructions.len().saturate_into() {
+                if ipc < 0 || ipc > self.instructions.len().try_into().unwrap() {
                     break ProgramEndStatus::JumpedOut(acc);
                 }
             } else {
@@ -159,7 +157,7 @@ impl Program {
                 ipc += 1;
             }
 
-            pc = ipc as usize;
+            pc = ipc.try_into().unwrap();
             if pc == self.instructions.len() {
                 break ProgramEndStatus::Terminated(acc);
             }
@@ -182,7 +180,7 @@ pub const SOLUTION: Solution = Solution {
                     acc
                 )));
             }
-            Ok(acc as u32)
+            Ok(acc.try_into().unwrap())
         }
 
         let part_a = match program.execute() {

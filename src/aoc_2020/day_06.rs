@@ -9,7 +9,7 @@ use nom::{
     sequence::{pair, tuple},
     Finish,
 };
-use std::collections::HashSet;
+use std::{collections::HashSet, convert::TryInto};
 
 #[cfg(test)]
 mod tests {
@@ -88,7 +88,7 @@ pub const SOLUTION: Solution = Solution {
         // Processing
         let answers = part_questions
             .iter()
-            .map(|v| v.iter().map(|q| q.len() as u64).sum())
+            .map(|v| v.iter().map(|q| q.len()).sum::<usize>().try_into().unwrap())
             .collect();
 
         Ok(answers)

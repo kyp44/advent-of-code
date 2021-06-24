@@ -1,9 +1,8 @@
-use super::super::aoc::{CountFilter, ParseResult, Solution};
+use super::super::aoc::{FilterCount, ParseResult, Solution};
 use nom::{
     branch::alt,
     bytes::complete::{is_not, tag, take_while_m_n},
     character::complete::{digit1, line_ending, space0, space1},
-    character::{is_digit, is_hex_digit},
     combinator::{all_consuming, map},
     error::context,
     multi::separated_list1,
@@ -118,7 +117,7 @@ impl PassportField {
             HairColor => {
                 let res: ParseResult<&str> = all_consuming(preceded(
                     tag("#"),
-                    take_while_m_n(6, 6, |c: char| c.is_ascii() && is_hex_digit(c as u8)),
+                    take_while_m_n(6, 6, |c: char| c.is_digit(16)),
                 ))(value);
                 res.is_ok()
             }
@@ -135,9 +134,8 @@ impl PassportField {
                 res.is_ok()
             }
             PassportId => {
-                let res: ParseResult<&str> = all_consuming(take_while_m_n(9, 9, |c: char| {
-                    c.is_ascii() && is_digit(c as u8)
-                }))(value);
+                let res: ParseResult<&str> =
+                    all_consuming(take_while_m_n(9, 9, |c: char| c.is_digit(10)))(value);
                 res.is_ok()
             }
             CountryId => true,
@@ -216,14 +214,8 @@ pub const SOLUTION: Solution = Solution {
 
         // Processing
         let answers = vec![
-            passports
-                .iter()
-                .filter_count(|p| passport_valid_part_a(p))
-                .into(),
-            passports
-                .iter()
-                .filter_count(|p| passport_valid_part_b(p))
-                .into(),
+            passports.iter().filter_count(|p| passport_valid_part_a(p)),
+            passports.iter().filter_count(|p| passport_valid_part_b(p)),
         ];
 
         Ok(answers)

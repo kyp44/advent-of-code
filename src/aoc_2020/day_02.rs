@@ -1,5 +1,4 @@
-use super::super::aoc::{CountFilter, ParseResult, Parseable, Solution};
-use crate::aoc::SaturateInto;
+use super::super::aoc::{FilterCount, ParseResult, Parseable, Solution};
 use nom::{
     bytes::complete::{tag, take},
     character::complete::digit1,
@@ -7,6 +6,7 @@ use nom::{
     error::context,
     sequence::separated_pair,
 };
+use std::convert::TryInto;
 
 #[cfg(test)]
 mod tests {
@@ -79,7 +79,8 @@ impl Password {
             .password
             .matches(self.policy.character)
             .count()
-            .saturate_into();
+            .try_into()
+            .unwrap();
         (self.policy.a..=self.policy.b).contains(&char_count)
     }
 
@@ -88,7 +89,11 @@ impl Password {
         // enough to contain both characters
         macro_rules! check {
             ($v:expr) => {
-                self.password.chars().nth(($v - 1) as usize).unwrap() == self.policy.character;
+                self.password
+                    .chars()
+                    .nth(($v - 1).try_into().unwrap())
+                    .unwrap()
+                    == self.policy.character;
             };
         }
         let a = check!(self.policy.a);
@@ -106,8 +111,8 @@ pub const SOLUTION: Solution = Solution {
 
         // Processing
         let answers = vec![
-            passwords.iter().filter_count(|p| p.valid_part_a()).into(),
-            passwords.iter().filter_count(|p| p.valid_part_b()).into(),
+            passwords.iter().filter_count(|p| p.valid_part_a()),
+            passwords.iter().filter_count(|p| p.valid_part_b()),
         ];
 
         Ok(answers)

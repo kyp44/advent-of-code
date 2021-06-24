@@ -1,4 +1,4 @@
-use super::super::aoc::{AocError, Parseable, Solution};
+use super::super::aoc::{AocError, FilterCount, Parseable, Solution};
 use std::collections::HashMap;
 
 #[cfg(test)]
@@ -83,7 +83,7 @@ pub const SOLUTION: Solution = Solution {
             ));
         }
         // Now get the required diffs
-        let count_diffs = |n| diffs.iter().filter(|d| **d == n).count() as u64;
+        let count_diffs = |n| -> u64 { diffs.iter().filter_count(|d| **d == n) };
         let mut answers = vec![count_diffs(1) * count_diffs(3)];
 
         // Part b)

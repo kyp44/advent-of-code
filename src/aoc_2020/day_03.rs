@@ -1,4 +1,4 @@
-use super::super::aoc::{AocError, CountFilter, Solution};
+use super::super::aoc::{AocError, FilterCount, Solution};
 use std::str::FromStr;
 
 #[cfg(test)]
@@ -126,13 +126,9 @@ pub const SOLUTION: Solution = Solution {
         let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
         let answers = vec![
             // Part a)
-            count_slope(3, 1).into(),
+            count_slope(3, 1),
             // Part b)
-            slopes
-                .iter()
-                .map(|(x, y)| count_slope(*x, *y))
-                .product::<u32>()
-                .into(),
+            slopes.iter().map(|(x, y)| count_slope(*x, *y)).product(),
         ];
 
         Ok(answers)

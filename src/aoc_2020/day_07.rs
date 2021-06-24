@@ -1,5 +1,3 @@
-use crate::aoc::SaturateInto;
-
 use super::super::aoc::{ParseError, Solution};
 use bimap::hash::BiHashMap;
 use nom::{
@@ -11,7 +9,7 @@ use nom::{
     sequence::{separated_pair, tuple},
     Finish,
 };
-use std::collections::HashSet;
+use std::{collections::HashSet, convert::TryInto};
 
 #[cfg(test)]
 mod tests {
@@ -151,7 +149,7 @@ pub const SOLUTION: Solution = Solution {
                     }
                 }
                 if containing_bags.len() == last_count {
-                    break (last_count - 1).saturate_into();
+                    break (last_count - 1).try_into().unwrap();
                 }
             }
         };

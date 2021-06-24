@@ -1,8 +1,6 @@
-use itertools::iproduct;
-
-use super::super::aoc::SaturateInto;
 use super::super::aoc::{AocError, Solution};
-use std::{cmp::min, collections::HashSet, fmt::Display, str::FromStr};
+use itertools::iproduct;
+use std::{cmp::min, collections::HashSet, convert::TryInto, fmt::Display, str::FromStr};
 
 #[cfg(test)]
 mod tests {
@@ -10,7 +8,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![],
+    vec![0],
     "L.LL.LL.LL
 LLLLLLL.LL
 L.L.L..L..
@@ -121,7 +119,8 @@ impl Area {
         let range = |v: usize, b: usize| min((v - 1).saturating_sub(1), b)..min(b, v + 2);
         iproduct!(range(x, self.width), range(y, self.height))
             .count()
-            .saturate_into()
+            .try_into()
+            .unwrap()
     }
 
     fn next(&self) -> Area {
