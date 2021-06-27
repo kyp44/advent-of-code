@@ -1,3 +1,5 @@
+#![feature(hash_set_entry)]
+
 mod aoc;
 mod aoc_2020;
 
