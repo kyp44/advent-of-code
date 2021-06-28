@@ -1,6 +1,6 @@
 use crate::aoc::{AocError, FilterCount, Solution};
 use itertools::iproduct;
-use std::{cmp::min, collections::HashSet, fmt::Display, hash::Hash, str::FromStr};
+use std::{collections::HashSet, convert::TryInto, fmt::Display, hash::Hash, str::FromStr};
 
 #[cfg(test)]
 mod tests {
@@ -8,7 +8,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![2483],
+    vec![2483, 2285],
     "L.LL.LL.LL
 LLLLLLL.LL
 L.L.L..L..
@@ -19,7 +19,7 @@ L.LLLLL.LL
 LLLLLLLLLL
 L.LLLLLL.L
 L.LLLLL.LL",
-        vec![37]
+        vec![37, 26]
     }
 }
 
@@ -85,27 +85,38 @@ impl Part for PartB {
 }
 
 trait Simulator {
-    fn size(&self) -> (usize, usize);
-    fn get(&self, point: (usize, usize)) -> Seat;
-    fn set(&mut self, point: (usize, usize), val: Seat);
+    fn size(&self) -> (isize, isize);
+    fn get(&self, point: &(isize, isize)) -> Option<Seat>;
+    fn set(&mut self, point: &(isize, isize), val: Seat);
+
+    fn valid_point(&self, point: &(isize, isize)) -> Option<(usize, usize)> {
+        let size = self.size();
+        if (0..size.0).contains(&point.0) && (0..size.1).contains(&point.1) {
+            return Some((
+                (*point).0.try_into().unwrap(),
+                (*point).1.try_into().unwrap(),
+            ));
+        }
+        None
+    }
 }
 
 trait SimulatorPart<T: Part>
 where
-    Self: Sized + Clone + Simulator + Hash + Eq,
+    Self: Sized + Clone + Simulator + Hash + Eq + Display,
 {
-    fn point_occupied(&self, point: (usize, usize)) -> u32;
+    fn point_occupied(&self, point: &(isize, isize)) -> u32;
 
     fn next(&self) -> Self {
-        let mut next = (*self).clone();
+        let mut next = self.clone();
         let size = self.size();
 
         for (x, y) in iproduct!(0..size.0, 0..size.1) {
-            let occupied = self.point_occupied((x, y));
-            let orig = self.get((x, y));
-            //println!("TODO seat ({}, {}) = {}", x, y, occupied);
+            let occupied = self.point_occupied(&(x, y));
+            let orig = self.get(&(x, y)).unwrap();
+            //println!("Seat ({}, {}) has {} around it", x, y, occupied);
             next.set(
-                (x, y),
+                &(x, y),
                 match orig {
                     Seat::Empty => {
                         if occupied == 0 {
@@ -205,33 +216,77 @@ impl Display for Area {
 }
 
 impl Simulator for Area {
-    fn size(&self) -> (usize, usize) {
-        (self.width, self.height)
+    fn size(&self) -> (isize, isize) {
+        (
+            self.width.try_into().unwrap(),
+            self.height.try_into().unwrap(),
+        )
     }
 
-    fn get(&self, point: (usize, usize)) -> Seat {
-        self.data[point.1][point.0]
+    fn get(&self, point: &(isize, isize)) -> Option<Seat> {
+        self.valid_point(point).map(|(x, y)| self.data[y][x])
     }
 
-    fn set(&mut self, point: (usize, usize), val: Seat) {
-        self.data[point.1][point.0] = val;
+    fn set(&mut self, point: &(isize, isize), val: Seat) {
+        if let Some((x, y)) = self.valid_point(point) {
+            self.data[y][x] = val;
+        }
     }
 }
 
 impl SimulatorPart<PartA> for Area {
-    fn point_occupied(&self, point: (usize, usize)) -> u32 {
-        let range = |v: usize, b: usize| min(v.saturating_sub(1), b)..min(b, v + 2);
-        iproduct!(range(point.0, self.width), range(point.1, self.height)).filter_count(
-            |(sx, sy)| {
-                !(*sx == point.0 && *sy == point.1) && matches!(self.data[*sy][*sx], Seat::Occupied)
+    fn point_occupied(&self, point: &(isize, isize)) -> u32 {
+        iproduct!((point.1 - 1)..=(point.1 + 1), (point.0 - 1)..=(point.0 + 1)).filter_count(
+            |(sy, sx)| {
+                !(*sx == point.0 && *sy == point.1)
+                    && matches!(self.get(&(*sx, *sy)), Some(Seat::Occupied))
             },
         )
     }
 }
 
 impl SimulatorPart<PartB> for Area {
-    fn point_occupied(&self, point: (usize, usize)) -> u32 {
-        todo!()
+    fn point_occupied(&self, point: &(isize, isize)) -> u32 {
+        struct Traverser<'a> {
+            area: &'a Area,
+            point: (isize, isize),
+            direction: (isize, isize),
+            stop: bool,
+        }
+        impl Traverser<'_> {
+            fn new(area: &Area, point: (isize, isize), direction: (isize, isize)) -> Traverser {
+                Traverser {
+                    area,
+                    point,
+                    direction,
+                    stop: false,
+                }
+            }
+        }
+        impl Iterator for Traverser<'_> {
+            type Item = Seat;
+
+            fn next(&mut self) -> Option<Self::Item> {
+                if self.stop {
+                    return None;
+                }
+
+                self.point = (
+                    self.point.0 + self.direction.0,
+                    self.point.1 + self.direction.1,
+                );
+
+                self.area.get(&self.point).map(|s| {
+                    self.stop = matches!(s, Seat::Empty) || matches!(s, Seat::Occupied);
+                    s
+                })
+            }
+        }
+
+        iproduct!(-1isize..=1, -1isize..=1)
+            .filter(|(dx, dy)| !(*dx == 0 && *dy == 0))
+            .map(|(dx, dy)| Traverser::new(self, *point, (dx, dy)).last())
+            .filter_count(|s| matches!(s, Some(Seat::Occupied)))
     }
 }
 
@@ -252,14 +307,18 @@ pub const SOLUTION: Solution = Solution {
         let area: Area = input.parse()?;
 
         // Process
-        let answers = vec![match area.simulate() {
-            SimulationStatus::Stable(a) => a.occupied(),
-            SimulationStatus::Infinite(_) => {
-                return Err(AocError::Process(
+        fn check_simulation(status: SimulationStatus<Area>) -> Result<u64, AocError> {
+            match status {
+                SimulationStatus::Stable(a) => Ok(a.occupied()),
+                SimulationStatus::Infinite(_) => Err(AocError::Process(
                     "Simulation did not reach a steady state".to_string(),
-                ));
+                )),
             }
-        }];
+        }
+        let answers = vec![
+            check_simulation(SimulatorPart::<PartA>::simulate(&area))?,
+            check_simulation(SimulatorPart::<PartB>::simulate(&area))?,
+        ];
         Ok(answers)
     },
 };
