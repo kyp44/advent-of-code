@@ -1,3 +1,6 @@
+use std::iter::FilterMap;
+
+use itertools::Itertools;
 use nom::{
     bytes::complete::{is_not, tag},
     character::complete::{digit1, multispace1, space0},
@@ -5,8 +8,9 @@ use nom::{
     multi::separated_list1,
     sequence::{separated_pair, tuple},
 };
+use num::integer::gcd;
 
-use crate::aoc::{ParseResult, Parseable, Solution};
+use crate::aoc::{AocError, ParseResult, Parseable, Solution};
 
 #[cfg(test)]
 mod tests {
@@ -43,6 +47,12 @@ impl Parseable for Schedule {
     }
 }
 
+impl Schedule {
+    fn valid_ids(&self) -> impl Iterator<Item = u64> + '_ {
+        self.bus_ids.iter().filter_map(|id| *id)
+    }
+}
+
 pub const SOLUTION: Solution = Solution {
     day: 13,
     name: "Shuttle Search",
@@ -51,14 +61,29 @@ pub const SOLUTION: Solution = Solution {
         let schedule = Schedule::from_str(input)?;
 
         // Process
+        let mut answers = vec![];
+
+        // Part a)
         let time_until = |id: &u64| id - (schedule.earliest_time % *id);
         let bus_id = schedule
-            .bus_ids
-            .iter()
-            .filter_map(|id| *id)
+            .valid_ids()
             .min_by(|a, b| time_until(a).cmp(&time_until(b)))
             .unwrap();
-        let answers = vec![bus_id * time_until(&bus_id)];
+        answers.push(bus_id * time_until(&bus_id));
+
+        // Part b)
+        // This problem is effectively the Chinese Remainder Theorem to solve a system
+        // of modulo congruences. These can be solved so long as the modulo factors
+        // (in our case the set of bus IDs) are all pairwise co-prime. So first we check
+        // that this is the case to guarantee that there will be a solution.
+        for v in schedule.valid_ids().combinations(2) {
+            if gcd(v[0], v[1]) > 1 {
+                return Err(AocError::Process(format!(
+                    "Part b) may not be solveable because {} and {} are not co-prime",
+                    v[0], v[1]
+                )));
+            }
+        }
 
         Ok(answers)
     },
