@@ -1,5 +1,3 @@
-use std::iter::FilterMap;
-
 use itertools::Itertools;
 use nom::{
     bytes::complete::{is_not, tag},
@@ -9,6 +7,7 @@ use nom::{
     sequence::{separated_pair, tuple},
 };
 use num::integer::gcd;
+use std::convert::TryInto;
 
 use crate::aoc::{AocError, ParseResult, Parseable, Solution};
 
@@ -18,10 +17,22 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![1895],
+    vec![1895, 840493039281088],
     "939
     7,13,x,x,59,x,31,19",
-        vec![295, 1068781]
+        vec![295, 1068781],
+        "0
+    67,7,59,61",
+        vec![0, 754018],
+        "0
+    67,x,7,59,61",
+        vec![0, 779210],
+        "0
+    67,7,x,59,61",
+        vec![0, 1261476],
+        "0
+    1789,37,47,1889",
+        vec![0, 1202161486]
     }
 }
 
@@ -53,6 +64,35 @@ impl Schedule {
     }
 }
 
+/// Returns -d (mod m).
+/// Note that is correct and differs from m - (d % m) when d = 0.
+fn neg_modulo(d: &u64, m: &u64) -> u64 {
+    let md: i64 = -TryInto::<i64>::try_into(*d).unwrap();
+    let m: i64 = (*m).try_into().unwrap();
+    (md.rem_euclid(m)).try_into().unwrap()
+}
+
+struct ModuloValues {
+    v: u64,
+    m: u64,
+}
+
+impl ModuloValues {
+    fn new(a: &u64, m: &u64) -> ModuloValues {
+        ModuloValues { v: *a % *m, m: *m }
+    }
+}
+
+impl Iterator for ModuloValues {
+    type Item = u64;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let r = Some(self.v);
+        self.v += self.m;
+        r
+    }
+}
+
 pub const SOLUTION: Solution = Solution {
     day: 13,
     name: "Shuttle Search",
@@ -64,7 +104,7 @@ pub const SOLUTION: Solution = Solution {
         let mut answers = vec![];
 
         // Part a)
-        let time_until = |id: &u64| id - (schedule.earliest_time % *id);
+        let time_until = |id: &u64| neg_modulo(&schedule.earliest_time, id);
         let bus_id = schedule
             .valid_ids()
             .min_by(|a, b| time_until(a).cmp(&time_until(b)))
@@ -84,6 +124,35 @@ pub const SOLUTION: Solution = Solution {
                 )));
             }
         }
+        // First get an iterator of tuples of (a, m), where a is congruence (time
+        // between timestamp and bus leaving) and m is the modulo value (bus ID)
+        // for each bus and ordered in descending order by m, which results in
+        // the fastest solution.
+        let mut conditions = schedule
+            .bus_ids
+            .iter()
+            .enumerate()
+            .filter_map(|(i, ido)| -> Option<(u64, u64)> {
+                match ido {
+                    Some(id) => Some((neg_modulo(&i.try_into().unwrap(), id), *id)),
+                    None => None,
+                }
+            })
+            .sorted_by(|t1, t2| t1.1.cmp(&t2.1).reverse());
+        // Now we use a sieve search as described at
+        // https://en.wikipedia.org/wiki/Chinese_remainder_theorem#Search_by_sieving
+        let (mut t, mut m) = conditions.next().unwrap();
+        for (na, nm) in conditions {
+            for x in ModuloValues::new(&t, &m) {
+                if (x % nm) == na {
+                    // Found a solution that meets all conditions so far
+                    t = x;
+                    m *= nm;
+                    break;
+                }
+            }
+        }
+        answers.push(t);
 
         Ok(answers)
     },
