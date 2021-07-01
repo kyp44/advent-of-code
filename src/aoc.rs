@@ -35,6 +35,7 @@ impl From<ParseError> for AocError {
         AocError::NomParse(e)
     }
 }
+pub type AocResult<T> = Result<T, AocError>;
 
 /// This custom parse error type is needed because the desired Nom VerboseError
 /// keeps references to the input string where that could not be parsed.
@@ -124,7 +125,7 @@ where
 pub struct Solution {
     pub day: u32,
     pub name: &'static str,
-    pub solver: fn(&str) -> Result<Vec<u64>, AocError>,
+    pub solver: fn(&str) -> AocResult<Vec<u64>>,
 }
 impl Solution {
     /// Constructs the title

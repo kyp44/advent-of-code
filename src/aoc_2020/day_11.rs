@@ -1,5 +1,6 @@
-use crate::aoc::{AocError, FilterCount, Solution};
+use crate::aoc::{AocError, AocResult, FilterCount, Solution};
 use itertools::iproduct;
+use rayon::prelude::*;
 use std::{collections::HashSet, convert::TryInto, fmt::Display, hash::Hash, str::FromStr};
 
 #[cfg(test)]
@@ -84,10 +85,13 @@ impl Part for PartB {
     }
 }
 
-trait Simulator {
+trait Simulator
+where
+    Self: Sized,
+{
+    fn new(data: Vec<Vec<Seat>>) -> AocResult<Self>;
     fn size(&self) -> (isize, isize);
     fn get(&self, point: &(isize, isize)) -> Option<Seat>;
-    fn set(&mut self, point: &(isize, isize), val: Seat);
 
     fn valid_point(&self, point: &(isize, isize)) -> Option<(usize, usize)> {
         let size = self.size();
@@ -103,41 +107,45 @@ trait Simulator {
 
 trait SimulatorPart<T: Part>
 where
-    Self: Sized + Clone + Simulator + Hash + Eq + Display,
+    Self: Sized + Clone + Simulator + Hash + Eq + Display + Sync,
 {
     fn point_occupied(&self, point: &(isize, isize)) -> u32;
 
     fn next(&self) -> Self {
-        let mut next = self.clone();
         let size = self.size();
 
-        for (x, y) in iproduct!(0..size.0, 0..size.1) {
-            let occupied = self.point_occupied(&(x, y));
-            let orig = self.get(&(x, y)).unwrap();
-            //println!("Seat ({}, {}) has {} around it", x, y, occupied);
-            next.set(
-                &(x, y),
-                match orig {
-                    Seat::Empty => {
-                        if occupied == 0 {
-                            Seat::Occupied
-                        } else {
-                            orig
+        // Calculate new seats
+        let data = (0..size.1)
+            .into_par_iter()
+            .map(|y| {
+                (0..size.0)
+                    .map(|x| {
+                        let point = (x, y);
+                        let occupied = self.point_occupied(&point);
+                        let orig = self.get(&point).unwrap();
+                        match orig {
+                            Seat::Empty => {
+                                if occupied == 0 {
+                                    Seat::Occupied
+                                } else {
+                                    orig
+                                }
+                            }
+                            Seat::Occupied => {
+                                if occupied >= T::min_needed_to_vacate() {
+                                    Seat::Empty
+                                } else {
+                                    orig
+                                }
+                            }
+                            _ => orig,
                         }
-                    }
-                    Seat::Occupied => {
-                        if occupied >= T::min_needed_to_vacate() {
-                            Seat::Empty
-                        } else {
-                            orig
-                        }
-                    }
-                    _ => orig,
-                },
-            );
-        }
-        //println!("\n{}", next);
-        next
+                    })
+                    .collect()
+            })
+            .collect();
+
+        Self::new(data).unwrap()
     }
 
     fn simulate(&self) -> SimulationStatus<Self> {
@@ -166,38 +174,10 @@ struct Area {
 impl FromStr for Area {
     type Err = AocError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut liter = s.lines();
         fn parse_row(line: &str) -> Vec<Seat> {
             line.trim().chars().map(|c| c.into()).collect()
         }
-        let first_row = parse_row(
-            liter
-                .next()
-                .ok_or_else(|| AocError::InvalidInput("No lines".to_string()))?,
-        );
-        let width = first_row.len();
-        if width < 1 {
-            return Err(AocError::InvalidInput(
-                "First map line has no content!".to_string(),
-            ));
-        }
-        let mut data = vec![first_row];
-
-        for line in liter {
-            let row = parse_row(line);
-            if row.len() != width {
-                return Err(AocError::InvalidInput(format!(
-                    "Map row '{}' has a length different from {}",
-                    line, width
-                )));
-            }
-            data.push(row);
-        }
-        Ok(Area {
-            width,
-            height: data.len(),
-            data,
-        })
+        Area::new(s.lines().map(|line| parse_row(line)).collect())
     }
 }
 
@@ -216,6 +196,37 @@ impl Display for Area {
 }
 
 impl Simulator for Area {
+    fn new(data: Vec<Vec<Seat>>) -> AocResult<Self> {
+        // Verify the data
+        let height = data.len();
+        if height < 1 {
+            return Err(AocError::InvalidInput(
+                "Area vector has no rows!".to_string(),
+            ));
+        }
+        let width = data[0].len();
+        if width < 1 {
+            return Err(AocError::InvalidInput(
+                "First area row has no elements!".to_string(),
+            ));
+        }
+        for (rn, row) in data.iter().enumerate() {
+            if row.len() != width {
+                return Err(AocError::InvalidInput(format!(
+                    "Area row {} has an incorrect width of {} when it should be {}",
+                    rn,
+                    row.len(),
+                    width
+                )));
+            }
+        }
+        Ok(Area {
+            width,
+            height,
+            data,
+        })
+    }
+
     fn size(&self) -> (isize, isize) {
         (
             self.width.try_into().unwrap(),
@@ -225,12 +236,6 @@ impl Simulator for Area {
 
     fn get(&self, point: &(isize, isize)) -> Option<Seat> {
         self.valid_point(point).map(|(x, y)| self.data[y][x])
-    }
-
-    fn set(&mut self, point: &(isize, isize), val: Seat) {
-        if let Some((x, y)) = self.valid_point(point) {
-            self.data[y][x] = val;
-        }
     }
 }
 
