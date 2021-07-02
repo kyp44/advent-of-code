@@ -11,6 +11,7 @@ mod day_10;
 mod day_11;
 mod day_12;
 mod day_13;
+mod day_14;
 
 use super::aoc::YearSolutions;
 use lazy_static::lazy_static;
@@ -32,7 +33,8 @@ lazy_static! {
             day_10::SOLUTION,
             day_11::SOLUTION,
             day_12::SOLUTION,
-        day_13::SOLUTION,
+            day_13::SOLUTION,
+        day_14::SOLUTION,
         ],
     };
 }
