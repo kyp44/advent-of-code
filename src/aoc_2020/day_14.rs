@@ -17,7 +17,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![],
+    vec![9967721333886],
     "mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
 mem[8] = 11
 mem[7] = 101
@@ -47,7 +47,7 @@ impl Parseable for Mask {
         }
 
         map(many_m_n(BITS, BITS, one_of("X01")), |v| Mask {
-            reset_mask: vec_to_mask(&v, |c| c != 'X'),
+            reset_mask: vec_to_mask(&v, |c| c == 'X'),
             set_mask: vec_to_mask(&v, |c| c == '1'),
         })(input)
     }
@@ -128,9 +128,11 @@ impl Program {
         let mut mask = &Mask::default();
         let mut memory: HashMap<u64, u64> = HashMap::new();
         for op in self.operations.iter() {
-            match *op {
+            match op {
                 Operation::SetMask(m) => mask = &m,
-                Operation::SetMemory(m) => memory[&m.address] = mask.apply(&m.value),
+                Operation::SetMemory(m) => {
+                    memory.insert(m.address, mask.apply(&m.value));
+                }
             }
         }
         memory.iter().map(|(_, v)| v).sum()
