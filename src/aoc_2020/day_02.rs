@@ -18,7 +18,7 @@ mod tests {
         "1-3 a: abcde
 1-3 b: cdefg
 2-9 c: ccccccccc",
-        vec![2, 1]
+        vec![Some(2), Some(1)]
     }
 }
 
@@ -105,16 +105,22 @@ impl Password {
 pub const SOLUTION: Solution = Solution {
     day: 2,
     name: "Password Philosophy",
-    solver: |input| {
-        // Generation
-        let passwords = Password::gather(input.lines())?;
+    solvers: &[
+        // Part a)
+        |input| {
+            // Generation
+            let passwords = Password::gather(input.lines())?;
 
-        // Processing
-        let answers = vec![
-            passwords.iter().filter_count(|p| p.valid_part_a()),
-            passwords.iter().filter_count(|p| p.valid_part_b()),
-        ];
+            // Processing
+            Ok(passwords.iter().filter_count(|p| p.valid_part_a()))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let passwords = Password::gather(input.lines())?;
 
-        Ok(answers)
-    },
+            // Processing
+            Ok(passwords.iter().filter_count(|p| p.valid_part_b()))
+        },
+    ],
 };

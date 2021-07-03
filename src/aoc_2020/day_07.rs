@@ -1,3 +1,5 @@
+use crate::aoc::AocError;
+
 use super::super::aoc::{ParseError, Solution};
 use bimap::hash::BiHashMap;
 use nom::{
@@ -9,7 +11,7 @@ use nom::{
     sequence::{separated_pair, tuple},
     Finish,
 };
-use std::{collections::HashSet, convert::TryInto};
+use std::{collections::HashSet, convert::TryInto, str::FromStr};
 
 #[cfg(test)]
 mod tests {
@@ -109,66 +111,90 @@ impl BagRule {
     }
 }
 
-pub const SOLUTION: Solution = Solution {
-    day: 7,
-    name: "Handy Haversacks",
-    solver: |input| {
-        // Generation
-        let mut bag_table = BagTable::new();
-        let rules: Vec<BagRule> = input
-            .trim_end()
+struct BagRules<'a> {
+    bags: BagTable<'a>,
+    rules: Vec<BagRule>,
+}
+
+impl<'a> FromStr for BagRules<'a> {
+    type Err = AocError;
+
+    // TODO
+    // Evidently we cannot use FromStr with lifetimes so need custom function.
+    // See: https://stackoverflow.com/questions/28931515/how-do-i-implement-fromstr-with-a-concrete-lifetime
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut bags = BagTable::new();
+        let rules: Vec<BagRule> = s
             .lines()
-            .map(|line| BagRule::parse(&mut bag_table, line))
+            .map(|line| BagRule::parse(&mut bags, line))
             .collect::<Result<Vec<BagRule>, ParseError>>()?;
 
         // Print things out for testing
         /*
-        println!("{}", input);
-        println!("{:?}", bag_table);
-        for rule in rules.iter() {
-            println!("{:?}", rule);
-        } */
+           println!("{}", input);
+           println!("{:?}", bag_table);
+           for rule in rules.iter() {
+           println!("{:?}", rule);
+        */
 
-        // Processing
-        let id = bag_table.get_or_add_bag("shiny gold");
+        Ok(BagRules { bags, rules })
+    }
+}
 
+pub const SOLUTION: Solution = Solution {
+    day: 7,
+    name: "Handy Haversacks",
+    solvers: &[
         // Part a)
-        let num_containers: u32 = {
-            let mut containing_bags = HashSet::new();
-            containing_bags.insert(id);
+        |input| {
+            // Generation
+            let bag_rules: BagRules = input.parse()?;
 
-            loop {
-                let last_count = containing_bags.len();
-                for rule in rules.iter() {
-                    if rule
-                        .contains
-                        .iter()
-                        .any(|cont| containing_bags.contains(&cont.bag_id))
-                    {
-                        containing_bags.insert(rule.bag_id);
+            // Processing
+            let id = bag_rules.bags.get_or_add_bag("shiny gold");
+
+            // Part a)
+            Ok({
+                let mut containing_bags = HashSet::new();
+                containing_bags.insert(id);
+
+                loop {
+                    let last_count = containing_bags.len();
+                    for rule in bag_rules.rules.iter() {
+                        if rule
+                            .contains
+                            .iter()
+                            .any(|cont| containing_bags.contains(&cont.bag_id))
+                        {
+                            containing_bags.insert(rule.bag_id);
+                        }
+                    }
+                    if containing_bags.len() == last_count {
+                        break (last_count - 1).try_into().unwrap();
                     }
                 }
-                if containing_bags.len() == last_count {
-                    break (last_count - 1).try_into().unwrap();
+            })
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let bag_rules: BagRules = input.parse()?;
+
+            // Processing
+            let id = bag_rules.bags.get_or_add_bag("shiny gold");
+
+            // Part b)
+            fn count_containing_bags(rules: &[BagRule], id: u32) -> u32 {
+                match rules.iter().find(|r| r.bag_id == id) {
+                    None => 0,
+                    Some(rule) => rule
+                        .contains
+                        .iter()
+                        .map(|c| c.count * (1 + count_containing_bags(rules, c.bag_id)))
+                        .sum(),
                 }
             }
-        };
-
-        // Part b)
-        fn count_containing_bags(rules: &[BagRule], id: u32) -> u32 {
-            match rules.iter().find(|r| r.bag_id == id) {
-                None => 0,
-                Some(rule) => rule
-                    .contains
-                    .iter()
-                    .map(|c| c.count * (1 + count_containing_bags(rules, c.bag_id)))
-                    .sum(),
-            }
-        }
-        let containing_count = count_containing_bags(&rules, id);
-
-        let answers = vec![num_containers.into(), containing_count.into()];
-
-        Ok(answers)
-    },
+            Ok(count_containing_bags(&bag_rules.rules, id).into())
+        },
+    ],
 };

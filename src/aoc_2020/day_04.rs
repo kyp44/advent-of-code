@@ -1,3 +1,5 @@
+use crate::aoc::ParseError;
+
 use super::super::aoc::{FilterCount, ParseResult, Solution};
 use nom::{
     branch::alt,
@@ -33,7 +35,7 @@ hgt:179cm
 
 hcl:#cfa07d eyr:2025 pid:166559648
 iyr:2011 ecl:brn hgt:59in",
-    vec![2, 2],
+    vec![Some(2), None],
     "eyr:1972 cid:100
 hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926
 
@@ -47,7 +49,7 @@ ecl:brn hgt:182cm pid:021572410 eyr:2020 byr:1992 cid:277
 hgt:59cm ecl:zzz
 eyr:2038 hcl:74454a iyr:2023
 pid:3556412378 byr:2007",
-    vec![4, 0],
+    vec![None, Some(0)],
     "pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980
 hcl:#623a2f
 
@@ -60,7 +62,7 @@ pid:545766238 ecl:hzl
 eyr:2022
 
 iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719",
-    vec![4, 4]
+    vec![None, Some(4)]
     }
 }
 
@@ -172,6 +174,15 @@ fn parse_passport<'a>(input: &'a str) -> ParseResult<Passport<'a>> {
     )(input)
 }
 
+fn parse_passports(input: &str) -> Result<Vec<Passport>, ParseError> {
+    all_consuming(separated_list1(
+        tuple((space0, line_ending, space0, line_ending)),
+        parse_passport,
+    ))(input.trim_end())
+    .finish()
+    .map(|(_, pd)| pd)
+}
+
 // Note that we can't make this a method of Passport because it's
 // A foreign type. We could make a trait but nah.
 fn passport_valid_part_a(passport: &Passport) -> bool {
@@ -203,21 +214,22 @@ fn passport_valid_part_b(passport: &Passport) -> bool {
 pub const SOLUTION: Solution = Solution {
     day: 4,
     name: "Passport Processing",
-    solver: |input| {
-        // Generation
-        let passports = all_consuming(separated_list1(
-            tuple((space0, line_ending, space0, line_ending)),
-            parse_passport,
-        ))(input.trim_end())
-        .finish()
-        .map(|(_, pd)| pd)?;
+    solvers: &[
+        // Part a)
+        |input| {
+            // Generation
+            let passports = parse_passports(input)?;
 
-        // Processing
-        let answers = vec![
-            passports.iter().filter_count(|p| passport_valid_part_a(p)),
-            passports.iter().filter_count(|p| passport_valid_part_b(p)),
-        ];
+            // Processing
+            Ok(passports.iter().filter_count(|p| passport_valid_part_a(p)))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let passports = parse_passports(input)?;
 
-        Ok(answers)
-    },
+            // Processing
+            Ok(passports.iter().filter_count(|p| passport_valid_part_b(p)))
+        },
+    ],
 };

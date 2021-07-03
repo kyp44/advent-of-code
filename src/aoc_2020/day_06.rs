@@ -1,3 +1,5 @@
+use crate::aoc::AocError;
+
 use super::super::aoc::{ParseResult, Solution};
 use nom::{
     branch::alt,
@@ -34,7 +36,7 @@ a
 
 b
 ",
-        vec![11, 6]
+        vec![Some(11), Some(6)]
     }
 }
 
@@ -67,30 +69,37 @@ fn make_questions_parser(
     }
 }
 
+fn solve(input: &str, reducer: fn(Questions, Questions) -> Questions) -> Result<u64, AocError> {
+    let questions = all_consuming(separated_list1(
+        tuple((space0, line_ending, space0, line_ending)),
+        make_questions_parser(reducer),
+    ))(input.trim_end())
+    .finish()
+    .map(|(_, pd)| pd)?;
+
+    Ok(questions
+        .iter()
+        .map(|q| q.len())
+        .sum::<usize>()
+        .try_into()
+        .unwrap())
+}
+
 pub const SOLUTION: Solution = Solution {
     day: 6,
     name: "Custom Customs",
-    solver: |input| {
-        // Generation
-        let parse_input = |reducer| {
-            all_consuming(separated_list1(
-                tuple((space0, line_ending, space0, line_ending)),
-                make_questions_parser(reducer),
-            ))(input.trim_end())
-            .finish()
-            .map(|(_, pd)| pd)
-        };
-        let part_questions = vec![
-            parse_input(|a: Questions, b: Questions| a.union(&b).copied().collect())?,
-            parse_input(|a: Questions, b: Questions| a.intersection(&b).copied().collect())?,
-        ];
-
-        // Processing
-        let answers = part_questions
-            .iter()
-            .map(|v| v.iter().map(|q| q.len()).sum::<usize>().try_into().unwrap())
-            .collect();
-
-        Ok(answers)
-    },
+    solvers: &[
+        // Part a)
+        |input| {
+            solve(input, |a: Questions, b: Questions| {
+                a.union(&b).copied().collect()
+            })
+        },
+        // Part b)
+        |input| {
+            solve(input, |a: Questions, b: Questions| {
+                a.intersection(&b).copied().collect()
+            })
+        },
+    ],
 };

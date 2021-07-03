@@ -20,7 +20,7 @@ mod tests {
 #...##....#
 .#..#...#.#
 ",
-        vec![7, 336]
+        vec![Some(7), Some(336)]
     }
 }
 
@@ -114,23 +114,33 @@ impl Iterator for MapDownhill<'_> {
     }
 }
 
+fn count_slope(map: &Map, x: usize, y: usize) -> u64 {
+    MapDownhill::new(map, x, y).filter_count(|t| *t)
+}
+
 pub const SOLUTION: Solution = Solution {
     day: 3,
     name: "Toboggan Trajectory",
-    solver: |input| {
-        // Generation
-        let map = Map::from_str(input)?;
+    solvers: &[
+        // Part a)
+        |input| {
+            // Generation
+            let map = Map::from_str(input)?;
 
-        // Process
-        let count_slope = |x, y| MapDownhill::new(&map, x, y).filter_count(|t| *t);
-        let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
-        let answers = vec![
-            // Part a)
-            count_slope(3, 1),
-            // Part b)
-            slopes.iter().map(|(x, y)| count_slope(*x, *y)).product(),
-        ];
+            // Process
+            Ok(count_slope(&map, 3, 1))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let map = Map::from_str(input)?;
 
-        Ok(answers)
-    },
+            // Process
+            let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
+            Ok(slopes
+                .iter()
+                .map(|(x, y)| count_slope(&map, *x, *y))
+                .product())
+        },
+    ],
 };

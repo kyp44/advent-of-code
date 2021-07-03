@@ -1,3 +1,5 @@
+use crate::aoc::AocError;
+
 use super::super::aoc::{ParseResult, Parseable, Solution};
 use nom::{
     bytes::complete::take_while_m_n,
@@ -16,7 +18,7 @@ mod tests {
         "BFFFBBFRRR
 FFFBBBFRRR
 BBFFBBFRLL",
-        vec![820, 0]
+        vec![Some(820), None]
     }
 }
 
@@ -65,33 +67,41 @@ impl Seat {
     }
 }
 
+fn get_ids(input: &str) -> Result<Vec<u32>, AocError> {
+    let seats = Seat::gather(input.lines())?;
+
+    // Process
+    Ok({
+        let mut ids = seats.iter().map(Seat::id).collect::<Vec<u32>>();
+        ids.sort_unstable();
+        ids
+    })
+}
+
 pub const SOLUTION: Solution = Solution {
     day: 5,
     name: "Binary Boarding",
-    solver: |input| {
-        // Generation
-        let seats = Seat::gather(input.lines())?;
+    solvers: &[
+        // Part a)
+        |input| {
+            // Generation
+            let ids = get_ids(input)?;
 
-        // Process
-        let ids = {
-            let mut ids = seats.iter().map(Seat::id).collect::<Vec<u32>>();
-            ids.sort_unstable();
-            ids
-        };
+            Ok(ids.iter().fold(0, |o, n| o.max(*n)).into())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let ids = get_ids(input)?;
 
-        // Part b) find the missing id
-        let missing_id = match ids
-            .iter()
-            .find(|id| !ids.contains(&(*id + 1)) && ids.contains(&(*id + 2)))
-        {
-            Some(id) => *id + 1,
-            None => 0,
-        };
-        let answers = vec![
-            ids.iter().fold(0, |o, n| o.max(*n)).into(),
-            missing_id.into(),
-        ];
-
-        Ok(answers)
-    },
+            let missing_id = match ids
+                .iter()
+                .find(|id| !ids.contains(&(*id + 1)) && ids.contains(&(*id + 2)))
+            {
+                Some(id) => *id + 1,
+                None => 0,
+            };
+            Ok(missing_id.into())
+        },
+    ],
 };

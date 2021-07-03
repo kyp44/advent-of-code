@@ -125,7 +125,7 @@ where
 pub struct Solution {
     pub day: u32,
     pub name: &'static str,
-    pub solver: fn(&str) -> AocResult<Vec<u64>>,
+    pub solvers: &'static [fn(&str) -> AocResult<u64>],
 }
 impl Solution {
     /// Constructs the title
@@ -133,14 +133,18 @@ impl Solution {
         format!("{} Day {}: {}", year, self.day, self.name)
     }
 
-    /// Reads the input, runs the solver, and outputs the answer(s).
+    /// Reads the input, runs the solvers, and outputs the answer(s).
     pub fn run(&self, year: u32) -> anyhow::Result<Vec<u64>> {
         // Read input for the problem
         let input_path = format!("input/{}/day_{:02}.txt", year, self.day);
         let input = fs::read_to_string(&input_path)
             .with_context(|| format!("Could not read input file {}", input_path))?;
 
-        let results = (self.solver)(&input).with_context(|| "Problem when running the solution")?;
+        let results = self
+            .solvers
+            .iter()
+            .map(|s| s(&input).with_context(|| "Problem when running the solution"))
+            .collect::<anyhow::Result<Vec<u64>>>()?;
 
         println!("{}", self.title(year));
         for (pc, result) in ('a'..'z').zip(results.iter()) {
@@ -157,7 +161,7 @@ impl Solution {
 /// Package of solutions of a year's puzzles.
 pub struct YearSolutions {
     pub year: u32,
-    pub solutions: Vec<Solution>,
+    pub solutions: &'static [Solution],
 }
 impl YearSolutions {
     pub fn get_day(&self, day: u32) -> Option<&Solution> {
@@ -190,7 +194,11 @@ macro_rules! solution_test {
 	    $(
 		let input = $input;
 
-		assert_eq!((SOLUTION.solver)(input).unwrap(), $exp);
+		for (solver, vopt) in SOLUTION.solvers.iter().zip($exp) {
+		    if let Some(v) = vopt {
+			assert_eq!(solver(&input).unwrap(), v);
+		    }
+		}
 	    )+
         }
     };
