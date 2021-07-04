@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::{collections::HashMap, convert::TryInto};
 
 use nom::{
     bytes::complete::tag,
@@ -16,7 +16,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![],
+    vec![1428],
     "0,3,6",
     vec![Some(436), Some(175594)],
     "1,3,2",
@@ -51,30 +51,28 @@ impl Parseable for Game {
 
 impl Game {
     fn play(&self, to_turn: usize) -> u64 {
-        let mut turns = self.starting.clone();
-        turns.reserve(to_turn.saturating_sub(turns.len()));
+        // Maps the spoken number to the last turn number
+        let mut turn_map: HashMap<u64, u64> = self
+            .starting
+            .iter()
+            .take(self.starting.len() - 1)
+            .enumerate()
+            .map(|(t, s)| (*s, t.try_into().unwrap()))
+            .collect();
 
-        let mut last_turn = *turns.last().unwrap();
-        for turn_num in turns.len()..to_turn {
-            let last_tn = turns.iter().enumerate().rev().skip(1).find_map(|(tn, v)| {
-                if *v == last_turn {
-                    Some(tn)
-                } else {
-                    None
-                }
-            });
-            let next_tn = match last_tn {
-                Some(tn) => turn_num - tn - 1,
+        let mut last_spoken = *self.starting.last().unwrap();
+        for turn in self.starting.len()..to_turn {
+            let turn: u64 = turn.try_into().unwrap();
+            let next_spoken = match turn_map.get(&last_spoken) {
+                Some(t) => turn - t - 1,
                 None => 0,
-            }
-            .try_into()
-            .unwrap();
-
-            turns.push(next_tn);
-            last_turn = next_tn;
-            //println!("Turn {}: {}", turn_num + 1, last_turn);
+            };
+            turn_map.insert(last_spoken, turn - 1);
+            last_spoken = next_spoken;
+            //println!("Turn {}: {}", turn + 1, last_spoken);
+            //println!("Turn map: {:?}", turn_map);
         }
-        last_turn
+        last_spoken
     }
 }
 
