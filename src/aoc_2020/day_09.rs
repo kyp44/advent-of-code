@@ -37,7 +37,7 @@ mod tests {
 277
 309
 576",
-        vec![127, 62]
+        vec![Some(127), Some(62)]
     }
 }
 
@@ -98,24 +98,37 @@ impl XmasPacket {
     }
 }
 
+fn verify_invalid(packet: &XmasPacket) -> Result<u64, AocError> {
+    match packet.validate() {
+        Validation::Valid => Err(AocError::Process(
+            "Packet was unexpectedly valid, guess it can't be exploited!".to_string(),
+        )),
+        Validation::Invalid(v) => Ok(v),
+    }
+}
+
 pub const SOLUTION: Solution = Solution {
     day: 9,
     name: "Encoding Error",
-    solver: |input| {
-        // Generation
-        let packet: XmasPacket = input.parse()?;
+    solvers: &[
+        // Part a)
+        |input| {
+            // Generation
+            let packet: XmasPacket = input.parse()?;
 
-        // Processing
-        let invalid_n = match packet.validate() {
-            Validation::Valid => Err(AocError::Process(
-                "Packet was unexpectedly valid, guess it can't be exploited!".to_string(),
-            )),
-            Validation::Invalid(v) => Ok(v),
-        }?;
-        let exploit_n = packet
-            .exploit(invalid_n)
-            .ok_or_else(|| AocError::Process("Could not exploit packet!".to_string()))?;
+            // Processing
+            verify_invalid(&packet)
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let packet: XmasPacket = input.parse()?;
 
-        Ok(vec![invalid_n, exploit_n])
-    },
+            // Processing
+            let invalid_n = verify_invalid(&packet)?;
+            packet
+                .exploit(invalid_n)
+                .ok_or_else(|| AocError::Process("Could not exploit packet!".to_string()))
+        },
+    ],
 };

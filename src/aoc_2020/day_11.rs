@@ -20,7 +20,7 @@ L.LLLLL.LL
 LLLLLLLLLL
 L.LLLLLL.L
 L.LLLLL.LL",
-        vec![37, 26]
+        vec![Some(37), Some(26)]
     }
 }
 
@@ -304,26 +304,34 @@ impl Area {
     }
 }
 
+fn check_simulation(status: SimulationStatus<Area>) -> Result<u64, AocError> {
+    match status {
+        SimulationStatus::Stable(a) => Ok(a.occupied()),
+        SimulationStatus::Infinite(_) => Err(AocError::Process(
+            "Simulation did not reach a steady state".to_string(),
+        )),
+    }
+}
+
 pub const SOLUTION: Solution = Solution {
     day: 11,
     name: "Seating System",
-    solver: |input| {
-        // Generation
-        let area: Area = input.parse()?;
+    solvers: &[
+        // Part a)
+        |input| {
+            // Generation
+            let area: Area = input.parse()?;
 
-        // Process
-        fn check_simulation(status: SimulationStatus<Area>) -> Result<u64, AocError> {
-            match status {
-                SimulationStatus::Stable(a) => Ok(a.occupied()),
-                SimulationStatus::Infinite(_) => Err(AocError::Process(
-                    "Simulation did not reach a steady state".to_string(),
-                )),
-            }
-        }
-        let answers = vec![
-            check_simulation(SimulatorPart::<PartA>::simulate(&area))?,
-            check_simulation(SimulatorPart::<PartB>::simulate(&area))?,
-        ];
-        Ok(answers)
-    },
+            // Process
+            check_simulation(SimulatorPart::<PartA>::simulate(&area))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let area: Area = input.parse()?;
+
+            // Process
+            check_simulation(SimulatorPart::<PartB>::simulate(&area))
+        },
+    ],
 };

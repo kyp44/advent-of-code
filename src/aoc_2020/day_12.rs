@@ -21,7 +21,7 @@ N3
 F7
 R90
 F11",
-        vec![25, 286]
+        vec![Some(25), Some(286)]
     }
 }
 
@@ -133,16 +133,22 @@ impl Ship {
 pub const SOLUTION: Solution = Solution {
     day: 12,
     name: "Rain Risk",
-    solver: |input| {
-        // Generation
-        let instructions = Instruction::gather(input.lines())?;
+    solvers: &[
+        // Part a)
+        |input| {
+            // Generation
+            let instructions = Instruction::gather(input.lines())?;
 
-        // Process
-        let answers = vec![
-            Ship::follow_ship_instructions(&instructions).manhatten(),
-            Ship::follow_waypoint_instructions(&instructions, &Vector2::new(10, 1)).manhatten(),
-        ];
+            // Process
+            Ok(Ship::follow_ship_instructions(&instructions).manhatten())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let instructions = Instruction::gather(input.lines())?;
 
-        Ok(answers)
-    },
+            // Process
+            Ok(Ship::follow_waypoint_instructions(&instructions, &Vector2::new(10, 1)).manhatten())
+        },
+    ],
 };

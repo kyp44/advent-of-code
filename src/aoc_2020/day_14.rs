@@ -1,5 +1,6 @@
 use std::{collections::HashMap, str::FromStr};
 
+use itertools::Itertools;
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -9,7 +10,7 @@ use nom::{
     sequence::{preceded, tuple},
 };
 
-use crate::aoc::{AocError, ParseResult, Parseable, Solution};
+use crate::aoc::{AocError, FilterCount, ParseResult, Parseable, Solution};
 
 #[cfg(test)]
 mod tests {
@@ -17,54 +18,36 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![9967721333886],
+    vec![9967721333886, 4355897790573],
     "mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
 mem[8] = 11
 mem[7] = 101
 mem[8] = 0",
-        vec![165]
+        vec![Some(165), None],
+    "mask = 000000000000000000000000000000X1001X
+        mem[42] = 100
+        mask = 00000000000000000000000000000000X0XX
+        mem[26] = 1",
+    vec![None, Some(208)]
     }
 }
 
 const BITS: usize = 36;
 
 #[derive(Debug)]
-struct Mask {
-    reset_mask: u64,
-    set_mask: u64,
+enum MaskBit {
+    X,
+    Zero,
+    One,
 }
-
-impl Parseable for Mask {
-    fn parse(input: &str) -> ParseResult<Self> {
-        fn vec_to_mask(vec: &Vec<char>, conv: fn(char) -> bool) -> u64 {
-            let mut val = 0;
-            for (bit, c) in vec.iter().rev().enumerate() {
-                if conv(*c) {
-                    val |= 1 << bit;
-                }
-            }
-            val
+impl From<char> for MaskBit {
+    fn from(c: char) -> Self {
+        match c {
+            '0' => MaskBit::Zero,
+            '1' => MaskBit::One,
+            'X' => MaskBit::X,
+            _ => panic!("Unkown mask bit type {}", c),
         }
-
-        map(many_m_n(BITS, BITS, one_of("X01")), |v| Mask {
-            reset_mask: vec_to_mask(&v, |c| c == 'X'),
-            set_mask: vec_to_mask(&v, |c| c == '1'),
-        })(input)
-    }
-}
-
-impl Default for Mask {
-    fn default() -> Self {
-        Mask {
-            reset_mask: std::u64::MAX,
-            set_mask: 0,
-        }
-    }
-}
-
-impl Mask {
-    fn apply(&self, val: &u64) -> u64 {
-        (self.reset_mask & *val) | self.set_mask
     }
 }
 
@@ -89,16 +72,17 @@ impl Memory {
 
 #[derive(Debug)]
 enum Operation {
-    SetMask(Mask),
+    SetMask(Vec<MaskBit>),
     SetMemory(Memory),
 }
 
 impl Parseable for Operation {
     fn parse(input: &str) -> ParseResult<Self> {
         alt((
-            map(preceded(tag("mask = "), Mask::parse), |m| {
-                Operation::SetMask(m)
-            }),
+            map(
+                preceded(tag("mask = "), many_m_n(BITS, BITS, one_of("X01"))),
+                |v: Vec<char>| Operation::SetMask(v.into_iter().rev().map(MaskBit::from).collect()),
+            ),
             map(
                 tuple((tag("mem["), digit1, tag("] = "), digit1)),
                 |(_, a, _, v): (&str, &str, &str, &str)| {
@@ -109,6 +93,100 @@ impl Parseable for Operation {
     }
 }
 
+trait Mask: for<'a> From<&'a [MaskBit]> + Default {
+    fn apply(&self, memory: &Memory) -> Vec<Memory>;
+
+    fn vec_to_mask(vec: &[MaskBit], mut conv: impl FnMut(&MaskBit) -> bool) -> u64 {
+        let mut val = 0;
+        for (bit, mb) in vec.iter().enumerate() {
+            if conv(mb) {
+                val |= 1 << bit;
+            }
+        }
+        val
+    }
+}
+
+// Mask for decoder chip v1 (Part a)
+struct MaskV1 {
+    reset_mask: u64,
+    set_mask: u64,
+}
+impl From<&[MaskBit]> for MaskV1 {
+    fn from(v: &[MaskBit]) -> Self {
+        assert_eq!(v.len(), BITS);
+        MaskV1 {
+            reset_mask: Self::vec_to_mask(v, |mb| matches!(mb, MaskBit::X)),
+            set_mask: Self::vec_to_mask(v, |mb| matches!(mb, MaskBit::One)),
+        }
+    }
+}
+impl Default for MaskV1 {
+    fn default() -> Self {
+        MaskV1 {
+            reset_mask: std::u64::MAX,
+            set_mask: 0,
+        }
+    }
+}
+impl Mask for MaskV1 {
+    fn apply(&self, memory: &Memory) -> Vec<Memory> {
+        vec![Memory::new(
+            memory.address,
+            (self.reset_mask & memory.value) | self.set_mask,
+        )]
+    }
+}
+
+// Mask for decoder chip v2 (Part b)
+struct MaskV2 {
+    reset_mask: u64,
+    set_masks: Vec<u64>,
+}
+impl From<&[MaskBit]> for MaskV2 {
+    fn from(v: &[MaskBit]) -> Self {
+        assert_eq!(v.len(), BITS);
+        MaskV2 {
+            reset_mask: Self::vec_to_mask(v, |mb| matches!(mb, MaskBit::Zero)),
+            set_masks: {
+                let num_floating: usize = v.iter().filter_count(|mb| matches!(mb, MaskBit::X));
+                (0..num_floating)
+                    .map(|_| &[false, true])
+                    .multi_cartesian_product()
+                    .map(|tf_vec| {
+                        let mut tf = tf_vec.into_iter();
+                        Self::vec_to_mask(v, move |mb| match mb {
+                            MaskBit::Zero => false,
+                            MaskBit::One => true,
+                            MaskBit::X => *tf.next().unwrap(),
+                        })
+                    })
+                    .collect()
+            },
+        }
+    }
+}
+impl Default for MaskV2 {
+    fn default() -> Self {
+        MaskV2 {
+            reset_mask: std::u64::MAX,
+            set_masks: vec![0],
+        }
+    }
+}
+impl Mask for MaskV2 {
+    fn apply(&self, memory: &Memory) -> Vec<Memory> {
+        self.set_masks
+            .iter()
+            .map(|sm| Memory {
+                address: (memory.address & self.reset_mask) | sm,
+                value: memory.value,
+            })
+            .collect()
+    }
+}
+
+#[derive(Debug)]
 struct Program {
     operations: Vec<Operation>,
 }
@@ -124,14 +202,16 @@ impl FromStr for Program {
 }
 
 impl Program {
-    fn execute(&self) -> u64 {
-        let mut mask = &Mask::default();
+    fn execute<M: Mask>(&self) -> u64 {
+        let mut mask = M::default();
         let mut memory: HashMap<u64, u64> = HashMap::new();
         for op in self.operations.iter() {
             match op {
-                Operation::SetMask(m) => mask = &m,
+                Operation::SetMask(mv) => mask = mv[..].into(),
                 Operation::SetMemory(m) => {
-                    memory.insert(m.address, mask.apply(&m.value));
+                    for mem in mask.apply(m) {
+                        memory.insert(mem.address, mem.value);
+                    }
                 }
             }
         }
@@ -142,13 +222,22 @@ impl Program {
 pub const SOLUTION: Solution = Solution {
     day: 14,
     name: "Docking Data",
-    solver: |input| {
-        // Generation
-        let program: Program = input.parse()?;
+    solvers: &[
+        // Part a)
+        |input| {
+            // Generation
+            let program: Program = input.parse()?;
 
-        // Process
-        let answers = vec![program.execute()];
+            // Process
+            Ok(program.execute::<MaskV1>())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let program: Program = input.parse()?;
 
-        Ok(answers)
-    },
+            // Process
+            Ok(program.execute::<MaskV2>())
+        },
+    ],
 };

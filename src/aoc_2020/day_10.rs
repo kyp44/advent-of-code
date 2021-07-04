@@ -19,7 +19,7 @@ mod tests {
 6
 12
 4",
-    vec![35, 8],
+    vec![Some(35), Some(8)],
 "28
 33
 18
@@ -51,66 +51,73 @@ mod tests {
 34
 10
 3",
-    vec![220, 19208]
+    vec![Some(220), Some(19208)]
     }
+}
+
+fn parse_joltages(input: &str) -> Result<Vec<u32>, AocError> {
+    // Get joltages
+    let mut j = u32::gather(input.lines())?;
+    // Add the outlet
+    j.push(0);
+    // Add the device
+    j.push(j.iter().max().unwrap() + 3);
+    // Remove duplicates and sort
+    j.dedup();
+    j.sort_unstable();
+    Ok(j)
 }
 
 pub const SOLUTION: Solution = Solution {
     day: 10,
     name: "Adapter Array",
-    solver: |input| {
-        // Generation
-        let joltages = {
-            // Get joltages
-            let mut j = u32::gather(input.lines())?;
-            // Add the outlet
-            j.push(0);
-            // Add the device
-            j.push(j.iter().max().unwrap() + 3);
-            // Remove duplicates and sort
-            j.dedup();
-            j.sort_unstable();
-            j
-        };
-
-        // Processing
+    solvers: &[
         // Part a)
-        let diffs: Vec<u32> = joltages.windows(2).map(|w| w[1] - w[0]).collect();
-        // Verify that no differences are above 3
-        if diffs.iter().any(|d| *d > 3) {
-            return Err(AocError::Process(
-                "Adaptors cannot be chained together due to a gap of over 3 jolts".to_string(),
-            ));
-        }
-        // Now get the required diffs
-        let count_diffs = |n| -> u64 { diffs.iter().filter_count(|d| **d == n) };
-        let mut answers = vec![count_diffs(1) * count_diffs(3)];
+        |input| {
+            // Generation
+            let joltages = parse_joltages(input)?;
 
+            // Processing
+            let diffs: Vec<u32> = joltages.windows(2).map(|w| w[1] - w[0]).collect();
+            // Verify that no differences are above 3
+            if diffs.iter().any(|d| *d > 3) {
+                return Err(AocError::Process(
+                    "Adaptors cannot be chained together due to a gap of over 3 jolts".to_string(),
+                ));
+            }
+            // Now get the required diffs
+            let count_diffs = |n| -> u64 { diffs.iter().filter_count(|d| **d == n) };
+            Ok(count_diffs(1) * count_diffs(3))
+        },
         // Part b)
-        // For each adapter we store the number of variations ahead if we were to just start with that
-        // joltage.
-        let mut variations: HashMap<u32, u64> = HashMap::new();
-        let mut last_var = 1;
-        // The algorithm here works work backwards just because it's more natural to take slices
-        // forward rather than backward.
-        for (i, v) in joltages.iter().enumerate().rev() {
-            // Each new number of variations is then the sum of any potential number
-            // of variations if there are adapters with any of the next three consectuive
-            // joltages, or the last variation if the the next gap is 3 jolts.
-            let var = std::cmp::max(
-                joltages[i + 1..]
-                    .iter()
-                    .take_while(|vp| **vp <= v + 3)
-                    .map(|vp| variations[vp])
-                    .sum(),
-                last_var,
-            );
-            variations.insert(*v, var);
-            last_var = var;
-            //println!("{} {} {}", i, v, var);
-        }
-        answers.push(last_var);
+        |input| {
+            // Generation
+            let joltages = parse_joltages(input)?;
 
-        Ok(answers)
-    },
+            // Processing
+            // For each adapter we store the number of variations ahead if we were to just start with that
+            // joltage.
+            let mut variations: HashMap<u32, u64> = HashMap::new();
+            let mut last_var = 1;
+            // The algorithm here works work backwards just because it's more natural to take slices
+            // forward rather than backward.
+            for (i, v) in joltages.iter().enumerate().rev() {
+                // Each new number of variations is then the sum of any potential number
+                // of variations if there are adapters with any of the next three consectuive
+                // joltages, or the last variation if the the next gap is 3 jolts.
+                let var = std::cmp::max(
+                    joltages[i + 1..]
+                        .iter()
+                        .take_while(|vp| **vp <= v + 3)
+                        .map(|vp| variations[vp])
+                        .sum(),
+                    last_var,
+                );
+                variations.insert(*v, var);
+                last_var = var;
+                //println!("{} {} {}", i, v, var);
+            }
+            Ok(last_var)
+        },
+    ],
 };

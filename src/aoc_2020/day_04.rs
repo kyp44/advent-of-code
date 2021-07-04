@@ -196,7 +196,6 @@ fn passport_valid_part_a(passport: &Passport) -> bool {
     valid
 }
 
-// Part b)
 fn passport_valid_part_b(passport: &Passport) -> bool {
     let mut valid = true;
     for field in PassportField::iter() {

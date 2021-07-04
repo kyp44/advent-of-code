@@ -29,7 +29,7 @@ acc -99
 acc +1
 jmp -4
 acc +6",
-        vec![5, 8]
+        vec![Some(5), Some(8)]
     }
 }
 
@@ -165,44 +165,52 @@ impl Program {
     }
 }
 
+fn check_acc(acc: i32) -> Result<u32, AocError> {
+    if acc < 0 {
+        return Err(AocError::Process(format!(
+            "Accumulator ended up negative as {}, which is a problem",
+            acc
+        )));
+    }
+    Ok(acc.try_into().unwrap())
+}
+
 pub const SOLUTION: Solution = Solution {
     day: 8,
     name: "Handheld Halting",
-    solver: |input| {
-        // Generation
-        let program: Program = input.parse()?;
+    solvers: &[
+        // Part a)
+        |input| {
+            // Generation
+            let program: Program = input.parse()?;
 
-        // Processing
-        fn check_acc(acc: i32) -> Result<u32, AocError> {
-            if acc < 0 {
-                return Err(AocError::Process(format!(
-                    "Accumulator ended up negative as {}, which is a problem",
-                    acc
-                )));
+            // Processing
+            Ok(match program.execute() {
+                ProgramEndStatus::Infinite(acc) => check_acc(acc)?,
+                _ => {
+                    return Err(AocError::Process(
+                        "Program execution did not result in an infinite loop".to_string(),
+                    ));
+                }
             }
-            Ok(acc.try_into().unwrap())
-        }
+            .into())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let program: Program = input.parse()?;
 
-        let part_a = match program.execute() {
-            ProgramEndStatus::Infinite(acc) => check_acc(acc)?,
-            _ => {
-                return Err(AocError::Process(
-                    "Program execution did not result in an infinite loop".to_string(),
-                ));
+            // Processing
+            let mut terminated_acc = None;
+            for prog in program.variations() {
+                if let ProgramEndStatus::Terminated(acc) = prog.execute() {
+                    terminated_acc = Some(check_acc(acc)?);
+                    break;
+                }
             }
-        }
-        .into();
-        let mut part_b = None;
-        for prog in program.variations() {
-            if let ProgramEndStatus::Terminated(acc) = prog.execute() {
-                part_b = Some(check_acc(acc)?);
-                break;
-            }
-        }
-        let part_b = part_b
-            .ok_or_else(|| AocError::Process("No modified programs terminated!".to_string()))?
-            .into();
-
-        Ok(vec![part_a, part_b])
-    },
+            Ok(terminated_acc
+                .ok_or_else(|| AocError::Process("No modified programs terminated!".to_string()))?
+                .into())
+        },
+    ],
 };

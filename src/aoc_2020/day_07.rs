@@ -1,5 +1,3 @@
-use crate::aoc::AocError;
-
 use super::super::aoc::{ParseError, Solution};
 use bimap::hash::BiHashMap;
 use nom::{
@@ -11,7 +9,7 @@ use nom::{
     sequence::{separated_pair, tuple},
     Finish,
 };
-use std::{collections::HashSet, convert::TryInto, str::FromStr};
+use std::{collections::HashSet, convert::TryInto};
 
 #[cfg(test)]
 mod tests {
@@ -29,7 +27,7 @@ dark olive bags contain 3 faded blue bags, 4 dotted black bags.
 vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
 faded blue bags contain no other bags.
 dotted black bags contain no other bags.",
-    vec![4, 32],
+    vec![Some(4), Some(32)],
     "shiny gold bags contain 2 dark red bags.
 dark red bags contain 2 dark orange bags.
 dark orange bags contain 2 dark yellow bags.
@@ -37,7 +35,7 @@ dark yellow bags contain 2 dark green bags.
 dark green bags contain 2 dark blue bags.
 dark blue bags contain 2 dark violet bags.
 dark violet bags contain no other bags.",
-    vec![0, 126]
+    vec![None, Some(126)]
     }
 }
 
@@ -116,13 +114,8 @@ struct BagRules<'a> {
     rules: Vec<BagRule>,
 }
 
-impl<'a> FromStr for BagRules<'a> {
-    type Err = AocError;
-
-    // TODO
-    // Evidently we cannot use FromStr with lifetimes so need custom function.
-    // See: https://stackoverflow.com/questions/28931515/how-do-i-implement-fromstr-with-a-concrete-lifetime
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl<'a> BagRules<'a> {
+    fn from_str(s: &'a str) -> Result<Self, ParseError> {
         let mut bags = BagTable::new();
         let rules: Vec<BagRule> = s
             .lines()
@@ -148,12 +141,10 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let bag_rules: BagRules = input.parse()?;
+            let mut bag_rules = BagRules::from_str(input)?;
 
             // Processing
             let id = bag_rules.bags.get_or_add_bag("shiny gold");
-
-            // Part a)
             Ok({
                 let mut containing_bags = HashSet::new();
                 containing_bags.insert(id);
@@ -178,12 +169,11 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let bag_rules: BagRules = input.parse()?;
+            let mut bag_rules = BagRules::from_str(input)?;
 
             // Processing
             let id = bag_rules.bags.get_or_add_bag("shiny gold");
 
-            // Part b)
             fn count_containing_bags(rules: &[BagRule], id: u32) -> u32 {
                 match rules.iter().find(|r| r.bag_id == id) {
                     None => 0,
