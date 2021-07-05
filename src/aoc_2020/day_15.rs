@@ -1,4 +1,4 @@
-use std::{collections::HashMap, convert::TryInto};
+use std::convert::TryInto;
 
 use nom::{
     bytes::complete::tag,
@@ -18,11 +18,8 @@ mod tests {
     solution_test! {
     vec![1428, 3718541],
     "0,3,6",
-    vec![Some(436), Some(175594)]
-    // These tests pass but just take too long to run.
-    // Interestingly, compiling in release mode makes a very big difference in run time
-        // for part b) of this problem.
-        /*"1,3,2",
+    vec![Some(436), Some(175594)],
+        "1,3,2",
     vec![Some(1), Some(2578)],
     "2,1,3",
     vec![Some(10), Some(3544142)],
@@ -33,7 +30,7 @@ mod tests {
     "3,2,1",
     vec![Some(438), Some(18)],
     "3,1,2",
-    vec![Some(1836), Some(362)]*/
+    vec![Some(1836), Some(362)]
     }
 }
 
@@ -55,22 +52,32 @@ impl Parseable for Game {
 impl Game {
     fn play(&self, to_turn: usize) -> u64 {
         // Maps the spoken number to the last turn number
-        let mut turn_map: HashMap<u64, u64> = self
+        // This had been implemented before as a HashMap but was
+        // pretty slow in debug mode, so we traded memory usage
+        // for speed and use a potentially very large vector instead
+        // to avoid the time penalty of HashMap lookups.
+        let mut turn_map: Vec<Option<u64>> = vec![None; to_turn];
+
+        // Initialize with starting numbers
+        for (t, s) in self
             .starting
             .iter()
             .take(self.starting.len() - 1)
             .enumerate()
-            .map(|(t, s)| (*s, t.try_into().unwrap()))
-            .collect();
+        {
+            let s: usize = (*s).try_into().unwrap();
+            turn_map[s] = Some(t.try_into().unwrap());
+        }
 
         let mut last_spoken = *self.starting.last().unwrap();
         for turn in self.starting.len()..to_turn {
             let turn: u64 = turn.try_into().unwrap();
-            let next_spoken = match turn_map.get(&last_spoken) {
+            let ls: usize = last_spoken.try_into().unwrap();
+            let next_spoken = match turn_map[ls] {
                 Some(t) => turn - t - 1,
                 None => 0,
             };
-            turn_map.insert(last_spoken, turn - 1);
+            turn_map[ls] = Some(turn - 1);
             last_spoken = next_spoken;
             /*println!("Turn {}: {}", turn + 1, last_spoken);
             if last_spoken == 0 {
