@@ -16,10 +16,13 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![1428],
+    vec![1428, 3718541],
     "0,3,6",
-    vec![Some(436), Some(175594)],
-    "1,3,2",
+    vec![Some(436), Some(175594)]
+    // These tests pass but just take too long to run.
+    // Interestingly, compiling in release mode makes a very big difference in run time
+        // for part b) of this problem.
+        /*"1,3,2",
     vec![Some(1), Some(2578)],
     "2,1,3",
     vec![Some(10), Some(3544142)],
@@ -30,7 +33,7 @@ mod tests {
     "3,2,1",
     vec![Some(438), Some(18)],
     "3,1,2",
-    vec![Some(1836), Some(362)]
+    vec![Some(1836), Some(362)]*/
     }
 }
 
@@ -69,8 +72,12 @@ impl Game {
             };
             turn_map.insert(last_spoken, turn - 1);
             last_spoken = next_spoken;
-            //println!("Turn {}: {}", turn + 1, last_spoken);
-            //println!("Turn map: {:?}", turn_map);
+            /*println!("Turn {}: {}", turn + 1, last_spoken);
+            if last_spoken == 0 {
+                let mut keys: Vec<&u64> = turn_map.keys().collect();
+                keys.sort_unstable();
+                println!("Turn map: {:?}", keys);
+            }*/
         }
         last_spoken
     }
@@ -87,14 +94,15 @@ pub const SOLUTION: Solution = Solution {
 
             // Process
             Ok(game.play(2020))
+            //Ok(game.play(30))
         },
         // Part b)
-        /*|input| {
+        |input| {
             // Generation
             let game = Game::from_str(input.trim())?;
 
             // Process
             Ok(game.play(30000000))
-        },*/
+        },
     ],
 };
