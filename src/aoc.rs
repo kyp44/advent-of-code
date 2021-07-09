@@ -92,9 +92,16 @@ pub trait Parseable {
         strs.map(|l| Self::from_str(l))
             .collect::<Result<Vec<Self>, ParseError>>()
     }
+
+    fn from_csv(input: &str) -> Result<Vec<Self>, ParseError>
+    where
+        Self: Sized,
+    {
+        input.split(",").map(|s| Self::from_str(s)).collect()
+    }
 }
 
-/// Parseable for input that is just a basic list of numbers
+/// Parseable for simple numbers
 impl<T: Unsigned + FromStr> Parseable for T {
     fn parse(input: &str) -> ParseResult<Self> {
         map(digit1, |ns: &str| match ns.parse() {
@@ -175,6 +182,20 @@ impl YearSolutions {
     }
 }
 
+/// Compares solution results with a vector
+#[macro_export]
+macro_rules! solution_results {
+    ($input:literal, $exp: expr) => {
+        let input = $input;
+
+        for (solver, vopt) in SOLUTION.solvers.iter().zip($exp) {
+            if let Some(v) = vopt {
+                assert_eq!(solver(&input).unwrap(), v);
+            }
+        }
+    };
+}
+
 /// Convenience macro to build the example test for a solution.
 /// Also creates an ignored test to test the main problem solutions.
 #[macro_export]
@@ -191,15 +212,25 @@ macro_rules! solution_test {
 
         #[test]
         fn example() {
+	    use crate::solution_results;
 	    $(
-		let input = $input;
-
-		for (solver, vopt) in SOLUTION.solvers.iter().zip($exp) {
-		    if let Some(v) = vopt {
-			assert_eq!(solver(&input).unwrap(), v);
-		    }
-		}
+		solution_results!($input, $exp);
 	    )+
+        }
+    };
+}
+
+/// Builds expensive tests that take a while to run.
+#[macro_export]
+macro_rules! expensive_test {
+    ($($input:literal, $exp: expr), +) => {
+        #[test]
+	#[cfg(feature = "expensive")]
+        fn expensive() {
+	    use crate::solution_results;
+            $(
+		solution_results!($input, $exp);
+            )+
         }
     };
 }

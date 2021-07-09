@@ -13,13 +13,17 @@ use crate::aoc::{ParseResult, Parseable, Solution};
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::expensive_test;
     use crate::solution_test;
 
     solution_test! {
     vec![1428, 3718541],
     "0,3,6",
-    vec![Some(436), Some(175594)],
-        "1,3,2",
+    vec![Some(436), Some(175594)]
+    }
+
+    expensive_test! {
+    "1,3,2",
     vec![Some(1), Some(2578)],
     "2,1,3",
     vec![Some(10), Some(3544142)],
