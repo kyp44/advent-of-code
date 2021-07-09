@@ -1,14 +1,15 @@
-use std::ops::RangeInclusive;
+use std::{ops::RangeInclusive, str::FromStr};
 
 use nom::{
     bytes::complete::{is_not, tag},
-    character::complete::digit1,
-    combinator::map,
+    character::complete::{digit1, multispace1},
+    combinator::{map, rest},
     multi::separated_list1,
-    sequence::separated_pair,
+    sequence::{preceded, separated_pair, tuple},
 };
 
-use crate::aoc::{AocError, ParseResult, Parseable, Solution};
+use crate::aoc::{AocError, DiscardInput, ParseError, ParseResult, Parseable, Solution};
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -60,9 +61,13 @@ impl Parseable for Field {
 struct Ticket {
     field_values: Vec<u32>,
 }
-impl Parseable for Ticket {
-    fn parse(input: &str) -> ParseResult<Self> {
-        todo!()
+impl FromStr for Ticket {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Ticket {
+            field_values: u32::from_csv(s)?,
+        })
     }
 }
 
@@ -82,9 +87,9 @@ impl Problem {
         }
         Ok(Problem {
             fields: Field::gather(sections[0].lines())?,
-            your_ticket: Ticket {
-                field_values: vec![],
-            },
+            your_ticket: preceded(tuple((tag("your ticket:"), multispace1)), rest)(sections[1])
+                .discard_input()?
+                .parse()?,
             nearby_tickets: vec![],
         })
     }

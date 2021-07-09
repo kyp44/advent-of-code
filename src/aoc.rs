@@ -114,6 +114,16 @@ impl<T: Unsigned + FromStr> Parseable for T {
 /// Type containing the result of a nom parsing
 pub type ParseResult<'a, U> = IResult<&'a str, U, ParseError>;
 
+/// This should be a part of the nom library in my opinion
+pub trait DiscardInput<U, E> {
+    fn discard_input(self) -> Result<U, E>;
+}
+impl<U> DiscardInput<U, ParseError> for ParseResult<'_, U> {
+    fn discard_input(self) -> Result<U, ParseError> {
+        self.finish().map(|(i, o)| o)
+    }
+}
+
 /// Convenience function to count from a filtered Iterator
 pub trait FilterCount<T, O> {
     fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> O;
