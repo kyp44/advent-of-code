@@ -16,7 +16,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![],
+    vec![29851],
 "class: 1-3 or 5-7
 row: 6-11 or 33-44
 seat: 13-40 or 45-50
@@ -56,6 +56,11 @@ impl Parseable for Field {
         )(input.trim())
     }
 }
+impl Field {
+    fn is_valid(&self, value: &u32) -> bool {
+        self.valid_ranges.iter().any(|r| r.contains(value))
+    }
+}
 
 #[derive(Debug)]
 struct Ticket {
@@ -90,9 +95,35 @@ impl Problem {
             your_ticket: preceded(tuple((tag("your ticket:"), multispace1)), rest)(sections[1])
                 .discard_input()?
                 .parse()?,
-            nearby_tickets: vec![],
+            nearby_tickets: preceded(tuple((tag("nearby tickets:"), multispace1)), rest)(
+                sections[2],
+            )
+            .discard_input()?
+            .lines()
+            .map(|l| l.parse())
+            .collect::<Result<Vec<Ticket>, ParseError>>()?,
         })
     }
+}
+impl Problem {
+    fn is_valid(&self, value: &u32) -> bool {
+        self.fields.iter().any(|f| f.is_valid(value))
+    }
+
+    fn invalid_fields(&self, ticket: &Ticket) -> Vec<u32> {
+        ticket
+            .field_values
+            .iter()
+            .filter_map(|v| if self.is_valid(v) { None } else { Some(*v) })
+            .collect()
+    }
+
+    /*fn invalid_fieldss<'a, 'b>(&'a self, ticket: &'b Ticket) -> impl Iterator<Item = &'b u32> {
+        ticket
+            .field_values
+            .iter()
+            .filter_map(|v| if self.is_valid(v) { None } else { Some(v) })
+    }*/
 }
 
 pub const SOLUTION: Solution = Solution {
@@ -103,10 +134,14 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let problem = Problem::from_str(input)?;
-            println!("TODO: {:?}", problem);
 
             // Process
-            Ok(0)
+            Ok(problem
+                .nearby_tickets
+                .iter()
+                .flat_map(|t| problem.invalid_fields(t))
+                .sum::<u32>()
+                .into())
         },
     ],
 };

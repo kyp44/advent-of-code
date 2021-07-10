@@ -97,7 +97,7 @@ pub trait Parseable {
     where
         Self: Sized,
     {
-        input.split(",").map(|s| Self::from_str(s)).collect()
+        input.split(',').map(|s| Self::from_str(s)).collect()
     }
 }
 
@@ -120,7 +120,7 @@ pub trait DiscardInput<U, E> {
 }
 impl<U> DiscardInput<U, ParseError> for ParseResult<'_, U> {
     fn discard_input(self) -> Result<U, ParseError> {
-        self.finish().map(|(i, o)| o)
+        self.finish().map(|(_, o)| o)
     }
 }
 
