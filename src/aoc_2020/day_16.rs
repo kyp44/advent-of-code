@@ -110,20 +110,18 @@ impl Problem {
         self.fields.iter().any(|f| f.is_valid(value))
     }
 
-    fn invalid_fields(&self, ticket: &Ticket) -> Vec<u32> {
+    // NOTE: Made a post about how to accomplish returning an Iterator here instead
+    // of a collected Vec.
+    // See: https://users.rust-lang.org/t/returning-iterator-seemingly-requiring-multiple-liftetimes/62179/3
+    fn invalid_fields<'a: 'c, 'b: 'c, 'c>(
+        &'a self,
+        ticket: &'b Ticket,
+    ) -> impl Iterator<Item = &'b u32> + 'c {
         ticket
             .field_values
             .iter()
-            .filter_map(|v| if self.is_valid(v) { None } else { Some(*v) })
-            .collect()
+            .filter_map(move |v| if self.is_valid(v) { None } else { Some(v) })
     }
-
-    /*fn invalid_fieldss<'a, 'b>(&'a self, ticket: &'b Ticket) -> impl Iterator<Item = &'b u32> {
-        ticket
-            .field_values
-            .iter()
-            .filter_map(|v| if self.is_valid(v) { None } else { Some(v) })
-    }*/
 }
 
 pub const SOLUTION: Solution = Solution {
