@@ -77,7 +77,7 @@ enum Operation {
 }
 
 impl Parseable for Operation {
-    fn parse(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> ParseResult<Self> {
         alt((
             map(
                 preceded(tag("mask = "), many_m_n(BITS, BITS, one_of("X01"))),

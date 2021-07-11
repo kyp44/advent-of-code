@@ -71,7 +71,7 @@ impl Display for ParseError {
 /// See here: https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299
 pub trait Parseable {
     /// Parser function for nom
-    fn parse(input: &str) -> ParseResult<Self>
+    fn parser(input: &str) -> ParseResult<Self>
     where
         Self: Sized;
 
@@ -80,7 +80,7 @@ pub trait Parseable {
     where
         Self: Sized,
     {
-        Self::parse(input).finish().map(|t| t.1)
+        Self::parser(input).finish().map(|t| t.1)
     }
 
     /// Gathers a vector of items from an iterator with each item being a string to parse
@@ -103,7 +103,7 @@ pub trait Parseable {
 
 /// Parseable for simple numbers
 impl<T: Unsigned + FromStr> Parseable for T {
-    fn parse(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> ParseResult<Self> {
         map(digit1, |ns: &str| match ns.parse() {
             Ok(v) => v,
             Err(_) => panic!("nom did not parse a numeric value correctly"),

@@ -1,4 +1,4 @@
-use std::{ops::RangeInclusive, str::FromStr};
+use std::{collections::HashSet, ops::RangeInclusive};
 
 use nom::{
     bytes::complete::{is_not, tag},
@@ -29,7 +29,19 @@ nearby tickets:
 40,4,50
 55,2,20
 38,6,12",
-    vec![Some(71)]
+    vec![Some(71), Some(222)],
+    "class: 0-1 or 4-19
+row: 0-5 or 8-19
+seat: 0-13 or 16-19
+
+your ticket:
+11,12,13
+
+nearby tickets:
+3,9,18
+15,1,5
+5,14,9",
+    vec![None, Some(222)]
     }
 }
 
@@ -39,7 +51,7 @@ struct Field {
     valid_ranges: Vec<RangeInclusive<u32>>,
 }
 impl Parseable for Field {
-    fn parse(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> ParseResult<Self> {
         map(
             separated_pair(
                 is_not(":"),
@@ -66,13 +78,15 @@ impl Field {
 struct Ticket {
     field_values: Vec<u32>,
 }
-impl FromStr for Ticket {
-    type Err = ParseError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Ticket {
-            field_values: u32::from_csv(s)?,
-        })
+impl Parseable for Ticket {
+    fn parser(input: &str) -> ParseResult<Self> {
+        Ok((
+            "",
+            Ticket {
+                field_values: u32::from_csv(input).map_err(|e| nom::Err::Failure(e))?,
+            },
+        ))
     }
 }
 
@@ -90,18 +104,42 @@ impl Problem {
                 "Input does not contain exactly the three expected sections".to_string(),
             ));
         }
-        Ok(Problem {
-            fields: Field::gather(sections[0].lines())?,
-            your_ticket: preceded(tuple((tag("your ticket:"), multispace1)), rest)(sections[1])
+
+        // Parse fields
+        let fields = Field::gather(sections[0].lines())?;
+        let num_fields = fields.len();
+
+        let verify_fields = |name: &str, ticket: &Ticket| match ticket.field_values.len() {
+            n if n == num_fields => Ok(()),
+            _ => Err(AocError::InvalidInput(format!(
+                "{} ticket has {} fields when {} are expected",
+                name,
+                ticket.field_values.len(),
+                num_fields
+            ))),
+        };
+
+        // Parse your ticket and verify the number of fields
+        let your_ticket =
+            preceded(tuple((tag("your ticket:"), multispace1)), Ticket::parser)(sections[1])
+                .discard_input()?;
+        verify_fields("Your", &your_ticket)?;
+
+        // Parse nearby tickets and verify the number of fields
+        let nearby_tickets =
+            preceded(tuple((tag("nearby tickets:"), multispace1)), rest)(sections[2])
                 .discard_input()?
-                .parse()?,
-            nearby_tickets: preceded(tuple((tag("nearby tickets:"), multispace1)), rest)(
-                sections[2],
-            )
-            .discard_input()?
-            .lines()
-            .map(|l| l.parse())
-            .collect::<Result<Vec<Ticket>, ParseError>>()?,
+                .lines()
+                .map(|l| Ticket::from_str(l))
+                .collect::<Result<Vec<Ticket>, ParseError>>()?;
+        for ticket in nearby_tickets.iter() {
+            verify_fields("A nearby", ticket)?;
+        }
+
+        Ok(Problem {
+            fields,
+            your_ticket,
+            nearby_tickets,
         })
     }
 }
@@ -113,14 +151,25 @@ impl Problem {
     // NOTE: Made a post about how to accomplish returning an Iterator here instead
     // of a collected Vec.
     // See: https://users.rust-lang.org/t/returning-iterator-seemingly-requiring-multiple-liftetimes/62179/3
-    fn invalid_fields<'a: 'c, 'b: 'c, 'c>(
-        &'a self,
-        ticket: &'b Ticket,
-    ) -> impl Iterator<Item = &'b u32> + 'c {
+    // This was later simplified to use u32 instead of &u32 in the Iterator.
+    fn invalid_fields<'a>(&'a self, ticket: &'a Ticket) -> impl Iterator<Item = u32> + 'a {
         ticket
             .field_values
             .iter()
-            .filter_map(move |v| if self.is_valid(v) { None } else { Some(v) })
+            .filter_map(move |v| if self.is_valid(v) { None } else { Some(*v) })
+    }
+
+    fn all_invalid_fields<'a>(&'a self) -> impl Iterator<Item = u32> + 'a {
+        self.nearby_tickets
+            .iter()
+            .flat_map(move |t| self.invalid_fields(t))
+    }
+
+    fn solve(&self) {
+        // First get a set of all invalid values
+        let invalid_values: HashSet<u32> = self.all_invalid_fields().collect();
+
+        println!("TODO {:?}", invalid_values);
     }
 }
 
@@ -134,12 +183,15 @@ pub const SOLUTION: Solution = Solution {
             let problem = Problem::from_str(input)?;
 
             // Process
-            Ok(problem
-                .nearby_tickets
-                .iter()
-                .flat_map(|t| problem.invalid_fields(t))
-                .sum::<u32>()
-                .into())
+            Ok(problem.all_invalid_fields().sum::<u32>().into())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let problem = Problem::from_str(input)?;
+
+            problem.solve();
+            Ok(0)
         },
     ],
 };

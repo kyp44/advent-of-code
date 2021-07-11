@@ -29,7 +29,7 @@ struct Seat {
 }
 
 impl Parseable for Seat {
-    fn parse(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> ParseResult<Self> {
         // Creates a parser closure for a letter-coded binary value of a
         // certain number of bits.
         fn binary_parser(

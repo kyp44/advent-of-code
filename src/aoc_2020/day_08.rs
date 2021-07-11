@@ -41,7 +41,7 @@ enum Instruction {
 }
 
 impl Parseable for Instruction {
-    fn parse(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> ParseResult<Self> {
         context(
             "instruction",
             map(

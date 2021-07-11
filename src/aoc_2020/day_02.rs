@@ -30,7 +30,7 @@ struct PasswordPolicy {
 }
 
 impl Parseable for PasswordPolicy {
-    fn parse(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> ParseResult<Self> {
         context(
             "password policy",
             map(
@@ -56,10 +56,10 @@ struct Password {
 }
 
 impl Parseable for Password {
-    fn parse(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> ParseResult<Self> {
         context(
             "password",
-            separated_pair(PasswordPolicy::parse, tag(": "), rest),
+            separated_pair(PasswordPolicy::parser, tag(": "), rest),
         )(input.trim())
         .map(|(next, res)| {
             (

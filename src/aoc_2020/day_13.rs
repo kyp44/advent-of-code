@@ -43,7 +43,7 @@ struct Schedule {
 }
 
 impl Parseable for Schedule {
-    fn parse(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> ParseResult<Self> {
         map(
             separated_pair(
                 digit1,

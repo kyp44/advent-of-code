@@ -47,7 +47,7 @@ enum Instruction {
 }
 
 impl Parseable for Instruction {
-    fn parse(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> ParseResult<Self> {
         map(pair(one_of("NSEWLRF"), digit1), |(c, n): (char, &str)| {
             use Instruction::*;
             let n: i32 = n.parse().unwrap();
