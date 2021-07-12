@@ -1,4 +1,4 @@
-use std::{collections::HashSet, ops::RangeInclusive};
+use std::{collections::HashSet, hash::Hash, ops::RangeInclusive};
 
 use nom::{
     bytes::complete::{is_not, tag},
@@ -16,7 +16,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![29851],
+    vec![29851, 3029180675981],
 "class: 1-3 or 5-7
 row: 6-11 or 33-44
 seat: 13-40 or 45-50
@@ -29,7 +29,8 @@ nearby tickets:
 40,4,50
 55,2,20
 38,6,12",
-    vec![Some(71), Some(222)],
+    // Solution: row, class, seat
+    vec![Some(71), None],
     "class: 0-1 or 4-19
 row: 0-5 or 8-19
 seat: 0-13 or 16-19
@@ -41,11 +42,12 @@ nearby tickets:
 3,9,18
 15,1,5
 5,14,9",
-    vec![None, Some(222)]
+    // Solution: row, class, seat
+    vec![None, Some(1)]
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq)]
 struct Field {
     name: String,
     valid_ranges: Vec<RangeInclusive<u32>>,
@@ -73,6 +75,16 @@ impl Field {
         self.valid_ranges.iter().any(|r| r.contains(value))
     }
 }
+impl PartialEq for Field {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+impl Hash for Field {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
+}
 
 #[derive(Debug)]
 struct Ticket {
@@ -84,7 +96,7 @@ impl Parseable for Ticket {
         Ok((
             "",
             Ticket {
-                field_values: u32::from_csv(input).map_err(|e| nom::Err::Failure(e))?,
+                field_values: u32::from_csv(input).map_err(nom::Err::Failure)?,
             },
         ))
     }
@@ -159,17 +171,79 @@ impl Problem {
             .filter_map(move |v| if self.is_valid(v) { None } else { Some(*v) })
     }
 
-    fn all_invalid_fields<'a>(&'a self) -> impl Iterator<Item = u32> + 'a {
+    fn all_invalid_fields(&self) -> impl Iterator<Item = u32> + '_ {
         self.nearby_tickets
             .iter()
             .flat_map(move |t| self.invalid_fields(t))
     }
 
-    fn solve(&self) {
+    fn solve(&self) -> Result<Vec<&Field>, AocError> {
         // First get a set of all invalid values
         let invalid_values: HashSet<u32> = self.all_invalid_fields().collect();
 
-        println!("TODO {:?}", invalid_values);
+        // Next determine possible Fields for each field position,
+        // i.e. those Fields for which every non-completely-invalid field is valid.
+        type PositionFields<'a> = Vec<HashSet<&'a Field>>;
+        let mut possible_fields: PositionFields = (0..self.fields.len())
+            .into_iter()
+            .map(|i| {
+                self.fields
+                    .iter()
+                    .filter(|field| {
+                        self.nearby_tickets
+                            .iter()
+                            .filter_map(|t| {
+                                let val = t.field_values[i];
+                                if invalid_values.contains(&val) {
+                                    None
+                                } else {
+                                    Some(val)
+                                }
+                            })
+                            .all(|val| field.is_valid(&val))
+                    })
+                    .collect()
+            })
+            .collect();
+
+        // Now eliminate until each position has only one possible field
+        Ok(loop {
+            let single_fields: Vec<&Field> = possible_fields
+                .iter()
+                .filter_map(|fields| {
+                    if fields.len() == 1 {
+                        Some(*fields.iter().next().unwrap())
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            let multi_fields: Vec<&mut HashSet<&Field>> = possible_fields
+                .iter_mut()
+                .filter(|fields| fields.len() > 1)
+                .collect();
+            let len = multi_fields.len();
+            if len == 0 {
+                // Our work is done, remove the HashSets to get the single element
+                break possible_fields
+                    .into_iter()
+                    .map(|mut fields| fields.drain().next().unwrap())
+                    .collect();
+            } else if len == self.fields.len() {
+                // No deduction is possible, at least not with this simple algorithm
+                return Err(AocError::Process(
+                    "No position has only one possible field so a solution may not be possible"
+                        .to_string(),
+                ));
+            }
+
+            // For each set remove all the fields whos positions are known
+            for fields in multi_fields {
+                for field in single_fields.iter() {
+                    fields.remove(field);
+                }
+            }
+        })
     }
 }
 
@@ -190,8 +264,24 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let problem = Problem::from_str(input)?;
 
-            problem.solve();
-            Ok(0)
+            // Process
+            let fields = problem.solve()?;
+            //println!("Solution: {:?}", fields);
+
+            // Now get the desired fields
+            Ok(fields
+                .into_iter()
+                .zip(problem.your_ticket.field_values.iter())
+                .filter_map(|(f, v)| {
+                    if f.name.starts_with("departure") {
+                        Some(*v)
+                    } else {
+                        None
+                    }
+                })
+                .map(|v| -> u64 { v.into() })
+                .product::<u64>()
+                .into())
         },
     ],
 };
