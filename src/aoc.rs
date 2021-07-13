@@ -69,14 +69,14 @@ impl Display for ParseError {
 /// Note that we cannot simply implement FromStr for types that implement this trait
 /// because this breaks the potential foreign trait on a foreign type rules.
 /// See here: https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299
-pub trait Parseable {
+pub trait Parseable<'a> {
     /// Parser function for nom
-    fn parser(input: &str) -> ParseResult<Self>
+    fn parser(input: &'a str) -> ParseResult<Self>
     where
         Self: Sized;
 
     /// Runs the parser and gets the result, stripping out the input from the nom parser
-    fn from_str(input: &str) -> Result<Self, ParseError>
+    fn from_str(input: &'a str) -> Result<Self, ParseError>
     where
         Self: Sized,
     {
@@ -84,7 +84,7 @@ pub trait Parseable {
     }
 
     /// Gathers a vector of items from an iterator with each item being a string to parse
-    fn gather<'a, I>(strs: I) -> Result<Vec<Self>, ParseError>
+    fn gather<I>(strs: I) -> Result<Vec<Self>, ParseError>
     where
         Self: Sized,
         I: Iterator<Item = &'a str>,
@@ -93,7 +93,7 @@ pub trait Parseable {
             .collect::<Result<Vec<Self>, ParseError>>()
     }
 
-    fn from_csv(input: &str) -> Result<Vec<Self>, ParseError>
+    fn from_csv(input: &'a str) -> Result<Vec<Self>, ParseError>
     where
         Self: Sized,
     {
@@ -102,7 +102,7 @@ pub trait Parseable {
 }
 
 /// Parseable for simple numbers
-impl<T: Unsigned + FromStr> Parseable for T {
+impl<T: Unsigned + FromStr> Parseable<'_> for T {
     fn parser(input: &str) -> ParseResult<Self> {
         map(digit1, |ns: &str| match ns.parse() {
             Ok(v) => v,

@@ -76,7 +76,7 @@ enum Operation {
     SetMemory(Memory),
 }
 
-impl Parseable for Operation {
+impl Parseable<'_> for Operation {
     fn parser(input: &str) -> ParseResult<Self> {
         alt((
             map(

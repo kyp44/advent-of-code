@@ -40,7 +40,7 @@ enum Instruction {
     Jmp(i32),
 }
 
-impl Parseable for Instruction {
+impl Parseable<'_> for Instruction {
     fn parser(input: &str) -> ParseResult<Self> {
         context(
             "instruction",

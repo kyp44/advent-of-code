@@ -52,7 +52,7 @@ struct Field {
     name: String,
     valid_ranges: Vec<RangeInclusive<u32>>,
 }
-impl Parseable for Field {
+impl Parseable<'_> for Field {
     fn parser(input: &str) -> ParseResult<Self> {
         map(
             separated_pair(
@@ -91,7 +91,7 @@ struct Ticket {
     field_values: Vec<u32>,
 }
 
-impl Parseable for Ticket {
+impl Parseable<'_> for Ticket {
     fn parser(input: &str) -> ParseResult<Self> {
         Ok((
             "",

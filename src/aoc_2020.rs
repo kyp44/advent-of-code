@@ -15,6 +15,7 @@ mod day_14;
 mod day_15;
 mod day_16;
 mod day_17;
+mod day_18;
 
 use super::aoc::YearSolutions;
 
@@ -39,5 +40,6 @@ pub const YEAR_SOLUTIONS: YearSolutions = YearSolutions {
         day_15::SOLUTION,
         day_16::SOLUTION,
         day_17::SOLUTION,
+        day_18::SOLUTION,
     ],
 };

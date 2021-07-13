@@ -29,7 +29,7 @@ struct PasswordPolicy {
     character: char,
 }
 
-impl Parseable for PasswordPolicy {
+impl Parseable<'_> for PasswordPolicy {
     fn parser(input: &str) -> ParseResult<Self> {
         context(
             "password policy",
@@ -55,7 +55,7 @@ struct Password {
     password: String,
 }
 
-impl Parseable for Password {
+impl Parseable<'_> for Password {
     fn parser(input: &str) -> ParseResult<Self> {
         context(
             "password",

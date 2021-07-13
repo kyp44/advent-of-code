@@ -42,7 +42,7 @@ struct Game {
     starting: Vec<u64>,
 }
 
-impl Parseable for Game {
+impl Parseable<'_> for Game {
     fn parser(input: &str) -> ParseResult<Self> {
         map(
             separated_list1(tuple((space0, tag(","), space0)), digit1),

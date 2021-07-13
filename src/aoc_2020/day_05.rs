@@ -28,7 +28,7 @@ struct Seat {
     column: u32,
 }
 
-impl Parseable for Seat {
+impl Parseable<'_> for Seat {
     fn parser(input: &str) -> ParseResult<Self> {
         // Creates a parser closure for a letter-coded binary value of a
         // certain number of bits.

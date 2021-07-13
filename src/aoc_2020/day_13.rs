@@ -42,7 +42,7 @@ struct Schedule {
     bus_ids: Vec<Option<u64>>,
 }
 
-impl Parseable for Schedule {
+impl Parseable<'_> for Schedule {
     fn parser(input: &str) -> ParseResult<Self> {
         map(
             separated_pair(

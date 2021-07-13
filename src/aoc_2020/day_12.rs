@@ -46,7 +46,7 @@ enum Instruction {
     Forward(i32),
 }
 
-impl Parseable for Instruction {
+impl Parseable<'_> for Instruction {
     fn parser(input: &str) -> ParseResult<Self> {
         map(pair(one_of("NSEWLRF"), digit1), |(c, n): (char, &str)| {
             use Instruction::*;
