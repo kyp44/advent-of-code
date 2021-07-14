@@ -1,8 +1,14 @@
+use std::cmp::Ordering;
 use std::fmt::Display;
 use std::ops::Add;
 use std::ops::Mul;
 
 use itertools::Itertools;
+use nom::character::complete::space0;
+use nom::error::ParseError;
+use nom::sequence::delimited;
+use nom::sequence::tuple;
+use nom::IResult;
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -35,48 +41,57 @@ mod tests {
     }
 }
 
-enum ElementType {
-    Number,
-    Operator,
-    Parenthesis,
+#[derive(Debug)]
+enum Operator {
+    Add,
+    Mul,
 }
-impl Display for ElementType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        use ElementType::*;
-        f.write_str(match self {
-            Number => "number",
-            Operator => "operator",
-            Parenthesis => "parenthesis",
-        })
+impl Operator {
+    fn evaluate(&self, a: u64, b: u64) -> u64 {
+        match self {
+            Operator::Add => a + b,
+            Operator::Mul => a * b,
+        }
     }
+
+    fn cmp<P: Part>(&self, other: &Operator) -> Ordering {
+        P::precedence(self).cmp(&P::precedence(other))
+    }
+}
+
+trait Part {
+    fn precedence(op: &Operator) -> u8;
+}
+struct PartA;
+impl Part for PartA {
+    fn precedence(op: &Operator) -> u8 {
+        match op {
+            Operator::Add => 1,
+            Operator::Mul => 1,
+        }
+    }
+}
+struct PartB;
+impl Part for PartB {
+    fn precedence(op: &Operator) -> u8 {
+        match op {
+            Operator::Add => 1,
+            Operator::Mul => 2,
+        }
+    }
+}
+
+#[derive(Debug)]
+enum Paren {
+    Start,
+    End,
 }
 
 #[derive(Debug)]
 enum Element {
     Number(u64),
-    Add,
-    Mult,
-    ParenStart,
-    ParenEnd,
-}
-impl Element {
-    fn unexpected(&self, expr: &str, expected: &[ElementType]) -> AocError {
-        AocError::Process(format!(
-            "Expected a {} but found a {} instead in expression '{}'",
-            expected.iter().map(|et| format!("{}", et)).join(" or "),
-            self.element_type(),
-            expr
-        ))
-    }
-
-    fn element_type(&self) -> ElementType {
-        use Element::*;
-        match self {
-            Number(_) => ElementType::Number,
-            Add | Mult => ElementType::Operator,
-            ParenStart | ParenEnd => ElementType::Parenthesis,
-        }
-    }
+    Operator(Operator),
+    Paren(Paren),
 }
 
 #[derive(Debug)]
@@ -86,13 +101,25 @@ struct Expression<'a> {
 }
 impl<'a> Parseable<'a> for Expression<'a> {
     fn parser(input: &'a str) -> ParseResult<Self> {
+        /// A combinator that trims whitespace surrounding a parser
+        fn trim<'a, F: 'a, O, E: ParseError<&'a str>>(
+            inner: F,
+        ) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
+        where
+            F: Fn(&'a str) -> IResult<&'a str, O, E>,
+        {
+            delimited(space0, inner, space0)
+        }
+
         all_consuming(map(
             many1(alt((
-                map(digit1, |ds: &str| Element::Number(ds.parse().unwrap())),
-                map(tag(" + "), |_| Element::Add),
-                map(tag(" * "), |_| Element::Mult),
-                map(tag("("), |_| Element::ParenStart),
-                map(tag(")"), |_| Element::ParenEnd),
+                map(trim(digit1), |ds: &str| {
+                    Element::Number(ds.parse().unwrap())
+                }),
+                map(trim(tag("+")), |_| Element::Operator(Operator::Add)),
+                map(trim(tag("*")), |_| Element::Operator(Operator::Mul)),
+                map(trim(tag("(")), |_| Element::Paren(Paren::Start)),
+                map(trim(tag(")")), |_| Element::Paren(Paren::End)),
             ))),
             |elements| Expression {
                 original: input,
@@ -102,92 +129,92 @@ impl<'a> Parseable<'a> for Expression<'a> {
     }
 }
 impl Expression<'_> {
-    fn evaluate(&self) -> Result<u64, AocError> {
-        fn eval<'a>(
-            expr: &str,
-            iter: &mut impl Iterator<Item = &'a Element>,
-            parens: bool,
-        ) -> Result<u64, AocError> {
-            type OperatorFunc = fn(u64, u64) -> u64;
-            enum EvalItem {
-                Number(u64),
-                Operator(OperatorFunc),
-            }
-            impl EvalItem {
-                fn expect_number(&self) -> u64 {
-                    match self {
-                        EvalItem::Number(n) => *n,
-                        _ => panic!(),
-                    }
-                }
-
-                fn expect_operator(&self) -> OperatorFunc {
-                    match self {
-                        EvalItem::Operator(f) => *f,
-                        _ => panic!(),
-                    }
-                }
-            }
-
-            let abrupt = || AocError::Process(format!("Expression '{}' ended abruptly", expr));
-            let mut eval_stack = vec![];
-            loop {
-                // Expecting a number (or sub-expression)
-                let next = iter.next().ok_or_else(abrupt)?;
-                match next {
-                    Element::Number(n) => eval_stack.push(EvalItem::Number(*n)),
-                    Element::ParenStart => {
-                        eval_stack.push(EvalItem::Number(eval(expr, iter, true)?))
-                    }
-                    _ => {
-                        return Err(
-                            next.unexpected(expr, &[ElementType::Number, ElementType::Parenthesis])
-                        )
-                    }
-                }
-
-                // Is there something to evaluate?
-                if eval_stack.len() > 1 {
-                    let v2 = eval_stack.pop().unwrap().expect_number();
-                    let f = eval_stack.pop().unwrap().expect_operator();
-                    let v1 = eval_stack.pop().unwrap().expect_number();
-                    eval_stack.push(EvalItem::Number(f(v1, v2)));
-                }
-
-                // Now expecting an operator or the end
+    fn is_valid(&self) -> bool {
+        let mut depth: i32 = 0;
+        let mut iter = self.elements.iter();
+        let mut expect_num = true;
+        loop {
+            if expect_num {
+                // Expecting a number or sub-expression
                 match iter.next() {
-                    None => {
-                        if parens {
-                            return Err(abrupt());
-                        } else {
-                            return Ok(eval_stack[0].expect_number());
-                        }
-                    }
+                    None => return false,
                     Some(e) => match e {
-                        Element::Add => eval_stack.push(EvalItem::Operator(u64::add)),
-                        Element::Mult => eval_stack.push(EvalItem::Operator(u64::mul)),
-                        Element::ParenEnd => {
-                            if parens {
-                                return Ok(eval_stack[0].expect_number());
-                            } else {
-                                return Err(AocError::Process(format!(
-                                    "Did not expect an end {} in expression '{}'",
-                                    ElementType::Parenthesis,
-                                    expr,
-                                )));
-                            }
+                        Element::Paren(Paren::Start) => {
+                            depth += 1;
+                            expect_num = true;
                         }
-                        _ => {
-                            return Err(e.unexpected(
-                                expr,
-                                &[ElementType::Operator, ElementType::Parenthesis],
-                            ))
+                        Element::Number(_) => expect_num = false,
+                        _ => return false,
+                    },
+                }
+            } else {
+                // Expecting an operator or end
+                match iter.next() {
+                    None => return depth == 0,
+                    Some(e) => match e {
+                        Element::Paren(Paren::End) => {
+                            depth -= 1;
+                            expect_num = false;
                         }
+                        Element::Operator(_) => expect_num = true,
+                        _ => return false,
                     },
                 }
             }
         }
-        eval(self.original, &mut self.elements.iter(), false)
+    }
+
+    fn evaluate<P: Part>(&self) -> Result<u64, AocError> {
+        // First validate
+        if !self.is_valid() {
+            return Err(AocError::Process(format!(
+                "The expression '{}' is malformed",
+                self.original
+            )));
+        }
+
+        // Next convert from infix to postfix.
+        // This implements the algorithm here:
+        // https://www.geeksforgeeks.org/stack-set-2-infix-to-postfix/
+        let mut stack = vec![];
+        let mut postfix = vec![];
+        for e in self.elements.iter() {
+            match e {
+                Element::Number(_) => postfix.push(e),
+                Element::Paren(Paren::Start) => stack.push(e),
+                Element::Paren(Paren::End) => loop {
+                    match stack.pop() {
+                        None => break,
+                        Some(se) => {
+                            if let Element::Paren(Paren::Start) = se {
+                                break;
+                            } else {
+                                postfix.push(se)
+                            }
+                        }
+                    }
+                },
+                Element::Operator(op) => {
+                    if let Some(pe) = stack.last() {
+                        if let Element::Operator(pop) = pe {
+                            if op.cmp::<P>(pop).is_le() {
+                                postfix.push(stack.pop().unwrap());
+                            }
+                        }
+                    }
+                    stack.push(e);
+                }
+            }
+        }
+        loop {
+            match stack.pop() {
+                None => break,
+                Some(e) => postfix.push(e),
+            }
+        }
+        println!("Postfix: {:?}", postfix);
+
+        Ok(0)
     }
 }
 
@@ -203,7 +230,7 @@ pub const SOLUTION: Solution = Solution {
             // We have to manually calculate the sum due to the error handling
             let mut s: u64 = 0;
             for e in expressions {
-                s += e.evaluate()?;
+                s += e.evaluate::<PartA>()?;
             }
             Ok(s)
         },
