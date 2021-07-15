@@ -3,7 +3,6 @@ use std::cmp::Ordering;
 use nom::character::complete::space0;
 use nom::error::ParseError;
 use nom::sequence::delimited;
-use nom::IResult;
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -12,7 +11,7 @@ use nom::{
     multi::many1,
 };
 
-use crate::aoc::{AocError, ParseResult, Parseable, Solution};
+use crate::aoc::{trim, AocError, ParseResult, Parseable, Solution};
 
 #[cfg(test)]
 mod tests {
@@ -96,16 +95,6 @@ struct Expression<'a> {
 }
 impl<'a> Parseable<'a> for Expression<'a> {
     fn parser(input: &'a str) -> ParseResult<Self> {
-        /// A combinator that trims whitespace surrounding a parser
-        fn trim<'a, F: 'a, O, E: ParseError<&'a str>>(
-            inner: F,
-        ) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
-        where
-            F: Fn(&'a str) -> IResult<&'a str, O, E>,
-        {
-            delimited(space0, inner, space0)
-        }
-
         all_consuming(map(
             many1(alt((
                 map(trim(digit1), |ds: &str| {
@@ -246,6 +235,7 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let expressions = Expression::gather(input.lines())?;
 
+            // Process
             Ok(solve::<PartA>(&expressions)?)
         },
         // Part b)
@@ -253,6 +243,7 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let expressions = Expression::gather(input.lines())?;
 
+            // Process
             Ok(solve::<PartB>(&expressions)?)
         },
     ],

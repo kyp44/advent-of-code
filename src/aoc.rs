@@ -65,6 +65,9 @@ impl Display for ParseError {
     }
 }
 
+/// Type containing the result of a nom parsing
+pub type ParseResult<'a, U> = IResult<&'a str, U, ParseError>;
+
 /// Trait for types to be parsable with Nom.
 /// Note that we cannot simply implement FromStr for types that implement this trait
 /// because this breaks the potential foreign trait on a foreign type rules.
@@ -111,8 +114,15 @@ impl<T: Unsigned + FromStr> Parseable<'_> for T {
     }
 }
 
-/// Type containing the result of a nom parsing
-pub type ParseResult<'a, U> = IResult<&'a str, U, ParseError>;
+/// A combinator that trims whitespace surrounding a parser
+pub fn trim<'a, F: 'a, O, E: ParseError<&'a str>>(
+    inner: F,
+) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
+where
+    F: Fn(&'a str) -> IResult<&'a str, O, E>,
+{
+    delimited(space0, inner, space0)
+}
 
 /// This should be a part of the nom library in my opinion
 pub trait DiscardInput<U, E> {
@@ -243,4 +253,26 @@ macro_rules! expensive_test {
             )+
         }
     };
+}
+
+/// Convenience macro to construct the solutions for a year
+#[macro_export]
+macro_rules! year_solutions {
+    (year = $year: expr, days =  {$($day: ident,)* }) => {
+	$(
+	    mod $day;
+	)*
+
+	use super::aoc::YearSolutions;
+
+	/// All of the solutions
+	pub const YEAR_SOLUTIONS: YearSolutions = YearSolutions {
+	    year: $year,
+	    solutions: &[
+		$(
+		    $day::SOLUTION,
+		)*
+	    ],
+	};
+    }
 }
