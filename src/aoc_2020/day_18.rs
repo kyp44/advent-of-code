@@ -1,13 +1,8 @@
 use std::cmp::Ordering;
-use std::fmt::Display;
-use std::ops::Add;
-use std::ops::Mul;
 
-use itertools::Itertools;
 use nom::character::complete::space0;
 use nom::error::ParseError;
 use nom::sequence::delimited;
-use nom::sequence::tuple;
 use nom::IResult;
 use nom::{
     branch::alt,
@@ -25,19 +20,19 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![464478013511],
+    vec![464478013511, 85660197232452],
     "1 + 2 * 3 + 4 * 5 + 6",
-    vec![Some(71)],
+    vec![Some(71), Some(231)],
     "1 + (2 * 3) + (4 * (5 + 6))",
-    vec![Some(51)],
+    vec![Some(51), Some(51)],
     "2 * 3 + (4 * 5)",
-    vec![Some(26)],
+    vec![Some(26), Some(46)],
     "5 + (8 * 3 + 9 + 3 * 4 * 3)",
-    vec![Some(437)],
+    vec![Some(437), Some(1445)],
     "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))",
-    vec![Some(12240)],
+    vec![Some(12240), Some(669060)],
     "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2",
-    vec![Some(13632)]
+    vec![Some(13632), Some(23340)]
     }
 }
 
@@ -47,7 +42,7 @@ enum Operator {
     Mul,
 }
 impl Operator {
-    fn evaluate(&self, a: u64, b: u64) -> u64 {
+    fn evaluate(&self, a: &u64, b: &u64) -> u64 {
         match self {
             Operator::Add => a + b,
             Operator::Mul => a * b,
@@ -75,8 +70,8 @@ struct PartB;
 impl Part for PartB {
     fn precedence(op: &Operator) -> u8 {
         match op {
-            Operator::Add => 1,
-            Operator::Mul => 2,
+            Operator::Add => 2,
+            Operator::Mul => 1,
         }
     }
 }
@@ -212,10 +207,34 @@ impl Expression<'_> {
                 Some(e) => postfix.push(e),
             }
         }
-        println!("Postfix: {:?}", postfix);
+        //println!("Infix: {}", self.original);
+        //println!("Postfix: {:?}", postfix);
 
-        Ok(0)
+        // Now evaluate the postfix expressions
+        let mut stack = vec![];
+        for e in postfix {
+            match e {
+                Element::Number(n) => stack.push(*n),
+                Element::Operator(op) => {
+                    let b = stack.pop().unwrap();
+                    let a = stack.pop().unwrap();
+                    stack.push(op.evaluate(&a, &b));
+                }
+                _ => panic!(),
+            }
+        }
+
+        Ok(stack.pop().unwrap())
     }
+}
+
+fn solve<T: Part>(expressions: &Vec<Expression>) -> Result<u64, AocError> {
+    // We have to manually calculate the sum due to the error handling
+    let mut s: u64 = 0;
+    for e in expressions {
+        s += e.evaluate::<T>()?;
+    }
+    return Ok(s);
 }
 
 pub const SOLUTION: Solution = Solution {
@@ -227,12 +246,14 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let expressions = Expression::gather(input.lines())?;
 
-            // We have to manually calculate the sum due to the error handling
-            let mut s: u64 = 0;
-            for e in expressions {
-                s += e.evaluate::<PartA>()?;
-            }
-            Ok(s)
+            Ok(solve::<PartA>(&expressions)?)
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let expressions = Expression::gather(input.lines())?;
+
+            Ok(solve::<PartB>(&expressions)?)
         },
     ],
 };
