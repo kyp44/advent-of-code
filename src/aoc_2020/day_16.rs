@@ -5,10 +5,13 @@ use nom::{
     character::complete::{digit1, multispace1},
     combinator::{map, rest},
     multi::separated_list1,
-    sequence::{preceded, separated_pair, tuple},
+    sequence::{pair, preceded, separated_pair, tuple},
+    Finish,
 };
 
-use crate::aoc::{AocError, DiscardInput, ParseError, ParseResult, Parseable, Solution};
+use crate::aoc::{
+    AocError, AocResult, DiscardInput, ParseError, ParseResult, Parseable, Sections, Solution,
+};
 
 #[cfg(test)]
 mod tests {
@@ -109,13 +112,8 @@ struct Problem {
     nearby_tickets: Vec<Ticket>,
 }
 impl Problem {
-    fn from_str(s: &str) -> Result<Problem, AocError> {
-        let sections: Vec<&str> = s.split("\n\n").collect();
-        if sections.len() != 3 {
-            return Err(AocError::InvalidInput(
-                "Input does not contain exactly the three expected sections".to_string(),
-            ));
-        }
+    fn from_str(s: &str) -> AocResult<Problem> {
+        let sections = s.sections(3)?;
 
         // Parse fields
         let fields = Field::gather(sections[0].lines())?;
@@ -134,16 +132,19 @@ impl Problem {
         // Parse your ticket and verify the number of fields
         let your_ticket =
             preceded(tuple((tag("your ticket:"), multispace1)), Ticket::parser)(sections[1])
+                .finish()
                 .discard_input()?;
         verify_fields("Your", &your_ticket)?;
 
         // Parse nearby tickets and verify the number of fields
-        let nearby_tickets =
-            preceded(tuple((tag("nearby tickets:"), multispace1)), rest)(sections[2])
-                .discard_input()?
-                .lines()
-                .map(|l| Ticket::from_str(l))
-                .collect::<Result<Vec<Ticket>, ParseError>>()?;
+        let result: ParseResult<_> =
+            preceded(pair(tag("nearby tickets:"), multispace1), rest)(sections[2]);
+        let nearby_tickets = result
+            .finish()
+            .discard_input()?
+            .lines()
+            .map(|l| Ticket::from_str(l))
+            .collect::<Result<Vec<Ticket>, ParseError>>()?;
         for ticket in nearby_tickets.iter() {
             verify_fields("A nearby", ticket)?;
         }
@@ -177,7 +178,7 @@ impl Problem {
             .flat_map(move |t| self.invalid_fields(t))
     }
 
-    fn solve(&self) -> Result<Vec<&Field>, AocError> {
+    fn solve(&self) -> AocResult<Vec<&Field>> {
         // First get a set of all invalid values
         let invalid_values: HashSet<u32> = self.all_invalid_fields().collect();
 

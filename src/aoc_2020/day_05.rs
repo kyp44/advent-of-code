@@ -1,4 +1,4 @@
-use crate::aoc::AocError;
+use crate::aoc::AocResult;
 
 use super::super::aoc::{ParseResult, Parseable, Solution};
 use nom::{
@@ -67,7 +67,7 @@ impl Seat {
     }
 }
 
-fn get_ids(input: &str) -> Result<Vec<u32>, AocError> {
+fn get_ids(input: &str) -> AocResult<Vec<u32>> {
     let seats = Seat::gather(input.lines())?;
 
     // Process

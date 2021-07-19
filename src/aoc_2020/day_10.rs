@@ -1,3 +1,5 @@
+use crate::aoc::AocResult;
+
 use super::super::aoc::{AocError, FilterCount, Parseable, Solution};
 use std::collections::HashMap;
 
@@ -55,7 +57,7 @@ mod tests {
     }
 }
 
-fn parse_joltages(input: &str) -> Result<Vec<u32>, AocError> {
+fn parse_joltages(input: &str) -> AocResult<Vec<u32>> {
     // Get joltages
     let mut j = u32::gather(input.lines())?;
     // Add the outlet

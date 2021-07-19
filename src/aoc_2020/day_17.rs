@@ -2,7 +2,7 @@ use std::{collections::HashSet, convert::TryInto, fmt::Debug, ops::RangeInclusiv
 
 use itertools::Itertools;
 
-use crate::aoc::{AocError, FilterCount, Solution};
+use crate::aoc::{AocError, AocResult, FilterCount, Solution};
 
 #[cfg(test)]
 mod tests {
@@ -73,7 +73,7 @@ impl Debug for Dimension {
     }
 }
 impl Dimension {
-    fn from_str(dimensions: usize, s: &str) -> Result<Self, AocError> {
+    fn from_str(dimensions: usize, s: &str) -> AocResult<Self> {
         if dimensions < 2 {
             return Err(AocError::InvalidInput(format!(
                 "Dimension must be at least 2, got {}",

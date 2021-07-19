@@ -1,4 +1,6 @@
 use anyhow::Context;
+use nom::character::complete::space0;
+use nom::sequence::delimited;
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
 use num::Unsigned;
@@ -115,11 +117,11 @@ impl<T: Unsigned + FromStr> Parseable<'_> for T {
 }
 
 /// A combinator that trims whitespace surrounding a parser
-pub fn trim<'a, F: 'a, O, E: ParseError<&'a str>>(
+pub fn trim<'a, F: 'a, O, E: nom::error::ParseError<&'a str>>(
     inner: F,
 ) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
 where
-    F: Fn(&'a str) -> IResult<&'a str, O, E>,
+    F: FnMut(&'a str) -> IResult<&'a str, O, E>,
 {
     delimited(space0, inner, space0)
 }
@@ -128,9 +130,27 @@ where
 pub trait DiscardInput<U, E> {
     fn discard_input(self) -> Result<U, E>;
 }
-impl<U> DiscardInput<U, ParseError> for ParseResult<'_, U> {
-    fn discard_input(self) -> Result<U, ParseError> {
-        self.finish().map(|(_, o)| o)
+impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
+    fn discard_input(self) -> Result<U, E> {
+        self.map(|(_, o)| o)
+    }
+}
+
+pub trait Sections {
+    fn sections(&self, num: usize) -> AocResult<Vec<&str>>;
+}
+impl Sections for str {
+    fn sections(&self, num: usize) -> AocResult<Vec<&str>> {
+        let secs: Vec<&str> = self.split("\n\n").collect();
+        if secs.len() == num {
+            Ok(secs)
+        } else {
+            Err(AocError::InvalidInput(format!(
+                "Expected {} sections from the input, found {}",
+                num,
+                secs.len()
+            )))
+        }
     }
 }
 

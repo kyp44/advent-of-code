@@ -1,8 +1,5 @@
 use std::cmp::Ordering;
 
-use nom::character::complete::space0;
-use nom::error::ParseError;
-use nom::sequence::delimited;
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -11,7 +8,7 @@ use nom::{
     multi::many1,
 };
 
-use crate::aoc::{trim, AocError, ParseResult, Parseable, Solution};
+use crate::aoc::{trim, AocError, AocResult, ParseResult, Parseable, Solution};
 
 #[cfg(test)]
 mod tests {
@@ -148,7 +145,7 @@ impl Expression<'_> {
         }
     }
 
-    fn evaluate<P: Part>(&self) -> Result<u64, AocError> {
+    fn evaluate<P: Part>(&self) -> AocResult<u64> {
         // First validate
         if !self.is_valid() {
             return Err(AocError::Process(format!(
@@ -217,7 +214,7 @@ impl Expression<'_> {
     }
 }
 
-fn solve<T: Part>(expressions: &Vec<Expression>) -> Result<u64, AocError> {
+fn solve<T: Part>(expressions: &Vec<Expression>) -> AocResult<u64> {
     // We have to manually calculate the sum due to the error handling
     let mut s: u64 = 0;
     for e in expressions {

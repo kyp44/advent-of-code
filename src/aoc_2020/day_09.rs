@@ -1,3 +1,5 @@
+use crate::aoc::AocResult;
+
 use super::super::aoc::{AocError, ParseError, Parseable, Solution};
 use itertools::Itertools;
 use nom::{
@@ -98,7 +100,7 @@ impl XmasPacket {
     }
 }
 
-fn verify_invalid(packet: &XmasPacket) -> Result<u64, AocError> {
+fn verify_invalid(packet: &XmasPacket) -> AocResult<u64> {
     match packet.validate() {
         Validation::Valid => Err(AocError::Process(
             "Packet was unexpectedly valid, guess it can't be exploited!".to_string(),

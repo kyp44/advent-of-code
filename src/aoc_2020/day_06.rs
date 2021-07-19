@@ -1,4 +1,4 @@
-use crate::aoc::AocError;
+use crate::aoc::AocResult;
 
 use super::super::aoc::{ParseResult, Solution};
 use nom::{
@@ -69,7 +69,7 @@ fn make_questions_parser(
     }
 }
 
-fn solve(input: &str, reducer: fn(Questions, Questions) -> Questions) -> Result<u64, AocError> {
+fn solve(input: &str, reducer: fn(Questions, Questions) -> Questions) -> AocResult<u64> {
     let questions = all_consuming(separated_list1(
         tuple((space0, line_ending, space0, line_ending)),
         make_questions_parser(reducer),

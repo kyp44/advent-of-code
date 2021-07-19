@@ -304,7 +304,7 @@ impl Area {
     }
 }
 
-fn check_simulation(status: SimulationStatus<Area>) -> Result<u64, AocError> {
+fn check_simulation(status: SimulationStatus<Area>) -> AocResult<u64> {
     match status {
         SimulationStatus::Stable(a) => Ok(a.occupied()),
         SimulationStatus::Infinite(_) => Err(AocError::Process(

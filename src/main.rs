@@ -1,4 +1,5 @@
 #![feature(hash_set_entry)]
+#![feature(destructuring_assignment)]
 
 mod aoc;
 mod aoc_2020;

@@ -1,3 +1,5 @@
+use crate::aoc::AocResult;
+
 use super::super::aoc::{AocError, ParseError, ParseResult, Parseable, Solution};
 use nom::{
     branch::alt,
@@ -165,7 +167,7 @@ impl Program {
     }
 }
 
-fn check_acc(acc: i32) -> Result<u32, AocError> {
+fn check_acc(acc: i32) -> AocResult<u32> {
     if acc < 0 {
         return Err(AocError::Process(format!(
             "Accumulator ended up negative as {}, which is a problem",
