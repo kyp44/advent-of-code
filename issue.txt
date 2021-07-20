@@ -1,0 +1,18 @@
+Should not have matched and did:
+Checking 'aaaabbaaaabbaaa'
+
+Should have matched and did:
+Checking 'ababaaaaaabaaab'
+
+bbabbbbaabaabba
+babbbbaabbbbbabbbbbbaabaaabaaa
+aaabbbbbbaaaabaababaabababbabaaabbababababaaa
+bbbbbbbaaaabbbbaaabbabaaa
+bbbababbbbaaaaaaaabbababaaababaabab
+ababaaaaaabaaab
+ababaaaaabbbaba
+baabbaaaabbaaaababbaababb
+abbbbabbbbaaaababbbbbbaaaababb
+aaaaabbaabaaaaababaa
+aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
+aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba

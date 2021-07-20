@@ -13,6 +13,7 @@ use nom::{
 use crate::aoc::{
     trim, AocError, AocResult, DiscardInput, ParseResult, Parseable, Sections, Solution,
 };
+use itertools::Itertools;
 
 #[cfg(test)]
 mod tests {
@@ -21,7 +22,9 @@ mod tests {
 
     solution_test! {
     vec![149],
-    "0: 4 1 5
+    "0
+
+0: 4 1 5
 1: 2 3 | 3 2
 2: 4 4 | 5 5
 3: 4 5 | 5 4
@@ -34,7 +37,9 @@ abbbab
 aaabbb
 aaaabbb",
     vec![Some(2), None],
-    "42: 9 14 | 10 1
+    "0
+
+42: 9 14 | 10 1
 9: 14 27 | 1 26
 10: 23 14 | 28 1
 1: \"a\"
@@ -158,21 +163,28 @@ impl<'a> RuleSet<'a> {
 
     fn is_valid(&self, s: &str, rule_num: usize) -> AocResult<bool> {
         fn valid<'a>(
-            rules: &HashMap<usize, Rule<'_>>,
+            rule_set: &RuleSet,
             s: &'a str,
             rule_num: usize,
+            level: usize,
         ) -> AocResult<(bool, &'a str)> {
-            let rule = rules
+            if s.len() == 0 {
+                return Ok((true, s));
+            }
+            let _tab: String = (0..level).map(|_| "  ").collect();
+            let rule = rule_set
+                .rules
                 .get(&rule_num)
                 .ok_or_else(|| AocError::Process(format!("Rule {} not found", rule_num)))?;
             let mut matched = true;
             let mut remaining = s;
+            println!(
+                "{}Rule {}: Checking that '{}' starts with rule {:?} {{",
+                _tab, rule_num, s, rule,
+            );
+
             match rule {
                 Rule::Match(ms) => {
-                    /*println!(
-                        "Rule {}: Checking that '{}' starts with '{}'",
-                        rule_num, s, ms
-                    );*/
                     if remaining.starts_with(ms) {
                         remaining = &s[ms.len()..];
                     } else {
@@ -180,13 +192,18 @@ impl<'a> RuleSet<'a> {
                     }
                 }
                 Rule::Seq(ov) => {
-                    //println!("Rule {}: Checking that '{}' matches {:?}", rule_num, s, ov);
                     for mv in ov.iter() {
                         let mut seq_rem = remaining;
                         matched = true;
 
                         for nrn in mv.iter() {
-                            (matched, seq_rem) = valid(rules, seq_rem, *nrn)?;
+                            /*if seq_rem.len() == 0 {
+                                // Ran out of input before the sequence ended,
+                                // which is a failure since it only partially matched
+                                matched = false;
+                                break;
+                            }*/
+                            (matched, seq_rem) = valid(rule_set, seq_rem, *nrn, level + 1)?;
                             if !matched {
                                 break;
                             }
@@ -198,44 +215,68 @@ impl<'a> RuleSet<'a> {
                     }
                 }
             }
-            /*println!(
-                "Rule {}: String: '{}' Matched: {} Remaining: '{}'",
-                rule_num, s, matched, remaining
-            );*/
+            println!(
+                "{}}} Matched: {}, Remaining: '{}'",
+                _tab, matched, remaining
+            );
             Ok((matched, remaining))
         }
 
         // Must have matched the entire string
-        let (matched, remaining) = valid(&self.rules, s, rule_num)?;
+        let (matched, remaining) = valid(self, s, rule_num, 0)?;
         if remaining.len() == 0 {
             return Ok(matched);
         }
         Ok(false)
     }
+
+    fn _rule_string(&self, rule_num: &usize) -> String {
+        let rule = self.rules.get(rule_num).unwrap();
+
+        match rule {
+            Rule::Match(s) => s.to_string(),
+            Rule::Seq(ov) => {
+                format!(
+                    "({})",
+                    ov.iter()
+                        .map(|sv| sv
+                            .iter()
+                            .map(|rn| self._rule_string(rn))
+                            .collect::<String>())
+                        .join(" | ")
+                )
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
 struct Problem<'a> {
+    rule_numbers: Vec<usize>,
     rule_set: RuleSet<'a>,
     strings: Vec<&'a str>,
 }
 impl<'a> Problem<'a> {
     fn from_str<P: Part>(s: &'a str) -> AocResult<Self> {
-        let secs = s.sections(2)?;
+        let secs = s.sections(3)?;
         Ok(Problem {
-            rule_set: RuleSet::from_str::<P>(secs[0])?,
-            strings: secs[1].lines().collect(),
+            rule_numbers: usize::from_csv(secs[0])?,
+            rule_set: RuleSet::from_str::<P>(secs[1])?,
+            strings: secs[2].lines().collect(),
         })
     }
 
     fn solve(&self) -> AocResult<u64> {
         let mut sum = 0;
-        for s in self.strings.iter() {
-            //println!("Checking '{}'", s);
-            let valid = self.rule_set.is_valid(s, 0)?;
-
-            if valid {
-                sum += 1;
+        for rule_num in self.rule_numbers.iter() {
+            //println!("Valid strings:");
+            for s in self.strings.iter() {
+                println!("\nChecking '{}' for rule {}", s, rule_num);
+                //println!("{}", self.rule_set._rule_string(rule_num));
+                if self.rule_set.is_valid(s, *rule_num)? {
+                    //println!("{}", s);
+                    sum += 1;
+                }
             }
         }
         Ok(sum)
