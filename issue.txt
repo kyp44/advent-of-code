@@ -4,6 +4,18 @@ Checking 'aaaabbaaaabbaaa'
 Should have matched and did:
 Checking 'ababaaaaaabaaab'
 
+Should have matched and didn't:
+Checking 'aaaaabbaabaaaaababaa'
+
+Should be good:
+bbabbbbaabaabba
+aaabbbbbbaaaabaababaabababbabaaabbababababaaa
+ababaaaaaabaaab
+ababaaaaabbbaba
+baabbaaaabbaaaababbaababb
+aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
+
+Actual solution:
 bbabbbbaabaabba
 babbbbaabbbbbabbbbbbaabaaabaaa
 aaabbbbbbaaaabaababaabababbabaaabbababababaaa

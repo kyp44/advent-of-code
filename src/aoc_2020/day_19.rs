@@ -168,9 +168,10 @@ impl<'a> RuleSet<'a> {
             rule_num: usize,
             level: usize,
         ) -> AocResult<(bool, &'a str)> {
-            if s.len() == 0 {
+            // TODO
+            /*if s.len() == 0 {
                 return Ok((true, s));
-            }
+            }*/
             let _tab: String = (0..level).map(|_| "  ").collect();
             let rule = rule_set
                 .rules
@@ -197,12 +198,12 @@ impl<'a> RuleSet<'a> {
                         matched = true;
 
                         for nrn in mv.iter() {
-                            /*if seq_rem.len() == 0 {
+                            if seq_rem.len() == 0 {
                                 // Ran out of input before the sequence ended,
                                 // which is a failure since it only partially matched
                                 matched = false;
                                 break;
-                            }*/
+                            }
                             (matched, seq_rem) = valid(rule_set, seq_rem, *nrn, level + 1)?;
                             if !matched {
                                 break;
@@ -300,8 +301,11 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let problem = Problem::from_str::<PartB>(input)?;
 
+            println!("ANNOYING: {}", problem.rule_set._rule_string(&42));
+            println!("ANNOYING: {}", problem.rule_set._rule_string(&31));
             // Process
-            Ok(problem.solve()?)
+            //Ok(problem.solve()?)
+            Ok(0)
         },
     ],
 };
