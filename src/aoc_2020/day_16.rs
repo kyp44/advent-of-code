@@ -281,8 +281,7 @@ pub const SOLUTION: Solution = Solution {
                     }
                 })
                 .map(|v| -> u64 { v.into() })
-                .product::<u64>()
-                .into())
+                .product::<u64>())
         },
     ],
 };

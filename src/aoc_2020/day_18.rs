@@ -176,11 +176,9 @@ impl Expression<'_> {
                     }
                 },
                 Element::Operator(op) => {
-                    if let Some(pe) = stack.last() {
-                        if let Element::Operator(pop) = pe {
-                            if op.cmp::<P>(pop).is_le() {
-                                postfix.push(stack.pop().unwrap());
-                            }
+                    if let Some(Element::Operator(pop)) = stack.last() {
+                        if op.cmp::<P>(pop).is_le() {
+                            postfix.push(stack.pop().unwrap());
                         }
                     }
                     stack.push(e);
@@ -214,13 +212,13 @@ impl Expression<'_> {
     }
 }
 
-fn solve<T: Part>(expressions: &Vec<Expression>) -> AocResult<u64> {
+fn solve<T: Part>(expressions: &[Expression]) -> AocResult<u64> {
     // We have to manually calculate the sum due to the error handling
     let mut s: u64 = 0;
     for e in expressions {
         s += e.evaluate::<T>()?;
     }
-    return Ok(s);
+    Ok(s)
 }
 
 pub const SOLUTION: Solution = Solution {
@@ -233,7 +231,7 @@ pub const SOLUTION: Solution = Solution {
             let expressions = Expression::gather(input.lines())?;
 
             // Process
-            Ok(solve::<PartA>(&expressions)?)
+            solve::<PartA>(&expressions)
         },
         // Part b)
         |input| {
@@ -241,7 +239,7 @@ pub const SOLUTION: Solution = Solution {
             let expressions = Expression::gather(input.lines())?;
 
             // Process
-            Ok(solve::<PartB>(&expressions)?)
+            solve::<PartB>(&expressions)
         },
     ],
 };

@@ -90,9 +90,7 @@ impl Dimension {
                         '.' => None,
                         _ => {
                             let mut point = vec![x.try_into().unwrap(), y.try_into().unwrap()];
-                            for _ in 0..(dimensions - 2) {
-                                point.push(0);
-                            }
+                            point.resize(dimensions, 0);
                             Some(point)
                         }
                     })
@@ -125,7 +123,7 @@ impl Dimension {
         (0..self.dimensions)
             .map(|i| point_range(&point[i]))
             .multi_cartesian_product()
-            .filter_count(|pt| pt != point && self.active(&pt))
+            .filter_count(|pt| pt != point && self.active(pt))
     }
 
     fn next(&self) -> Dimension {
@@ -139,16 +137,10 @@ impl Dimension {
             active_cubes: (0..self.dimensions)
                 .map(|i| exp_range(&ranges[i]))
                 .multi_cartesian_product()
-                .filter_map(|point| {
-                    let num = self.count_neighbors_active(&point);
-                    if self.active(&point) {
-                        if num == 2 || num == 3 {
-                            return Some(point);
-                        }
-                    } else if num == 3 {
-                        return Some(point);
-                    }
-                    None
+                .filter(|point| {
+                    let num = self.count_neighbors_active(point);
+
+                    (self.active(point) && num == 2) || num == 3
                 })
                 .collect(),
         }

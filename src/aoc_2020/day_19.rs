@@ -22,9 +22,7 @@ mod tests {
 
     solution_test! {
     vec![149, 332],
-    "0
-
-0: 4 1 5
+    "0: 4 1 5
 1: 2 3 | 3 2
 2: 4 4 | 5 5
 3: 4 5 | 5 4
@@ -37,9 +35,7 @@ abbbab
 aaabbb
 aaaabbb",
     vec![Some(2), None],
-    "0
-
-42: 9 14 | 10 1
+    "42: 9 14 | 10 1
 9: 14 27 | 1 26
 10: 23 14 | 28 1
 1: \"a\"
@@ -151,7 +147,7 @@ impl<'a> RuleSet<'a> {
                 .finish()
                 .discard_input()?;
             let n: usize = ns.parse().unwrap();
-            if let Some(_) = rules.insert(n, P::fix_rule(n, rule)) {
+            if rules.insert(n, P::fix_rule(n, rule)).is_some() {
                 return Err(AocError::InvalidInput(format!(
                     "There is a duplicate for rule {}",
                     ns
@@ -196,7 +192,7 @@ impl<'a> RuleSet<'a> {
 
                         for nrn in mv.iter() {
                             // Have we run out of string?
-                            if seq_rem.len() == 0 {
+                            if seq_rem.is_empty() {
                                 // Apparently we disallow partial pattern mattern unless
                                 // the partial match ended on a looped rule
                                 matched = last_rn == rule_num;
@@ -224,7 +220,7 @@ impl<'a> RuleSet<'a> {
 
         // Must have matched the entire string
         let (matched, remaining) = valid(self, s, rule_num, 0)?;
-        if remaining.len() == 0 {
+        if remaining.is_empty() {
             return Ok(matched);
         }
         Ok(false)
@@ -252,33 +248,31 @@ impl<'a> RuleSet<'a> {
 
 #[derive(Debug)]
 struct Problem<'a> {
-    rule_numbers: Vec<usize>,
     rule_set: RuleSet<'a>,
     strings: Vec<&'a str>,
 }
 impl<'a> Problem<'a> {
     fn from_str<P: Part>(s: &'a str) -> AocResult<Self> {
-        let secs = s.sections(3)?;
+        let secs = s.sections(2)?;
         Ok(Problem {
-            rule_numbers: usize::from_csv(secs[0])?,
-            rule_set: RuleSet::from_str::<P>(secs[1])?,
-            strings: secs[2].lines().collect(),
+            rule_set: RuleSet::from_str::<P>(secs[0])?,
+            strings: secs[1].lines().collect(),
         })
     }
 
     fn solve(&self) -> AocResult<u64> {
         let mut sum = 0;
-        for rule_num in self.rule_numbers.iter() {
-            //println!("Valid strings:");
-            for s in self.strings.iter() {
-                //println!("\nChecking '{}' for rule {}", s, rule_num);
-                //println!("{}", self.rule_set._rule_string(rule_num));
-                if self.rule_set.is_valid(s, *rule_num)? {
-                    //println!("{}", s);
-                    sum += 1;
-                }
+
+        //println!("Valid strings:");
+        for s in self.strings.iter() {
+            //println!("\nChecking '{}' for rule {}", s, rule_num);
+            //println!("{}", self.rule_set._rule_string(rule_num));
+            if self.rule_set.is_valid(s, 0)? {
+                //println!("{}", s);
+                sum += 1;
             }
         }
+
         Ok(sum)
     }
 }
@@ -293,7 +287,7 @@ pub const SOLUTION: Solution = Solution {
             let problem = Problem::from_str::<PartA>(input)?;
 
             // Process
-            Ok(problem.solve()?)
+            problem.solve()
         },
         // Part b)
         |input| {
@@ -301,7 +295,7 @@ pub const SOLUTION: Solution = Solution {
             let problem = Problem::from_str::<PartB>(input)?;
 
             // Process
-            Ok(problem.solve()?)
+            problem.solve()
         },
     ],
 };
