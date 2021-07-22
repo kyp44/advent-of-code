@@ -21,7 +21,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![149],
+    vec![149, 332],
     "0
 
 0: 4 1 5
@@ -168,10 +168,6 @@ impl<'a> RuleSet<'a> {
             rule_num: usize,
             level: usize,
         ) -> AocResult<(bool, &'a str)> {
-            // TODO
-            /*if s.len() == 0 {
-                return Ok((true, s));
-            }*/
             let _tab: String = (0..level).map(|_| "  ").collect();
             let rule = rule_set
                 .rules
@@ -179,10 +175,10 @@ impl<'a> RuleSet<'a> {
                 .ok_or_else(|| AocError::Process(format!("Rule {} not found", rule_num)))?;
             let mut matched = true;
             let mut remaining = s;
-            println!(
+            /*println!(
                 "{}Rule {}: Checking that '{}' starts with rule {:?} {{",
                 _tab, rule_num, s, rule,
-            );
+            );*/
 
             match rule {
                 Rule::Match(ms) => {
@@ -194,20 +190,23 @@ impl<'a> RuleSet<'a> {
                 }
                 Rule::Seq(ov) => {
                     for mv in ov.iter() {
+                        let mut last_rn = rule_num;
                         let mut seq_rem = remaining;
                         matched = true;
 
                         for nrn in mv.iter() {
+                            // Have we run out of string?
                             if seq_rem.len() == 0 {
-                                // Ran out of input before the sequence ended,
-                                // which is a failure since it only partially matched
-                                matched = false;
+                                // Apparently we disallow partial pattern mattern unless
+                                // the partial match ended on a looped rule
+                                matched = last_rn == rule_num;
                                 break;
                             }
                             (matched, seq_rem) = valid(rule_set, seq_rem, *nrn, level + 1)?;
                             if !matched {
                                 break;
                             }
+                            last_rn = *nrn;
                         }
                         if matched {
                             remaining = seq_rem;
@@ -216,10 +215,10 @@ impl<'a> RuleSet<'a> {
                     }
                 }
             }
-            println!(
+            /*println!(
                 "{}}} Matched: {}, Remaining: '{}'",
                 _tab, matched, remaining
-            );
+            );*/
             Ok((matched, remaining))
         }
 
@@ -272,7 +271,7 @@ impl<'a> Problem<'a> {
         for rule_num in self.rule_numbers.iter() {
             //println!("Valid strings:");
             for s in self.strings.iter() {
-                println!("\nChecking '{}' for rule {}", s, rule_num);
+                //println!("\nChecking '{}' for rule {}", s, rule_num);
                 //println!("{}", self.rule_set._rule_string(rule_num));
                 if self.rule_set.is_valid(s, *rule_num)? {
                     //println!("{}", s);
@@ -301,11 +300,8 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let problem = Problem::from_str::<PartB>(input)?;
 
-            println!("ANNOYING: {}", problem.rule_set._rule_string(&42));
-            println!("ANNOYING: {}", problem.rule_set._rule_string(&31));
             // Process
-            //Ok(problem.solve()?)
-            Ok(0)
+            Ok(problem.solve()?)
         },
     ],
 };

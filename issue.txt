@@ -1,30 +1,37 @@
-Should not have matched and did:
+Partial: No
+No Partial: No
+Answer: No
+Checking 'abbbbbabbbaaaababbaabbbbabababbbabbbbbbabaaaa'
+ |abbbb|babbb|aaaababbaa|b  |b  |b  |b |abababbbabbbbbbabaaaa
+1|8    |11
+2|     |42   |11        |31
+1|     |     |          |14 |17
+1|     |     |          |   |14 |2
+2|     |     |          |   |   |14 |4
+F|     |     |          |   |   |   |1
+
+Partial: Yes
+No Partial: No
+Answer: No
 Checking 'aaaabbaaaabbaaa'
+ |aaaab|baaaa|bbaa|a|
+1|8    |11
+2|     |42   |11  | |31
+1|     |     |42  | |31
+2|     |     |10  |1|
 
-Should have matched and did:
-Checking 'ababaaaaaabaaab'
 
-Should have matched and didn't:
+Partial: Yes
+No Partial: No
+Answer: Yes
 Checking 'aaaaabbaabaaaaababaa'
+ |aaaaa|bbaab|aaaaa|b  |a |b  |a  |a|
+1|8    |11
+2|     |42   |11   |                |31
+1|     |     |42   |31
+1|     |     |     |14 |17
+2|     |     |     |   |1 |7
+1|     |     |     |   |  |14 |5
+2|     |     |     |   |  |   |15 |1
+1|     |     |     |   |  |   |1  |
 
-Should be good:
-bbabbbbaabaabba
-aaabbbbbbaaaabaababaabababbabaaabbababababaaa
-ababaaaaaabaaab
-ababaaaaabbbaba
-baabbaaaabbaaaababbaababb
-aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
-
-Actual solution:
-bbabbbbaabaabba
-babbbbaabbbbbabbbbbbaabaaabaaa
-aaabbbbbbaaaabaababaabababbabaaabbababababaaa
-bbbbbbbaaaabbbbaaabbabaaa
-bbbababbbbaaaaaaaabbababaaababaabab
-ababaaaaaabaaab
-ababaaaaabbbaba
-baabbaaaabbaaaababbaababb
-abbbbabbbbaaaababbbbbbaaaababb
-aaaaabbaabaaaaababaa
-aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
-aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba
