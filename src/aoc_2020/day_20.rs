@@ -1,5 +1,5 @@
-use std::fmt;
 use std::str::FromStr;
+use std::{cmp::Ordering, fmt};
 
 use crate::aoc::{AocError, AocResult, DiscardInput, ParseError, Solution};
 use nom::{
@@ -12,6 +12,7 @@ use nom::{
 };
 
 use enum_map::{enum_map, Enum, EnumMap};
+use itertools::iproduct;
 use itertools::Itertools;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
@@ -22,7 +23,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![],
+    vec![83775126454273],
     "Tile 2311:
 ..##.#..#.
 ##..#.....
@@ -134,7 +135,7 @@ Tile 3079:
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Enum)]
+#[derive(Debug, Enum)]
 enum Edge {
     Top,
     Bottom,
@@ -142,12 +143,19 @@ enum Edge {
     Right,
 }
 
+/// Rotations and flips form a non-abelian group with eight elements.
+/// These are the eight elements that are reachable from rotations
+/// and flips.
 #[derive(Clone, Copy, EnumIter, Display)]
-enum Rotation {
-    Deg0,
-    Deg90,
-    Deg180,
-    Deg270,
+enum Transform {
+    Rot0,
+    Rot90,
+    Rot180,
+    Rot270,
+    FlipH,
+    FlipV,
+    Rot90FlipH,
+    Rot90FlipV,
 }
 
 #[derive(Debug)]
@@ -210,29 +218,53 @@ impl FromStr for Tile {
     }
 }
 impl Tile {
-    fn get_edge(&self, edge: Edge, rotation: Rotation) -> &[bool] {
+    fn get_edge(&self, edge: Edge, transform: Transform) -> &[bool] {
         use Edge::*;
-        use Rotation::*;
+        use Transform::*;
 
-        match rotation {
-            Deg0 => &self.edges[edge],
-            Deg90 => match edge {
+        match transform {
+            Rot0 => &self.edges[edge],
+            Rot90 => match edge {
                 Top => &self.edges[Right],
                 Bottom => &self.edges[Left],
                 Left => &self.edges_reversed[Top],
                 Right => &self.edges_reversed[Bottom],
             },
-            Deg180 => match edge {
+            Rot180 => match edge {
                 Top => &self.edges_reversed[Bottom],
                 Bottom => &self.edges_reversed[Top],
                 Left => &self.edges_reversed[Right],
                 Right => &self.edges_reversed[Left],
             },
-            Deg270 => match edge {
+            Rot270 => match edge {
                 Top => &self.edges_reversed[Left],
                 Bottom => &self.edges_reversed[Right],
                 Left => &self.edges[Bottom],
                 Right => &self.edges[Top],
+            },
+            FlipH => match edge {
+                Top => &self.edges_reversed[Top],
+                Bottom => &self.edges_reversed[Bottom],
+                Left => &self.edges[Right],
+                Right => &self.edges[Left],
+            },
+            FlipV => match edge {
+                Top => &self.edges[Bottom],
+                Bottom => &self.edges[Top],
+                Left => &self.edges_reversed[Left],
+                Right => &self.edges_reversed[Right],
+            },
+            Rot90FlipH => match edge {
+                Top => &self.edges_reversed[Right],
+                Bottom => &self.edges_reversed[Left],
+                Left => &self.edges_reversed[Bottom],
+                Right => &self.edges_reversed[Top],
+            },
+            Rot90FlipV => match edge {
+                Top => &self.edges[Left],
+                Bottom => &self.edges[Right],
+                Left => &self.edges[Top],
+                Right => &self.edges[Bottom],
             },
         }
     }
@@ -243,12 +275,11 @@ fn sqrt(n: usize) -> Option<usize> {
     let mut i: usize = 0;
     loop {
         let s = i * i;
-        if s == n {
-            break Some(i);
-        } else if s > n {
-            break None;
+        match s.cmp(&n) {
+            Ordering::Equal => break Some(i),
+            Ordering::Greater => break None,
+            Ordering::Less => i += 1,
         }
-        i += 1;
     }
 }
 
@@ -285,7 +316,7 @@ impl FromStr for TileSet {
 #[derive(Clone)]
 struct TileSlot<'a> {
     tile: &'a Tile,
-    rotation: Rotation,
+    transform: Transform,
 }
 
 #[derive(Clone)]
@@ -297,12 +328,12 @@ struct TileMap<'a> {
 impl fmt::Display for TileMap<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for y in 0..self.size {
-            write!(
+            writeln!(
                 f,
-                "{}\n",
+                "{}",
                 &(0..self.size)
                     .map(|x| match self.get(x, y) {
-                        Some(t) => format!("{} {}", t.tile.id, t.rotation),
+                        Some(t) => format!("{} {}", t.tile.id, t.transform),
                         None => "-".to_string(),
                     })
                     .join(" | "),
@@ -315,14 +346,14 @@ impl<'a> TileMap<'a> {
     fn new(tile_set: &'a TileSet) -> Self {
         let size = tile_set.size;
         TileMap {
-            size: size,
+            size,
             remaining: tile_set.tiles.iter().collect(),
             slots: vec![vec![None; size]; size],
         }
     }
 
-    fn set(&mut self, x: usize, y: usize, tile: &'a Tile, rotation: Rotation) {
-        self.slots[y][x] = Some(TileSlot { tile, rotation });
+    fn set(&mut self, x: usize, y: usize, tile: &'a Tile, transform: Transform) {
+        self.slots[y][x] = Some(TileSlot { tile, transform });
     }
 
     fn get(&self, x: usize, y: usize) -> Option<&TileSlot> {
@@ -347,44 +378,53 @@ impl Solver {
     fn solve(&self) -> AocResult<u64> {
         let map = TileMap::new(&self.tile_set);
 
-        fn solve_slot<'a>(x: usize, y: usize, map: TileMap<'a>) -> Option<TileMap<'a>> {
+        fn solve_slot(x: usize, y: usize, map: TileMap) -> Option<TileMap> {
             if map.remaining.is_empty() {
                 return Some(map);
             }
+            //println!("Have :\n {}", map);
+
             for (tile_idx, tile) in map.remaining.iter().enumerate() {
-                for rotation in Rotation::iter() {
+                for transform in Transform::iter() {
+                    /*println!(
+                        "Trying tile {} with transform {} at ({}, {})",
+                        tile.id, transform, x, y
+                    );*/
+                    let mut fits = true;
                     // Do we need to match to the right side of the tile to the left?
                     if x > 0 {
                         let left_slot = map.get(x - 1, y).unwrap();
-                        if tile.get_edge(Edge::Left, rotation)
-                            != left_slot.tile.get_edge(Edge::Right, left_slot.rotation)
+                        if tile.get_edge(Edge::Left, transform)
+                            != left_slot.tile.get_edge(Edge::Right, left_slot.transform)
                         {
-                            break;
+                            fits = false;
                         }
                     }
                     // Do we need to match the top side of the tile with the bottom
                     // side of the tile above?
                     if y > 0 {
                         let above_slot = map.get(x, y - 1).unwrap();
-                        if tile.get_edge(Edge::Top, rotation)
-                            != above_slot.tile.get_edge(Edge::Bottom, above_slot.rotation)
+                        if tile.get_edge(Edge::Top, transform)
+                            != above_slot.tile.get_edge(Edge::Bottom, above_slot.transform)
                         {
-                            break;
+                            fits = false;
                         }
                     }
 
-                    // The tile fits, so place it and work on the next tile
-                    let mut map = map.clone();
-                    map.set(x, y, tile, rotation);
-                    map.remaining.remove(tile_idx);
-                    println!("Trying:\n {}", map);
-                    let (x, y) = if x == map.size {
-                        (0, y + 1)
-                    } else {
-                        (x + 1, y)
-                    };
-                    if let Some(map) = solve_slot(x, y, map) {
-                        return Some(map);
+                    if fits {
+                        // The tile fits, so place it and work on the next tile
+                        //println!("It fit!");
+                        let mut map = map.clone();
+                        map.set(x, y, tile, transform);
+                        map.remaining.remove(tile_idx);
+                        let (x, y) = if x == map.size - 1 {
+                            (0, y + 1)
+                        } else {
+                            (x + 1, y)
+                        };
+                        if let Some(map) = solve_slot(x, y, map) {
+                            return Some(map);
+                        }
                     }
                 }
             }
@@ -395,9 +435,11 @@ impl Solver {
 
         match solve_slot(0, 0, map) {
             Some(map) => {
-                //let size = self.tile_set.size;
-                println!("Solution\n: {}", map);
-                Ok(0)
+                let size = map.size;
+                //println!("Solution\n: {}", map);
+                Ok(iproduct!([0, size - 1], [0, size - 1])
+                    .map(|(x, y)| map.get(x, y).unwrap().tile.id)
+                    .product())
             }
             None => Err(AocError::Process("Could not find a solution".to_string())),
         }
