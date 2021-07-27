@@ -1,3 +1,4 @@
+use std::fmt;
 use std::str::FromStr;
 
 use crate::aoc::{AocError, AocResult, DiscardInput, ParseError, Solution};
@@ -11,8 +12,9 @@ use nom::{
 };
 
 use enum_map::{enum_map, Enum, EnumMap};
+use itertools::Itertools;
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
+use strum_macros::{Display, EnumIter};
 
 #[cfg(test)]
 mod tests {
@@ -140,7 +142,7 @@ enum Edge {
     Right,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy, EnumIter, Display)]
 enum Rotation {
     Deg0,
     Deg90,
@@ -286,12 +288,35 @@ struct TileSlot<'a> {
     rotation: Rotation,
 }
 
+#[derive(Clone)]
 struct TileMap<'a> {
+    size: usize,
+    remaining: Vec<&'a Tile>,
     slots: Vec<Vec<Option<TileSlot<'a>>>>,
 }
+impl fmt::Display for TileMap<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for y in 0..self.size {
+            write!(
+                f,
+                "{}\n",
+                &(0..self.size)
+                    .map(|x| match self.get(x, y) {
+                        Some(t) => format!("{} {}", t.tile.id, t.rotation),
+                        None => "-".to_string(),
+                    })
+                    .join(" | "),
+            )?;
+        }
+        Ok(())
+    }
+}
 impl<'a> TileMap<'a> {
-    fn new(size: usize) -> Self {
+    fn new(tile_set: &'a TileSet) -> Self {
+        let size = tile_set.size;
         TileMap {
+            size: size,
+            remaining: tile_set.tiles.iter().collect(),
             slots: vec![vec![None; size]; size],
         }
     }
@@ -300,8 +325,8 @@ impl<'a> TileMap<'a> {
         self.slots[y][x] = Some(TileSlot { tile, rotation });
     }
 
-    fn get(&self, x: usize, y: usize) -> &Option<TileSlot> {
-        &self.slots[y][x]
+    fn get(&self, x: usize, y: usize) -> Option<&TileSlot> {
+        self.slots[y][x].as_ref()
     }
 }
 
@@ -319,29 +344,63 @@ impl FromStr for Solver {
     }
 }
 impl Solver {
-    fn solve(&self) -> AocResult<TileMap> {
-        let map = TileMap::new(self.tile_set.size);
+    fn solve(&self) -> AocResult<u64> {
+        let map = TileMap::new(&self.tile_set);
 
-        fn solve_slot(x: usize, y: usize, map: TileMap, remaining: Vec<&Tile>) -> bool {
-            if remaining.is_empty() {
-                return true;
+        fn solve_slot<'a>(x: usize, y: usize, map: TileMap<'a>) -> Option<TileMap<'a>> {
+            if map.remaining.is_empty() {
+                return Some(map);
             }
-            for (idx, tile) in remaining.into_iter().enumerate() {
-                // Do we need to match to the right side of the tile to the left?
-                if x > 0 {
-                    let left_slot = &map.get(x - 1, y).unwrap();
-                    //if tile.get_edge(Edge::LEFT, rotation)
+            for (tile_idx, tile) in map.remaining.iter().enumerate() {
+                for rotation in Rotation::iter() {
+                    // Do we need to match to the right side of the tile to the left?
+                    if x > 0 {
+                        let left_slot = map.get(x - 1, y).unwrap();
+                        if tile.get_edge(Edge::Left, rotation)
+                            != left_slot.tile.get_edge(Edge::Right, left_slot.rotation)
+                        {
+                            break;
+                        }
+                    }
+                    // Do we need to match the top side of the tile with the bottom
+                    // side of the tile above?
+                    if y > 0 {
+                        let above_slot = map.get(x, y - 1).unwrap();
+                        if tile.get_edge(Edge::Top, rotation)
+                            != above_slot.tile.get_edge(Edge::Bottom, above_slot.rotation)
+                        {
+                            break;
+                        }
+                    }
+
+                    // The tile fits, so place it and work on the next tile
+                    let mut map = map.clone();
+                    map.set(x, y, tile, rotation);
+                    map.remaining.remove(tile_idx);
+                    println!("Trying:\n {}", map);
+                    let (x, y) = if x == map.size {
+                        (0, y + 1)
+                    } else {
+                        (x + 1, y)
+                    };
+                    if let Some(map) = solve_slot(x, y, map) {
+                        return Some(map);
+                    }
                 }
-
-                let remaining = remaining.clone();
-                remaining.remove(idx);
             }
 
-            // TODO
-            return false;
+            // Could not complete the map
+            None
         }
 
-        Ok(map)
+        match solve_slot(0, 0, map) {
+            Some(map) => {
+                //let size = self.tile_set.size;
+                println!("Solution\n: {}", map);
+                Ok(0)
+            }
+            None => Err(AocError::Process("Could not find a solution".to_string())),
+        }
     }
 }
 
@@ -353,10 +412,9 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let solver: Solver = input.parse()?;
-            //println!("TODO: {:?}", solver);
 
             // Process
-            Ok(0)
+            solver.solve()
         },
     ],
 };
