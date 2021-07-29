@@ -131,7 +131,7 @@ Tile 3079:
 ..#.###...
 ..#.......
 ..#.###...",
-    vec![Some(20899048083289)]
+    vec![Some(20899048083289), Some(273)]
     }
 }
 
@@ -158,9 +158,127 @@ enum Transform {
     Rot90FlipV,
 }
 
+#[derive(Clone)]
+struct Image<T> {
+    width: usize,
+    height: usize,
+    pixels: Box<[Box<[T]>]>,
+}
+impl<T> Image<T>
+where
+    T: Default + Copy,
+{
+    fn new(width: usize, height: usize) -> Self {
+        Image {
+            width,
+            height,
+            pixels: vec![vec![T::default(); width].into_boxed_slice(); height].into_boxed_slice(),
+        }
+    }
+
+    fn set(&mut self, rows: impl Iterator<Item = impl Iterator<Item = T>>) {
+        for (y, row) in (0..self.height).zip(rows) {
+            for (x, v) in (0..self.width).zip(row) {
+                self.pixels[y][x] = v;
+            }
+        }
+    }
+
+    fn rot_90(&self) -> Self {
+        let mut out = Image::new(self.height, self.width);
+        out.set(
+            (0..self.width)
+                .rev()
+                .map(|x| (0..self.height).map(move |y| self.pixels[y][x])),
+        );
+        out
+    }
+
+    fn flip_hor(&self) -> Self {
+        let mut out = Image::new(self.width, self.height);
+        out.set(self.pixels.iter().map(|row| row.iter().rev().map(|p| *p)));
+        out
+    }
+    fn flip_ver(&self) -> Self {
+        let mut out = Image::new(self.width, self.height);
+        out.set(
+            self.pixels
+                .iter()
+                .rev()
+                .map(|row| row.into_iter().map(|p| *p)),
+        );
+        out
+    }
+
+    fn transformed(&self, transform: Transform) -> Self {
+        use Transform::*;
+        match transform {
+            Rot0 => self.clone(),
+            Rot90 => self.rot_90(),
+            Rot180 => self.rot_90().rot_90(),
+            Rot270 => self.rot_90().rot_90().rot_90(),
+            FlipH => self.flip_hor(),
+            FlipV => self.flip_ver(),
+            Rot90FlipH => self.rot_90().flip_hor(),
+            Rot90FlipV => self.rot_90().flip_ver(),
+        }
+    }
+
+    fn adjoin_right(&self, right: &Self) -> Self {
+        assert_eq!(
+            self.height, right.height,
+            "Images must have the same height to adjoin horizontally"
+        );
+        let mut out = Image::new(self.width + right.width, self.height);
+        out.set(
+            self.pixels
+                .iter()
+                .zip(right.pixels.iter())
+                .map(|(l, r)| l.iter().chain(r.iter()).map(|p| *p)),
+        );
+        out
+    }
+
+    fn adjoin_below(&self, below: &Self) -> Self {
+        assert_eq!(
+            self.width, below.width,
+            "Images must have the same width to adjoin vertically"
+        );
+        let mut out = Image::new(self.width, self.height + below.height);
+        out.set(
+            self.pixels
+                .iter()
+                .chain(below.pixels.iter())
+                .map(|row| row.iter().map(|p| *p)),
+        );
+        out
+    }
+}
+impl fmt::Display for Image<bool> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "{}",
+            self.pixels
+                .iter()
+                .map(|row| row
+                    .iter()
+                    .map(|p| if *p { '#' } else { '.' })
+                    .collect::<String>())
+                .join("\n")
+        )
+    }
+}
+impl fmt::Debug for Image<bool> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
+    }
+}
+
 #[derive(Debug)]
 struct Tile {
     id: u64,
+    image: Image<bool>,
     edges: EnumMap<Edge, Vec<bool>>,
     edges_reversed: EnumMap<Edge, Vec<bool>>,
 }
@@ -168,7 +286,7 @@ impl FromStr for Tile {
     type Err = AocError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (id, lv) = map::<_, _, _, ParseError, _, _>(
+        let (id, rows) = map::<_, _, _, ParseError, _, _>(
             pair(
                 delimited(tag("Tile "), digit1, pair(tag(":"), line_ending)),
                 separated_list1(line_ending, many1(one_of(".#"))),
@@ -179,29 +297,47 @@ impl FromStr for Tile {
         .discard_input()?;
 
         // Verify the tile dimensions
-        let size = lv[0].len();
-        if lv.len() != size {
+        let size = rows[0].len();
+        if size < 3 {
+            return Err(AocError::InvalidInput(format!(
+                "Tile {} must be at least 3x3",
+                id
+            )));
+        }
+        if rows.len() != size {
             return Err(AocError::InvalidInput(format!(
                 "Tile {} did not have the expected height of {}",
                 id, size
             )));
         }
-        if lv.iter().any(|v| v.len() != size) {
+        if rows.iter().any(|v| v.len() != size) {
             return Err(AocError::InvalidInput(format!(
                 "Not all rows of tile {} have the expected width of {}",
                 id, size
             )));
         }
 
-        // Pull out the edges
-        fn convert<'a>(iter: impl Iterator<Item = &'a char>) -> Vec<bool> {
-            iter.map(|c| *c == '#').collect()
+        // Converts iterator of chars to boolean pixels
+        fn convert<'a>(
+            iter: impl Iterator<Item = &'a char> + 'a,
+        ) -> impl Iterator<Item = bool> + 'a {
+            iter.map(|c| *c == '#')
         }
-        let edges = enum_map! {
-            Edge::Top => convert(lv[0].iter()),
-            Edge::Bottom => convert(lv.last().unwrap().iter()),
-            Edge::Left => convert(lv.iter().map(|v| &v[0])),
-            Edge::Right => convert(lv.iter().map(|v| v.last().unwrap())),
+
+        // Create image of interior
+        let mut image = Image::new(size - 2, size - 2);
+        image.set(
+            rows[1..size - 1]
+                .iter()
+                .map(|row| convert(row[1..size - 1].iter())),
+        );
+
+        // Pull out the edges
+        let edges: EnumMap<_, Vec<bool>> = enum_map! {
+            Edge::Top => convert(rows[0].iter()).collect(),
+            Edge::Bottom => convert(rows.last().unwrap().iter()).collect(),
+            Edge::Left => convert(rows.iter().map(|v| &v[0])).collect(),
+            Edge::Right => convert(rows.iter().map(|v| v.last().unwrap())).collect(),
         };
         let mut edges_reversed = EnumMap::default();
         for (k, v) in edges.iter() {
@@ -212,6 +348,7 @@ impl FromStr for Tile {
 
         Ok(Tile {
             id,
+            image,
             edges,
             edges_reversed,
         })
@@ -359,6 +496,35 @@ impl<'a> TileMap<'a> {
     fn get(&self, x: usize, y: usize) -> Option<&TileSlot> {
         self.slots[y][x].as_ref()
     }
+
+    fn stitched_image(&self) -> AocResult<Image<bool>> {
+        // Check that all slots are filled
+        if self
+            .slots
+            .iter()
+            .map(|row| row.iter())
+            .flatten()
+            .any(|slot| slot.is_none())
+        {
+            return Err(AocError::Process(
+                "Cannot stitch image because not every slot in the map is set".to_string(),
+            ));
+        }
+        Ok(self
+            .slots
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .map(|slot| {
+                        let slot = slot.as_ref().unwrap();
+                        slot.tile.image.transformed(slot.transform)
+                    })
+                    .reduce(|left, right| left.adjoin_right(&right))
+                    .unwrap()
+            })
+            .reduce(|upper, lower| upper.adjoin_below(&lower))
+            .unwrap())
+    }
 }
 
 #[derive(Debug)]
@@ -375,7 +541,7 @@ impl FromStr for Solver {
     }
 }
 impl Solver {
-    fn solve(&self) -> AocResult<u64> {
+    fn solve(&self) -> AocResult<TileMap> {
         let map = TileMap::new(&self.tile_set);
 
         fn solve_slot(x: usize, y: usize, map: TileMap) -> Option<TileMap> {
@@ -433,16 +599,8 @@ impl Solver {
             None
         }
 
-        match solve_slot(0, 0, map) {
-            Some(map) => {
-                let size = map.size;
-                //println!("Solution\n: {}", map);
-                Ok(iproduct!([0, size - 1], [0, size - 1])
-                    .map(|(x, y)| map.get(x, y).unwrap().tile.id)
-                    .product())
-            }
-            None => Err(AocError::Process("Could not find a solution".to_string())),
-        }
+        solve_slot(0, 0, map)
+            .ok_or_else(|| AocError::Process("Could not find a solution".to_string()))
     }
 }
 
@@ -456,7 +614,25 @@ pub const SOLUTION: Solution = Solution {
             let solver: Solver = input.parse()?;
 
             // Process
-            solver.solve()
+            let map = solver.solve()?;
+            //println!("Solution\n: {}", map);
+
+            let size = map.size;
+            Ok(iproduct!([0, size - 1], [0, size - 1])
+                .map(|(x, y)| map.get(x, y).unwrap().tile.id)
+                .product())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let solver: Solver = input.parse()?;
+
+            // Process
+            let map = solver.solve()?;
+            println!("{}", map);
+            println!("{}", map.stitched_image()?.flip_hor().rot_90());
+
+            Ok(0)
         },
     ],
 };
