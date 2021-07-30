@@ -1,7 +1,9 @@
 use std::str::FromStr;
 use std::{cmp::Ordering, fmt};
 
-use crate::aoc::{AocError, AocResult, DiscardInput, ParseError, Solution};
+use crate::aoc::{
+    AocError, AocResult, DiscardInput, FilterCount, ParseError, ParseResult, Parseable, Solution,
+};
 use nom::{
     bytes::complete::tag,
     character::complete::{digit1, line_ending, one_of},
@@ -23,7 +25,7 @@ mod tests {
     use crate::solution_test;
 
     solution_test! {
-    vec![83775126454273],
+    vec![83775126454273, 1993],
     "Tile 2311:
 ..##.#..#.
 ##..#.....
@@ -196,17 +198,12 @@ where
 
     fn flip_hor(&self) -> Self {
         let mut out = Image::new(self.width, self.height);
-        out.set(self.pixels.iter().map(|row| row.iter().rev().map(|p| *p)));
+        out.set(self.pixels.iter().map(|row| row.iter().rev().copied()));
         out
     }
     fn flip_ver(&self) -> Self {
         let mut out = Image::new(self.width, self.height);
-        out.set(
-            self.pixels
-                .iter()
-                .rev()
-                .map(|row| row.into_iter().map(|p| *p)),
-        );
+        out.set(self.pixels.iter().rev().map(|row| row.iter().copied()));
         out
     }
 
@@ -234,7 +231,7 @@ where
             self.pixels
                 .iter()
                 .zip(right.pixels.iter())
-                .map(|(l, r)| l.iter().chain(r.iter()).map(|p| *p)),
+                .map(|(l, r)| l.iter().chain(r.iter()).copied()),
         );
         out
     }
@@ -249,9 +246,30 @@ where
             self.pixels
                 .iter()
                 .chain(below.pixels.iter())
-                .map(|row| row.iter().map(|p| *p)),
+                .map(|row| row.iter().copied()),
         );
         out
+    }
+
+    fn slice(&self, point: &(usize, usize), width: usize, height: usize) -> Box<[&[T]]> {
+        self.pixels[point.1..point.1 + height]
+            .iter()
+            .map(|row| &row[point.0..point.0 + width])
+            .collect::<Vec<&[T]>>()
+            .into_boxed_slice()
+    }
+
+    fn slice_mut(
+        &mut self,
+        point: &(usize, usize),
+        width: usize,
+        height: usize,
+    ) -> Box<[&mut [T]]> {
+        self.pixels[point.1..point.1 + height]
+            .iter_mut()
+            .map(|row| &mut row[point.0..point.0 + width])
+            .collect::<Vec<&mut [T]>>()
+            .into_boxed_slice()
     }
 }
 impl fmt::Display for Image<bool> {
@@ -274,6 +292,52 @@ impl fmt::Debug for Image<bool> {
         fmt::Display::fmt(self, f)
     }
 }
+impl<'a> Parseable<'a> for Image<bool> {
+    fn parser(input: &'a str) -> ParseResult<Self> {
+        map(separated_list1(line_ending, many1(one_of(" .#"))), |rows| {
+            let height = rows.len();
+            let width = if height > 0 { rows[0].len() } else { 0 };
+            let mut image = Image::new(width, height);
+            image.set(
+                rows.into_iter()
+                    .map(|row| row.into_iter().map(|p| p == '#')),
+            );
+            image
+        })(input)
+    }
+}
+impl Image<bool> {
+    fn search(&self, image: &Self) -> Vec<(usize, usize)> {
+        iproduct!(
+            0..=(self.height - image.height),
+            0..=(self.width - image.width)
+        )
+        .filter(|(y, x)| {
+            self.slice(&(*x, *y), image.width, image.height)
+                .iter()
+                .map(|row| row.iter())
+                .flatten()
+                .zip(image.pixels.iter().map(|row| row.iter()).flatten())
+                .all(|(p, sp)| !sp || *p)
+        })
+        .map(|(y, x)| (x, y))
+        .collect()
+    }
+
+    fn subtract(&mut self, point: &(usize, usize), image: &Self) {
+        let mut slice = self.slice_mut(point, image.width, image.height);
+        for (p, sp) in slice
+            .iter_mut()
+            .map(|row| row.iter_mut())
+            .flatten()
+            .zip(image.pixels.iter().map(|row| row.iter()).flatten())
+        {
+            if *sp {
+                *p = false;
+            }
+        }
+    }
+}
 
 #[derive(Debug)]
 struct Tile {
@@ -286,58 +350,39 @@ impl FromStr for Tile {
     type Err = AocError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (id, rows) = map::<_, _, _, ParseError, _, _>(
+        let (id, full_image) = map::<_, _, _, ParseError, _, _>(
             pair(
                 delimited(tag("Tile "), digit1, pair(tag(":"), line_ending)),
-                separated_list1(line_ending, many1(one_of(".#"))),
+                Image::<bool>::parser,
             ),
-            |(ids, lv): (&str, Vec<Vec<char>>)| (ids.parse().unwrap(), lv),
+            |(ids, img)| (ids.parse().unwrap(), img),
         )(s)
         .finish()
         .discard_input()?;
 
         // Verify the tile dimensions
-        let size = rows[0].len();
-        if size < 3 {
+        let size = full_image.width;
+        if size != full_image.height || size < 3 {
             return Err(AocError::InvalidInput(format!(
-                "Tile {} must be at least 3x3",
+                "Tile {} must be square with at least a size of 3x3",
                 id
             )));
-        }
-        if rows.len() != size {
-            return Err(AocError::InvalidInput(format!(
-                "Tile {} did not have the expected height of {}",
-                id, size
-            )));
-        }
-        if rows.iter().any(|v| v.len() != size) {
-            return Err(AocError::InvalidInput(format!(
-                "Not all rows of tile {} have the expected width of {}",
-                id, size
-            )));
-        }
-
-        // Converts iterator of chars to boolean pixels
-        fn convert<'a>(
-            iter: impl Iterator<Item = &'a char> + 'a,
-        ) -> impl Iterator<Item = bool> + 'a {
-            iter.map(|c| *c == '#')
         }
 
         // Create image of interior
         let mut image = Image::new(size - 2, size - 2);
         image.set(
-            rows[1..size - 1]
+            full_image.pixels[1..size - 1]
                 .iter()
-                .map(|row| convert(row[1..size - 1].iter())),
+                .map(|row| row[1..size - 1].iter().copied()),
         );
 
         // Pull out the edges
         let edges: EnumMap<_, Vec<bool>> = enum_map! {
-            Edge::Top => convert(rows[0].iter()).collect(),
-            Edge::Bottom => convert(rows.last().unwrap().iter()).collect(),
-            Edge::Left => convert(rows.iter().map(|v| &v[0])).collect(),
-            Edge::Right => convert(rows.iter().map(|v| v.last().unwrap())).collect(),
+            Edge::Top => full_image.pixels[0].iter().copied().collect(),
+            Edge::Bottom => full_image.pixels.last().unwrap().iter().copied().collect(),
+            Edge::Left => full_image.pixels.iter().map(|row| row[0]).collect(),
+            Edge::Right => full_image.pixels.iter().map(|row| *row.last().unwrap()).collect(),
         };
         let mut edges_reversed = EnumMap::default();
         for (k, v) in edges.iter() {
@@ -628,11 +673,33 @@ pub const SOLUTION: Solution = Solution {
             let solver: Solver = input.parse()?;
 
             // Process
-            let map = solver.solve()?;
-            println!("{}", map);
-            println!("{}", map.stitched_image()?.flip_hor().rot_90());
+            let image = solver.solve()?.stitched_image()?;
+            let sea_monster: Image<bool> = Image::from_str(
+                "                  # 
+#    ##    ##    ###
+ #  #  #  #  #  #   ",
+            )?;
 
-            Ok(0)
+            for transform in Transform::iter() {
+                let mut image = image.transformed(transform);
+                let found_coords = image.search(&sea_monster);
+                if !found_coords.is_empty() {
+                    // Subtract out the sea monster points
+                    for point in found_coords {
+                        image.subtract(&point, &sea_monster)
+                    }
+
+                    // Count the rough spots
+                    return Ok(image
+                        .pixels
+                        .iter()
+                        .map(|row| row.iter().copied())
+                        .flatten()
+                        .filter_count(|p| *p));
+                }
+            }
+
+            Err(AocError::Process("No sea monsters found!".to_string()))
         },
     ],
 };
