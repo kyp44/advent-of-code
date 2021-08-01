@@ -93,7 +93,7 @@ impl Password {
                     .chars()
                     .nth(($v - 1).try_into().unwrap())
                     .unwrap()
-                    == self.policy.character;
+                    == self.policy.character
             };
         }
         let a = check!(self.policy.a);
