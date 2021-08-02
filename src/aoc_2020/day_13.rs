@@ -1,3 +1,4 @@
+use crate::aoc::prelude::*;
 use itertools::Itertools;
 use nom::{
     bytes::complete::{is_not, tag},
@@ -9,30 +10,29 @@ use nom::{
 use num::integer::gcd;
 use std::convert::TryInto;
 
-use crate::aoc::{AocError, ParseResult, Parseable, Solution};
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![1895, 840493039281088],
+    vec![Number(1895), Number(840493039281088)],
     "939
     7,13,x,x,59,x,31,19",
-        vec![Some(295), Some(1068781)],
+        vec![295, 1068781].answer_vec(),
         "0
     67,7,59,61",
-        vec![None, Some(754018)],
+        vec![None, Some(Number(754018))],
         "0
     67,x,7,59,61",
-        vec![None, Some(779210)],
+        vec![None, Some(Number(779210))],
         "0
     67,7,x,59,61",
-        vec![None, Some(1261476)],
+        vec![None, Some(Number(1261476))],
         "0
     1789,37,47,1889",
-        vec![None, Some(1202161486)]
+        vec![None, Some(Number(1202161486))]
     }
 }
 
@@ -43,7 +43,7 @@ struct Schedule {
 }
 
 impl Parseable<'_> for Schedule {
-    fn parser(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self> {
         map(
             separated_pair(
                 digit1,
@@ -108,7 +108,7 @@ pub const SOLUTION: Solution = Solution {
                 .valid_ids()
                 .min_by(|a, b| time_until(a).cmp(&time_until(b)))
                 .unwrap();
-            Ok(bus_id * time_until(&bus_id))
+            Ok((bus_id * time_until(&bus_id)).into())
         },
         // Part b)
         |input| {
@@ -156,7 +156,7 @@ pub const SOLUTION: Solution = Solution {
                     }
                 }
             }
-            Ok(t)
+            Ok(t.into())
         },
     ],
 };

@@ -1,3 +1,4 @@
+use crate::aoc::prelude::*;
 use std::{collections::HashSet, hash::Hash, ops::RangeInclusive};
 
 use nom::{
@@ -9,17 +10,14 @@ use nom::{
     Finish,
 };
 
-use crate::aoc::{
-    AocError, AocResult, DiscardInput, ParseError, ParseResult, Parseable, Sections, Solution,
-};
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![29851, 3029180675981],
+    vec![Number(29851), Number(3029180675981)],
 "class: 1-3 or 5-7
 row: 6-11 or 33-44
 seat: 13-40 or 45-50
@@ -33,7 +31,7 @@ nearby tickets:
 55,2,20
 38,6,12",
     // Solution: row, class, seat
-    vec![Some(71), None],
+    vec![Some(Number(71)), None],
     "class: 0-1 or 4-19
 row: 0-5 or 8-19
 seat: 0-13 or 16-19
@@ -46,7 +44,7 @@ nearby tickets:
 15,1,5
 5,14,9",
     // Solution: row, class, seat
-    vec![None, Some(1)]
+    vec![None, Some(Number(1))]
     }
 }
 
@@ -56,7 +54,7 @@ struct Field {
     valid_ranges: Vec<RangeInclusive<u32>>,
 }
 impl Parseable<'_> for Field {
-    fn parser(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self> {
         map(
             separated_pair(
                 is_not(":"),
@@ -95,7 +93,7 @@ struct Ticket {
 }
 
 impl Parseable<'_> for Ticket {
-    fn parser(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self> {
         Ok((
             "",
             Ticket {
@@ -137,14 +135,14 @@ impl Problem {
         verify_fields("Your", &your_ticket)?;
 
         // Parse nearby tickets and verify the number of fields
-        let result: ParseResult<_> =
+        let result: NomParseResult<_> =
             preceded(pair(tag("nearby tickets:"), multispace1), rest)(sections[2]);
         let nearby_tickets = result
             .finish()
             .discard_input()?
             .lines()
             .map(|l| Ticket::from_str(l))
-            .collect::<Result<Vec<Ticket>, ParseError>>()?;
+            .collect::<Result<Vec<Ticket>, NomParseError>>()?;
         for ticket in nearby_tickets.iter() {
             verify_fields("A nearby", ticket)?;
         }
@@ -258,7 +256,9 @@ pub const SOLUTION: Solution = Solution {
             let problem = Problem::from_str(input)?;
 
             // Process
-            Ok(problem.all_invalid_fields().sum::<u32>().into())
+            Ok(Answer::Number(
+                problem.all_invalid_fields().sum::<u32>().into(),
+            ))
         },
         // Part b)
         |input| {
@@ -281,7 +281,8 @@ pub const SOLUTION: Solution = Solution {
                     }
                 })
                 .map(|v| -> u64 { v.into() })
-                .product::<u64>())
+                .product::<u64>()
+                .into())
         },
     ],
 };

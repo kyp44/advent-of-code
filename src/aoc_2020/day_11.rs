@@ -1,4 +1,4 @@
-use crate::aoc::{AocError, AocResult, FilterCount, Solution};
+use crate::aoc::prelude::*;
 use itertools::iproduct;
 use rayon::prelude::*;
 use std::{collections::HashSet, convert::TryInto, fmt::Display, hash::Hash, str::FromStr};
@@ -7,9 +7,10 @@ use std::{collections::HashSet, convert::TryInto, fmt::Display, hash::Hash, str:
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![2483, 2285],
+    vec![Number(2483), Number(2285)],
     "L.LL.LL.LL
 LLLLLLL.LL
 L.L.L..L..
@@ -20,7 +21,7 @@ L.LLLLL.LL
 LLLLLLLLLL
 L.LLLLLL.L
 L.LLLLL.LL",
-        vec![Some(37), Some(26)]
+        vec![37, 26].answer_vec()
     }
 }
 
@@ -304,9 +305,9 @@ impl Area {
     }
 }
 
-fn check_simulation(status: SimulationStatus<Area>) -> AocResult<u64> {
+fn check_simulation(status: SimulationStatus<Area>) -> AocResult<Answer> {
     match status {
-        SimulationStatus::Stable(a) => Ok(a.occupied()),
+        SimulationStatus::Stable(a) => Ok(a.occupied().into()),
         SimulationStatus::Infinite(_) => Err(AocError::Process(
             "Simulation did not reach a steady state".to_string(),
         )),

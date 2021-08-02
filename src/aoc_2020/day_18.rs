@@ -1,5 +1,5 @@
-use std::cmp::Ordering;
-
+use crate::aoc::prelude::*;
+use crate::aoc::trim;
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -7,28 +7,28 @@ use nom::{
     combinator::{all_consuming, map},
     multi::many1,
 };
-
-use crate::aoc::{trim, AocError, AocResult, ParseResult, Parseable, Solution};
+use std::cmp::Ordering;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![464478013511, 85660197232452],
+    vec![Number(464478013511), Number(85660197232452)],
     "1 + 2 * 3 + 4 * 5 + 6",
-    vec![Some(71), Some(231)],
+    vec![71, 231].answer_vec(),
     "1 + (2 * 3) + (4 * (5 + 6))",
-    vec![Some(51), Some(51)],
+    vec![51, 51].answer_vec(),
     "2 * 3 + (4 * 5)",
-    vec![Some(26), Some(46)],
+    vec![26, 46].answer_vec(),
     "5 + (8 * 3 + 9 + 3 * 4 * 3)",
-    vec![Some(437), Some(1445)],
+    vec![437, 1445].answer_vec(),
     "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))",
-    vec![Some(12240), Some(669060)],
+    vec![12240, 669060].answer_vec(),
     "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2",
-    vec![Some(13632), Some(23340)]
+    vec![13632, 23340].answer_vec()
     }
 }
 
@@ -91,7 +91,7 @@ struct Expression<'a> {
     elements: Vec<Element>,
 }
 impl<'a> Parseable<'a> for Expression<'a> {
-    fn parser(input: &'a str) -> ParseResult<Self> {
+    fn parser(input: &'a str) -> NomParseResult<Self> {
         all_consuming(map(
             many1(alt((
                 map(trim(digit1), |ds: &str| {
@@ -212,13 +212,13 @@ impl Expression<'_> {
     }
 }
 
-fn solve<T: Part>(expressions: &[Expression]) -> AocResult<u64> {
+fn solve<T: Part>(expressions: &[Expression]) -> AocResult<Answer> {
     // We have to manually calculate the sum due to the error handling
     let mut s: u64 = 0;
     for e in expressions {
         s += e.evaluate::<T>()?;
     }
-    Ok(s)
+    Ok(s.into())
 }
 
 pub const SOLUTION: Solution = Solution {

@@ -1,6 +1,4 @@
-use crate::aoc::ParseError;
-
-use super::super::aoc::{FilterCount, ParseResult, Solution};
+use crate::aoc::prelude::*;
 use nom::{
     branch::alt,
     bytes::complete::{is_not, tag, take_while_m_n},
@@ -19,9 +17,10 @@ use strum_macros::{EnumIter, EnumString};
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![202, 137],
+    vec![Number(202), Number(137)],
     "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd
 byr:1937 iyr:2017 cid:147 hgt:183cm
 
@@ -35,7 +34,7 @@ hgt:179cm
 
 hcl:#cfa07d eyr:2025 pid:166559648
 iyr:2011 ecl:brn hgt:59in",
-    vec![Some(2), None],
+    vec![Some(Number(2)), None],
     "eyr:1972 cid:100
 hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926
 
@@ -49,7 +48,7 @@ ecl:brn hgt:182cm pid:021572410 eyr:2020 byr:1992 cid:277
 hgt:59cm ecl:zzz
 eyr:2038 hcl:74454a iyr:2023
 pid:3556412378 byr:2007",
-    vec![None, Some(0)],
+    vec![None, Some(Number(0))],
     "pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980
 hcl:#623a2f
 
@@ -62,7 +61,7 @@ pid:545766238 ecl:hzl
 eyr:2022
 
 iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719",
-    vec![None, Some(4)]
+    vec![None, Some(Number(4))]
     }
 }
 
@@ -103,7 +102,7 @@ impl PassportField {
                 Err(_) => false,
             },
             Height => {
-                let res: ParseResult<(&str, &str)> =
+                let res: NomParseResult<(&str, &str)> =
                     all_consuming(pair(digit1, alt((tag("cm"), tag("in")))))(value);
                 match res {
                     Ok((_, (h, u))) => {
@@ -117,14 +116,14 @@ impl PassportField {
                 }
             }
             HairColor => {
-                let res: ParseResult<&str> = all_consuming(preceded(
+                let res: NomParseResult<&str> = all_consuming(preceded(
                     tag("#"),
                     take_while_m_n(6, 6, |c: char| c.is_digit(16)),
                 ))(value);
                 res.is_ok()
             }
             EyeColor => {
-                let res: ParseResult<&str> = all_consuming(alt((
+                let res: NomParseResult<&str> = all_consuming(alt((
                     tag("amb"),
                     tag("blu"),
                     tag("brn"),
@@ -136,7 +135,7 @@ impl PassportField {
                 res.is_ok()
             }
             PassportId => {
-                let res: ParseResult<&str> =
+                let res: NomParseResult<&str> =
                     all_consuming(take_while_m_n(9, 9, |c: char| c.is_digit(10)))(value);
                 res.is_ok()
             }
@@ -151,7 +150,7 @@ type Passport<'a> = HashMap<PassportField, &'a str>;
 // beause of annoying lifetime issues that apparently have no solution in Rust.
 // It also could not be implemented as a normal method on Passport since
 // this is a foreign type.
-fn parse_passport<'a>(input: &'a str) -> ParseResult<Passport<'a>> {
+fn parse_passport<'a>(input: &'a str) -> NomParseResult<Passport<'a>> {
     context(
         "passport data",
         map(
@@ -174,7 +173,7 @@ fn parse_passport<'a>(input: &'a str) -> ParseResult<Passport<'a>> {
     )(input)
 }
 
-fn parse_passports(input: &str) -> Result<Vec<Passport>, ParseError> {
+fn parse_passports(input: &str) -> Result<Vec<Passport>, NomParseError> {
     all_consuming(separated_list1(
         tuple((space0, line_ending, space0, line_ending)),
         parse_passport,
@@ -220,7 +219,9 @@ pub const SOLUTION: Solution = Solution {
             let passports = parse_passports(input)?;
 
             // Processing
-            Ok(passports.iter().filter_count(|p| passport_valid_part_a(p)))
+            Ok(Answer::Number(
+                passports.iter().filter_count(|p| passport_valid_part_a(p)),
+            ))
         },
         // Part b)
         |input| {
@@ -228,7 +229,9 @@ pub const SOLUTION: Solution = Solution {
             let passports = parse_passports(input)?;
 
             // Processing
-            Ok(passports.iter().filter_count(|p| passport_valid_part_b(p)))
+            Ok(Answer::Number(
+                passports.iter().filter_count(|p| passport_valid_part_b(p)),
+            ))
         },
     ],
 };

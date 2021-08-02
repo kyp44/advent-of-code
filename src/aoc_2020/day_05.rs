@@ -1,6 +1,4 @@
-use crate::aoc::AocResult;
-
-use super::super::aoc::{ParseResult, Parseable, Solution};
+use crate::aoc::prelude::*;
 use nom::{
     bytes::complete::take_while_m_n,
     combinator::{all_consuming, map},
@@ -12,13 +10,14 @@ use nom::{
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-        vec![970, 587],
+        vec![Number(970), Number(587)],
         "BFFFBBFRRR
 FFFBBBFRRR
 BBFFBBFRLL",
-        vec![Some(820), None]
+        vec![Some(Number(820)), None]
     }
 }
 
@@ -29,14 +28,14 @@ struct Seat {
 }
 
 impl Parseable<'_> for Seat {
-    fn parser(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self> {
         // Creates a parser closure for a letter-coded binary value of a
         // certain number of bits.
         fn binary_parser(
             bit0: char,
             bit1: char,
             len: usize,
-        ) -> impl FnMut(&str) -> ParseResult<u32> {
+        ) -> impl FnMut(&str) -> NomParseResult<u32> {
             move |input| {
                 map(
                     take_while_m_n(len, len, |c: char| c == bit0 || c == bit1),
@@ -87,7 +86,7 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let ids = get_ids(input)?;
 
-            Ok(ids.iter().fold(0, |o, n| o.max(*n)).into())
+            Ok(Answer::Number(ids.iter().fold(0, |o, n| o.max(*n)).into()))
         },
         // Part b)
         |input| {
@@ -101,7 +100,7 @@ pub const SOLUTION: Solution = Solution {
                 Some(id) => *id + 1,
                 None => 0,
             };
-            Ok(missing_id.into())
+            Ok(Answer::Number(missing_id.into()))
         },
     ],
 };

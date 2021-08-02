@@ -1,6 +1,4 @@
-use crate::aoc::AocResult;
-
-use super::super::aoc::{AocError, ParseError, Parseable, Solution};
+use crate::aoc::prelude::*;
 use itertools::Itertools;
 use nom::{
     bytes::complete::tag,
@@ -15,9 +13,10 @@ use std::str::FromStr;
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-        vec![542529149, 75678618],
+        vec![Number(542529149), Number(75678618)],
         "previous: 5
 35
 20
@@ -39,7 +38,7 @@ mod tests {
 277
 309
 576",
-        vec![Some(127), Some(62)]
+        vec![127, 62].answer_vec()
     }
 }
 
@@ -56,7 +55,7 @@ struct XmasPacket {
 }
 
 impl FromStr for XmasPacket {
-    type Err = ParseError;
+    type Err = NomParseError;
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         let (input, previous) = map(
             tuple((tag("previous:"), multispace1, digit1, multispace1)),
@@ -119,7 +118,7 @@ pub const SOLUTION: Solution = Solution {
             let packet: XmasPacket = input.parse()?;
 
             // Processing
-            verify_invalid(&packet)
+            verify_invalid(&packet).map(|n| n.into())
         },
         // Part b)
         |input| {
@@ -131,6 +130,7 @@ pub const SOLUTION: Solution = Solution {
             packet
                 .exploit(invalid_n)
                 .ok_or_else(|| AocError::Process("Could not exploit packet!".to_string()))
+                .map(|n| n.into())
         },
     ],
 };

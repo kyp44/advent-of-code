@@ -1,4 +1,4 @@
-use super::super::aoc::{FilterCount, ParseResult, Parseable, Solution};
+use crate::aoc::prelude::*;
 use nom::{
     bytes::complete::{tag, take},
     character::complete::digit1,
@@ -12,13 +12,14 @@ use std::convert::TryInto;
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-            vec![378, 280],
+            vec![Number(378), Number(280)],
         "1-3 a: abcde
 1-3 b: cdefg
 2-9 c: ccccccccc",
-        vec![Some(2), Some(1)]
+        vec![2, 1].answer_vec()
     }
 }
 
@@ -30,7 +31,7 @@ struct PasswordPolicy {
 }
 
 impl Parseable<'_> for PasswordPolicy {
-    fn parser(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self> {
         context(
             "password policy",
             map(
@@ -56,7 +57,7 @@ struct Password {
 }
 
 impl Parseable<'_> for Password {
-    fn parser(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self> {
         context(
             "password",
             separated_pair(PasswordPolicy::parser, tag(": "), rest),
@@ -112,7 +113,9 @@ pub const SOLUTION: Solution = Solution {
             let passwords = Password::gather(input.lines())?;
 
             // Processing
-            Ok(passwords.iter().filter_count(|p| p.valid_part_a()))
+            Ok(Answer::Number(
+                passwords.iter().filter_count(|p| p.valid_part_a()),
+            ))
         },
         // Part b)
         |input| {
@@ -120,7 +123,9 @@ pub const SOLUTION: Solution = Solution {
             let passwords = Password::gather(input.lines())?;
 
             // Processing
-            Ok(passwords.iter().filter_count(|p| p.valid_part_b()))
+            Ok(Answer::Number(
+                passwords.iter().filter_count(|p| p.valid_part_b()),
+            ))
         },
     ],
 };

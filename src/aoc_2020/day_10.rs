@@ -1,15 +1,14 @@
-use crate::aoc::AocResult;
-
-use super::super::aoc::{AocError, FilterCount, Parseable, Solution};
+use crate::aoc::prelude::*;
 use std::collections::HashMap;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![2100, 16198260678656],
+    vec![Number(2100), Number(16198260678656)],
     "16
 10
 15
@@ -21,7 +20,7 @@ mod tests {
 6
 12
 4",
-    vec![Some(35), Some(8)],
+    vec![35, 8].answer_vec(),
 "28
 33
 18
@@ -53,7 +52,7 @@ mod tests {
 34
 10
 3",
-    vec![Some(220), Some(19208)]
+    vec![220, 19208].answer_vec()
     }
 }
 
@@ -89,7 +88,7 @@ pub const SOLUTION: Solution = Solution {
             }
             // Now get the required diffs
             let count_diffs = |n| -> u64 { diffs.iter().filter_count(|d| **d == n) };
-            Ok(count_diffs(1) * count_diffs(3))
+            Ok((count_diffs(1) * count_diffs(3)).into())
         },
         // Part b)
         |input| {
@@ -119,7 +118,7 @@ pub const SOLUTION: Solution = Solution {
                 last_var = var;
                 //println!("{} {} {}", i, v, var);
             }
-            Ok(last_var)
+            Ok(last_var.into())
         },
     ],
 };

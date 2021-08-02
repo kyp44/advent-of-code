@@ -1,9 +1,7 @@
-use std::str::FromStr;
-use std::{cmp::Ordering, fmt};
-
-use crate::aoc::{
-    AocError, AocResult, DiscardInput, FilterCount, ParseError, ParseResult, Parseable, Solution,
-};
+use crate::aoc::prelude::*;
+use enum_map::{enum_map, Enum, EnumMap};
+use itertools::iproduct;
+use itertools::Itertools;
 use nom::{
     bytes::complete::tag,
     character::complete::{digit1, line_ending, one_of},
@@ -12,10 +10,8 @@ use nom::{
     sequence::{delimited, pair},
     Finish,
 };
-
-use enum_map::{enum_map, Enum, EnumMap};
-use itertools::iproduct;
-use itertools::Itertools;
+use std::str::FromStr;
+use std::{cmp::Ordering, fmt};
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter};
 
@@ -23,9 +19,10 @@ use strum_macros::{Display, EnumIter};
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![83775126454273, 1993],
+    vec![Number(83775126454273), Number(1993)],
     "Tile 2311:
 ..##.#..#.
 ##..#.....
@@ -133,7 +130,7 @@ Tile 3079:
 ..#.###...
 ..#.......
 ..#.###...",
-    vec![Some(20899048083289), Some(273)]
+    vec![20899048083289, 273].answer_vec()
     }
 }
 
@@ -293,7 +290,7 @@ impl fmt::Debug for Image<bool> {
     }
 }
 impl<'a> Parseable<'a> for Image<bool> {
-    fn parser(input: &'a str) -> ParseResult<Self> {
+    fn parser(input: &'a str) -> NomParseResult<Self> {
         map(separated_list1(line_ending, many1(one_of(" .#"))), |rows| {
             let height = rows.len();
             let width = if height > 0 { rows[0].len() } else { 0 };
@@ -350,7 +347,7 @@ impl FromStr for Tile {
     type Err = AocError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (id, full_image) = map::<_, _, _, ParseError, _, _>(
+        let (id, full_image) = map::<_, _, _, NomParseError, _, _>(
             pair(
                 delimited(tag("Tile "), digit1, pair(tag(":"), line_ending)),
                 Image::<bool>::parser,
@@ -665,7 +662,8 @@ pub const SOLUTION: Solution = Solution {
             let size = map.size;
             Ok(iproduct!([0, size - 1], [0, size - 1])
                 .map(|(x, y)| map.get(x, y).unwrap().tile.id)
-                .product())
+                .product::<u64>()
+                .into())
         },
         // Part b)
         |input| {
@@ -690,12 +688,14 @@ pub const SOLUTION: Solution = Solution {
                     }
 
                     // Count the rough spots
-                    return Ok(image
-                        .pixels
-                        .iter()
-                        .map(|row| row.iter().copied())
-                        .flatten()
-                        .filter_count(|p| *p));
+                    return Ok(Answer::Number(
+                        image
+                            .pixels
+                            .iter()
+                            .map(|row| row.iter().copied())
+                            .flatten()
+                            .filter_count(|p| *p),
+                    ));
                 }
             }
 

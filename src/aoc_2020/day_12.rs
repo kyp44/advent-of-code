@@ -1,4 +1,4 @@
-use crate::aoc::{ParseResult, Parseable, Solution};
+use crate::aoc::prelude::*;
 use cgmath::Vector2;
 use nom::{
     character::complete::{digit1, one_of},
@@ -13,15 +13,16 @@ use std::fmt::Debug;
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![2228, 42908],
+    vec![Number(2228), Number(42908)],
     "F10
 N3
 F7
 R90
 F11",
-        vec![Some(25), Some(286)]
+        vec![25, 286].answer_vec()
     }
 }
 
@@ -47,7 +48,7 @@ enum Instruction {
 }
 
 impl Parseable<'_> for Instruction {
-    fn parser(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self> {
         map(pair(one_of("NSEWLRF"), digit1), |(c, n): (char, &str)| {
             use Instruction::*;
             let n: i32 = n.parse().unwrap();
@@ -140,7 +141,9 @@ pub const SOLUTION: Solution = Solution {
             let instructions = Instruction::gather(input.lines())?;
 
             // Process
-            Ok(Ship::follow_ship_instructions(&instructions).manhatten())
+            Ok(Answer::Number(
+                Ship::follow_ship_instructions(&instructions).manhatten(),
+            ))
         },
         // Part b)
         |input| {
@@ -148,7 +151,9 @@ pub const SOLUTION: Solution = Solution {
             let instructions = Instruction::gather(input.lines())?;
 
             // Process
-            Ok(Ship::follow_waypoint_instructions(&instructions, &Vector2::new(10, 1)).manhatten())
+            Ok(Answer::Number(
+                Ship::follow_waypoint_instructions(&instructions, &Vector2::new(10, 1)).manhatten(),
+            ))
         },
     ],
 };

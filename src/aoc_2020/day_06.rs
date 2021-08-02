@@ -1,6 +1,4 @@
-use crate::aoc::AocResult;
-
-use super::super::aoc::{ParseResult, Solution};
+use crate::aoc::prelude::*;
 use nom::{
     branch::alt,
     bytes::complete::is_not,
@@ -17,9 +15,10 @@ use std::{collections::HashSet, convert::TryInto};
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-        vec![6335, 3392],
+        vec![Number(6335), Number(3392)],
         "abc
 
 a
@@ -36,7 +35,7 @@ a
 
 b
 ",
-        vec![Some(11), Some(6)]
+        vec![11, 6].answer_vec()
     }
 }
 
@@ -49,7 +48,7 @@ type Questions = HashSet<char>;
 // probably just more efficient to accept an fn instead (certainly rather than boxing).
 fn make_questions_parser(
     reducer: fn(Questions, Questions) -> Questions,
-) -> impl Fn(&str) -> ParseResult<Questions> {
+) -> impl Fn(&str) -> NomParseResult<Questions> {
     move |input| {
         context(
             "questions",
@@ -69,7 +68,7 @@ fn make_questions_parser(
     }
 }
 
-fn solve(input: &str, reducer: fn(Questions, Questions) -> Questions) -> AocResult<u64> {
+fn solve(input: &str, reducer: fn(Questions, Questions) -> Questions) -> AocResult<Answer> {
     let questions = all_consuming(separated_list1(
         tuple((space0, line_ending, space0, line_ending)),
         make_questions_parser(reducer),
@@ -77,12 +76,14 @@ fn solve(input: &str, reducer: fn(Questions, Questions) -> Questions) -> AocResu
     .finish()
     .map(|(_, pd)| pd)?;
 
-    Ok(questions
-        .iter()
-        .map(|q| q.len())
-        .sum::<usize>()
-        .try_into()
-        .unwrap())
+    Ok(Answer::Number(
+        questions
+            .iter()
+            .map(|q| q.len())
+            .sum::<usize>()
+            .try_into()
+            .unwrap(),
+    ))
 }
 
 pub const SOLUTION: Solution = Solution {

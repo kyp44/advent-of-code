@@ -1,5 +1,6 @@
-use std::collections::HashMap;
-
+use crate::aoc::prelude::*;
+use crate::aoc::trim;
+use itertools::Itertools;
 use nom::{
     branch::alt,
     bytes::complete::{is_not, tag},
@@ -9,19 +10,16 @@ use nom::{
     sequence::{delimited, preceded, separated_pair},
     Finish,
 };
-
-use crate::aoc::{
-    trim, AocError, AocResult, DiscardInput, ParseResult, Parseable, Sections, Solution,
-};
-use itertools::Itertools;
+use std::collections::HashMap;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![149, 332],
+    vec![Number(149), Number(332)],
     "0: 4 1 5
 1: 2 3 | 3 2
 2: 4 4 | 5 5
@@ -34,7 +32,7 @@ bababa
 abbbab
 aaabbb
 aaaabbb",
-    vec![Some(2), None],
+    vec![Some(Number(2)), None],
     "42: 9 14 | 10 1
 9: 14 27 | 1 26
 10: 23 14 | 28 1
@@ -82,7 +80,7 @@ aaaabbaaaabbaaa
 aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
 babaaabbbaaabaababbaabababaaab
 aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba",
-    vec![Some(3), Some(12)]
+    vec![3, 12].answer_vec()
     }
 }
 
@@ -92,7 +90,7 @@ enum Rule<'a> {
     Seq(Vec<Vec<usize>>),
 }
 impl<'a> Parseable<'a> for Rule<'a> {
-    fn parser(input: &'a str) -> ParseResult<Self> {
+    fn parser(input: &'a str) -> NomParseResult<Self> {
         let quote = "\"";
         alt((
             map(
@@ -260,7 +258,7 @@ impl<'a> Problem<'a> {
         })
     }
 
-    fn solve(&self) -> AocResult<u64> {
+    fn solve(&self) -> AocResult<Answer> {
         let mut sum = 0;
 
         //println!("Valid strings:");
@@ -273,7 +271,7 @@ impl<'a> Problem<'a> {
             }
         }
 
-        Ok(sum)
+        Ok(sum.into())
     }
 }
 

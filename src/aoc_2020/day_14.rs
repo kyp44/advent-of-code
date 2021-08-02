@@ -1,5 +1,4 @@
-use std::{collections::HashMap, str::FromStr};
-
+use crate::aoc::prelude::*;
 use itertools::Itertools;
 use nom::{
     branch::alt,
@@ -9,26 +8,26 @@ use nom::{
     multi::many_m_n,
     sequence::{preceded, tuple},
 };
-
-use crate::aoc::{AocError, FilterCount, ParseResult, Parseable, Solution};
+use std::{collections::HashMap, str::FromStr};
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![9967721333886, 4355897790573],
+    vec![Number(9967721333886), Number(4355897790573)],
     "mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
 mem[8] = 11
 mem[7] = 101
 mem[8] = 0",
-        vec![Some(165), None],
+        vec![Some(Number(165)), None],
     "mask = 000000000000000000000000000000X1001X
         mem[42] = 100
         mask = 00000000000000000000000000000000X0XX
         mem[26] = 1",
-    vec![None, Some(208)]
+    vec![None, Some(Number(208))]
     }
 }
 
@@ -77,7 +76,7 @@ enum Operation {
 }
 
 impl Parseable<'_> for Operation {
-    fn parser(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self> {
         alt((
             map(
                 preceded(tag("mask = "), many_m_n(BITS, BITS, one_of("X01"))),
@@ -229,7 +228,7 @@ pub const SOLUTION: Solution = Solution {
             let program: Program = input.parse()?;
 
             // Process
-            Ok(program.execute::<MaskV1>())
+            Ok(program.execute::<MaskV1>().into())
         },
         // Part b)
         |input| {
@@ -237,7 +236,7 @@ pub const SOLUTION: Solution = Solution {
             let program: Program = input.parse()?;
 
             // Process
-            Ok(program.execute::<MaskV2>())
+            Ok(program.execute::<MaskV2>().into())
         },
     ],
 };

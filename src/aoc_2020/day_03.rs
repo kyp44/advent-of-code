@@ -1,13 +1,14 @@
-use super::super::aoc::{AocError, FilterCount, Solution};
+use crate::aoc::prelude::*;
 use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![225, 1115775000],
+    vec![Number(225), Number(1115775000)],
         "..##.......
 #...#...#..
 .#....#..#.
@@ -20,7 +21,7 @@ mod tests {
 #...##....#
 .#..#...#.#
 ",
-        vec![Some(7), Some(336)]
+        vec![7, 336].answer_vec()
     }
 }
 
@@ -128,7 +129,7 @@ pub const SOLUTION: Solution = Solution {
             let map = Map::from_str(input)?;
 
             // Process
-            Ok(count_slope(&map, 3, 1))
+            Ok(count_slope(&map, 3, 1).into())
         },
         // Part b)
         |input| {
@@ -140,7 +141,8 @@ pub const SOLUTION: Solution = Solution {
             Ok(slopes
                 .iter()
                 .map(|(x, y)| count_slope(&map, *x, *y))
-                .product())
+                .product::<u64>()
+                .into())
         },
     ],
 };

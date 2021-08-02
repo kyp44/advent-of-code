@@ -11,12 +11,20 @@ use std::fmt::{Debug, Display, Formatter};
 use std::str::FromStr;
 use std::{fmt, fs};
 
+/// Prelude
+pub mod prelude {
+    pub use super::{
+        Answer, AnswerVec, AocError, AocResult, DiscardInput, FilterCount, NomParseError,
+        NomParseResult, Parseable, Sections, Solution, YearSolutions,
+    };
+}
+
 /// Custom error type for AoC problem functions.
 #[derive(Debug, Clone)]
 pub enum AocError {
     NoYear(u32),
     NoDay(u32),
-    NomParse(ParseError),
+    NomParse(NomParseError),
     InvalidInput(String),
     Process(String),
 }
@@ -32,8 +40,8 @@ impl Display for AocError {
     }
 }
 impl Error for AocError {}
-impl From<ParseError> for AocError {
-    fn from(e: ParseError) -> Self {
+impl From<NomParseError> for AocError {
+    fn from(e: NomParseError) -> Self {
         AocError::NomParse(e)
     }
 }
@@ -44,31 +52,31 @@ pub type AocResult<T> = Result<T, AocError>;
 /// This does not play well with anyhow, which requires that its errors have
 /// static lifetime since the error chain is passed out of main().
 #[derive(Debug, Clone)]
-pub struct ParseError {
+pub struct NomParseError {
     verbose_error: VerboseError<String>,
 }
-impl nom::error::ParseError<&str> for ParseError {
+impl nom::error::ParseError<&str> for NomParseError {
     fn from_error_kind(input: &str, kind: ErrorKind) -> Self {
-        ParseError {
+        NomParseError {
             verbose_error: VerboseError::from_error_kind(input.to_string(), kind),
         }
     }
 
     fn append(input: &str, kind: ErrorKind, other: Self) -> Self {
-        ParseError {
+        NomParseError {
             verbose_error: VerboseError::append(input.to_string(), kind, other.verbose_error),
         }
     }
 }
-impl nom::error::ContextError<&str> for ParseError {}
-impl Display for ParseError {
+impl nom::error::ContextError<&str> for NomParseError {}
+impl Display for NomParseError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         Display::fmt(&self.verbose_error, f)
     }
 }
 
 /// Type containing the result of a nom parsing
-pub type ParseResult<'a, U> = IResult<&'a str, U, ParseError>;
+pub type NomParseResult<'a, U> = IResult<&'a str, U, NomParseError>;
 
 /// Trait for types to be parsable with Nom.
 /// Note that we cannot simply implement FromStr for types that implement this trait
@@ -76,12 +84,12 @@ pub type ParseResult<'a, U> = IResult<&'a str, U, ParseError>;
 /// See here: https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299
 pub trait Parseable<'a> {
     /// Parser function for nom
-    fn parser(input: &'a str) -> ParseResult<Self>
+    fn parser(input: &'a str) -> NomParseResult<Self>
     where
         Self: Sized;
 
     /// Runs the parser and gets the result, stripping out the input from the nom parser
-    fn from_str(input: &'a str) -> Result<Self, ParseError>
+    fn from_str(input: &'a str) -> Result<Self, NomParseError>
     where
         Self: Sized,
     {
@@ -89,16 +97,16 @@ pub trait Parseable<'a> {
     }
 
     /// Gathers a vector of items from an iterator with each item being a string to parse
-    fn gather<I>(strs: I) -> Result<Vec<Self>, ParseError>
+    fn gather<I>(strs: I) -> Result<Vec<Self>, NomParseError>
     where
         Self: Sized,
         I: Iterator<Item = &'a str>,
     {
         strs.map(|l| Self::from_str(l))
-            .collect::<Result<Vec<Self>, ParseError>>()
+            .collect::<Result<Vec<Self>, NomParseError>>()
     }
 
-    fn from_csv(input: &'a str) -> Result<Vec<Self>, ParseError>
+    fn from_csv(input: &'a str) -> Result<Vec<Self>, NomParseError>
     where
         Self: Sized,
     {
@@ -108,7 +116,7 @@ pub trait Parseable<'a> {
 
 /// Parseable for simple numbers
 impl<T: Unsigned + FromStr> Parseable<'_> for T {
-    fn parser(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self> {
         map(digit1, |ns: &str| match ns.parse() {
             Ok(v) => v,
             Err(_) => panic!("nom did not parse a numeric value correctly"),
@@ -168,11 +176,28 @@ where
     }
 }
 
+/// Allows for different answer types
+#[derive(Debug, PartialEq, Eq)]
+pub enum Answer {
+    Number(u64),
+    String(String),
+}
+impl From<u64> for Answer {
+    fn from(n: u64) -> Self {
+        Answer::Number(n)
+    }
+}
+impl From<String> for Answer {
+    fn from(s: String) -> Self {
+        Answer::String(s)
+    }
+}
+
 /// Represents the solver for a day's puzzle.
 pub struct Solution {
     pub day: u32,
     pub name: &'static str,
-    pub solvers: &'static [fn(&str) -> AocResult<u64>],
+    pub solvers: &'static [fn(&str) -> AocResult<Answer>],
 }
 impl Solution {
     /// Constructs the title
@@ -181,7 +206,7 @@ impl Solution {
     }
 
     /// Reads the input, runs the solvers, and outputs the answer(s).
-    pub fn run(&self, year: u32) -> anyhow::Result<Vec<u64>> {
+    pub fn run(&self, year: u32) -> anyhow::Result<Vec<Answer>> {
         // Read input for the problem
         let input_path = format!("input/{}/day_{:02}.txt", year, self.day);
         let input = fs::read_to_string(&input_path)
@@ -191,14 +216,20 @@ impl Solution {
             .solvers
             .iter()
             .map(|s| s(&input).with_context(|| "Problem when running the solution"))
-            .collect::<anyhow::Result<Vec<u64>>>()?;
+            .collect::<anyhow::Result<Vec<Answer>>>()?;
 
         println!("{}", self.title(year));
         for (pc, result) in ('a'..'z').zip(results.iter()) {
             if results.len() > 1 {
                 println!("Part {})", pc);
             }
-            println!("Answer: {}", result);
+            println!(
+                "Answer: {}",
+                match result {
+                    Answer::Number(n) => n.to_string(),
+                    Answer::String(s) => s.to_string(),
+                }
+            );
         }
 
         Ok(results)
@@ -222,14 +253,25 @@ impl YearSolutions {
     }
 }
 
+/// Convenience trait to convert a vector of numbers into numberic answers
+pub trait AnswerVec {
+    fn answer_vec(self) -> Vec<Option<Answer>>;
+}
+impl AnswerVec for Vec<u64> {
+    fn answer_vec(self) -> Vec<Option<Answer>> {
+        self.into_iter().map(|n| Some(Answer::Number(n))).collect()
+    }
+}
+
 /// Compares solution results with a vector
 #[macro_export]
 macro_rules! solution_results {
     ($input:literal, $exp: expr) => {
         let input = $input;
+        let vans: Vec<Option<Answer>> = $exp;
 
-        for (solver, vopt) in SOLUTION.solvers.iter().zip($exp) {
-            if let Some(v) = vopt {
+        for (solver, ans) in SOLUTION.solvers.iter().zip(vans) {
+            if let Some(v) = ans {
                 assert_eq!(solver(&input).unwrap(), v);
             }
         }

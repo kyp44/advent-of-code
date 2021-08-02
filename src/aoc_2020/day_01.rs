@@ -1,13 +1,14 @@
-use super::super::aoc::{AocError, Parseable, Solution};
+use crate::aoc::prelude::*;
 use itertools::Itertools;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![63616, 67877784],
+    vec![Number(63616), Number(67877784)],
         "1721
 979
 366
@@ -15,7 +16,7 @@ mod tests {
 675
 1456
 ",
-        vec![Some(514579), Some(241861950)]
+        vec![514579, 241861950].answer_vec()
     }
 }
 
@@ -36,7 +37,7 @@ pub const SOLUTION: Solution = Solution {
                 match i.next() {
                     Some(v) => {
                         if v[0] + v[1] == 2020 {
-                            break Ok((v[0] * v[1]).into());
+                            break Ok(Answer::Number((v[0] * v[1]).into()));
                         }
                     }
                     None => break Err(AocError::Process("No two values add to 2020".to_string())),
@@ -52,7 +53,7 @@ pub const SOLUTION: Solution = Solution {
             loop {
                 match i.next() {
                     Some(v) if v[0] + v[1] + v[2] == 2020 => {
-                        break Ok((v[0] * v[1] * v[2]).into());
+                        break Ok(Answer::Number((v[0] * v[1] * v[2]).into()));
                     }
                     None => {
                         break Err(AocError::Process("No three values add to 2020".to_string()));

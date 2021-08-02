@@ -1,5 +1,4 @@
-use std::convert::TryInto;
-
+use crate::aoc::prelude::*;
 use nom::{
     bytes::complete::tag,
     character::complete::{digit1, space0},
@@ -7,34 +6,34 @@ use nom::{
     multi::separated_list1,
     sequence::tuple,
 };
-
-use crate::aoc::{ParseResult, Parseable, Solution};
+use std::convert::TryInto;
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::expensive_test;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![1428, 3718541],
+    vec![Number(1428), Number(3718541)],
     "0,3,6",
-    vec![Some(436), Some(175594)]
+    vec![436, 175594].answer_vec()
     }
 
     expensive_test! {
     "1,3,2",
-    vec![Some(1), Some(2578)],
+    vec![1, 2578].answer_vec(),
     "2,1,3",
-    vec![Some(10), Some(3544142)],
+    vec![10, 3544142].answer_vec(),
     "1,2,3",
-    vec![Some(27), Some(261214)],
+    vec![27, 261214].answer_vec(),
     "2,3,1",
-    vec![Some(78), Some(6895259)],
+    vec![78, 6895259].answer_vec(),
     "3,2,1",
-    vec![Some(438), Some(18)],
+    vec![438, 18].answer_vec(),
     "3,1,2",
-    vec![Some(1836), Some(362)]
+    vec![1836, 362].answer_vec()
     }
 }
 
@@ -43,7 +42,7 @@ struct Game {
 }
 
 impl Parseable<'_> for Game {
-    fn parser(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self> {
         map(
             separated_list1(tuple((space0, tag(","), space0)), digit1),
             |v: Vec<&str>| Game {
@@ -104,8 +103,7 @@ pub const SOLUTION: Solution = Solution {
             let game = Game::from_str(input.trim())?;
 
             // Process
-            Ok(game.play(2020))
-            //Ok(game.play(30))
+            Ok(game.play(2020).into())
         },
         // Part b)
         |input| {
@@ -113,7 +111,7 @@ pub const SOLUTION: Solution = Solution {
             let game = Game::from_str(input.trim())?;
 
             // Process
-            Ok(game.play(30000000))
+            Ok(game.play(30000000).into())
         },
     ],
 };

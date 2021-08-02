@@ -1,20 +1,19 @@
-use std::{collections::HashSet, convert::TryInto, fmt::Debug, ops::RangeInclusive};
-
+use crate::aoc::prelude::*;
 use itertools::Itertools;
-
-use crate::aoc::{AocError, AocResult, FilterCount, Solution};
+use std::{collections::HashSet, convert::TryInto, fmt::Debug, ops::RangeInclusive};
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![386, 2276],
+    vec![Number(386), Number(2276)],
     ".#.
 ..#
 ###",
-    vec![Some(112), Some(848)]
+    vec![112, 848].answer_vec()
     }
 }
 
@@ -166,7 +165,9 @@ pub const SOLUTION: Solution = Solution {
             let dimension = Dimension::from_str(3, input)?;
 
             // Process
-            Ok(dimension.run(6).count_active().try_into().unwrap())
+            Ok(Answer::Number(
+                dimension.run(6).count_active().try_into().unwrap(),
+            ))
         },
         // Part b)
         |input| {
@@ -174,7 +175,9 @@ pub const SOLUTION: Solution = Solution {
             let dimension = Dimension::from_str(4, input)?;
 
             // Process
-            Ok(dimension.run(6).count_active().try_into().unwrap())
+            Ok(Answer::Number(
+                dimension.run(6).count_active().try_into().unwrap(),
+            ))
         },
     ],
 };

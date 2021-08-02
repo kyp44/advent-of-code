@@ -1,6 +1,4 @@
-use crate::aoc::AocResult;
-
-use super::super::aoc::{AocError, ParseError, ParseResult, Parseable, Solution};
+use crate::aoc::prelude::*;
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -9,8 +7,7 @@ use nom::{
     error::context,
     sequence::{pair, separated_pair},
 };
-use std::iter::Enumerate;
-use std::iter::Filter;
+use std::iter::{Enumerate, Filter};
 use std::slice::Iter;
 use std::str::FromStr;
 use std::{collections::HashSet, convert::TryInto};
@@ -19,9 +16,10 @@ use std::{collections::HashSet, convert::TryInto};
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![1087, 780],
+    vec![Number(1087), Number(780)],
         "nop +0
 acc +1
 jmp +4
@@ -31,7 +29,7 @@ acc -99
 acc +1
 jmp -4
 acc +6",
-        vec![Some(5), Some(8)]
+        vec![5, 8].answer_vec()
     }
 }
 
@@ -43,7 +41,7 @@ enum Instruction {
 }
 
 impl Parseable<'_> for Instruction {
-    fn parser(input: &str) -> ParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self> {
         context(
             "instruction",
             map(
@@ -83,7 +81,7 @@ struct Program {
 }
 
 impl FromStr for Program {
-    type Err = ParseError;
+    type Err = NomParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Program {
             instructions: Instruction::gather(s.lines())?,
@@ -187,15 +185,17 @@ pub const SOLUTION: Solution = Solution {
             let program: Program = input.parse()?;
 
             // Processing
-            Ok(match program.execute() {
-                ProgramEndStatus::Infinite(acc) => check_acc(acc)?,
-                _ => {
-                    return Err(AocError::Process(
-                        "Program execution did not result in an infinite loop".to_string(),
-                    ));
+            Ok(Answer::Number(
+                match program.execute() {
+                    ProgramEndStatus::Infinite(acc) => check_acc(acc)?,
+                    _ => {
+                        return Err(AocError::Process(
+                            "Program execution did not result in an infinite loop".to_string(),
+                        ));
+                    }
                 }
-            }
-            .into())
+                .into(),
+            ))
         },
         // Part b)
         |input| {
@@ -210,9 +210,13 @@ pub const SOLUTION: Solution = Solution {
                     break;
                 }
             }
-            Ok(terminated_acc
-                .ok_or_else(|| AocError::Process("No modified programs terminated!".to_string()))?
-                .into())
+            Ok(Answer::Number(
+                terminated_acc
+                    .ok_or_else(|| {
+                        AocError::Process("No modified programs terminated!".to_string())
+                    })?
+                    .into(),
+            ))
         },
     ],
 };

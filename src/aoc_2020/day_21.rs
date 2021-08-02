@@ -1,10 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    convert::TryInto,
-    rc::Rc,
-    str::FromStr,
-};
-
+use crate::aoc::prelude::*;
 use itertools::iproduct;
 use nom::{
     bytes::complete::tag,
@@ -13,21 +7,26 @@ use nom::{
     multi::separated_list1,
     sequence::{delimited, pair},
 };
-
-use crate::aoc::{AocError, Parseable, Solution};
+use std::{
+    collections::{HashMap, HashSet},
+    convert::TryInto,
+    rc::Rc,
+    str::FromStr,
+};
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::solution_test;
+    use Answer::Number;
 
     solution_test! {
-    vec![2287],
+    vec![Number(2287)],
     "mxmxvkd kfcds sqjhc nhms (contains dairy, fish)
 trh fvjkl sbzzf mxmxvkd (contains dairy)
 sqjhc fvjkl (contains soy)
 sqjhc mxmxvkd sbzzf (contains fish)",
-    vec![Some(5)]
+    vec![Some(Number(5)), Some(Answer::String("mxmxvkd,sqjhc,fvjkl".to_string()))]
     }
 }
 
@@ -37,7 +36,7 @@ struct Food {
     allergens: HashSet<Rc<String>>,
 }
 impl Parseable<'_> for Food {
-    fn parser(input: &str) -> crate::aoc::ParseResult<Self> {
+    fn parser(input: &str) -> crate::aoc::NomParseResult<Self> {
         map(
             pair(
                 separated_list1(space1, alphanumeric1),
@@ -56,6 +55,12 @@ impl Parseable<'_> for Food {
             },
         )(input)
     }
+}
+
+type ProblemStr = Rc<String>;
+struct PartialSolution {
+    possibilities: HashMap<ProblemStr, HashSet<ProblemStr>>,
+    safe_ingredients: HashSet<ProblemStr>,
 }
 
 // NOTE: Tried to originally have the HashSets own the Strings
@@ -90,28 +95,24 @@ impl FromStr for Problem {
     }
 }
 impl Problem {
-    fn solve(&self) -> u64 {
-        fn slices(set: &HashSet<Rc<String>>) -> impl Iterator<Item = &str> {
-            set.iter().map(|rc| rc.as_str())
-        }
-
+    fn partial_solve(&self) -> PartialSolution {
         // First setup up a map of each allergen to possible ingredients,
         // initializing to every ingredient.
-        let all_ingredients: HashSet<&str> = slices(&self.ingredients).collect();
-        let mut possibilities: HashMap<&str, HashSet<&str>> = slices(&self.allergens)
-            .map(|al| (al, all_ingredients.clone()))
+        let mut possibilities: HashMap<ProblemStr, HashSet<ProblemStr>> = self
+            .allergens
+            .iter()
+            .map(|al| (al.clone(), self.ingredients.clone()))
             .collect();
 
         // Now remove ingredients that cannot contain the allergen based on
         // the food list.
-        for (allergen, food) in iproduct!(slices(&self.allergens), self.foods.iter()) {
-            let ingredients = slices(&food.ingredients).collect();
-            if slices(&food.allergens).any(|a| a == allergen) {
+        for (allergen, food) in iproduct!(self.allergens.iter(), self.foods.iter()) {
+            if food.allergens.contains(allergen) {
                 possibilities.insert(
-                    allergen,
+                    allergen.clone(),
                     possibilities[allergen]
-                        .intersection(&ingredients)
-                        .copied()
+                        .intersection(&food.ingredients)
+                        .cloned()
                         .collect(),
                 );
             }
@@ -119,28 +120,38 @@ impl Problem {
 
         // Now determine those ingredients that do not appear in the
         // possibilities for any allergen.
-        let unsafe_ingredients: HashSet<&str> = possibilities
+        let unsafe_ingredients = possibilities
             .values()
             .map(|ings| ings.iter())
             .flatten()
-            .copied()
+            .cloned()
             .collect();
-        let safe_ingredients: HashSet<&str> = all_ingredients
+        let safe_ingredients = self
+            .ingredients
             .difference(&unsafe_ingredients)
-            .copied()
+            .cloned()
             .collect();
 
-        // Finally, count the number of times these appear in the ingedients list.
-        self.foods
-            .iter()
-            .map(|food| {
-                safe_ingredients
-                    .intersection(&slices(&food.ingredients).collect())
-                    .count()
-            })
-            .sum::<usize>()
-            .try_into()
-            .unwrap()
+        PartialSolution {
+            possibilities,
+            safe_ingredients,
+        }
+    }
+
+    fn finish_solve(&self, partial_solution: PartialSolution) -> HashMap<ProblemStr, ProblemStr> {
+        let mut final_ingredients = HashMap::new();
+
+        // Lastly, we repeatly pare down the possibilities when allergens
+        // have only a single possible ingredient
+        for allergen in partial_solution.possibilities.keys() {
+            let ingredients = &mut partial_solution.possibilities[allergen];
+
+            if ingredients.len() == 1 {
+                final_ingredients.insert(allergen.clone(), ingredients.drain().next().unwrap());
+            }
+        }
+
+        final_ingredients
     }
 }
 
@@ -154,7 +165,36 @@ pub const SOLUTION: Solution = Solution {
             let problem = Problem::from_str(input)?;
 
             // Process
-            Ok(problem.solve())
+            let partial_solution = problem.partial_solve();
+
+            println!("TODO: {:?}", partial_solution.possibilities);
+            println!("TODO: {:?}", partial_solution.safe_ingredients);
+
+            // Finally, count the number of times these appear in the ingedients list.
+            /*Ok(Answer::Number(
+                    problem
+                        .foods
+                        .iter()
+                        .map(|food| {
+                            partial_solution
+                                .safe_ingredients
+                                .intersection(&Problem::slices(&food.ingredients).collect())
+                                .count()
+                        })
+                        .sum::<usize>()
+                        .try_into()
+                        .unwrap(),
+            ))*/
+            Ok(0.into())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let problem = Problem::from_str(input)?;
+
+            // Process
+            //let full_solution = problem.finish_solve(problem.partial_solve());
+            Ok(Answer::String("giggles".to_string()))
         },
     ],
 };
