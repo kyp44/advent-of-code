@@ -1,5 +1,5 @@
 use crate::aoc::prelude::*;
-use itertools::iproduct;
+use itertools::{iproduct, Itertools};
 use nom::{
     bytes::complete::tag,
     character::complete::{alphanumeric1, space1},
@@ -21,7 +21,7 @@ mod tests {
     use Answer::Number;
 
     solution_test! {
-    vec![Number(2287)],
+    vec![Number(2287), Answer::String("fntg,gtqfrp,xlvrggj,rlsr,xpbxbv,jtjtrd,fvjkp,zhszc".to_string())],
     "mxmxvkd kfcds sqjhc nhms (contains dairy, fish)
 trh fvjkl sbzzf mxmxvkd (contains dairy)
 sqjhc fvjkl (contains soy)
@@ -81,7 +81,7 @@ impl FromStr for Problem {
         fn convert(foods: &[Food], f: fn(&Food) -> &HashSet<Rc<String>>) -> HashSet<Rc<String>> {
             foods
                 .iter()
-                .map(|food| f(food).iter().map(|i| i.clone()))
+                .map(|food| f(food).iter().cloned())
                 .flatten()
                 .collect()
         }
@@ -138,20 +138,44 @@ impl Problem {
         }
     }
 
-    fn finish_solve(&self, partial_solution: PartialSolution) -> HashMap<ProblemStr, ProblemStr> {
+    fn finish_solve(
+        &self,
+        mut partial_solution: PartialSolution,
+    ) -> Option<HashMap<ProblemStr, ProblemStr>> {
         let mut final_ingredients = HashMap::new();
 
         // Lastly, we repeatly pare down the possibilities when allergens
         // have only a single possible ingredient
-        for allergen in partial_solution.possibilities.keys() {
-            let ingredients = &mut partial_solution.possibilities[allergen];
+        loop {
+            let mut changed = false;
+            for allergen in self.allergens.iter() {
+                let ingredients = partial_solution.possibilities.get_mut(allergen).unwrap();
 
-            if ingredients.len() == 1 {
-                final_ingredients.insert(allergen.clone(), ingredients.drain().next().unwrap());
+                // If there is only one then set it in our final map
+                if ingredients.len() == 1 {
+                    final_ingredients.insert(allergen.clone(), ingredients.drain().next().unwrap());
+                    changed = true;
+                }
+
+                // Now remove all known ingredients
+                for ingredient in final_ingredients.values() {
+                    if ingredients.remove(ingredient) {
+                        changed = true;
+                    }
+                }
+            }
+
+            // If there was no change on this iteration then we are done
+            if !changed {
+                break;
             }
         }
 
-        final_ingredients
+        if final_ingredients.len() == partial_solution.possibilities.len() {
+            Some(final_ingredients)
+        } else {
+            None
+        }
     }
 }
 
@@ -167,25 +191,21 @@ pub const SOLUTION: Solution = Solution {
             // Process
             let partial_solution = problem.partial_solve();
 
-            println!("TODO: {:?}", partial_solution.possibilities);
-            println!("TODO: {:?}", partial_solution.safe_ingredients);
-
             // Finally, count the number of times these appear in the ingedients list.
-            /*Ok(Answer::Number(
-                    problem
-                        .foods
-                        .iter()
-                        .map(|food| {
-                            partial_solution
-                                .safe_ingredients
-                                .intersection(&Problem::slices(&food.ingredients).collect())
-                                .count()
-                        })
-                        .sum::<usize>()
-                        .try_into()
-                        .unwrap(),
-            ))*/
-            Ok(0.into())
+            Ok(Answer::Number(
+                problem
+                    .foods
+                    .iter()
+                    .map(|food| {
+                        partial_solution
+                            .safe_ingredients
+                            .intersection(&food.ingredients)
+                            .count()
+                    })
+                    .sum::<usize>()
+                    .try_into()
+                    .unwrap(),
+            ))
         },
         // Part b)
         |input| {
@@ -193,8 +213,16 @@ pub const SOLUTION: Solution = Solution {
             let problem = Problem::from_str(input)?;
 
             // Process
-            //let full_solution = problem.finish_solve(problem.partial_solve());
-            Ok(Answer::String("giggles".to_string()))
+            let solution = problem
+                .finish_solve(problem.partial_solve())
+                .ok_or_else(|| AocError::Process("No solution found!".to_string()))?;
+
+            Ok(solution
+                .iter()
+                .sorted_by(|(a1, _), (a2, _)| a1.cmp(a2))
+                .map(|(_, i)| i)
+                .join(",")
+                .into())
         },
     ],
 };
