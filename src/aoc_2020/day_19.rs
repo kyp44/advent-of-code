@@ -116,7 +116,7 @@ impl<'a> Parseable<'a> for Rule<'a> {
 }
 
 trait Part {
-    fn fix_rule(_num: usize, rule: Rule) -> Rule {
+    fn fix_rule<'a>(&self, _num: usize, rule: Rule<'a>) -> Rule<'a> {
         rule
     }
 }
@@ -124,7 +124,7 @@ struct PartA;
 impl Part for PartA {}
 struct PartB;
 impl Part for PartB {
-    fn fix_rule(num: usize, rule: Rule) -> Rule {
+    fn fix_rule<'a>(&self, num: usize, rule: Rule<'a>) -> Rule<'a> {
         match num {
             8 => Rule::Seq(vec![vec![42], vec![42, 8]]),
             11 => Rule::Seq(vec![vec![42, 31], vec![42, 11, 31]]),
@@ -138,14 +138,14 @@ struct RuleSet<'a> {
     rules: HashMap<usize, Rule<'a>>,
 }
 impl<'a> RuleSet<'a> {
-    fn from_str<P: Part>(s: &'a str) -> AocResult<Self> {
+    fn from_str(s: &'a str, part: &dyn Part) -> AocResult<Self> {
         let mut rules = HashMap::new();
         for line in s.lines() {
             let (ns, rule) = separated_pair(digit1, tag(":"), Rule::parser)(line)
                 .finish()
                 .discard_input()?;
             let n: usize = ns.parse().unwrap();
-            if rules.insert(n, P::fix_rule(n, rule)).is_some() {
+            if rules.insert(n, part.fix_rule(n, rule)).is_some() {
                 return Err(AocError::InvalidInput(format!(
                     "There is a duplicate for rule {}",
                     ns
@@ -250,10 +250,10 @@ struct Problem<'a> {
     strings: Vec<&'a str>,
 }
 impl<'a> Problem<'a> {
-    fn from_str<P: Part>(s: &'a str) -> AocResult<Self> {
+    fn from_str(s: &'a str, part: &dyn Part) -> AocResult<Self> {
         let secs = s.sections(2)?;
         Ok(Problem {
-            rule_set: RuleSet::from_str::<P>(secs[0])?,
+            rule_set: RuleSet::from_str(secs[0], part)?,
             strings: secs[1].lines().collect(),
         })
     }
@@ -282,7 +282,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let problem = Problem::from_str::<PartA>(input)?;
+            let problem = Problem::from_str(input, &PartA)?;
 
             // Process
             problem.solve()
@@ -290,7 +290,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let problem = Problem::from_str::<PartB>(input)?;
+            let problem = Problem::from_str(input, &PartB)?;
 
             // Process
             problem.solve()

@@ -45,17 +45,17 @@ impl Operator {
         }
     }
 
-    fn cmp<P: Part>(&self, other: &Operator) -> Ordering {
-        P::precedence(self).cmp(&P::precedence(other))
+    fn cmp(&self, other: &Operator, part: &dyn Part) -> Ordering {
+        part.precedence(self).cmp(&part.precedence(other))
     }
 }
 
 trait Part {
-    fn precedence(op: &Operator) -> u8;
+    fn precedence(&self, op: &Operator) -> u8;
 }
 struct PartA;
 impl Part for PartA {
-    fn precedence(op: &Operator) -> u8 {
+    fn precedence(&self, op: &Operator) -> u8 {
         match op {
             Operator::Add => 1,
             Operator::Mul => 1,
@@ -64,7 +64,7 @@ impl Part for PartA {
 }
 struct PartB;
 impl Part for PartB {
-    fn precedence(op: &Operator) -> u8 {
+    fn precedence(&self, op: &Operator) -> u8 {
         match op {
             Operator::Add => 2,
             Operator::Mul => 1,
@@ -145,7 +145,7 @@ impl Expression<'_> {
         }
     }
 
-    fn evaluate<P: Part>(&self) -> AocResult<u64> {
+    fn evaluate(&self, part: &dyn Part) -> AocResult<u64> {
         // First validate
         if !self.is_valid() {
             return Err(AocError::Process(format!(
@@ -177,7 +177,7 @@ impl Expression<'_> {
                 },
                 Element::Operator(op) => {
                     if let Some(Element::Operator(pop)) = stack.last() {
-                        if op.cmp::<P>(pop).is_le() {
+                        if op.cmp(pop, part).is_le() {
                             postfix.push(stack.pop().unwrap());
                         }
                     }
@@ -212,11 +212,11 @@ impl Expression<'_> {
     }
 }
 
-fn solve<T: Part>(expressions: &[Expression]) -> AocResult<Answer> {
+fn solve(expressions: &[Expression], part: &dyn Part) -> AocResult<Answer> {
     // We have to manually calculate the sum due to the error handling
     let mut s: u64 = 0;
     for e in expressions {
-        s += e.evaluate::<T>()?;
+        s += e.evaluate(part)?;
     }
     Ok(s.into())
 }
@@ -231,7 +231,7 @@ pub const SOLUTION: Solution = Solution {
             let expressions = Expression::gather(input.lines())?;
 
             // Process
-            solve::<PartA>(&expressions)
+            solve(&expressions, &PartA)
         },
         // Part b)
         |input| {
@@ -239,7 +239,7 @@ pub const SOLUTION: Solution = Solution {
             let expressions = Expression::gather(input.lines())?;
 
             // Process
-            solve::<PartB>(&expressions)
+            solve(&expressions, &PartB)
         },
     ],
 };

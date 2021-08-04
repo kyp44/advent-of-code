@@ -1,4 +1,4 @@
-use std::{convert::TryInto, str::FromStr};
+use std::{collections::HashSet, convert::TryInto, str::FromStr};
 
 use nom::{
     bytes::complete::tag,
@@ -31,11 +31,20 @@ Player 2:
 4
 7
 10",
-    vec![306].answer_vec()
+    vec![306, 291].answer_vec(),
+    "Player 1:
+43
+19
+
+Player 2:
+2
+29
+14",
+    vec![None, Some(Number(105))]
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Deck {
     player: u8,
     cards: Vec<u8>,
@@ -77,9 +86,30 @@ impl Deck {
             .map(|(x, y)| TryInto::<u64>::try_into(x + 1).unwrap() * Into::<u64>::into(*y))
             .sum()
     }
+
+    fn len(&self) -> usize {
+        self.cards.len()
+    }
+
+    fn new(&self, cards: &[u8]) -> Deck {
+        Deck {
+            player: self.player,
+            cards: cards.iter().copied().collect(),
+        }
+    }
 }
 
-#[derive(Debug)]
+trait Part {}
+struct PartA;
+impl Part for PartA {}
+struct PartB;
+impl Part for PartB {}
+
+trait GamePart<P: Part> {
+    fn play(&mut self) -> &Deck;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct Game {
     player1: Deck,
     player2: Deck,
@@ -111,8 +141,61 @@ impl FromStr for Game {
     }
 }
 impl Game {
-    fn play(&mut self) -> u64 {
-        let winning_cards = loop {
+    fn new(&self, cards1: &[u8], cards2: &[u8]) -> Game {
+        Game {
+            player1: self.player1.new(cards1),
+            player2: self.player2.new(cards2),
+        }
+    }
+
+    fn play_recursive(&mut self, history: &mut HashSet<Game>) -> &Deck {
+        loop {
+            println!("Game: {:?}", self);
+
+            if history.contains(self) {
+                break &self.player1;
+            }
+            if self.player1.done() {
+                break &self.player2;
+            } else if self.player2.done() {
+                break &self.player1;
+            }
+            history.insert(self.clone());
+
+            let c1 = self.player1.draw().unwrap();
+            let c2 = self.player2.draw().unwrap();
+            println!("Player 1 drew: {}, Player 2 drew: {}", c1, c2);
+            let s1 = self.player1.len();
+            let s2 = self.player2.len();
+            if s1 >= c1.into() && s2 >= c2.into() {
+                println!("Starting sub-game:");
+                let mut sub_game = self.new(
+                    &self.player1.cards[(s1 - Into::<usize>::into(c1))..],
+                    &self.player2.cards[(s2 - Into::<usize>::into(c2))..],
+                );
+                if sub_game.play_recursive(history).player == 1 {
+                    self.player1.place_bottom(c1);
+                    self.player1.place_bottom(c2);
+                } else {
+                    self.player2.place_bottom(c2);
+                    self.player2.place_bottom(c1);
+                }
+            } else {
+                if c2 > c1 {
+                    self.player2.place_bottom(c2);
+                    self.player2.place_bottom(c1);
+                } else {
+                    // In the event of a draw (which should never happen), player 1 wins
+                    self.player1.place_bottom(c1);
+                    self.player1.place_bottom(c2);
+                }
+            }
+        }
+    }
+}
+impl GamePart<PartA> for Game {
+    fn play(&mut self) -> &Deck {
+        loop {
             if self.player1.done() {
                 break &self.player2;
             } else if self.player2.done() {
@@ -128,8 +211,13 @@ impl Game {
                 self.player1.place_bottom(c1);
                 self.player1.place_bottom(c2);
             }
-        };
-        winning_cards.score()
+        }
+    }
+}
+impl GamePart<PartB> for Game {
+    fn play(&mut self) -> &Deck {
+        let mut history = HashSet::new();
+        self.play_recursive(&mut history)
     }
 }
 
@@ -143,7 +231,15 @@ pub const SOLUTION: Solution = Solution {
             let mut game: Game = input.parse()?;
 
             // Process
-            Ok(game.play().into())
+            Ok(GamePart::<PartA>::play(&mut game).score().into())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let mut game: Game = input.parse()?;
+
+            // Process
+            Ok(GamePart::<PartB>::play(&mut game).score().into())
         },
     ],
 };

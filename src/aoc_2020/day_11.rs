@@ -106,7 +106,7 @@ where
     }
 }
 
-trait SimulatorPart<T: Part>
+trait SimulatorPart<P: Part>
 where
     Self: Sized + Clone + Simulator + Hash + Eq + Display + Sync,
 {
@@ -133,7 +133,7 @@ where
                                 }
                             }
                             Seat::Occupied => {
-                                if occupied >= T::min_needed_to_vacate() {
+                                if occupied >= P::min_needed_to_vacate() {
                                     Seat::Empty
                                 } else {
                                     orig
