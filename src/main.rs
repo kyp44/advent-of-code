@@ -5,6 +5,7 @@ mod aoc;
 mod aoc_2020;
 
 use aoc::AocError;
+use itertools::Itertools;
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
@@ -33,9 +34,21 @@ fn main() -> anyhow::Result<()> {
 
     if cli.list {
         // List all implemented solutions
-        for year_solutions in all_year_solutions {
-            year_solutions.print_solution_list();
-        }
+        println!(
+            "{}",
+            all_year_solutions
+                .into_iter()
+                .map(|year_solutions| {
+                    let year = year_solutions.year;
+                    format!(
+                        "{}\n{}\n{}",
+                        year,
+                        year.to_string().chars().map(|_| '=').collect::<String>(),
+                        year_solutions.solution_list(),
+                    )
+                })
+                .join("\n")
+        );
     } else {
         // Get solution or produce errors if it is not implemented
         let year = cli.year.unwrap();

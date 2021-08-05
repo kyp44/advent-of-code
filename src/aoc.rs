@@ -1,4 +1,5 @@
 use anyhow::Context;
+use itertools::Itertools;
 use nom::character::complete::space0;
 use nom::sequence::delimited;
 use nom::{character::complete::digit1, combinator::map};
@@ -201,8 +202,8 @@ pub struct Solution {
 }
 impl Solution {
     /// Constructs the title
-    pub fn title(&self, year: u32) -> String {
-        format!("{} Day {}: {}", year, self.day, self.name)
+    pub fn title(&self) -> String {
+        format!("Day {}: {}", self.day, self.name)
     }
 
     /// Reads the input, runs the solvers, and outputs the answer(s).
@@ -218,7 +219,7 @@ impl Solution {
             .map(|s| s(&input).with_context(|| "Problem when running the solution"))
             .collect::<anyhow::Result<Vec<Answer>>>()?;
 
-        println!("{}", self.title(year));
+        println!("Year {} {}", year, self.title());
         for (pc, result) in ('a'..'z').zip(results.iter()) {
             if results.len() > 1 {
                 println!("Part {})", pc);
@@ -246,10 +247,11 @@ impl YearSolutions {
         self.solutions.iter().find(|s| s.day == day)
     }
 
-    pub fn print_solution_list(&self) {
-        for solution in self.solutions.iter() {
-            println!("{}", solution.title(self.year));
-        }
+    pub fn solution_list(&self) -> String {
+        self.solutions
+            .iter()
+            .map(|solution| solution.title())
+            .join("\n")
     }
 }
 
