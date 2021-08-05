@@ -125,7 +125,7 @@ impl<T: Unsigned + FromStr> Parseable<'_> for T {
     }
 }
 
-/// A combinator that trims whitespace surrounding a parser
+/// A nom combinator that trims whitespace surrounding a parser
 pub fn trim<'a, F: 'a, O, E: nom::error::ParseError<&'a str>>(
     inner: F,
 ) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
@@ -133,6 +133,15 @@ where
     F: FnMut(&'a str) -> IResult<&'a str, O, E>,
 {
     delimited(space0, inner, space0)
+}
+
+/// A nom parser that takes a single decimal digit
+fn single_digit<'a, E>(input: &'a str) -> IResult<&str, u8, E>
+where
+    E: nom::error::ParseError<&'a str>,
+{
+    let ds = &input[..1];
+    todo!()
 }
 
 /// This should be a part of the nom library in my opinion
