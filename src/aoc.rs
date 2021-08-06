@@ -4,6 +4,7 @@ use nom::character::complete::space0;
 use nom::sequence::delimited;
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
+use nom::{AsChar, InputTakeAtPosition};
 use num::Unsigned;
 use std::convert::TryFrom;
 use std::convert::TryInto;
@@ -136,12 +137,12 @@ where
 }
 
 /// A nom parser that takes a single decimal digit
-fn single_digit<'a, E>(input: &'a str) -> IResult<&str, u8, E>
+fn single_digit<T, E>(input: T) -> IResult<T, u8, E>
 where
-    E: nom::error::ParseError<&'a str>,
+    T: InputTakeAtPosition,
+    <T as InputTakeAtPosition>::Item: AsChar,
 {
-    let ds = &input[..1];
-    todo!()
+    input.split_at_position1_complete(|item| !item.is_dec_digit(), ErrorKind::Digit)
 }
 
 /// This should be a part of the nom library in my opinion
