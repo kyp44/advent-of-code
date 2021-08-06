@@ -95,7 +95,7 @@ impl<'a> Parseable<'a> for Rule<'a> {
         alt((
             map(
                 trim(delimited(tag(quote), is_not(quote), tag(quote))),
-                |s| Rule::Match(s),
+                Rule::Match,
             ),
             map(
                 separated_list1(preceded(space1, tag("|")), many1(preceded(space1, digit1))),

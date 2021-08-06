@@ -1,5 +1,4 @@
 use std::{
-    borrow::BorrowMut,
     cell::RefCell,
     convert::TryInto,
     fmt,
@@ -33,6 +32,8 @@ impl CupRef {
     fn new(rc: Weak<RefCell<Cup>>) -> Self {
         CupRef { rc }
     }
+
+    //fn set_next(&self, Option<
 }
 impl From<&Rc<RefCell<Cup>>> for CupRef {
     fn from(rc: &Rc<RefCell<Cup>>) -> Self {
@@ -98,37 +99,27 @@ impl FromStr for Cups {
 
         // Now create circle of references
         for win in cups.windows(2) {
-            todo!()
+            win[0].borrow_mut().next = Some(CupRef::from(&win[1]));
         }
-        /*
-        for i in (1..cups.len()).rev() {
-            /*println!(
-                "{} {} {} {}",
-                i,
-                cups[i].label,
-                Rc::strong_count(&cups[i]),
-                Rc::weak_count(&cups[i])
-            );*/
-            Rc::get_mut(&mut cups[i - 1]).unwrap().next = Some((&cups[i]).into());
-        }
-        Rc::get_mut(cups.last_mut().unwrap()).unwrap().next = Some((&cups[0]).into());*/
-        println!("{:?}", cups);
+        cups.last().unwrap().borrow_mut().next = Some(CupRef::from(&cups[0]));
+        let current = CupRef::from(&cups[0]);
 
-        /*Ok(Cups {
-                cups,
-                current: CupRef::from(&cups[0]),
-        })*/
-        todo!()
+        Ok(Cups { cups, current })
+    }
+}
+impl fmt::Debug for Cups {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for rc in self.cups.iter() {
+            writeln!(f, "{:?}", rc.borrow())?;
+        }
+        writeln!(f, "Current: {:?}", self.current)
     }
 }
 impl Cups {
-    /*fn new() -> Self {
-        let c1 = Cup::new_ref(1, None);
-        let c2 = Cup::new_ref(1, c1.clone().into());
-        c2.set_next(c1.clone().into());
-
-        Cups { current: c1 }
-    }*/
+    fn next(&mut self) {
+        // First remove the next three cups
+        //let three = self.current
+    }
 }
 
 pub const SOLUTION: Solution = Solution {
@@ -140,6 +131,7 @@ pub const SOLUTION: Solution = Solution {
             println!("TODO: {}", input);
             // Generation
             let cups = Cups::from_str(input)?;
+            println!("{:?}", cups);
 
             // Process
             Ok(0.into())
