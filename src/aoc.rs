@@ -4,12 +4,13 @@ use nom::character::complete::space0;
 use nom::sequence::delimited;
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
-use nom::{AsChar, InputTakeAtPosition};
+use nom::{AsChar, InputIter, InputTakeAtPosition, Slice};
 use num::Unsigned;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+use std::ops::RangeFrom;
 use std::str::FromStr;
 use std::{fmt, fs};
 
@@ -127,22 +128,33 @@ impl<T: Unsigned + FromStr> Parseable<'_> for T {
 }
 
 /// A nom combinator that trims whitespace surrounding a parser
-pub fn trim<'a, F: 'a, O, E: nom::error::ParseError<&'a str>>(
-    inner: F,
-) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
+pub fn trim<I, F, O, E>(inner: F) -> impl FnMut(I) -> IResult<I, O, E>
 where
-    F: FnMut(&'a str) -> IResult<&'a str, O, E>,
+    I: InputTakeAtPosition,
+    <I as InputTakeAtPosition>::Item: AsChar + Clone,
+    F: FnMut(I) -> IResult<I, O, E>,
+    E: nom::error::ParseError<I>,
 {
     delimited(space0, inner, space0)
 }
 
 /// A nom parser that takes a single decimal digit
-fn single_digit<T, E>(input: T) -> IResult<T, u8, E>
+pub fn single_digit<I, Error: nom::error::ParseError<I>>(input: I) -> IResult<I, u32, Error>
 where
-    T: InputTakeAtPosition,
-    <T as InputTakeAtPosition>::Item: AsChar,
+    I: Slice<RangeFrom<usize>> + InputIter,
+    <I as InputIter>::Item: AsChar + Copy,
 {
-    input.split_at_position1_complete(|item| !item.is_dec_digit(), ErrorKind::Digit)
+    match input
+        .iter_elements()
+        .next()
+        .map(|c| (c, c.as_char().to_digit(10)))
+    {
+        Some((c, Some(d))) => Ok((input.slice(c.len()..), d)),
+        _ => Err(nom::Err::Error(Error::from_error_kind(
+            input,
+            ErrorKind::NoneOf,
+        ))),
+    }
 }
 
 /// This should be a part of the nom library in my opinion
