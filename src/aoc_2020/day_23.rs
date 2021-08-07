@@ -18,7 +18,7 @@ mod tests {
     use Answer::Number;
 
     solution_test! {
-    vec![],
+    vec![Number(98645732)],
     "389125467",
     vec![67384529].answer_vec()
     }
@@ -33,7 +33,25 @@ impl CupRef {
         CupRef { rc }
     }
 
-    //fn set_next(&self, Option<
+    fn label(&self) -> u8 {
+        self.rc.upgrade().unwrap().borrow().label
+    }
+
+    fn next(&self) -> Option<CupRef> {
+        self.rc.upgrade().unwrap().borrow().next.as_ref().cloned()
+    }
+
+    fn set_next(&self, next: Option<CupRef>) -> Option<CupRef> {
+        let rc = self.rc.upgrade().unwrap();
+        let mut cup = rc.borrow_mut();
+        let old = cup.next.take();
+        cup.next = next;
+        old
+    }
+
+    fn iter(&self) -> CupIter {
+        CupIter::new(self)
+    }
 }
 impl From<&Rc<RefCell<Cup>>> for CupRef {
     fn from(rc: &Rc<RefCell<Cup>>) -> Self {
@@ -42,11 +60,38 @@ impl From<&Rc<RefCell<Cup>>> for CupRef {
 }
 impl fmt::Debug for CupRef {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let opt = self.rc.upgrade();
-        match opt {
-            Some(rc) => rc.borrow().label.fmt(f),
-            None => opt.fmt(f),
+        self.rc.upgrade().unwrap().borrow().fmt(f)
+    }
+}
+
+struct CupIter {
+    first_label: u8,
+    next_ref: Option<CupRef>,
+}
+impl CupIter {
+    fn new(cr: &CupRef) -> CupIter {
+        CupIter {
+            first_label: cr.label(),
+            next_ref: Some(cr.clone()),
         }
+    }
+}
+impl Iterator for CupIter {
+    type Item = CupRef;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let out = self.next_ref.take();
+
+        if let Some(curr) = &out {
+            self.next_ref = curr.next();
+            if let Some(next) = &self.next_ref {
+                if next.label() == self.first_label {
+                    self.next_ref = None;
+                }
+            }
+        }
+
+        out
     }
 }
 
@@ -61,11 +106,7 @@ impl Cup {
 }
 impl fmt::Debug for Cup {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} -> ", self.label)?;
-        match &self.next {
-            Some(cr) => cr.fmt(f),
-            None => self.next.fmt(f),
-        }
+        self.label.fmt(f)
     }
 }
 
@@ -104,21 +145,67 @@ impl FromStr for Cups {
         cups.last().unwrap().borrow_mut().next = Some(CupRef::from(&cups[0]));
         let current = CupRef::from(&cups[0]);
 
+        // Lastly, ensure that the cups have consecutive labels starting with 1
+        let mut labels: Vec<usize> = current.iter().map(|cr| cr.label().into()).collect();
+        labels.sort_unstable();
+        if labels != (1..=cups.len()).collect::<Vec<usize>>() {
+            return Err(AocError::InvalidInput(format!(
+                "The {} cups do not have valid, consecutive labels",
+                cups.len()
+            )));
+        }
+
         Ok(Cups { cups, current })
     }
 }
 impl fmt::Debug for Cups {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for rc in self.cups.iter() {
-            writeln!(f, "{:?}", rc.borrow())?;
-        }
-        writeln!(f, "Current: {:?}", self.current)
+        write!(
+            f,
+            "{}",
+            (self.current.iter().map(|cr| format!("{:?}", cr)).join(", "))
+        )
     }
 }
 impl Cups {
     fn next(&mut self) {
         // First remove the next three cups
-        //let three = self.current
+        let three = self.current.next().unwrap();
+        self.current
+            .set_next(three.iter().nth(2).unwrap().set_next(None));
+
+        // Search for the destination cup
+        let mut dest_label = self.current.label();
+        let len: u8 = self.cups.len().try_into().unwrap();
+        let dest = loop {
+            dest_label = ((dest_label + len - 2) % len) + 1;
+            if let Some(cr) = self.current.iter().find(|cr| cr.label() == dest_label) {
+                break cr;
+            }
+        };
+
+        // Insert the three cups back after the destination cup
+        three.iter().last().unwrap().set_next(dest.next());
+        dest.set_next(Some(three));
+
+        // Lastly, select the new current cup
+        self.current = self.current.next().unwrap();
+    }
+
+    fn run(&mut self, iterations: usize) {
+        for _ in 0..iterations {
+            self.next();
+        }
+    }
+
+    fn score(&self) -> u64 {
+        let one = self.current.iter().find(|cr| cr.label() == 1).unwrap();
+        one.iter()
+            .skip(1)
+            .map(|cr| cr.label().to_string())
+            .collect::<String>()
+            .parse()
+            .unwrap()
     }
 }
 
@@ -128,13 +215,12 @@ pub const SOLUTION: Solution = Solution {
     solvers: &[
         // Part a)
         |input| {
-            println!("TODO: {}", input);
             // Generation
-            let cups = Cups::from_str(input)?;
-            println!("{:?}", cups);
+            let mut cups = Cups::from_str(input)?;
+            cups.run(100);
 
             // Process
-            Ok(0.into())
+            Ok(cups.score().into())
         },
     ],
 };
