@@ -3,7 +3,6 @@ use std::{
     convert::TryInto,
     fmt,
     rc::{Rc, Weak},
-    str::FromStr,
 };
 
 use itertools::Itertools;
@@ -20,7 +19,7 @@ mod tests {
     solution_test! {
     vec![Number(98645732)],
     "389125467",
-    vec![67384529].answer_vec()
+    vec![67384529, 149245887792].answer_vec()
     }
 }
 
@@ -33,7 +32,7 @@ impl CupRef {
         CupRef { rc }
     }
 
-    fn label(&self) -> u8 {
+    fn label(&self) -> u32 {
         self.rc.upgrade().unwrap().borrow().label
     }
 
@@ -64,8 +63,9 @@ impl fmt::Debug for CupRef {
     }
 }
 
+#[derive(Debug)]
 struct CupIter {
-    first_label: u8,
+    first_label: u32,
     next_ref: Option<CupRef>,
 }
 impl CupIter {
@@ -96,11 +96,11 @@ impl Iterator for CupIter {
 }
 
 struct Cup {
-    label: u8,
+    label: u32,
     next: Option<CupRef>,
 }
 impl Cup {
-    fn new(label: u8, next: Option<CupRef>) -> Cup {
+    fn new(label: u32, next: Option<CupRef>) -> Cup {
         Cup { label, next }
     }
 }
@@ -110,29 +110,66 @@ impl fmt::Debug for Cup {
     }
 }
 
+trait Part {
+    fn add_cups(&self, cups: &mut Vec<u32>) {}
+}
+struct PartA;
+impl Part for PartA {}
+struct PartB;
+impl Part for PartB {
+    fn add_cups(&self, cups: &mut Vec<u32>) {
+        for i in (cups.len() + 1)..=1000000 {
+            cups.push(i.try_into().unwrap());
+        }
+    }
+}
+
 struct Cups {
     // NOTE: We need RefCell here to complete the circle
     cups: Box<[Rc<RefCell<Cup>>]>,
     current: CupRef,
 }
-impl FromStr for Cups {
-    type Err = AocError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let lv = many1::<_, _, NomParseError, _>(single_digit)(s)
+impl fmt::Debug for Cups {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            (self.current.iter().map(|cr| format!("{:?}", cr)).join(", "))
+        )
+    }
+}
+impl Cups {
+    fn from_str(s: &str, part: &dyn Part) -> AocResult<Self> {
+        let mut cups = many1::<_, _, NomParseError, _>(single_digit)(s)
             .finish()
             .discard_input()?;
 
         // Verify that we have enough cups
-        if lv.len() < 4 {
+        if cups.len() < 4 {
             return Err(AocError::InvalidInput(format!(
                 "Only found {} cups, which is not enough",
-                lv.len()
+                cups.len()
             )));
         }
 
+        // Ensure that the cups have consecutive labels starting with 1
+        if cups
+            .iter()
+            .map(|l| -> usize { (*l).try_into().unwrap() })
+            .sorted()
+            .ne(1..=cups.len())
+        {
+            return Err(AocError::InvalidInput(format!(
+                "The {} cups do not have valid, consecutive labels",
+                cups.len()
+            )));
+        }
+
+        // Add additional cups based on the part
+        part.add_cups(&mut cups);
+
         // Created owned slice
-        let cups = lv
+        let cups = cups
             .into_iter()
             .map(|l| Rc::new(RefCell::new(Cup::new(l.try_into().unwrap(), None))))
             .collect_vec()
@@ -145,29 +182,9 @@ impl FromStr for Cups {
         cups.last().unwrap().borrow_mut().next = Some(CupRef::from(&cups[0]));
         let current = CupRef::from(&cups[0]);
 
-        // Lastly, ensure that the cups have consecutive labels starting with 1
-        let mut labels: Vec<usize> = current.iter().map(|cr| cr.label().into()).collect();
-        labels.sort_unstable();
-        if labels != (1..=cups.len()).collect::<Vec<usize>>() {
-            return Err(AocError::InvalidInput(format!(
-                "The {} cups do not have valid, consecutive labels",
-                cups.len()
-            )));
-        }
-
         Ok(Cups { cups, current })
     }
-}
-impl fmt::Debug for Cups {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            (self.current.iter().map(|cr| format!("{:?}", cr)).join(", "))
-        )
-    }
-}
-impl Cups {
+
     fn next(&mut self) {
         // First remove the next three cups
         let three = self.current.next().unwrap();
@@ -176,7 +193,7 @@ impl Cups {
 
         // Search for the destination cup
         let mut dest_label = self.current.label();
-        let len: u8 = self.cups.len().try_into().unwrap();
+        let len: u32 = self.cups.len().try_into().unwrap();
         let dest = loop {
             dest_label = ((dest_label + len - 2) % len) + 1;
             if let Some(cr) = self.current.iter().find(|cr| cr.label() == dest_label) {
@@ -216,11 +233,21 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let mut cups = Cups::from_str(input)?;
+            let mut cups = Cups::from_str(input, &PartA)?;
             cups.run(100);
 
             // Process
             Ok(cups.score().into())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let mut cups = Cups::from_str(input, &PartB)?;
+            cups.run(10000000);
+
+            // Process
+            //Ok(cups.score().into())
+            Ok(0.into())
         },
     ],
 };
