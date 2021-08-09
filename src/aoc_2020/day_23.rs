@@ -111,7 +111,7 @@ impl fmt::Debug for Cup {
 }
 
 trait Part {
-    fn add_cups(&self, cups: &mut Vec<u32>) {}
+    fn add_cups(&self, _cups: &mut Vec<u32>) {}
 }
 struct PartA;
 impl Part for PartA {}
@@ -210,7 +210,8 @@ impl Cups {
     }
 
     fn run(&mut self, iterations: usize) {
-        for _ in 0..iterations {
+        for i in 0..iterations {
+            println!("Move {}", i);
             self.next();
         }
     }
@@ -243,7 +244,8 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let mut cups = Cups::from_str(input, &PartB)?;
-            cups.run(10000000);
+            //cups.run(10000000);
+            cups.run(50);
 
             // Process
             //Ok(cups.score().into())
