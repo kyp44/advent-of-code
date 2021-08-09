@@ -128,10 +128,9 @@ impl FromStr for Game {
         fn check(exp: u8, found: u8) -> AocResult<()> {
             match found {
                 x if x == exp => Ok(()),
-                _ => Err(AocError::InvalidInput(format!(
-                    "Expected player {} deck, found player {}",
-                    exp, found
-                ))),
+                _ => Err(AocError::InvalidInput(
+                    format!("Expected player {} deck, found player {}", exp, found).into(),
+                )),
             }
         }
         check(1, game.player1.player)?;

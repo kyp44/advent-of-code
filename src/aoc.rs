@@ -6,6 +6,7 @@ use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
 use nom::{AsChar, InputIter, InputTakeAtPosition, Slice};
 use num::Unsigned;
+use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::error::Error;
@@ -28,8 +29,8 @@ pub enum AocError {
     NoYear(u32),
     NoDay(u32),
     NomParse(NomParseError),
-    InvalidInput(String),
-    Process(String),
+    InvalidInput(Cow<'static, str>),
+    Process(Cow<'static, str>),
 }
 impl Display for AocError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -176,11 +177,14 @@ impl Sections for str {
         if secs.len() == num {
             Ok(secs)
         } else {
-            Err(AocError::InvalidInput(format!(
-                "Expected {} sections from the input, found {}",
-                num,
-                secs.len()
-            )))
+            Err(AocError::InvalidInput(
+                format!(
+                    "Expected {} sections from the input, found {}",
+                    num,
+                    secs.len()
+                )
+                .into(),
+            ))
         }
     }
 }

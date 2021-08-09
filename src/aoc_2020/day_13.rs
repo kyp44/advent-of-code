@@ -122,10 +122,13 @@ pub const SOLUTION: Solution = Solution {
             // that this is the case to guarantee that there will be a solution.
             for v in schedule.valid_ids().combinations(2) {
                 if gcd(v[0], v[1]) > 1 {
-                    return Err(AocError::Process(format!(
-                        "Part b) may not be solveable because {} and {} are not co-prime",
-                        v[0], v[1]
-                    )));
+                    return Err(AocError::Process(
+                        format!(
+                            "Part b) may not be solveable because {} and {} are not co-prime",
+                            v[0], v[1]
+                        )
+                        .into(),
+                    ));
                 }
             }
             // First get an iterator of tuples of (a, m), where a is congruence (time

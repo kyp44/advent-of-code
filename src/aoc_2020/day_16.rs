@@ -119,12 +119,15 @@ impl Problem {
 
         let verify_fields = |name: &str, ticket: &Ticket| match ticket.field_values.len() {
             n if n == num_fields => Ok(()),
-            _ => Err(AocError::InvalidInput(format!(
-                "{} ticket has {} fields when {} are expected",
-                name,
-                ticket.field_values.len(),
-                num_fields
-            ))),
+            _ => Err(AocError::InvalidInput(
+                format!(
+                    "{} ticket has {} fields when {} are expected",
+                    name,
+                    ticket.field_values.len(),
+                    num_fields
+                )
+                .into(),
+            )),
         };
 
         // Parse your ticket and verify the number of fields
@@ -232,7 +235,7 @@ impl Problem {
                 // No deduction is possible, at least not with this simple algorithm
                 return Err(AocError::Process(
                     "No position has only one possible field so a solution may not be possible"
-                        .to_string(),
+                        .into(),
                 ));
             }
 

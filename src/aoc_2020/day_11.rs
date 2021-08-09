@@ -201,24 +201,25 @@ impl Simulator for Area {
         // Verify the data
         let height = data.len();
         if height < 1 {
-            return Err(AocError::InvalidInput(
-                "Area vector has no rows!".to_string(),
-            ));
+            return Err(AocError::InvalidInput("Area vector has no rows!".into()));
         }
         let width = data[0].len();
         if width < 1 {
             return Err(AocError::InvalidInput(
-                "First area row has no elements!".to_string(),
+                "First area row has no elements!".into(),
             ));
         }
         for (rn, row) in data.iter().enumerate() {
             if row.len() != width {
-                return Err(AocError::InvalidInput(format!(
-                    "Area row {} has an incorrect width of {} when it should be {}",
-                    rn,
-                    row.len(),
-                    width
-                )));
+                return Err(AocError::InvalidInput(
+                    format!(
+                        "Area row {} has an incorrect width of {} when it should be {}",
+                        rn,
+                        row.len(),
+                        width
+                    )
+                    .into(),
+                ));
             }
         }
         Ok(Area {
@@ -309,7 +310,7 @@ fn check_simulation(status: SimulationStatus<Area>) -> AocResult<Answer> {
     match status {
         SimulationStatus::Stable(a) => Ok(a.occupied().into()),
         SimulationStatus::Infinite(_) => Err(AocError::Process(
-            "Simulation did not reach a steady state".to_string(),
+            "Simulation did not reach a steady state".into(),
         )),
     }
 }

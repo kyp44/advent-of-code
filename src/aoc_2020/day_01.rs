@@ -40,7 +40,7 @@ pub const SOLUTION: Solution = Solution {
                             break Ok(Answer::Number((v[0] * v[1]).into()));
                         }
                     }
-                    None => break Err(AocError::Process("No two values add to 2020".to_string())),
+                    None => break Err(AocError::Process("No two values add to 2020".into())),
                 }
             }
         },
@@ -56,7 +56,7 @@ pub const SOLUTION: Solution = Solution {
                         break Ok(Answer::Number((v[0] * v[1] * v[2]).into()));
                     }
                     None => {
-                        break Err(AocError::Process("No three values add to 2020".to_string()));
+                        break Err(AocError::Process("No three values add to 2020".into()));
                     }
                     _ => (),
                 }

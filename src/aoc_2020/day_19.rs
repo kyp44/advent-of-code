@@ -146,10 +146,9 @@ impl<'a> RuleSet<'a> {
                 .discard_input()?;
             let n: usize = ns.parse().unwrap();
             if rules.insert(n, part.fix_rule(n, rule)).is_some() {
-                return Err(AocError::InvalidInput(format!(
-                    "There is a duplicate for rule {}",
-                    ns
-                )));
+                return Err(AocError::InvalidInput(
+                    format!("There is a duplicate for rule {}", ns).into(),
+                ));
             }
         }
         Ok(RuleSet { rules })
@@ -166,7 +165,7 @@ impl<'a> RuleSet<'a> {
             let rule = rule_set
                 .rules
                 .get(&rule_num)
-                .ok_or_else(|| AocError::Process(format!("Rule {} not found", rule_num)))?;
+                .ok_or_else(|| AocError::Process(format!("Rule {} not found", rule_num).into()))?;
             let mut matched = true;
             let mut remaining = s;
             /*println!(

@@ -360,10 +360,9 @@ impl FromStr for Tile {
         // Verify the tile dimensions
         let size = full_image.width;
         if size != full_image.height || size < 3 {
-            return Err(AocError::InvalidInput(format!(
-                "Tile {} must be square with at least a size of 3x3",
-                id
-            )));
+            return Err(AocError::InvalidInput(
+                format!("Tile {} must be square with at least a size of 3x3", id).into(),
+            ));
         }
 
         // Create image of interior
@@ -479,10 +478,13 @@ impl FromStr for TileSet {
         // Verify that tiles can be placed in a square map
         let size = sqrt(tiles.len());
         if size.is_none() {
-            return Err(AocError::InvalidInput(format!(
-                "Tile set has {} elements, which is not a square number",
-                tiles.len()
-            )));
+            return Err(AocError::InvalidInput(
+                format!(
+                    "Tile set has {} elements, which is not a square number",
+                    tiles.len()
+                )
+                .into(),
+            ));
         }
 
         Ok(TileSet {
@@ -549,7 +551,7 @@ impl<'a> TileMap<'a> {
             .any(|slot| slot.is_none())
         {
             return Err(AocError::Process(
-                "Cannot stitch image because not every slot in the map is set".to_string(),
+                "Cannot stitch image because not every slot in the map is set".into(),
             ));
         }
         Ok(self
@@ -641,8 +643,7 @@ impl Solver {
             None
         }
 
-        solve_slot(0, 0, map)
-            .ok_or_else(|| AocError::Process("Could not find a solution".to_string()))
+        solve_slot(0, 0, map).ok_or_else(|| AocError::Process("Could not find a solution".into()))
     }
 }
 
@@ -699,7 +700,7 @@ pub const SOLUTION: Solution = Solution {
                 }
             }
 
-            Err(AocError::Process("No sea monsters found!".to_string()))
+            Err(AocError::Process("No sea monsters found!".into()))
         },
     ],
 };

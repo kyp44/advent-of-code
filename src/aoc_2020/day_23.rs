@@ -1,5 +1,6 @@
 use std::{
     cell::RefCell,
+    collections::HashMap,
     convert::TryInto,
     fmt,
     rc::{Rc, Weak},
@@ -13,13 +14,18 @@ use crate::aoc::{prelude::*, single_digit};
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use crate::{expensive_test, solution_test};
     use Answer::Number;
 
     solution_test! {
-    vec![Number(98645732)],
+    vec![Number(98645732), Number(689500518476)],
     "389125467",
-    vec![67384529, 149245887792].answer_vec()
+    vec![Some(Number(67384529)), None]
+    }
+
+    expensive_test! {
+    "389125467",
+    vec![None, Some(Number(149245887792))]
     }
 }
 
@@ -32,7 +38,7 @@ impl CupRef {
         CupRef { rc }
     }
 
-    fn label(&self) -> u32 {
+    fn label(&self) -> Label {
         self.rc.upgrade().unwrap().borrow().label
     }
 
@@ -65,7 +71,7 @@ impl fmt::Debug for CupRef {
 
 #[derive(Debug)]
 struct CupIter {
-    first_label: u32,
+    first_label: Label,
     next_ref: Option<CupRef>,
 }
 impl CupIter {
@@ -95,12 +101,13 @@ impl Iterator for CupIter {
     }
 }
 
+type Label = u32;
 struct Cup {
-    label: u32,
+    label: Label,
     next: Option<CupRef>,
 }
 impl Cup {
-    fn new(label: u32, next: Option<CupRef>) -> Cup {
+    fn new(label: Label, next: Option<CupRef>) -> Cup {
         Cup { label, next }
     }
 }
@@ -111,22 +118,42 @@ impl fmt::Debug for Cup {
 }
 
 trait Part {
-    fn add_cups(&self, _cups: &mut Vec<u32>) {}
+    fn add_cups(&self, _cups: &mut Vec<Label>) {}
+    fn score(&self, one: &CupRef) -> u64;
 }
 struct PartA;
-impl Part for PartA {}
+impl Part for PartA {
+    fn score(&self, one: &CupRef) -> u64 {
+        one.iter()
+            .skip(1)
+            .map(|cr| cr.label().to_string())
+            .collect::<String>()
+            .parse()
+            .unwrap()
+    }
+}
 struct PartB;
 impl Part for PartB {
-    fn add_cups(&self, cups: &mut Vec<u32>) {
+    fn add_cups(&self, cups: &mut Vec<Label>) {
         for i in (cups.len() + 1)..=1000000 {
             cups.push(i.try_into().unwrap());
         }
+    }
+
+    fn score(&self, one: &CupRef) -> u64 {
+        one.iter()
+            .skip(1)
+            .take(2)
+            .map(|cr| u64::from(cr.label()))
+            .product()
     }
 }
 
 struct Cups {
     // NOTE: We need RefCell here to complete the circle
     cups: Box<[Rc<RefCell<Cup>>]>,
+    // NOTE: This is needed to speed things up for part b)
+    lookup: HashMap<Label, CupRef>,
     current: CupRef,
 }
 impl fmt::Debug for Cups {
@@ -146,10 +173,9 @@ impl Cups {
 
         // Verify that we have enough cups
         if cups.len() < 4 {
-            return Err(AocError::InvalidInput(format!(
-                "Only found {} cups, which is not enough",
-                cups.len()
-            )));
+            return Err(AocError::InvalidInput(
+                format!("Only found {} cups, which is not enough", cups.len()).into(),
+            ));
         }
 
         // Ensure that the cups have consecutive labels starting with 1
@@ -159,10 +185,13 @@ impl Cups {
             .sorted()
             .ne(1..=cups.len())
         {
-            return Err(AocError::InvalidInput(format!(
-                "The {} cups do not have valid, consecutive labels",
-                cups.len()
-            )));
+            return Err(AocError::InvalidInput(
+                format!(
+                    "The {} cups do not have valid, consecutive labels",
+                    cups.len()
+                )
+                .into(),
+            ));
         }
 
         // Add additional cups based on the part
@@ -171,9 +200,15 @@ impl Cups {
         // Created owned slice
         let cups = cups
             .into_iter()
-            .map(|l| Rc::new(RefCell::new(Cup::new(l.try_into().unwrap(), None))))
+            .map(|l| Rc::new(RefCell::new(Cup::new(l, None))))
             .collect_vec()
             .into_boxed_slice();
+
+        // Create lookup table
+        let lookup: HashMap<Label, CupRef> = cups
+            .iter()
+            .map(|rc| (rc.borrow().label, CupRef::from(rc)))
+            .collect();
 
         // Now create circle of references
         for win in cups.windows(2) {
@@ -182,7 +217,11 @@ impl Cups {
         cups.last().unwrap().borrow_mut().next = Some(CupRef::from(&cups[0]));
         let current = CupRef::from(&cups[0]);
 
-        Ok(Cups { cups, current })
+        Ok(Cups {
+            cups,
+            lookup,
+            current,
+        })
     }
 
     fn next(&mut self) {
@@ -193,11 +232,11 @@ impl Cups {
 
         // Search for the destination cup
         let mut dest_label = self.current.label();
-        let len: u32 = self.cups.len().try_into().unwrap();
+        let len: Label = self.cups.len().try_into().unwrap();
         let dest = loop {
             dest_label = ((dest_label + len - 2) % len) + 1;
-            if let Some(cr) = self.current.iter().find(|cr| cr.label() == dest_label) {
-                break cr;
+            if three.iter().all(|cr| cr.label() != dest_label) {
+                break &self.lookup[&dest_label];
             }
         };
 
@@ -210,20 +249,14 @@ impl Cups {
     }
 
     fn run(&mut self, iterations: usize) {
-        for i in 0..iterations {
-            println!("Move {}", i);
+        for _i in 0..iterations {
+            //println!("Move {}", _i + 1);
             self.next();
         }
     }
 
-    fn score(&self) -> u64 {
-        let one = self.current.iter().find(|cr| cr.label() == 1).unwrap();
-        one.iter()
-            .skip(1)
-            .map(|cr| cr.label().to_string())
-            .collect::<String>()
-            .parse()
-            .unwrap()
+    fn score(&self, part: &dyn Part) -> u64 {
+        part.score(&self.lookup[&1])
     }
 }
 
@@ -234,22 +267,22 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let mut cups = Cups::from_str(input, &PartA)?;
+            let part = &PartA;
+            let mut cups = Cups::from_str(input, part)?;
             cups.run(100);
 
             // Process
-            Ok(cups.score().into())
+            Ok(cups.score(part).into())
         },
         // Part b)
         |input| {
             // Generation
-            let mut cups = Cups::from_str(input, &PartB)?;
-            //cups.run(10000000);
-            cups.run(50);
+            let part = &PartB;
+            let mut cups = Cups::from_str(input, part)?;
+            cups.run(10000000);
 
             // Process
-            //Ok(cups.score().into())
-            Ok(0.into())
+            Ok(cups.score(part).into())
         },
     ],
 };

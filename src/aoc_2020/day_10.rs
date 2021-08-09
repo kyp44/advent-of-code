@@ -83,7 +83,7 @@ pub const SOLUTION: Solution = Solution {
             // Verify that no differences are above 3
             if diffs.iter().any(|d| *d > 3) {
                 return Err(AocError::Process(
-                    "Adaptors cannot be chained together due to a gap of over 3 jolts".to_string(),
+                    "Adaptors cannot be chained together due to a gap of over 3 jolts".into(),
                 ));
             }
             // Now get the required diffs

@@ -102,7 +102,7 @@ impl XmasPacket {
 fn verify_invalid(packet: &XmasPacket) -> AocResult<u64> {
     match packet.validate() {
         Validation::Valid => Err(AocError::Process(
-            "Packet was unexpectedly valid, guess it can't be exploited!".to_string(),
+            "Packet was unexpectedly valid, guess it can't be exploited!".into(),
         )),
         Validation::Invalid(v) => Ok(v),
     }
@@ -129,7 +129,7 @@ pub const SOLUTION: Solution = Solution {
             let invalid_n = verify_invalid(&packet)?;
             packet
                 .exploit(invalid_n)
-                .ok_or_else(|| AocError::Process("Could not exploit packet!".to_string()))
+                .ok_or_else(|| AocError::Process("Could not exploit packet!".into()))
                 .map(|n| n.into())
         },
     ],

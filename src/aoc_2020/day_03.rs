@@ -47,12 +47,12 @@ impl FromStr for Map {
         let first_row = parse_row(
             liter
                 .next()
-                .ok_or_else(|| AocError::InvalidInput("No lines".to_string()))?,
+                .ok_or_else(|| AocError::InvalidInput("No lines".into()))?,
         );
         let width = first_row.len();
         if width < 1 {
             return Err(AocError::InvalidInput(
-                "First map line has no content!".to_string(),
+                "First map line has no content!".into(),
             ));
         }
         let mut data = vec![first_row];
@@ -60,10 +60,9 @@ impl FromStr for Map {
         for line in liter {
             let row = parse_row(line);
             if row.len() != width {
-                return Err(AocError::InvalidInput(format!(
-                    "Map row '{}' has a length different from {}",
-                    line, width
-                )));
+                return Err(AocError::InvalidInput(
+                    format!("Map row '{}' has a length different from {}", line, width).into(),
+                ));
             }
             data.push(row);
         }

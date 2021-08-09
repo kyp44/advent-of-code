@@ -167,10 +167,13 @@ impl Program {
 
 fn check_acc(acc: i32) -> AocResult<u32> {
     if acc < 0 {
-        return Err(AocError::Process(format!(
-            "Accumulator ended up negative as {}, which is a problem",
-            acc
-        )));
+        return Err(AocError::Process(
+            format!(
+                "Accumulator ended up negative as {}, which is a problem",
+                acc
+            )
+            .into(),
+        ));
     }
     Ok(acc.try_into().unwrap())
 }
@@ -190,7 +193,7 @@ pub const SOLUTION: Solution = Solution {
                     ProgramEndStatus::Infinite(acc) => check_acc(acc)?,
                     _ => {
                         return Err(AocError::Process(
-                            "Program execution did not result in an infinite loop".to_string(),
+                            "Program execution did not result in an infinite loop".into(),
                         ));
                     }
                 }
@@ -212,9 +215,7 @@ pub const SOLUTION: Solution = Solution {
             }
             Ok(Answer::Number(
                 terminated_acc
-                    .ok_or_else(|| {
-                        AocError::Process("No modified programs terminated!".to_string())
-                    })?
+                    .ok_or_else(|| AocError::Process("No modified programs terminated!".into()))?
                     .into(),
             ))
         },

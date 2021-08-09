@@ -148,10 +148,9 @@ impl Expression<'_> {
     fn evaluate(&self, part: &dyn Part) -> AocResult<u64> {
         // First validate
         if !self.is_valid() {
-            return Err(AocError::Process(format!(
-                "The expression '{}' is malformed",
-                self.original
-            )));
+            return Err(AocError::Process(
+                format!("The expression '{}' is malformed", self.original).into(),
+            ));
         }
 
         // Next convert from infix to postfix.

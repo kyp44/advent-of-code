@@ -74,10 +74,9 @@ impl Debug for Dimension {
 impl Dimension {
     fn from_str(dimensions: usize, s: &str) -> AocResult<Self> {
         if dimensions < 2 {
-            return Err(AocError::InvalidInput(format!(
-                "Dimension must be at least 2, got {}",
-                dimensions
-            )));
+            return Err(AocError::InvalidInput(
+                format!("Dimension must be at least 2, got {}", dimensions).into(),
+            ));
         }
         Ok(Dimension {
             dimensions,
