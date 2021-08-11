@@ -1,18 +1,19 @@
 use cgmath::{Vector2, Zero};
+use itertools::{iproduct, Itertools};
 use nom::{
     branch::alt,
     bytes::complete::tag,
     combinator::{all_consuming, map},
     multi::many1,
 };
-use std::{collections::HashSet, convert::TryInto, str::FromStr};
+use std::{collections::HashSet, convert::TryInto, fmt, str::FromStr};
 
 use crate::aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{expensive_test, solution_test};
+    use crate::solution_test;
     use Answer::Number;
 
     solution_test! {
@@ -37,9 +38,11 @@ nenewswnwewswnenesenwnesewesw
 eneswnwswnwsenenwnwnwwseeswneewsenese
 neswnwewnwnwseenwseesewsenwsweewe
 wseweeenwnesenwwwswnew",
-    vec![10].answer_vec()
+    vec![10, 2208].answer_vec()
     }
 }
+
+type Point = Vector2<i32>;
 
 #[derive(Debug, Copy, Clone)]
 enum Direction {
@@ -74,7 +77,7 @@ impl Parseable<'_> for Direction {
         )(input)
     }
 }
-impl From<Direction> for Vector2<i32> {
+impl From<Direction> for Point {
     fn from(dir: Direction) -> Self {
         use Direction::*;
         match dir {
@@ -100,7 +103,7 @@ impl Parseable<'_> for Route {
     }
 }
 impl Route {
-    fn follow(&self, start: Vector2<i32>) -> Vector2<i32> {
+    fn follow(&self, start: Point) -> Point {
         self.directions
             .iter()
             .fold(start, |a, b| a + Vector2::<i32>::from(*b))
@@ -108,31 +111,106 @@ impl Route {
 }
 
 struct Floor {
-    routes: Box<[Route]>,
+    black_tiles: HashSet<Point>,
 }
 impl FromStr for Floor {
     type Err = AocError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Floor {
-            routes: Route::gather(s.lines())?.into_boxed_slice(),
-        })
-    }
-}
-impl Floor {
-    fn flip_all(&self) -> HashSet<Vector2<i32>> {
-        let mut blacks = HashSet::new();
+        let routes = Route::gather(s.lines())?;
 
-        for route in self.routes.iter() {
+        // Determine the initial state
+        let mut black_tiles = HashSet::new();
+        for route in routes.iter() {
             let tile = route.follow(Vector2::zero());
-            if blacks.contains(&tile) {
-                blacks.remove(&tile);
+            if black_tiles.contains(&tile) {
+                black_tiles.remove(&tile);
             } else {
-                blacks.insert(tile);
+                black_tiles.insert(tile);
             }
         }
 
-        blacks
+        Ok(Floor { black_tiles })
+    }
+}
+impl Iterator for Floor {
+    type Item = HashSet<Point>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut new_blacks = HashSet::new();
+        for point in self.iter() {
+            if self.black_tiles.contains(&point) {
+                // Tile is black
+                let adj = self.adjacent_blacks(&point);
+                if adj == 0 || adj > 2 {
+                    new_blacks.remove(&point);
+                }
+            } else {
+                // Tile is white
+                if self.adjacent_blacks(&point) == 2 {
+                    new_blacks.insert(point);
+                }
+            }
+        }
+        self.black_tiles = new_blacks.clone();
+        Some(new_blacks)
+    }
+}
+impl fmt::Debug for Floor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // First convert to Vecs so that they can be reversed
+        let mut rows: Vec<Vec<char>> = Vec::new();
+        let mut row: Vec<char> = Vec::new();
+
+        let mut last_y: Option<i32> = None;
+        for point in self.iter() {
+            row.push(if self.black_tiles.contains(&point) {
+                '#'
+            } else {
+                '.'
+            });
+
+            if let Some(y) = last_y {
+                if y != point.y {
+                    rows.push(row);
+                    row = Vec::new();
+                }
+            }
+            last_y = Some(point.y);
+        }
+
+        // Now output the Vecs
+        for (i, row) in rows.into_iter().rev().enumerate() {
+            write!(f, "{}", (0..i).map(|_| ' ').collect::<String>())?;
+            writeln!(f, "{}", row.into_iter().join(" "))?;
+        }
+
+        Ok(())
+    }
+}
+impl Floor {
+    fn adjacent_blacks(&self, point: &Point) -> usize {
+        [
+            Point::new(0, 1),
+            Point::new(0, -1),
+            Point::new(-1, 0),
+            Point::new(-1, -1),
+            Point::new(1, 0),
+            Point::new(1, 1),
+        ]
+        .iter()
+        .filter_count(|dp| self.black_tiles.contains(&(*dp + point)))
+    }
+
+    fn iter(&self) -> impl Iterator<Item = Point> {
+        // Determine the range in x and y
+        let range = |f: fn(&Point) -> i32| {
+            let start = self.black_tiles.iter().map(|p| f(p)).min().unwrap_or(1);
+            let stop = self.black_tiles.iter().map(|p| f(p)).max().unwrap_or(-1);
+            (start - 1)..=(stop + 1)
+        };
+
+        iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Vector2::new(x, y))
     }
 }
 
@@ -146,7 +224,22 @@ pub const SOLUTION: Solution = Solution {
             let floor: Floor = input.parse()?;
 
             // Process
-            Ok(Answer::Number(floor.flip_all().len().try_into().unwrap()))
+            Ok(Answer::Number(floor.black_tiles.len().try_into().unwrap()))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let floor: Floor = input.parse()?;
+            println!("TODO {:?}", floor.black_tiles);
+            println!("{:?}", floor);
+
+            for (i, blacks) in floor.take(20).enumerate() {
+                //println!("Day {}: {}", i + 1, blacks.len());
+                //println!("TODO {:?}", blacks);
+            }
+
+            // Process
+            Ok(Answer::Number(0))
         },
     ],
 };
