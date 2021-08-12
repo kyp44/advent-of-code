@@ -17,8 +17,8 @@ mod tests {
     use Answer::Number;
 
     solution_test! {
-    vec![Number(354)],
-    "sesenwnenenewseeswwswswwnenewsewsw
+            vec![Number(354), Number(3608)],
+        "sesenwnenenewseeswwswswwnenewsewsw
 neeenesenwnwwswnenewnwwsewnenwseswesw
 seswneswswsenwwnwse
 nwnwneseeswswnenewneswwnewseswneseene
@@ -142,8 +142,8 @@ impl Iterator for Floor {
             if self.black_tiles.contains(&point) {
                 // Tile is black
                 let adj = self.adjacent_blacks(&point);
-                if adj == 0 || adj > 2 {
-                    new_blacks.remove(&point);
+                if adj > 0 && adj <= 2 {
+                    new_blacks.insert(point);
                 }
             } else {
                 // Tile is white
@@ -164,12 +164,6 @@ impl fmt::Debug for Floor {
 
         let mut last_y: Option<i32> = None;
         for point in self.iter() {
-            row.push(if self.black_tiles.contains(&point) {
-                '#'
-            } else {
-                '.'
-            });
-
             if let Some(y) = last_y {
                 if y != point.y {
                     rows.push(row);
@@ -177,7 +171,14 @@ impl fmt::Debug for Floor {
                 }
             }
             last_y = Some(point.y);
+
+            row.push(if self.black_tiles.contains(&point) {
+                '#'
+            } else {
+                '.'
+            });
         }
+        rows.push(row);
 
         // Now output the Vecs
         for (i, row) in rows.into_iter().rev().enumerate() {
@@ -229,17 +230,12 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let floor: Floor = input.parse()?;
-            println!("TODO {:?}", floor.black_tiles);
-            println!("{:?}", floor);
-
-            for (i, blacks) in floor.take(20).enumerate() {
-                //println!("Day {}: {}", i + 1, blacks.len());
-                //println!("TODO {:?}", blacks);
-            }
+            let mut floor: Floor = input.parse()?;
 
             // Process
-            Ok(Answer::Number(0))
+            Ok(Answer::Number(
+                floor.nth(100 - 1).unwrap().len().try_into().unwrap(),
+            ))
         },
     ],
 };
