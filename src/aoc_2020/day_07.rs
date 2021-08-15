@@ -15,10 +15,10 @@ use std::{collections::HashSet, convert::TryInto};
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(316), Number(11310)],
+    vec![Unsigned(316), Unsigned(11310)],
     "light red bags contain 1 bright white bag, 2 muted yellow bags.
 dark orange bags contain 3 bright white bags, 4 muted yellow bags.
 bright white bags contain 1 shiny gold bag.
@@ -28,7 +28,7 @@ dark olive bags contain 3 faded blue bags, 4 dotted black bags.
 vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
 faded blue bags contain no other bags.
 dotted black bags contain no other bags.",
-    vec![4, 32].answer_vec(),
+    vec![4u64, 32].answer_vec(),
     "shiny gold bags contain 2 dark red bags.
 dark red bags contain 2 dark orange bags.
 dark orange bags contain 2 dark yellow bags.
@@ -36,7 +36,7 @@ dark yellow bags contain 2 dark green bags.
 dark green bags contain 2 dark blue bags.
 dark blue bags contain 2 dark violet bags.
 dark violet bags contain no other bags.",
-    vec![None, Some(Number(126))]
+    vec![None, Some(Unsigned(126))]
     }
 }
 
@@ -146,7 +146,7 @@ pub const SOLUTION: Solution = Solution {
 
             // Processing
             let id = bag_rules.bags.get_or_add_bag("shiny gold");
-            Ok(Answer::Number({
+            Ok(Answer::Unsigned({
                 let mut containing_bags = HashSet::new();
                 containing_bags.insert(id);
 
@@ -185,7 +185,7 @@ pub const SOLUTION: Solution = Solution {
                         .sum(),
                 }
             }
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 count_containing_bags(&bag_rules.rules, id).into(),
             ))
         },

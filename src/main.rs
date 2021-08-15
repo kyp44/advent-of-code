@@ -2,6 +2,7 @@
 #![feature(destructuring_assignment)]
 
 mod aoc;
+mod aoc_2015;
 mod aoc_2020;
 
 use aoc::AocError;
@@ -30,7 +31,7 @@ fn main() -> anyhow::Result<()> {
     // Parse command line arguments
     let cli = Cli::from_args();
 
-    let all_year_solutions = vec![&aoc_2020::YEAR_SOLUTIONS];
+    let all_year_solutions = vec![&aoc_2015::YEAR_SOLUTIONS, &aoc_2020::YEAR_SOLUTIONS];
 
     if cli.list {
         // List all implemented solutions
@@ -47,7 +48,7 @@ fn main() -> anyhow::Result<()> {
                         year_solutions.solution_list(),
                     )
                 })
-                .join("\n")
+                .join("\n\n")
         );
     } else {
         // Get solution or produce errors if it is not implemented

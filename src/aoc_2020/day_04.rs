@@ -17,10 +17,10 @@ use strum_macros::{EnumIter, EnumString};
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(202), Number(137)],
+    vec![Unsigned(202), Unsigned(137)],
     "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd
 byr:1937 iyr:2017 cid:147 hgt:183cm
 
@@ -34,7 +34,7 @@ hgt:179cm
 
 hcl:#cfa07d eyr:2025 pid:166559648
 iyr:2011 ecl:brn hgt:59in",
-    vec![Some(Number(2)), None],
+    vec![Some(Unsigned(2)), None],
     "eyr:1972 cid:100
 hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926
 
@@ -48,7 +48,7 @@ ecl:brn hgt:182cm pid:021572410 eyr:2020 byr:1992 cid:277
 hgt:59cm ecl:zzz
 eyr:2038 hcl:74454a iyr:2023
 pid:3556412378 byr:2007",
-    vec![None, Some(Number(0))],
+    vec![None, Some(Unsigned(0))],
     "pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980
 hcl:#623a2f
 
@@ -61,7 +61,7 @@ pid:545766238 ecl:hzl
 eyr:2022
 
 iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719",
-    vec![None, Some(Number(4))]
+    vec![None, Some(Unsigned(4))]
     }
 }
 
@@ -219,7 +219,7 @@ pub const SOLUTION: Solution = Solution {
             let passports = parse_passports(input)?;
 
             // Processing
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 passports.iter().filter_count(|p| passport_valid_part_a(p)),
             ))
         },
@@ -229,7 +229,7 @@ pub const SOLUTION: Solution = Solution {
             let passports = parse_passports(input)?;
 
             // Processing
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 passports.iter().filter_count(|p| passport_valid_part_b(p)),
             ))
         },

@@ -12,14 +12,14 @@ use std::convert::TryInto;
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-            vec![Number(378), Number(280)],
+            vec![Unsigned(378), Unsigned(280)],
         "1-3 a: abcde
 1-3 b: cdefg
 2-9 c: ccccccccc",
-        vec![2, 1].answer_vec()
+        vec![2u64, 1].answer_vec()
     }
 }
 
@@ -113,7 +113,7 @@ pub const SOLUTION: Solution = Solution {
             let passwords = Password::gather(input.lines())?;
 
             // Processing
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 passwords.iter().filter_count(|p| p.valid_part_a()),
             ))
         },
@@ -123,7 +123,7 @@ pub const SOLUTION: Solution = Solution {
             let passwords = Password::gather(input.lines())?;
 
             // Processing
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 passwords.iter().filter_count(|p| p.valid_part_b()),
             ))
         },

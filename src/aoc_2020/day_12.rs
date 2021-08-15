@@ -13,16 +13,16 @@ use std::fmt::Debug;
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(2228), Number(42908)],
+    vec![Unsigned(2228), Unsigned(42908)],
     "F10
 N3
 F7
 R90
 F11",
-        vec![25, 286].answer_vec()
+        vec![25u64, 286].answer_vec()
     }
 }
 
@@ -141,7 +141,7 @@ pub const SOLUTION: Solution = Solution {
             let instructions = Instruction::gather(input.lines())?;
 
             // Process
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 Ship::follow_ship_instructions(&instructions).manhatten(),
             ))
         },
@@ -151,7 +151,7 @@ pub const SOLUTION: Solution = Solution {
             let instructions = Instruction::gather(input.lines())?;
 
             // Process
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 Ship::follow_waypoint_instructions(&instructions, &Vector2::new(10, 1)).manhatten(),
             ))
         },

@@ -19,10 +19,10 @@ use strum_macros::{Display, EnumIter};
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(83775126454273), Number(1993)],
+    vec![Unsigned(83775126454273), Unsigned(1993)],
     "Tile 2311:
 ..##.#..#.
 ##..#.....
@@ -130,7 +130,7 @@ Tile 3079:
 ..#.###...
 ..#.......
 ..#.###...",
-    vec![20899048083289, 273].answer_vec()
+    vec![20899048083289, 273u64].answer_vec()
     }
 }
 
@@ -689,7 +689,7 @@ pub const SOLUTION: Solution = Solution {
                     }
 
                     // Count the rough spots
-                    return Ok(Answer::Number(
+                    return Ok(Answer::Unsigned(
                         image
                             .pixels
                             .iter()

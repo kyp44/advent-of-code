@@ -14,10 +14,10 @@ use crate::aoc::prelude::*;
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-            vec![Number(354), Number(3608)],
+            vec![Unsigned(354), Unsigned(3608)],
         "sesenwnenenewseeswwswswwnenewsewsw
 neeenesenwnwwswnenewnwwsewnenwseswesw
 seswneswswsenwwnwse
@@ -38,7 +38,7 @@ nenewswnwewswnenesenwnesewesw
 eneswnwswnwsenenwnwnwwseeswneewsenese
 neswnwewnwnwseenwseesewsenwsweewe
 wseweeenwnesenwwwswnew",
-    vec![10, 2208].answer_vec()
+    vec![10u64, 2208].answer_vec()
     }
 }
 
@@ -225,7 +225,9 @@ pub const SOLUTION: Solution = Solution {
             let floor: Floor = input.parse()?;
 
             // Process
-            Ok(Answer::Number(floor.black_tiles.len().try_into().unwrap()))
+            Ok(Answer::Unsigned(
+                floor.black_tiles.len().try_into().unwrap(),
+            ))
         },
         // Part b)
         |input| {
@@ -233,7 +235,7 @@ pub const SOLUTION: Solution = Solution {
             let mut floor: Floor = input.parse()?;
 
             // Process
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 floor.nth(100 - 1).unwrap().len().try_into().unwrap(),
             ))
         },

@@ -14,10 +14,10 @@ use crate::aoc::prelude::*;
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(33561), Number(34594)],
+    vec![Unsigned(33561), Unsigned(34594)],
     "Player 1:
 9
 2
@@ -31,7 +31,7 @@ Player 2:
 4
 7
 10",
-    vec![306, 291].answer_vec(),
+    vec![306u64, 291].answer_vec(),
     "Player 1:
 43
 19
@@ -40,7 +40,7 @@ Player 2:
 2
 29
 14",
-    vec![None, Some(Number(105))]
+    vec![None, Some(Unsigned(105))]
     }
 }
 

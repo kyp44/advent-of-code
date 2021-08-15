@@ -13,10 +13,10 @@ use std::str::FromStr;
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-        vec![Number(542529149), Number(75678618)],
+        vec![Unsigned(542529149), Unsigned(75678618)],
         "previous: 5
 35
 20
@@ -38,7 +38,7 @@ mod tests {
 277
 309
 576",
-        vec![127, 62].answer_vec()
+        vec![127u64, 62].answer_vec()
     }
 }
 

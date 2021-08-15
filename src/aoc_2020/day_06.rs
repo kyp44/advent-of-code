@@ -15,10 +15,10 @@ use std::{collections::HashSet, convert::TryInto};
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-        vec![Number(6335), Number(3392)],
+        vec![Unsigned(6335), Unsigned(3392)],
         "abc
 
 a
@@ -35,7 +35,7 @@ a
 
 b
 ",
-        vec![11, 6].answer_vec()
+        vec![11u64, 6].answer_vec()
     }
 }
 
@@ -76,7 +76,7 @@ fn solve(input: &str, reducer: fn(Questions, Questions) -> Questions) -> AocResu
     .finish()
     .map(|(_, pd)| pd)?;
 
-    Ok(Answer::Number(
+    Ok(Answer::Unsigned(
         questions
             .iter()
             .map(|q| q.len())

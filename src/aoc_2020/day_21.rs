@@ -18,15 +18,15 @@ use std::{
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(2287), Answer::String("fntg,gtqfrp,xlvrggj,rlsr,xpbxbv,jtjtrd,fvjkp,zhszc".to_string())],
+    vec![Unsigned(2287), Answer::String("fntg,gtqfrp,xlvrggj,rlsr,xpbxbv,jtjtrd,fvjkp,zhszc".to_string())],
     "mxmxvkd kfcds sqjhc nhms (contains dairy, fish)
 trh fvjkl sbzzf mxmxvkd (contains dairy)
 sqjhc fvjkl (contains soy)
 sqjhc mxmxvkd sbzzf (contains fish)",
-    vec![Some(Number(5)), Some(Answer::String("mxmxvkd,sqjhc,fvjkl".to_string()))]
+    vec![Some(Unsigned(5)), Some(Answer::String("mxmxvkd,sqjhc,fvjkl".to_string()))]
     }
 }
 
@@ -192,7 +192,7 @@ pub const SOLUTION: Solution = Solution {
             let partial_solution = problem.partial_solve();
 
             // Finally, count the number of times these appear in the ingedients list.
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 problem
                     .foods
                     .iter()

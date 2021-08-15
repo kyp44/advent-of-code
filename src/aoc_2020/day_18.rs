@@ -13,22 +13,22 @@ use std::cmp::Ordering;
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(464478013511), Number(85660197232452)],
+    vec![Unsigned(464478013511), Unsigned(85660197232452)],
     "1 + 2 * 3 + 4 * 5 + 6",
-    vec![71, 231].answer_vec(),
+    vec![71u64, 231].answer_vec(),
     "1 + (2 * 3) + (4 * (5 + 6))",
-    vec![51, 51].answer_vec(),
+    vec![51u64, 51].answer_vec(),
     "2 * 3 + (4 * 5)",
-    vec![26, 46].answer_vec(),
+    vec![26u64, 46].answer_vec(),
     "5 + (8 * 3 + 9 + 3 * 4 * 3)",
-    vec![437, 1445].answer_vec(),
+    vec![437u64, 1445].answer_vec(),
     "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))",
-    vec![12240, 669060].answer_vec(),
+    vec![12240u64, 669060].answer_vec(),
     "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2",
-    vec![13632, 23340].answer_vec()
+    vec![13632u64, 23340].answer_vec()
     }
 }
 

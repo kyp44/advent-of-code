@@ -6,13 +6,13 @@ use crate::aoc::prelude::*;
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-            vec![Number(6421487)],
+            vec![Unsigned(6421487)],
         "5764801
     17807724",
-    vec![14897079].answer_vec()
+    vec![14897079u64].answer_vec()
     }
 }
 

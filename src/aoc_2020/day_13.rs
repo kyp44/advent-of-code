@@ -14,25 +14,25 @@ use std::convert::TryInto;
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(1895), Number(840493039281088)],
+    vec![Unsigned(1895), Unsigned(840493039281088)],
     "939
     7,13,x,x,59,x,31,19",
-        vec![295, 1068781].answer_vec(),
+        vec![295u64, 1068781].answer_vec(),
         "0
     67,7,59,61",
-        vec![None, Some(Number(754018))],
+        vec![None, Some(Unsigned(754018))],
         "0
     67,x,7,59,61",
-        vec![None, Some(Number(779210))],
+        vec![None, Some(Unsigned(779210))],
         "0
     67,7,x,59,61",
-        vec![None, Some(Number(1261476))],
+        vec![None, Some(Unsigned(1261476))],
         "0
     1789,37,47,1889",
-        vec![None, Some(Number(1202161486))]
+        vec![None, Some(Unsigned(1202161486))]
     }
 }
 

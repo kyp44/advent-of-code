@@ -16,10 +16,10 @@ use std::collections::HashMap;
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(149), Number(332)],
+    vec![Unsigned(149), Unsigned(332)],
     "0: 4 1 5
 1: 2 3 | 3 2
 2: 4 4 | 5 5
@@ -32,7 +32,7 @@ bababa
 abbbab
 aaabbb
 aaaabbb",
-    vec![Some(Number(2)), None],
+    vec![Some(Unsigned(2)), None],
     "42: 9 14 | 10 1
 9: 14 27 | 1 26
 10: 23 14 | 28 1
@@ -80,7 +80,7 @@ aaaabbaaaabbaaa
 aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
 babaaabbbaaabaababbaabababaaab
 aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba",
-    vec![3, 12].answer_vec()
+    vec![3u64, 12].answer_vec()
     }
 }
 
@@ -258,7 +258,7 @@ impl<'a> Problem<'a> {
     }
 
     fn solve(&self) -> AocResult<Answer> {
-        let mut sum = 0;
+        let mut sum: u64 = 0;
 
         //println!("Valid strings:");
         for s in self.strings.iter() {

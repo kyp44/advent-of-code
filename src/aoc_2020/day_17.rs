@@ -6,14 +6,14 @@ use std::{collections::HashSet, convert::TryInto, fmt::Debug, ops::RangeInclusiv
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(386), Number(2276)],
+    vec![Unsigned(386), Unsigned(2276)],
     ".#.
 ..#
 ###",
-    vec![112, 848].answer_vec()
+    vec![112u64, 848].answer_vec()
     }
 }
 
@@ -164,7 +164,7 @@ pub const SOLUTION: Solution = Solution {
             let dimension = Dimension::from_str(3, input)?;
 
             // Process
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 dimension.run(6).count_active().try_into().unwrap(),
             ))
         },
@@ -174,7 +174,7 @@ pub const SOLUTION: Solution = Solution {
             let dimension = Dimension::from_str(4, input)?;
 
             // Process
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 dimension.run(6).count_active().try_into().unwrap(),
             ))
         },

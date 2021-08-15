@@ -206,12 +206,18 @@ where
 /// Allows for different answer types
 #[derive(Debug, PartialEq, Eq)]
 pub enum Answer {
-    Number(u64),
+    Unsigned(u64),
+    Signed(i64),
     String(String),
 }
 impl From<u64> for Answer {
     fn from(n: u64) -> Self {
-        Answer::Number(n)
+        Answer::Unsigned(n)
+    }
+}
+impl From<i64> for Answer {
+    fn from(n: i64) -> Self {
+        Answer::Signed(n)
     }
 }
 impl From<String> for Answer {
@@ -253,7 +259,8 @@ impl Solution {
             println!(
                 "Answer: {}",
                 match result {
-                    Answer::Number(n) => n.to_string(),
+                    Answer::Unsigned(n) => n.to_string(),
+                    Answer::Signed(n) => n.to_string(),
                     Answer::String(s) => s.to_string(),
                 }
             );
@@ -287,7 +294,14 @@ pub trait AnswerVec {
 }
 impl AnswerVec for Vec<u64> {
     fn answer_vec(self) -> Vec<Option<Answer>> {
-        self.into_iter().map(|n| Some(Answer::Number(n))).collect()
+        self.into_iter()
+            .map(|n| Some(Answer::Unsigned(n)))
+            .collect()
+    }
+}
+impl AnswerVec for Vec<i64> {
+    fn answer_vec(self) -> Vec<Option<Answer>> {
+        self.into_iter().map(|n| Some(Answer::Signed(n))).collect()
     }
 }
 

@@ -7,10 +7,10 @@ use std::{collections::HashSet, convert::TryInto, fmt::Display, hash::Hash, str:
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(2483), Number(2285)],
+    vec![Unsigned(2483), Unsigned(2285)],
     "L.LL.LL.LL
 LLLLLLL.LL
 L.L.L..L..
@@ -21,7 +21,7 @@ L.LLLLL.LL
 LLLLLLLLLL
 L.LLLLLL.L
 L.LLLLL.LL",
-        vec![37, 26].answer_vec()
+        vec![37u64, 26].answer_vec()
     }
 }
 

@@ -14,20 +14,20 @@ use std::{collections::HashMap, str::FromStr};
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(9967721333886), Number(4355897790573)],
+    vec![Unsigned(9967721333886), Unsigned(4355897790573)],
     "mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
 mem[8] = 11
 mem[7] = 101
 mem[8] = 0",
-        vec![Some(Number(165)), None],
+        vec![Some(Unsigned(165)), None],
     "mask = 000000000000000000000000000000X1001X
         mem[42] = 100
         mask = 00000000000000000000000000000000X0XX
         mem[26] = 1",
-    vec![None, Some(Number(208))]
+    vec![None, Some(Unsigned(208))]
     }
 }
 

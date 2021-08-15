@@ -15,17 +15,17 @@ use crate::aoc::{prelude::*, single_digit};
 mod tests {
     use super::*;
     use crate::{expensive_test, solution_test};
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(98645732), Number(689500518476)],
+    vec![Unsigned(98645732), Unsigned(689500518476)],
     "389125467",
-    vec![Some(Number(67384529)), None]
+    vec![Some(Unsigned(67384529)), None]
     }
 
     expensive_test! {
     "389125467",
-    vec![None, Some(Number(149245887792))]
+    vec![None, Some(Unsigned(149245887792))]
     }
 }
 

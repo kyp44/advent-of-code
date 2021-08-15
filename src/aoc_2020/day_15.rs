@@ -13,27 +13,27 @@ mod tests {
     use super::*;
     use crate::expensive_test;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(1428), Number(3718541)],
+    vec![Unsigned(1428), Unsigned(3718541)],
     "0,3,6",
-    vec![436, 175594].answer_vec()
+    vec![436u64, 175594].answer_vec()
     }
 
     expensive_test! {
     "1,3,2",
-    vec![1, 2578].answer_vec(),
+    vec![1u64, 2578].answer_vec(),
     "2,1,3",
-    vec![10, 3544142].answer_vec(),
+    vec![10u64, 3544142].answer_vec(),
     "1,2,3",
-    vec![27, 261214].answer_vec(),
+    vec![27u64, 261214].answer_vec(),
     "2,3,1",
-    vec![78, 6895259].answer_vec(),
+    vec![78u64, 6895259].answer_vec(),
     "3,2,1",
-    vec![438, 18].answer_vec(),
+    vec![438u64, 18].answer_vec(),
     "3,1,2",
-    vec![1836, 362].answer_vec()
+    vec![1836u64, 362].answer_vec()
     }
 }
 

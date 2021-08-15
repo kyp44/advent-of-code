@@ -5,10 +5,10 @@ use itertools::Itertools;
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(63616), Number(67877784)],
+    vec![Unsigned(63616), Unsigned(67877784)],
         "1721
 979
 366
@@ -16,7 +16,7 @@ mod tests {
 675
 1456
 ",
-        vec![514579, 241861950].answer_vec()
+        vec![514579u64, 241861950].answer_vec()
     }
 }
 
@@ -37,7 +37,7 @@ pub const SOLUTION: Solution = Solution {
                 match i.next() {
                     Some(v) => {
                         if v[0] + v[1] == 2020 {
-                            break Ok(Answer::Number((v[0] * v[1]).into()));
+                            break Ok(Answer::Unsigned((v[0] * v[1]).into()));
                         }
                     }
                     None => break Err(AocError::Process("No two values add to 2020".into())),
@@ -53,7 +53,7 @@ pub const SOLUTION: Solution = Solution {
             loop {
                 match i.next() {
                     Some(v) if v[0] + v[1] + v[2] == 2020 => {
-                        break Ok(Answer::Number((v[0] * v[1] * v[2]).into()));
+                        break Ok(Answer::Unsigned((v[0] * v[1] * v[2]).into()));
                     }
                     None => {
                         break Err(AocError::Process("No three values add to 2020".into()));

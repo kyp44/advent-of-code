@@ -5,10 +5,10 @@ use std::collections::HashMap;
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(2100), Number(16198260678656)],
+    vec![Unsigned(2100), Unsigned(16198260678656)],
     "16
 10
 15
@@ -20,7 +20,7 @@ mod tests {
 6
 12
 4",
-    vec![35, 8].answer_vec(),
+    vec![35u64, 8].answer_vec(),
 "28
 33
 18
@@ -52,7 +52,7 @@ mod tests {
 34
 10
 3",
-    vec![220, 19208].answer_vec()
+    vec![220u64, 19208].answer_vec()
     }
 }
 

@@ -10,14 +10,14 @@ use nom::{
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-        vec![Number(970), Number(587)],
+        vec![Unsigned(970), Unsigned(587)],
         "BFFFBBFRRR
 FFFBBBFRRR
 BBFFBBFRLL",
-        vec![Some(Number(820)), None]
+        vec![Some(Unsigned(820)), None]
     }
 }
 
@@ -86,7 +86,9 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let ids = get_ids(input)?;
 
-            Ok(Answer::Number(ids.iter().fold(0, |o, n| o.max(*n)).into()))
+            Ok(Answer::Unsigned(
+                ids.iter().fold(0, |o, n| o.max(*n)).into(),
+            ))
         },
         // Part b)
         |input| {
@@ -100,7 +102,7 @@ pub const SOLUTION: Solution = Solution {
                 Some(id) => *id + 1,
                 None => 0,
             };
-            Ok(Answer::Number(missing_id.into()))
+            Ok(Answer::Unsigned(missing_id.into()))
         },
     ],
 };

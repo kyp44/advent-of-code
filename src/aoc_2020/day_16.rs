@@ -14,10 +14,10 @@ use nom::{
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(29851), Number(3029180675981)],
+    vec![Unsigned(29851), Unsigned(3029180675981)],
 "class: 1-3 or 5-7
 row: 6-11 or 33-44
 seat: 13-40 or 45-50
@@ -31,7 +31,7 @@ nearby tickets:
 55,2,20
 38,6,12",
     // Solution: row, class, seat
-    vec![Some(Number(71)), None],
+    vec![Some(Unsigned(71)), None],
     "class: 0-1 or 4-19
 row: 0-5 or 8-19
 seat: 0-13 or 16-19
@@ -44,7 +44,7 @@ nearby tickets:
 15,1,5
 5,14,9",
     // Solution: row, class, seat
-    vec![None, Some(Number(1))]
+    vec![None, Some(Unsigned(1))]
     }
 }
 
@@ -259,7 +259,7 @@ pub const SOLUTION: Solution = Solution {
             let problem = Problem::from_str(input)?;
 
             // Process
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 problem.all_invalid_fields().sum::<u32>().into(),
             ))
         },

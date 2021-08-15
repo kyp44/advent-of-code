@@ -16,10 +16,10 @@ use std::{collections::HashSet, convert::TryInto};
 mod tests {
     use super::*;
     use crate::solution_test;
-    use Answer::Number;
+    use Answer::Unsigned;
 
     solution_test! {
-    vec![Number(1087), Number(780)],
+    vec![Unsigned(1087), Unsigned(780)],
         "nop +0
 acc +1
 jmp +4
@@ -29,7 +29,7 @@ acc -99
 acc +1
 jmp -4
 acc +6",
-        vec![5, 8].answer_vec()
+        vec![5u64, 8].answer_vec()
     }
 }
 
@@ -188,7 +188,7 @@ pub const SOLUTION: Solution = Solution {
             let program: Program = input.parse()?;
 
             // Processing
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 match program.execute() {
                     ProgramEndStatus::Infinite(acc) => check_acc(acc)?,
                     _ => {
@@ -213,7 +213,7 @@ pub const SOLUTION: Solution = Solution {
                     break;
                 }
             }
-            Ok(Answer::Number(
+            Ok(Answer::Unsigned(
                 terminated_acc
                     .ok_or_else(|| AocError::Process("No modified programs terminated!".into()))?
                     .into(),
