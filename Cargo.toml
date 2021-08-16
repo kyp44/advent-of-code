@@ -23,6 +23,7 @@ cgmath = "0.18"
 rayon = "1.5.1"
 enum-map = "1.1.1"
 enum-map-derive = "0.6"
+md5 = "0.7"
 
 [features]
 expensive = []
