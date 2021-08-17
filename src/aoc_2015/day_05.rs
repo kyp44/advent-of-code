@@ -9,7 +9,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(236)],
+    vec![Unsigned(236), Unsigned(51)],
     "ugknbfddgicrmopn
 aaa
 jchzalrnumimnmhp
@@ -52,6 +52,8 @@ impl Nice<PartA> for &str {
 impl Nice<PartB> for &str {
     fn is_nice(&self) -> bool {
         // Pair of letters appearing twice but not overlapping
+        (0..self.len() - 3).any(|i| self[i + 2..].contains(&self[i..i + 2]))
+	    &&
         // Repeating letter with one in between
         self.chars().tuple_windows().any(|(a, _, c)| a == c)
     }
