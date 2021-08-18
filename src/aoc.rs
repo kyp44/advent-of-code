@@ -1,6 +1,6 @@
 use anyhow::Context;
 use itertools::Itertools;
-use nom::character::complete::space0;
+use nom::character::complete::{space0, space1};
 use nom::sequence::delimited;
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
@@ -139,11 +139,23 @@ where
     delimited(space0, inner, space0)
 }
 
+/// A nom combinator that requires some whitespace around a parser
+pub fn separator<I, F, O, E>(inner: F) -> impl FnMut(I) -> IResult<I, O, E>
+where
+    I: InputTakeAtPosition,
+    <I as InputTakeAtPosition>::Item: AsChar + Clone,
+    F: FnMut(I) -> IResult<I, O, E>,
+    E: nom::error::ParseError<I>,
+{
+    delimited(space1, inner, space1)
+}
+
 /// A nom parser that takes a single decimal digit
-pub fn single_digit<I, Error: nom::error::ParseError<I>>(input: I) -> IResult<I, u32, Error>
+pub fn single_digit<I, E>(input: I) -> IResult<I, u32, E>
 where
     I: Slice<RangeFrom<usize>> + InputIter,
     <I as InputIter>::Item: AsChar + Copy,
+    E: nom::error::ParseError<I>,
 {
     match input
         .iter_elements()
@@ -151,7 +163,7 @@ where
         .map(|c| (c, c.as_char().to_digit(10)))
     {
         Some((c, Some(d))) => Ok((input.slice(c.len()..), d)),
-        _ => Err(nom::Err::Error(Error::from_error_kind(
+        _ => Err(nom::Err::Error(E::from_error_kind(
             input,
             ErrorKind::NoneOf,
         ))),
