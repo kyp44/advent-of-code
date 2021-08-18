@@ -19,7 +19,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(543903)],
+    vec![Unsigned(543903), Unsigned(14687245)],
     "turn on 0,0 through 999,999
 toggle 0,0 through 999,0
 turn off 499,499 through 500,500",
@@ -107,19 +107,19 @@ impl Parseable<'_> for Instruction {
 
 trait Part {
     fn initial() -> Self;
-    fn operate(&self, val: Self) -> Self;
+    fn update(&mut self, action: &Action);
 }
 impl Part for bool {
     fn initial() -> Self {
         false
     }
 
-    fn operate(&self, val: Self) -> Self {
+    fn update(&mut self, action: &Action) {
         use Action::*;
-        match self {
-            TurnOn => true,
-            Toggle => !val,
-            TurnOff => false,
+        match action {
+            TurnOn => *self = true,
+            Toggle => *self = !*self,
+            TurnOff => *self = false,
         }
     }
 }
@@ -129,12 +129,12 @@ impl Part for u8 {
         0
     }
 
-    fn operate(&self, val: Self) -> Self {
+    fn update(&mut self, action: &Action) {
         use Action::*;
-        match self {
-            TurnOn => val + 1,
-            Toggle => val + 2,
-            TurnOff => val.saturating_sub(1),
+        match action {
+            TurnOn => *self += 1,
+            Toggle => *self += 2,
+            TurnOff => *self = self.saturating_sub(1),
         }
     }
 }
@@ -153,7 +153,7 @@ impl<T: Part> LightGrid<T> {
     fn execute_instruction(&mut self, instructions: &[Instruction]) {
         for inst in instructions {
             for point in inst.rect.iter() {
-                self.grid[point.y][point.x] = inst.action.operate(self.grid[point.y][point.x]);
+                self.grid[point.y][point.x].update(&inst.action);
             }
         }
     }
@@ -181,6 +181,17 @@ impl fmt::Debug for LightGrid<bool> {
         Ok(())
     }
 }
+impl LightGrid<u8> {
+    fn total_brightness(&self) -> u64 {
+        self.grid
+            .iter()
+            .map(|row| row.iter())
+            .flatten()
+            .copied()
+            .map::<u64, _>(|v| v.into())
+            .sum()
+    }
+}
 
 pub const SOLUTION: Solution = Solution {
     day: 6,
@@ -203,13 +214,11 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let mut light_grid = LightGrid::<bool>::new(1000);
+            let mut light_grid = LightGrid::<u8>::new(1000);
             light_grid.execute_instruction(&Instruction::gather(input.lines())?);
 
             // Process
-            Ok(Answer::Unsigned(
-                light_grid.number_lit().try_into().unwrap(),
-            ))
+            Ok(light_grid.total_brightness().into())
         },
     ],
 };
