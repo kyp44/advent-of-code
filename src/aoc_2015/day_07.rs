@@ -93,13 +93,10 @@ impl<'a> Parseable<'a> for Element<'a> {
         }
 
         /// A nom parser for the shift element
-        fn shift<'a, E>(
+        fn shift<'a>(
             keyword: &'static str,
             mapper: fn(Unary<'a>, usize) -> Element<'a>,
-        ) -> impl FnMut(&'a str) -> IResult<&'a str, Element<'a>, E>
-        where
-            E: nom::error::ParseError<&'a str>,
-        {
+        ) -> impl FnMut(&'a str) -> IResult<&'a str, Element<'a>, NomParseError> {
             map(
                 separated_pair(
                     separated_pair(Input::parser, separator(tag(keyword)), digit1),
@@ -110,15 +107,11 @@ impl<'a> Parseable<'a> for Element<'a> {
             )
         }
 
-        /*
         /// A nom parser for a binary operation
-        fn binary<'a, E>(
+        fn binary<'a>(
             keyword: &'static str,
             mapper: fn(Binary<'a>) -> Element<'a>,
-        ) -> impl FnMut(&'a str) -> IResult<&'a str, Element<'a>, E>
-        where
-            E: nom::error::ParseError<&'a str>,
-        {
+        ) -> impl FnMut(&'a str) -> IResult<&'a str, Element<'a>, NomParseError> {
             map(
                 separated_pair(
                     separated_pair(Input::parser, separator(tag(keyword)), Input::parser),
@@ -127,7 +120,8 @@ impl<'a> Parseable<'a> for Element<'a> {
                 ),
                 move |((i1s, i2s), os)| mapper(Binary::new(i1s, i2s, os)),
             )
-        }*/
+        }
+
         alt((
             map(separated_pair(Input::parser, io_sep, alpha1), |(i, os)| {
                 Buffer(Unary::new(i, os))
@@ -136,10 +130,10 @@ impl<'a> Parseable<'a> for Element<'a> {
                 separated_pair(preceded(tag("NOT "), Input::parser), io_sep, alpha1),
                 |(i, os)| Not(Unary::new(i, os)),
             ),
-            /*shift("LSHIFT", |u, a| ShiftLeft(u, a)),
+            shift("LSHIFT", |u, a| ShiftLeft(u, a)),
             shift("RSHIFT", |u, a| ShiftRight(u, a)),
             binary("AND", |b| And(b)),
-            binary("OR", |b| Or(b)),*/
+            binary("OR", |b| Or(b)),
         ))(input.trim())
     }
 }
@@ -179,7 +173,6 @@ impl<'a> Circuit<'a> {
     }
 
     fn determine_signal(&self, wire: &str) -> AocResult<u16> {
-        use Element::*;
         let element = self
             .elements
             .iter()
@@ -188,23 +181,24 @@ impl<'a> Circuit<'a> {
                 AocError::Process(format!("Wire '{}' not connected to an output", wire).into())
             })?;
 
-        todo!()
-        /*
         let det_input = |input: &Input| -> AocResult<u16> {
             Ok(match input {
-                Input::Value(v) => v,
+                Input::Value(v) => *v,
                 Input::Wire(w) => self.determine_signal(w)?,
             })
         };
 
+        println!("Determining wire {}: {:?}", wire, element);
+
+        use Element::*;
         Ok(match element {
-            Set(_, v) => *v,
-            Not(u) => !self.determine_signal(u.input)?,
-            ShiftLeft(u, a) => self.determine_signal(u.input)? << a,
-            ShiftRight(u, a) => self.determine_signal(u.input)? >> a,
-            And(b) => self.determine_signal(b.input1)? & self.determine_signal(b.input2)?,
-            Or(b) => self.determine_signal(b.input1)? | self.determine_signal(b.input2)?,
-        })*/
+            Buffer(u) => det_input(&u.input)?,
+            Not(u) => !det_input(&u.input)?,
+            ShiftLeft(u, a) => det_input(&u.input)? << a,
+            ShiftRight(u, a) => det_input(&u.input)? >> a,
+            And(b) => det_input(&b.input1)? & det_input(&b.input2)?,
+            Or(b) => det_input(&b.input1)? | det_input(&b.input2)?,
+        })
     }
 }
 
