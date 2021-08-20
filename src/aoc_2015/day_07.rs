@@ -1,3 +1,5 @@
+use std::{cell::RefCell, collections::HashMap};
+
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -16,7 +18,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![],
+    vec![Unsigned(46065), Unsigned(14134)],
     "123 -> x
 456 -> y
 x AND y -> d
@@ -25,8 +27,8 @@ x LSHIFT 2 -> f
 y RSHIFT 2 -> g
 NOT x -> h
 NOT y -> i
-NOT f -> a",
-    vec![65043u64].answer_vec()
+f -> a",
+    vec![492u64].answer_vec()
     }
 }
 
@@ -39,7 +41,7 @@ impl<'a> Parseable<'a> for Input<'a> {
     fn parser(input: &'a str) -> NomParseResult<Self> {
         alt((
             map(digit1, |ds: &str| Input::Value(ds.parse().unwrap())),
-            map(alpha1, |s| Input::Wire(s)),
+            map(alpha1, Input::Wire),
         ))(input)
     }
 }
@@ -82,8 +84,6 @@ enum Element<'a> {
 }
 impl<'a> Parseable<'a> for Element<'a> {
     fn parser(input: &'a str) -> NomParseResult<Self> {
-        use Element::*;
-
         /// A nom parser for the input/output separator
         fn io_sep<'a, E>(input: &'a str) -> IResult<&str, (), E>
         where
@@ -124,16 +124,16 @@ impl<'a> Parseable<'a> for Element<'a> {
 
         alt((
             map(separated_pair(Input::parser, io_sep, alpha1), |(i, os)| {
-                Buffer(Unary::new(i, os))
+                Element::Buffer(Unary::new(i, os))
             }),
             map(
                 separated_pair(preceded(tag("NOT "), Input::parser), io_sep, alpha1),
-                |(i, os)| Not(Unary::new(i, os)),
+                |(i, os)| Element::Not(Unary::new(i, os)),
             ),
-            shift("LSHIFT", |u, a| ShiftLeft(u, a)),
-            shift("RSHIFT", |u, a| ShiftRight(u, a)),
-            binary("AND", |b| And(b)),
-            binary("OR", |b| Or(b)),
+            shift("LSHIFT", Element::ShiftLeft),
+            shift("RSHIFT", Element::ShiftRight),
+            binary("AND", Element::And),
+            binary("OR", Element::Or),
         ))(input.trim())
     }
 }
@@ -154,6 +154,7 @@ impl Element<'_> {
 #[derive(Debug)]
 struct Circuit<'a> {
     elements: Box<[Element<'a>]>,
+    wire_values: RefCell<HashMap<&'a str, u16>>,
 }
 impl<'a> Circuit<'a> {
     fn from_str(s: &'a str) -> AocResult<Self> {
@@ -169,36 +170,70 @@ impl<'a> Circuit<'a> {
             }
         }
 
-        Ok(Circuit { elements })
+        Ok(Circuit {
+            elements,
+            wire_values: RefCell::new(HashMap::new()),
+        })
     }
 
-    fn determine_signal(&self, wire: &str) -> AocResult<u16> {
+    fn determine_signal<'b>(&'b mut self, wire: &'a str) -> AocResult<u16> {
+        // Recursive internal function
+        fn det_sig<'a, 'b>(
+            wire_values: &'b RefCell<HashMap<&'a str, u16>>,
+            elements: &'b [Element<'a>],
+            wire: &'a str,
+        ) -> AocResult<u16> {
+            if let Some(val) = wire_values.borrow().get(wire) {
+                //println!("Found wire '{}' in lookup table", wire);
+                return Ok(*val);
+            }
+            let element = elements
+                .iter()
+                .find(|e| e.output() == wire)
+                .ok_or_else(|| Circuit::wire_error(wire))?;
+
+            let det_input = |input: &Input<'a>| -> AocResult<u16> {
+                Ok(match input {
+                    Input::Value(v) => *v,
+                    Input::Wire(w) => det_sig(wire_values, elements, w)?,
+                })
+            };
+
+            //println!("Determining wire {}: {:?}", wire, element);
+            use Element::*;
+            let val = match element {
+                Buffer(u) => det_input(&u.input)?,
+                Not(u) => !det_input(&u.input)?,
+                ShiftLeft(u, a) => det_input(&u.input)? << a,
+                ShiftRight(u, a) => det_input(&u.input)? >> a,
+                And(b) => det_input(&b.input1)? & det_input(&b.input2)?,
+                Or(b) => det_input(&b.input1)? | det_input(&b.input2)?,
+            };
+
+            wire_values.borrow_mut().insert(wire, val);
+            Ok(val)
+        }
+
+        det_sig(&self.wire_values, &self.elements, wire)
+    }
+
+    fn wire_error(wire: &str) -> AocError {
+        AocError::Process(format!("Wire '{}' not connected to an output", wire).into())
+    }
+
+    fn override_wire<'b>(&'b mut self, wire: &'a str, value: u16) -> AocResult<()> {
+        // Change the wire to the specified value
         let element = self
             .elements
-            .iter()
+            .iter_mut()
             .find(|e| e.output() == wire)
-            .ok_or_else(|| {
-                AocError::Process(format!("Wire '{}' not connected to an output", wire).into())
-            })?;
+            .ok_or_else(|| Self::wire_error(wire))?;
+        *element = Element::Buffer(Unary::new(Input::Value(value), wire));
 
-        let det_input = |input: &Input| -> AocResult<u16> {
-            Ok(match input {
-                Input::Value(v) => *v,
-                Input::Wire(w) => self.determine_signal(w)?,
-            })
-        };
+        // Now reset known wires
+        self.wire_values.borrow_mut().clear();
 
-        println!("Determining wire {}: {:?}", wire, element);
-
-        use Element::*;
-        Ok(match element {
-            Buffer(u) => det_input(&u.input)?,
-            Not(u) => !det_input(&u.input)?,
-            ShiftLeft(u, a) => det_input(&u.input)? << a,
-            ShiftRight(u, a) => det_input(&u.input)? >> a,
-            And(b) => det_input(&b.input1)? & det_input(&b.input2)?,
-            Or(b) => det_input(&b.input1)? | det_input(&b.input2)?,
-        })
+        Ok(())
     }
 }
 
@@ -209,7 +244,19 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let circuit = Circuit::from_str(input)?;
+            let mut circuit = Circuit::from_str(input)?;
+
+            // Process
+            Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let mut circuit = Circuit::from_str(input)?;
+
+            // Find part a) solution an override
+            let a = circuit.determine_signal("a")?;
+            circuit.override_wire("b", a)?;
 
             // Process
             Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()))
