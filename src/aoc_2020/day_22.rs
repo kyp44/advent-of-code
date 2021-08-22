@@ -2,7 +2,7 @@ use std::{collections::HashSet, convert::TryInto, str::FromStr};
 
 use nom::{
     bytes::complete::tag,
-    character::complete::{digit1, multispace1},
+    character::complete::multispace1,
     combinator::map,
     multi::separated_list1,
     sequence::{delimited, pair},
@@ -53,15 +53,16 @@ impl Parseable<'_> for Deck {
     fn parser(input: &str) -> NomParseResult<Self> {
         map(
             pair(
-                delimited(tag("Player "), digit1, pair(tag(":"), multispace1)),
+                delimited(
+                    tag("Player "),
+                    nom::character::complete::u8,
+                    pair(tag(":"), multispace1),
+                ),
                 separated_list1(multispace1, u8::parser),
             ),
-            |(ps, mut v)| {
-                v.reverse();
-                Deck {
-                    player: ps.parse().unwrap(),
-                    cards: v,
-                }
+            |(player, mut cards)| {
+                cards.reverse();
+                Deck { player, cards }
             },
         )(input)
     }

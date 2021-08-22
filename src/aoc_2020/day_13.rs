@@ -2,7 +2,7 @@ use crate::aoc::prelude::*;
 use itertools::Itertools;
 use nom::{
     bytes::complete::{is_not, tag},
-    character::complete::{digit1, multispace1, space0},
+    character::complete::{multispace1, space0},
     combinator::map,
     multi::separated_list1,
     sequence::{separated_pair, tuple},
@@ -46,12 +46,12 @@ impl Parseable<'_> for Schedule {
     fn parser(input: &str) -> NomParseResult<Self> {
         map(
             separated_pair(
-                digit1,
+                nom::character::complete::u64,
                 multispace1,
                 separated_list1(tuple((space0, tag(","), space0)), is_not(", \t\n\r")),
             ),
-            |(ts, vs): (&str, Vec<&str>)| Schedule {
-                earliest_time: ts.parse().unwrap(),
+            |(earliest_time, vs): (u64, Vec<&str>)| Schedule {
+                earliest_time,
                 bus_ids: vs.into_iter().map(|s| s.parse().ok()).collect(),
             },
         )(input)

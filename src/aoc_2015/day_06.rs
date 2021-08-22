@@ -5,7 +5,7 @@ use itertools::iproduct;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{digit1, space1},
+    character::complete::space1,
     combinator::{map, map_opt, value},
     sequence::{separated_pair, tuple},
 };
@@ -51,10 +51,10 @@ type Point = Vector2<usize>;
 // NOTE: This cannot be done as a Parseable implementation due
 // to a potential conflict.
 fn point_parser(input: &str) -> NomParseResult<Point> {
-    map(
-        separated_pair(digit1, tag(","), digit1),
-        |(xs, ys): (&str, &str)| Vector2::new(xs.parse().unwrap(), ys.parse().unwrap()),
-    )(input)
+    use nom::character::complete::u64 as cu64;
+    map(separated_pair(cu64, tag(","), cu64), |(x, y)| {
+        Vector2::new(x.try_into().unwrap(), y.try_into().unwrap())
+    })(input)
 }
 
 struct Rect {

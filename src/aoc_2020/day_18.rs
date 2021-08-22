@@ -3,7 +3,6 @@ use crate::aoc::trim;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::digit1,
     combinator::{all_consuming, map},
     multi::many1,
 };
@@ -94,9 +93,7 @@ impl<'a> Parseable<'a> for Expression<'a> {
     fn parser(input: &'a str) -> NomParseResult<Self> {
         all_consuming(map(
             many1(alt((
-                map(trim(digit1), |ds: &str| {
-                    Element::Number(ds.parse().unwrap())
-                }),
+                map(trim(nom::character::complete::u64), Element::Number),
                 map(trim(tag("+")), |_| Element::Operator(Operator::Add)),
                 map(trim(tag("*")), |_| Element::Operator(Operator::Mul)),
                 map(trim(tag("(")), |_| Element::Paren(Paren::Start)),

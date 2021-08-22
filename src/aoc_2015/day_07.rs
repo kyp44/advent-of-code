@@ -1,15 +1,15 @@
-use std::{cell::RefCell, collections::HashMap};
+use std::{cell::RefCell, collections::HashMap, convert::TryInto};
 
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{alpha1, digit1},
+    character::complete::alpha1,
     combinator::{map, value},
     sequence::{preceded, separated_pair},
     IResult,
 };
 
-use crate::aoc::{prelude::*, separator};
+use crate::aoc::{prelude::*, separated};
 
 #[cfg(test)]
 mod tests {
@@ -40,7 +40,7 @@ enum Input<'a> {
 impl<'a> Parseable<'a> for Input<'a> {
     fn parser(input: &'a str) -> NomParseResult<Self> {
         alt((
-            map(digit1, |ds: &str| Input::Value(ds.parse().unwrap())),
+            map(nom::character::complete::u16, Input::Value),
             map(alpha1, Input::Wire),
         ))(input)
     }
@@ -89,7 +89,7 @@ impl<'a> Parseable<'a> for Element<'a> {
         where
             E: nom::error::ParseError<&'a str>,
         {
-            value((), separator(tag("->")))(input)
+            value((), separated(tag("->")))(input)
         }
 
         /// A nom parser for the shift element
@@ -99,11 +99,15 @@ impl<'a> Parseable<'a> for Element<'a> {
         ) -> impl FnMut(&'a str) -> IResult<&'a str, Element<'a>, NomParseError> {
             map(
                 separated_pair(
-                    separated_pair(Input::parser, separator(tag(keyword)), digit1),
+                    separated_pair(
+                        Input::parser,
+                        separated(tag(keyword)),
+                        nom::character::complete::u64,
+                    ),
                     io_sep,
                     alpha1,
                 ),
-                move |((i, ds), os)| mapper(Unary::new(i, os), ds.parse().unwrap()),
+                move |((i, d), os)| mapper(Unary::new(i, os), d.try_into().unwrap()),
             )
         }
 
@@ -114,7 +118,7 @@ impl<'a> Parseable<'a> for Element<'a> {
         ) -> impl FnMut(&'a str) -> IResult<&'a str, Element<'a>, NomParseError> {
             map(
                 separated_pair(
-                    separated_pair(Input::parser, separator(tag(keyword)), Input::parser),
+                    separated_pair(Input::parser, separated(tag(keyword)), Input::parser),
                     io_sep,
                     alpha1,
                 ),

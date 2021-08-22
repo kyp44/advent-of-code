@@ -140,7 +140,7 @@ where
 }
 
 /// A nom combinator that requires some whitespace around a parser
-pub fn separator<I, F, O, E>(inner: F) -> impl FnMut(I) -> IResult<I, O, E>
+pub fn separated<I, F, O, E>(inner: F) -> impl FnMut(I) -> IResult<I, O, E>
 where
     I: InputTakeAtPosition,
     <I as InputTakeAtPosition>::Item: AsChar + Clone,

@@ -2,7 +2,7 @@ use crate::aoc::prelude::*;
 use bimap::hash::BiHashMap;
 use nom::{
     bytes::complete::{is_not, tag, take_until},
-    character::complete::{digit1, space1},
+    character::complete::space1,
     combinator::map,
     error::context,
     multi::separated_list0,
@@ -90,15 +90,20 @@ impl BagRule {
                     tag(" bags contain "),
                     separated_list0(
                         tag(", "),
-                        tuple((digit1, space1, take_until(" bag"), is_not(",."))),
+                        tuple((
+                            nom::character::complete::u32,
+                            space1,
+                            take_until(" bag"),
+                            is_not(",."),
+                        )),
                     ),
                 ),
                 |(bs, vec)| BagRule {
                     bag_id: bag_table.get_or_add_bag(bs),
                     contains: vec
-                        .iter()
-                        .map(|(ids, _, bs, _)| BagContains {
-                            count: ids.parse().unwrap(),
+                        .into_iter()
+                        .map(|(count, _, bs, _)| BagContains {
+                            count,
                             bag_id: bag_table.get_or_add_bag(bs),
                         })
                         .collect(),

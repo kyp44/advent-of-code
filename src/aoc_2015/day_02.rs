@@ -1,10 +1,7 @@
 use std::str::FromStr;
 
 use itertools::Itertools;
-use nom::{
-    bytes::complete::tag, character::complete::digit1, combinator::map, multi::separated_list1,
-    Finish,
-};
+use nom::{bytes::complete::tag, multi::separated_list1, Finish};
 
 use crate::aoc::prelude::*;
 
@@ -33,7 +30,7 @@ impl FromStr for Present {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut dimensions = separated_list1::<_, _, _, NomParseError, _, _>(
             tag("x"),
-            map(digit1, |ds: &str| -> u64 { ds.parse().unwrap() }),
+            nom::character::complete::u64,
         )(s)
         .finish()
         .discard_input()?;

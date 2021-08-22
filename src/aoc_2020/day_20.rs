@@ -4,7 +4,7 @@ use itertools::iproduct;
 use itertools::Itertools;
 use nom::{
     bytes::complete::tag,
-    character::complete::{digit1, line_ending, one_of},
+    character::complete::{line_ending, one_of},
     combinator::map,
     multi::{many1, separated_list1},
     sequence::{delimited, pair},
@@ -347,12 +347,13 @@ impl FromStr for Tile {
     type Err = AocError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (id, full_image) = map::<_, _, _, NomParseError, _, _>(
-            pair(
-                delimited(tag("Tile "), digit1, pair(tag(":"), line_ending)),
-                Image::<bool>::parser,
+        let (id, full_image) = pair(
+            delimited(
+                tag("Tile "),
+                nom::character::complete::u64,
+                pair(tag(":"), line_ending),
             ),
-            |(ids, img)| (ids.parse().unwrap(), img),
+            Image::<bool>::parser,
         )(s)
         .finish()
         .discard_input()?;

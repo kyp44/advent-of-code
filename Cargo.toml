@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 structopt = "0.3"
 anyhow = "1.0"
-nom = "6.2.0"
+nom = "7.0.0"
 # Would like to use this to get better nom parsing errors but it doesn't
 # implement Clone on its ErrorTree so I can't (and I can't implement
 # a foreign trait on a foreign struct).

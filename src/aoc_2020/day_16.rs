@@ -3,7 +3,7 @@ use std::{collections::HashSet, hash::Hash, ops::RangeInclusive};
 
 use nom::{
     bytes::complete::{is_not, tag},
-    character::complete::{digit1, multispace1},
+    character::complete::multispace1,
     combinator::{map, rest},
     multi::separated_list1,
     sequence::{pair, preceded, separated_pair, tuple},
@@ -55,18 +55,16 @@ struct Field {
 }
 impl Parseable<'_> for Field {
     fn parser(input: &str) -> NomParseResult<Self> {
+        use nom::character::complete::u32 as cu32;
         map(
             separated_pair(
                 is_not(":"),
                 tag(": "),
-                separated_list1(tag(" or "), separated_pair(digit1, tag("-"), digit1)),
+                separated_list1(tag(" or "), separated_pair(cu32, tag("-"), cu32)),
             ),
-            |(name, v): (&str, Vec<(&str, &str)>)| Field {
+            |(name, v): (&str, Vec<(u32, u32)>)| Field {
                 name: name.to_string(),
-                valid_ranges: v
-                    .iter()
-                    .map(|(sa, sb)| sa.parse().unwrap()..=sb.parse().unwrap())
-                    .collect(),
+                valid_ranges: v.into_iter().map(|(sa, sb)| sa..=sb).collect(),
             },
         )(input.trim())
     }

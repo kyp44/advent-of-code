@@ -1,7 +1,6 @@
 use crate::aoc::prelude::*;
 use nom::{
     bytes::complete::{tag, take},
-    character::complete::digit1,
     combinator::{map, rest},
     error::context,
     sequence::separated_pair,
@@ -32,18 +31,15 @@ struct PasswordPolicy {
 
 impl Parseable<'_> for PasswordPolicy {
     fn parser(input: &str) -> NomParseResult<Self> {
+        use nom::character::complete::u32 as cu32;
         context(
             "password policy",
             map(
-                separated_pair(
-                    separated_pair(digit1, tag("-"), digit1),
-                    tag(" "),
-                    take(1usize),
-                ),
-                |res: ((&str, &str), &str)| PasswordPolicy {
-                    a: res.0 .0.parse().unwrap(),
-                    b: res.0 .1.parse().unwrap(),
-                    character: res.1.chars().next().unwrap(),
+                separated_pair(separated_pair(cu32, tag("-"), cu32), tag(" "), take(1usize)),
+                |((a, b), s): ((u32, u32), &str)| PasswordPolicy {
+                    a,
+                    b,
+                    character: s.chars().next().unwrap(),
                 },
             ),
         )(input.trim())

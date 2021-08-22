@@ -2,12 +2,12 @@ use crate::aoc::prelude::*;
 use itertools::Itertools;
 use nom::{
     bytes::complete::tag,
-    character::complete::{digit1, multispace1},
+    character::complete::multispace1,
     combinator::map,
-    sequence::tuple,
+    sequence::{delimited, preceded},
     Finish,
 };
-use std::str::FromStr;
+use std::{convert::TryInto, str::FromStr};
 
 #[cfg(test)]
 mod tests {
@@ -58,8 +58,11 @@ impl FromStr for XmasPacket {
     type Err = NomParseError;
     fn from_str(input: &str) -> Result<Self, Self::Err> {
         let (input, previous) = map(
-            tuple((tag("previous:"), multispace1, digit1, multispace1)),
-            |(_, _, ns, _): (&str, &str, &str, &str)| ns.parse().unwrap(),
+            preceded(
+                tag("previous:"),
+                delimited(multispace1, nom::character::complete::u64, multispace1),
+            ),
+            |n| n.try_into().unwrap(),
         )(input)
         .finish()?;
         let numbers = Number::gather(input.lines())?;

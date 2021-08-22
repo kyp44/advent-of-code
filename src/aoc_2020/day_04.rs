@@ -2,7 +2,7 @@ use crate::aoc::prelude::*;
 use nom::{
     branch::alt,
     bytes::complete::{is_not, tag, take_while_m_n},
-    character::complete::{digit1, line_ending, space0, space1},
+    character::complete::{line_ending, space0, space1},
     combinator::{all_consuming, map},
     error::context,
     multi::separated_list1,
@@ -102,16 +102,15 @@ impl PassportField {
                 Err(_) => false,
             },
             Height => {
-                let res: NomParseResult<(&str, &str)> =
-                    all_consuming(pair(digit1, alt((tag("cm"), tag("in")))))(value);
+                let res: NomParseResult<(u32, &str)> = all_consuming(pair(
+                    nom::character::complete::u32,
+                    alt((tag("cm"), tag("in"))),
+                ))(value);
                 match res {
-                    Ok((_, (h, u))) => {
-                        let h = h.parse::<u32>().unwrap();
-                        match u {
-                            "cm" => (150..=193).contains(&h),
-                            _ => (59..=76).contains(&h),
-                        }
-                    }
+                    Ok((_, (h, u))) => match u {
+                        "cm" => (150..=193).contains(&h),
+                        _ => (59..=76).contains(&h),
+                    },
                     Err(_) => false,
                 }
             }

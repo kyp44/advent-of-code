@@ -1,9 +1,6 @@
 use crate::aoc::prelude::*;
 use nom::{
-    bytes::complete::tag,
-    character::complete::{digit1, space0},
-    combinator::map,
-    multi::separated_list1,
+    bytes::complete::tag, character::complete::space0, combinator::map, multi::separated_list1,
     sequence::tuple,
 };
 use std::convert::TryInto;
@@ -44,10 +41,11 @@ struct Game {
 impl Parseable<'_> for Game {
     fn parser(input: &str) -> NomParseResult<Self> {
         map(
-            separated_list1(tuple((space0, tag(","), space0)), digit1),
-            |v: Vec<&str>| Game {
-                starting: v.into_iter().map(|ds| ds.parse().unwrap()).collect(),
-            },
+            separated_list1(
+                tuple((space0, tag(","), space0)),
+                nom::character::complete::u64,
+            ),
+            |starting| Game { starting },
         )(input)
     }
 }

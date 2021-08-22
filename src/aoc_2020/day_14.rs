@@ -3,7 +3,7 @@ use itertools::Itertools;
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    character::complete::{digit1, one_of},
+    character::complete::one_of,
     combinator::map,
     multi::many_m_n,
     sequence::{preceded, tuple},
@@ -77,16 +77,15 @@ enum Operation {
 
 impl Parseable<'_> for Operation {
     fn parser(input: &str) -> NomParseResult<Self> {
+        use nom::character::complete::u64 as cu64;
         alt((
             map(
                 preceded(tag("mask = "), many_m_n(BITS, BITS, one_of("X01"))),
                 |v: Vec<char>| Operation::SetMask(v.into_iter().rev().map(MaskBit::from).collect()),
             ),
             map(
-                tuple((tag("mem["), digit1, tag("] = "), digit1)),
-                |(_, a, _, v): (&str, &str, &str, &str)| {
-                    Operation::SetMemory(Memory::new(a.parse().unwrap(), v.parse().unwrap()))
-                },
+                tuple((tag("mem["), cu64, tag("] = "), cu64)),
+                |(_, a, _, v)| Operation::SetMemory(Memory::new(a, v)),
             ),
         ))(input.trim())
     }

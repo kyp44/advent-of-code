@@ -1,10 +1,6 @@
 use crate::aoc::prelude::*;
 use cgmath::Vector2;
-use nom::{
-    character::complete::{digit1, one_of},
-    combinator::map,
-    sequence::pair,
-};
+use nom::{character::complete::one_of, combinator::map, sequence::pair};
 use num::Signed;
 use std::convert::TryInto;
 use std::fmt::Debug;
@@ -49,20 +45,22 @@ enum Instruction {
 
 impl Parseable<'_> for Instruction {
     fn parser(input: &str) -> NomParseResult<Self> {
-        map(pair(one_of("NSEWLRF"), digit1), |(c, n): (char, &str)| {
-            use Instruction::*;
-            let n: i32 = n.parse().unwrap();
-            match c {
-                'N' => Move(n * Vector2::unit_y()),
-                'S' => Move(-n * Vector2::unit_y()),
-                'E' => Move(n * Vector2::unit_x()),
-                'W' => Move(-n * Vector2::unit_x()),
-                'L' => Turn(n / 90),
-                'R' => Turn(-n / 90),
-                'F' => Forward(n),
-                _ => panic!(),
-            }
-        })(input.trim())
+        map(
+            pair(one_of("NSEWLRF"), nom::character::complete::i32),
+            |(c, n)| {
+                use Instruction::*;
+                match c {
+                    'N' => Move(n * Vector2::unit_y()),
+                    'S' => Move(-n * Vector2::unit_y()),
+                    'E' => Move(n * Vector2::unit_x()),
+                    'W' => Move(-n * Vector2::unit_x()),
+                    'L' => Turn(n / 90),
+                    'R' => Turn(-n / 90),
+                    'F' => Forward(n),
+                    _ => panic!(),
+                }
+            },
+        )(input.trim())
     }
 }
 

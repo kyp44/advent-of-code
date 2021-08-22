@@ -4,13 +4,14 @@ use itertools::Itertools;
 use nom::{
     branch::alt,
     bytes::complete::{is_not, tag},
-    character::complete::{digit1, space1},
+    character::complete::space1,
     combinator::map,
     multi::{many1, separated_list1},
     sequence::{delimited, preceded, separated_pair},
     Finish,
 };
 use std::collections::HashMap;
+use std::convert::TryInto;
 
 #[cfg(test)]
 mod tests {
@@ -98,15 +99,14 @@ impl<'a> Parseable<'a> for Rule<'a> {
                 Rule::Match,
             ),
             map(
-                separated_list1(preceded(space1, tag("|")), many1(preceded(space1, digit1))),
-                |v: Vec<Vec<&str>>| {
+                separated_list1(
+                    preceded(space1, tag("|")),
+                    many1(preceded(space1, nom::character::complete::u32)),
+                ),
+                |v| {
                     Rule::Seq(
                         v.into_iter()
-                            .map(|iv| {
-                                iv.into_iter()
-                                    .map(|ds| ds.parse::<usize>().unwrap())
-                                    .collect()
-                            })
+                            .map(|iv| iv.into_iter().map(|d| d.try_into().unwrap()).collect())
                             .collect(),
                     )
                 },
@@ -141,13 +141,14 @@ impl<'a> RuleSet<'a> {
     fn from_str(s: &'a str, part: &dyn Part) -> AocResult<Self> {
         let mut rules = HashMap::new();
         for line in s.lines() {
-            let (ns, rule) = separated_pair(digit1, tag(":"), Rule::parser)(line)
-                .finish()
-                .discard_input()?;
-            let n: usize = ns.parse().unwrap();
+            let (n, rule) =
+                separated_pair(nom::character::complete::u32, tag(":"), Rule::parser)(line)
+                    .finish()
+                    .discard_input()?;
+            let n: usize = n.try_into().unwrap();
             if rules.insert(n, part.fix_rule(n, rule)).is_some() {
                 return Err(AocError::InvalidInput(
-                    format!("There is a duplicate for rule {}", ns).into(),
+                    format!("There is a duplicate for rule {}", n).into(),
                 ));
             }
         }

@@ -1,11 +1,7 @@
 use crate::aoc::prelude::*;
 use nom::{
-    branch::alt,
-    bytes::complete::tag,
-    character::complete::{digit1, one_of, space1},
-    combinator::map,
-    error::context,
-    sequence::{pair, separated_pair},
+    branch::alt, bytes::complete::tag, character::complete::space1, combinator::map,
+    error::context, sequence::separated_pair,
 };
 use std::iter::{Enumerate, Filter};
 use std::slice::Iter;
@@ -48,20 +44,13 @@ impl Parseable<'_> for Instruction {
                 separated_pair(
                     alt((tag("nop"), tag("acc"), tag("jmp"))),
                     space1,
-                    pair(one_of("+-"), digit1),
+                    nom::character::complete::i32,
                 ),
-                |(iss, (pm, ns)): (&str, (char, &str))| {
-                    let n: i32 = match pm {
-                        '-' => -ns.parse::<i32>().unwrap(),
-                        '+' => ns.parse().unwrap(),
-                        _ => panic!(),
-                    };
-                    match iss {
-                        "nop" => Instruction::Nop(n),
-                        "acc" => Instruction::Acc(n),
-                        "jmp" => Instruction::Jmp(n),
-                        _ => panic!(),
-                    }
+                |(iss, n)| match iss {
+                    "nop" => Instruction::Nop(n),
+                    "acc" => Instruction::Acc(n),
+                    "jmp" => Instruction::Jmp(n),
+                    _ => panic!(),
                 },
             ),
         )(input)
