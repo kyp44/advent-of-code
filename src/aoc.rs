@@ -316,6 +316,13 @@ impl AnswerVec for Vec<i64> {
         self.into_iter().map(|n| Some(Answer::Signed(n))).collect()
     }
 }
+impl AnswerVec for Vec<&str> {
+    fn answer_vec(self) -> Vec<Option<Answer>> {
+        self.into_iter()
+            .map(|s| Some(Answer::String(s.into())))
+            .collect()
+    }
+}
 
 /// Compares solution results with a vector
 #[macro_export]

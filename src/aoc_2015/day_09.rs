@@ -98,7 +98,7 @@ impl<'a> Problem<'a> {
             .sum()
     }
 
-    fn routes_distances<'b>(&'b self) -> impl Iterator<Item = u64> + 'b {
+    fn routes_distances(&self) -> impl Iterator<Item = u64> + '_ {
         self.cities
             .iter()
             .copied()
