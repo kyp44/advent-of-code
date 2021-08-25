@@ -24,9 +24,6 @@ ieodomkazucvgmuy",
     }
 }
 
-const VOWELS: [char; 5] = ['a', 'e', 'i', 'o', 'u'];
-const BAD_STRS: [&str; 4] = ["ab", "cd", "pq", "xy"];
-
 trait Part {}
 struct PartA;
 impl Part for PartA {}
@@ -38,6 +35,9 @@ trait Nice<P: Part> {
 }
 impl Nice<PartA> for &str {
     fn is_nice(&self) -> bool {
+        const VOWELS: &[char] = &['a', 'e', 'i', 'o', 'u'];
+        const BAD_STRS: &[&str] = &["ab", "cd", "pq", "xy"];
+
         // Check vowels
         FilterCount::<_, usize>::filter_count(self.chars(), |c| VOWELS.contains(c)) >= 3
 	    // Double letters

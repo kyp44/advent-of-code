@@ -18,8 +18,8 @@ use std::{fmt, fs};
 /// Prelude
 pub mod prelude {
     pub use super::{
-        Answer, AnswerVec, AocError, AocResult, DiscardInput, FilterCount, NomParseError,
-        NomParseResult, Parseable, Sections, Solution, YearSolutions,
+        char_add, Answer, AnswerVec, AocError, AocResult, DiscardInput, FilterCount, NomParseError,
+        NomParseResult, Parseable, Sections, Solution, SplitRuns, YearSolutions,
     };
 }
 
@@ -79,7 +79,7 @@ impl Display for NomParseError {
     }
 }
 
-/// Type containing the result of a nom parsing
+/// Type containing the result of a nom parsing.
 pub type NomParseResult<'a, U> = IResult<&'a str, U, NomParseError>;
 
 /// Trait for types to be parsable with Nom.
@@ -87,12 +87,12 @@ pub type NomParseResult<'a, U> = IResult<&'a str, U, NomParseError>;
 /// because this breaks the potential foreign trait on a foreign type rules.
 /// See here: https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299
 pub trait Parseable<'a> {
-    /// Parser function for nom
+    /// Parser function for nom.
     fn parser(input: &'a str) -> NomParseResult<Self>
     where
         Self: Sized;
 
-    /// Runs the parser and gets the result, stripping out the input from the nom parser
+    /// Runs the parser and gets the result, stripping out the input from the nom parser.
     fn from_str(input: &'a str) -> Result<Self, NomParseError>
     where
         Self: Sized,
@@ -100,7 +100,7 @@ pub trait Parseable<'a> {
         Self::parser(input).finish().map(|t| t.1)
     }
 
-    /// Gathers a vector of items from an iterator with each item being a string to parse
+    /// Gathers a vector of items from an iterator with each item being a string to parse.
     fn gather<I>(strs: I) -> Result<Vec<Self>, NomParseError>
     where
         Self: Sized,
@@ -118,7 +118,7 @@ pub trait Parseable<'a> {
     }
 }
 
-/// Parseable for simple numbers
+/// Parseable for simple numbers.
 impl<T: Unsigned + FromStr> Parseable<'_> for T {
     fn parser(input: &str) -> NomParseResult<Self> {
         map(digit1, |ns: &str| match ns.parse() {
@@ -128,7 +128,7 @@ impl<T: Unsigned + FromStr> Parseable<'_> for T {
     }
 }
 
-/// A nom combinator that trims whitespace surrounding a parser
+/// A nom combinator that trims whitespace surrounding a parser.
 pub fn trim<I, F, O, E>(inner: F) -> impl FnMut(I) -> IResult<I, O, E>
 where
     I: InputTakeAtPosition,
@@ -139,7 +139,7 @@ where
     delimited(space0, inner, space0)
 }
 
-/// A nom combinator that requires some whitespace around a parser
+/// A nom combinator that requires some whitespace around a parser.
 pub fn separated<I, F, O, E>(inner: F) -> impl FnMut(I) -> IResult<I, O, E>
 where
     I: InputTakeAtPosition,
@@ -150,7 +150,7 @@ where
     delimited(space1, inner, space1)
 }
 
-/// A nom parser that takes a single decimal digit
+/// A nom parser that takes a single decimal digit.
 pub fn single_digit<I, E>(input: I) -> IResult<I, u32, E>
 where
     I: Slice<RangeFrom<usize>> + InputIter,
@@ -170,7 +170,7 @@ where
     }
 }
 
-/// This should be a part of the nom library in my opinion
+/// This should be a part of the nom library in my opinion.
 pub trait DiscardInput<U, E> {
     fn discard_input(self) -> Result<U, E>;
 }
@@ -201,7 +201,7 @@ impl Sections for str {
     }
 }
 
-/// Convenience function to count from a filtered Iterator
+/// Convenience function to count from a filtered Iterator.
 pub trait FilterCount<T, O> {
     fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> O;
 }
@@ -215,7 +215,45 @@ where
     }
 }
 
-/// Allows for different answer types
+/// Increment a character by a certain number.
+pub fn char_add(c: char, i: u32) -> char {
+    std::char::from_u32((c as u32) + i).unwrap_or(c)
+}
+
+/// Iteartor over runs of the same characters in strings.
+pub struct Runs<'a> {
+    remaining: &'a str,
+}
+impl<'a> Iterator for Runs<'a> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining.is_empty() {
+            return None;
+        }
+
+        let first_char = self.remaining.chars().next().unwrap();
+        let end = match self.remaining.chars().position(|c| c != first_char) {
+            None => self.remaining.len(),
+            Some(i) => i,
+        };
+        let next = &self.remaining[0..end];
+        self.remaining = &self.remaining[end..];
+        Some(next)
+    }
+}
+
+/// Trait that allows splitting by runs on the same elements.
+pub trait SplitRuns {
+    fn split_runs(&self) -> Runs;
+}
+impl SplitRuns for str {
+    fn split_runs(&self) -> Runs {
+        Runs { remaining: self }
+    }
+}
+
+/// Allows for different answer types.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Answer {
     Unsigned(u64),
@@ -245,7 +283,7 @@ pub struct Solution {
     pub solvers: &'static [fn(&str) -> AocResult<Answer>],
 }
 impl Solution {
-    /// Constructs the title
+    /// Constructs the title.
     pub fn title(&self) -> String {
         format!("Day {}: {}", self.day, self.name)
     }
@@ -300,7 +338,7 @@ impl YearSolutions {
     }
 }
 
-/// Convenience trait to convert a vector of numbers into numberic answers
+/// Convenience trait to convert a vector of numbers into numberic answers.
 pub trait AnswerVec {
     fn answer_vec(self) -> Vec<Option<Answer>>;
 }
@@ -324,7 +362,7 @@ impl AnswerVec for Vec<&str> {
     }
 }
 
-/// Compares solution results with a vector
+/// Compares solution results with a vector.
 #[macro_export]
 macro_rules! solution_results {
     ($input:literal, $exp: expr) => {
@@ -378,7 +416,7 @@ macro_rules! expensive_test {
     };
 }
 
-/// Convenience macro to construct the solutions for a year
+/// Convenience macro to construct the solutions for a year.
 #[macro_export]
 macro_rules! year_solutions {
     (year = $year: expr, days =  {$($day: ident,)* }) => {
@@ -388,7 +426,7 @@ macro_rules! year_solutions {
 
 	use super::aoc::YearSolutions;
 
-	/// All of the solutions
+	/// All of the solutions.
 	pub const YEAR_SOLUTIONS: YearSolutions = YearSolutions {
 	    year: $year,
 	    solutions: &[
