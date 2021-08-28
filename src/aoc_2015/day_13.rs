@@ -17,7 +17,7 @@ mod tests {
     use Answer::Signed;
 
     solution_test! {
-    vec![Signed(664)],
+    vec![Signed(664), Signed(640)],
     "Alice would gain 54 happiness units by sitting next to Bob.
 Alice would lose 79 happiness units by sitting next to Carol.
 Alice would lose 2 happiness units by sitting next to David.
@@ -30,7 +30,7 @@ Carol would gain 55 happiness units by sitting next to David.
 David would gain 46 happiness units by sitting next to Alice.
 David would lose 7 happiness units by sitting next to Bob.
 David would gain 41 happiness units by sitting next to Carol.",
-    vec![330i64].answer_vec()
+    vec![330i64, 286].answer_vec()
     }
 }
 
@@ -63,8 +63,8 @@ impl<'a> Parseable<'a> for HappinessChange<'a> {
 
 #[derive(Debug)]
 struct Problem<'a> {
-    attendees: Box<[&'a str]>,
-    changes: Box<[HappinessChange<'a>]>,
+    attendees: Vec<&'a str>,
+    changes: Vec<HappinessChange<'a>>,
 }
 impl<'a> Problem<'a> {
     fn from_str(s: &'a str) -> AocResult<Self> {
@@ -78,15 +78,15 @@ impl<'a> Problem<'a> {
 
         Ok(Problem {
             attendees: attendees.into_iter().collect(),
-            changes: changes.into_boxed_slice(),
+            changes,
         })
     }
 }
-impl Problem<'_> {
+impl<'a> Problem<'a> {
     fn arrangements(&self) -> impl Iterator<Item = Vec<&str>> {
         let others = &self.attendees[1..];
         others
-            .into_iter()
+            .iter()
             .copied()
             .permutations(others.len())
             .map(move |mut v| {
@@ -98,7 +98,7 @@ impl Problem<'_> {
     fn arrangement_happiness(&self, arrangement: &[&str]) -> AocResult<i64> {
         let lookup_change = |person: &str, other: &str| -> AocResult<i64> {
             self.changes
-                .into_iter()
+                .iter()
                 .find(|c| c.person == person && c.next_to == other)
                 .map(|c| c.change)
                 .ok_or_else(|| {
@@ -114,7 +114,7 @@ impl Problem<'_> {
 
         process_results(
             arrangement
-                .into_iter()
+                .iter()
                 .enumerate()
                 .map(|(i, person)| -> Result<_, _> {
                     Ok(lookup_change(
@@ -130,8 +130,27 @@ impl Problem<'_> {
         process_results(
             self.arrangements()
                 .map(|a| -> Result<_, _> { self.arrangement_happiness(&a) }),
-            |iter| iter.max().unwrap(),
+            |iter| iter.max().unwrap_or(0),
         )
+    }
+
+    fn add_attendee(&mut self, name: &'a str) {
+        // Add neutral seating preferences
+        for att in self.attendees.iter() {
+            self.changes.push(HappinessChange {
+                person: name,
+                next_to: att,
+                change: 0,
+            });
+            self.changes.push(HappinessChange {
+                person: att,
+                next_to: name,
+                change: 0,
+            });
+        }
+
+        // Add attendee
+        self.attendees.push(name);
     }
 }
 
@@ -145,6 +164,16 @@ pub const SOLUTION: Solution = Solution {
             let problem = Problem::from_str(input)?;
 
             // Process
+            Ok(problem.best_arrangement()?.into())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let mut problem = Problem::from_str(input)?;
+
+            // Process
+            problem.add_attendee("Self");
+            println!("Solution: {}", problem.best_arrangement()?);
             Ok(problem.best_arrangement()?.into())
         },
     ],
