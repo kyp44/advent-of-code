@@ -81,8 +81,7 @@ impl<'a> Problem<'a> {
             changes,
         })
     }
-}
-impl<'a> Problem<'a> {
+
     fn arrangements(&self) -> impl Iterator<Item = Vec<&str>> {
         let others = &self.attendees[1..];
         others
