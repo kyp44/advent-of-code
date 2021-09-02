@@ -1,4 +1,4 @@
-use std::{iter::Filter, slice::Iter, str::FromStr};
+use std::{convert::TryInto, str::FromStr};
 
 use itertools::Itertools;
 
@@ -11,13 +11,13 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![],
+    vec![Unsigned(654), Unsigned(57)],
     "20
 15
 10
 5
 5",
-    Vec::new()
+    vec![0u64, 0].answer_vec()
     }
 }
 
@@ -34,36 +34,16 @@ impl FromStr for Problem {
     }
 }
 impl Problem {
-    fn combinations(amount: u16) {
-        todo!()
-    }
-}
-
-struct Combinations<'a, P> {
-    elements: &'a [u16],
-    i: u16,
-    iter: Filter<itertools::Combinations<Iter<'a, u16>>, P>,
-}
-impl<'a, P> Combinations<'a, P>
-where P: impl Fn(&Vec<&u16>) -> bool
-{
-    fn new(elements: &'a [u16], amount: u16) -> Self {
-        Combinations {
-            elements,
-            i: 1,
-            iter: elements
-                .iter()
-                .combinations(1)
-                .filter(|x: &Vec<&u16>| false),
-        }
-    }
-}
-impl Iterator for Combinations<'_> {
-    type Item = u16;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let x = self.elements.iter();
-        todo!()
+    fn combinations(&self, amount: u16) -> impl Iterator<Item = Vec<u16>> + '_ {
+        (1..=self.containers.len())
+            .map(move |k| {
+                self.containers
+                    .iter()
+                    .combinations(k)
+                    .map(|c| c.into_iter().copied().collect())
+            })
+            .flatten()
+            .filter(move |c: &Vec<u16>| c.iter().sum::<u16>() == amount)
     }
 }
 
@@ -77,7 +57,24 @@ pub const SOLUTION: Solution = Solution {
             let problem: Problem = input.parse()?;
 
             // Process
-            Ok(0u64.into())
+            /*for c in problem.combinations(25) {
+                println!("{:?}", c);
+            }*/
+            Ok(Answer::Unsigned(
+                problem.combinations(150).count().try_into().unwrap(),
+            ))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let problem: Problem = input.parse()?;
+
+            // Process
+            let combs: Vec<Vec<u16>> = problem.combinations(150).collect();
+            let min = combs.iter().map(|cv| cv.len()).min().unwrap_or(0);
+            let ans: u64 = combs.iter().filter_count(|cv| cv.len() == min);
+
+            Ok(ans.into())
         },
     ],
 };
