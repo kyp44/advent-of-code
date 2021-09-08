@@ -1,7 +1,9 @@
 use crate::aoc::prelude::*;
-use itertools::iproduct;
+use itertools::{iproduct, Product};
 use rayon::prelude::*;
-use std::{collections::HashSet, convert::TryInto, fmt::Display, hash::Hash, str::FromStr};
+use std::{
+    collections::HashSet, convert::TryInto, fmt::Display, hash::Hash, ops::Range, str::FromStr,
+};
 
 #[cfg(test)]
 mod tests {
@@ -172,33 +174,56 @@ struct Area {
     data: Vec<Vec<Seat>>,
 }
 
+impl Evolver<(usize, usize), Seat> for Area {
+    type Iter = Product<Range<usize>, Range<usize>>;
+
+    fn new(other: &Self) -> Self {
+        Area {
+            width: other.width,
+            height: other.height,
+            data: other
+                .data
+                .iter()
+                .map(|row| {
+                    row.iter()
+                        .map(|s| match s {
+                            Seat::Empty => Seat::Empty,
+                            Seat::Floor => Seat::Floor,
+                            Seat::Occupied => Seat::Empty,
+                        })
+                        .collect()
+                })
+                .collect(),
+        }
+    }
+
+    fn get(&self, pos: &(usize, usize)) -> Seat {
+        self.data[pos.1][pos.0]
+    }
+
+    fn set(&mut self, pos: &(usize, usize), val: Seat) {
+        self.data[pos.1][pos.0] = val;
+    }
+
+    fn next_cell(&self, pos: &(usize, usize)) -> Seat {
+        todo!()
+    }
+
+    fn next_iter(&self) -> Self::Iter {
+        iproduct!(0..self.width, 0..self.height)
+    }
+}
+
 impl FromStr for Area {
     type Err = AocError;
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         fn parse_row(line: &str) -> Vec<Seat> {
             line.trim().chars().map(|c| c.into()).collect()
         }
-        Area::new(s.lines().map(|line| parse_row(line)).collect())
-    }
-}
 
-impl Display for Area {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.data
-                .iter()
-                .map(|row| { row.iter().map(|s| -> char { s.into() }).collect::<String>() })
-                .collect::<Vec<String>>()
-                .join("\n")
-        )
-    }
-}
-
-impl Simulator for Area {
-    fn new(data: Vec<Vec<Seat>>) -> AocResult<Self> {
         // Verify the data
+        let data = s.lines().map(|line| parse_row(line)).collect();
         let height = data.len();
         if height < 1 {
             return Err(AocError::InvalidInput("Area vector has no rows!".into()));
@@ -228,7 +253,23 @@ impl Simulator for Area {
             data,
         })
     }
+}
 
+impl Display for Area {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.data
+                .iter()
+                .map(|row| { row.iter().map(|s| -> char { s.into() }).collect::<String>() })
+                .collect::<Vec<String>>()
+                .join("\n")
+        )
+    }
+}
+
+impl Simulator for Area {
     fn size(&self) -> (isize, isize) {
         (
             self.width.try_into().unwrap(),

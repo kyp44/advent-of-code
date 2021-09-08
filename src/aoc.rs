@@ -15,11 +15,14 @@ use std::ops::RangeFrom;
 use std::str::FromStr;
 use std::{fmt, fs};
 
+mod evolver;
+
 /// Prelude
 pub mod prelude {
     pub use super::{
-        char_add, Answer, AnswerVec, AocError, AocResult, DiscardInput, FilterCount, NomParseError,
-        NomParseResult, Parseable, Sections, Solution, SplitRuns, YearSolutions,
+        char_add, evolver::Evolver, Answer, AnswerVec, AocError, AocResult, DiscardInput,
+        FilterCount, NomParseError, NomParseResult, Parseable, Sections, Solution, SplitRuns,
+        YearSolutions,
     };
 }
 
