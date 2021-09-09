@@ -2,7 +2,7 @@
 name = "advent-of-code"
 version = "0.1.0"
 authors = ["dwhitman"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -29,6 +29,7 @@ enum-map-derive = "0.6"
 md5 = "0.7"
 serde_json = "1.0"
 maplit = "1.0.2"
+aoc_derive = { path = "aoc_derive" }
 
 [features]
 expensive = []

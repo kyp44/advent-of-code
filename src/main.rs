@@ -1,5 +1,6 @@
 #![feature(hash_set_entry)]
 #![feature(destructuring_assignment)]
+#![feature(type_alias_impl_trait)]
 
 mod aoc;
 mod aoc_2015;

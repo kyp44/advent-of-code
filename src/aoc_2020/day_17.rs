@@ -18,6 +18,8 @@ mod tests {
 }
 
 type DimensionRange = RangeInclusive<i32>;
+
+#[derive(Clone)]
 struct Dimension {
     dimensions: usize,
     active_cubes: HashSet<Vec<i32>>,
@@ -36,7 +38,7 @@ impl Debug for Dimension {
                         .map(|x| {
                             let mut point = vec![x, y];
                             point.extend_from_slice(&cs);
-                            if self.active(&point) {
+                            if self.get(&point) {
                                 '#'
                             } else {
                                 '.'
@@ -97,6 +99,16 @@ impl Dimension {
         })
     }
 
+    fn verify_point(&self, point: &[i32]) {
+        if point.len() != self.dimensions {
+            panic!(
+                "Trying to access a {}-dimensional pocket dimension with a {}-dimensional point",
+                self.dimensions,
+                point.len()
+            )
+        }
+    }
+
     fn ranges(&self) -> Vec<DimensionRange> {
         (0..self.dimensions)
             .map(|i| {
@@ -106,51 +118,55 @@ impl Dimension {
             .collect()
     }
 
-    fn active(&self, point: &[i32]) -> bool {
+    fn count_active(&self) -> u64 {
+        self.active_cubes.len().try_into().unwrap()
+    }
+}
+
+impl Evolver<bool> for Dimension {
+    type Point = Vec<i32>;
+    type Iter = impl Iterator<Item = Self::Point>;
+
+    fn new(other: &Self) -> Self {
+        Dimension {
+            dimensions: other.dimensions,
+            active_cubes: HashSet::new(),
+        }
+    }
+
+    fn get(&self, point: &Self::Point) -> bool {
+        self.verify_point(point);
         self.active_cubes.contains(point)
     }
 
-    fn count_active(&self) -> usize {
-        self.active_cubes.len()
+    fn set(&mut self, point: &Self::Point, value: bool) {
+        self.verify_point(point);
+        if value {
+            self.active_cubes.insert(point.clone());
+        } else {
+            self.active_cubes.remove(point);
+        }
     }
 
-    fn count_neighbors_active(&self, point: &[i32]) -> usize {
-        fn point_range(val: &i32) -> DimensionRange {
-            (val - 1)..=(val + 1)
-        }
-        (0..self.dimensions)
-            .map(|i| point_range(&point[i]))
+    fn next_cell(&self, point: &Self::Point) -> bool {
+        self.verify_point(point);
+        let neighbors: usize = (0..self.dimensions)
+            .map(|i| {
+                let v = point[i];
+                (v - 1)..=(v + 1)
+            })
             .multi_cartesian_product()
-            .filter_count(|pt| pt != point && self.active(pt))
+            .filter_count(|pt| pt != point && self.get(pt));
+
+        (self.get(point) && neighbors == 2) || neighbors == 3
     }
 
-    fn next(&self) -> Dimension {
-        fn exp_range(range: &DimensionRange) -> DimensionRange {
-            (range.start() - 1)..=(range.end() + 1)
-        }
-        let ranges = self.ranges();
-
-        Dimension {
-            dimensions: self.dimensions,
-            active_cubes: (0..self.dimensions)
-                .map(|i| exp_range(&ranges[i]))
-                .multi_cartesian_product()
-                .filter(|point| {
-                    let num = self.count_neighbors_active(point);
-
-                    (self.active(point) && num == 2) || num == 3
-                })
-                .collect(),
-        }
-    }
-
-    fn run(&self, cycles: usize) -> Dimension {
-        let mut current = self.next();
-        for _ in 1..cycles {
-            //println!("After {} cycles:\n{:?}", i, current);
-            current = current.next();
-        }
-        current
+    fn next_iter(&self) -> Self::Iter {
+        self.ranges()
+            .iter()
+            .map(|r| (r.start() - 1)..=(r.end() + 1))
+            .into_iter()
+            .multi_cartesian_product()
     }
 }
 
@@ -163,10 +179,13 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let dimension = Dimension::from_str(3, input)?;
 
+            /*println!("{:?}", dimension);
+            for dim in dimension.evolutions().take(3) {
+                println!("{:?}", dim);
+            }*/
+
             // Process
-            Ok(Answer::Unsigned(
-                dimension.run(6).count_active().try_into().unwrap(),
-            ))
+            Ok(dimension.evolutions().nth(5).unwrap().count_active().into())
         },
         // Part b)
         |input| {
@@ -174,9 +193,7 @@ pub const SOLUTION: Solution = Solution {
             let dimension = Dimension::from_str(4, input)?;
 
             // Process
-            Ok(Answer::Unsigned(
-                dimension.run(6).count_active().try_into().unwrap(),
-            ))
+            Ok(dimension.evolutions().nth(5).unwrap().count_active().into())
         },
     ],
 };

@@ -1,9 +1,8 @@
 use crate::aoc::prelude::*;
-use itertools::{iproduct, Product};
-use rayon::prelude::*;
-use std::{
-    collections::HashSet, convert::TryInto, fmt::Display, hash::Hash, ops::Range, str::FromStr,
-};
+use aoc_derive::CharGridDebug;
+use cgmath::{Vector2, Zero};
+use itertools::iproduct;
+use std::{collections::HashSet, convert::TryInto, fmt::Display, hash::Hash, rc::Rc};
 
 #[cfg(test)]
 mod tests {
@@ -32,6 +31,7 @@ enum Seat {
     Floor,
     Empty,
     Occupied,
+    Outside,
 }
 
 impl From<char> for Seat {
@@ -50,6 +50,7 @@ impl From<&Seat> for char {
             Seat::Floor => '.',
             Seat::Empty => 'L',
             Seat::Occupied => '#',
+            Seat::Outside => 'O',
         }
     }
 }
@@ -69,118 +70,83 @@ impl<T: Display> Display for SimulationStatus<T> {
     }
 }
 
-/// Marker structs for each part.
-/// This really shows the power of abstraction of Rust to accomplish
-/// multiple implementations of the same trait.
-trait Part {
-    fn min_needed_to_vacate() -> u32;
+/// Had to end up using an enum for this, which is not ideal
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+enum Part {
+    PartA,
+    PartB,
 }
-struct PartA;
-struct PartB;
-impl Part for PartA {
-    fn min_needed_to_vacate() -> u32 {
-        4
-    }
-}
-impl Part for PartB {
-    fn min_needed_to_vacate() -> u32 {
-        5
-    }
-}
-
-trait Simulator
-where
-    Self: Sized,
-{
-    fn new(data: Vec<Vec<Seat>>) -> AocResult<Self>;
-    fn size(&self) -> (isize, isize);
-    fn get(&self, point: &(isize, isize)) -> Option<Seat>;
-
-    fn valid_point(&self, point: &(isize, isize)) -> Option<(usize, usize)> {
-        let size = self.size();
-        if (0..size.0).contains(&point.0) && (0..size.1).contains(&point.1) {
-            return Some((
-                (*point).0.try_into().unwrap(),
-                (*point).1.try_into().unwrap(),
-            ));
+impl Part {
+    fn min_needed_to_vacate(&self) -> u8 {
+        match self {
+            Part::PartA => 4,
+            Part::PartB => 5,
         }
-        None
     }
-}
 
-trait SimulatorPart<P: Part>
-where
-    Self: Sized + Clone + Simulator + Hash + Eq + Display + Sync,
-{
-    fn point_occupied(&self, point: &(isize, isize)) -> u32;
-
-    fn next(&self) -> Self {
-        let size = self.size();
-
-        // Calculate new seats
-        let data = (0..size.1)
-            .into_par_iter()
-            .map(|y| {
-                (0..size.0)
-                    .map(|x| {
-                        let point = (x, y);
-                        let occupied = self.point_occupied(&point);
-                        let orig = self.get(&point).unwrap();
-                        match orig {
-                            Seat::Empty => {
-                                if occupied == 0 {
-                                    Seat::Occupied
-                                } else {
-                                    orig
-                                }
-                            }
-                            Seat::Occupied => {
-                                if occupied >= P::min_needed_to_vacate() {
-                                    Seat::Empty
-                                } else {
-                                    orig
-                                }
-                            }
-                            _ => orig,
+    fn point_occupied(&self, area: &Area, point: &Vector2<isize>) -> u8 {
+        match self {
+            Part::PartA => iproduct!(-1isize..=1, -1isize..=1).filter_count(|(dx, dy)| {
+                let dp = Vector2::new(*dx, *dy);
+                dp != Vector2::zero() && area.get(&(point + dp)) == Seat::Occupied
+            }),
+            Part::PartB => iproduct!(-1isize..=1, -1isize..=1)
+                .map(|(dx, dy)| Vector2::new(dx, dy))
+                .filter(|dp| *dp != Vector2::zero())
+                .filter_count(|dp| {
+                    let mut i = 1;
+                    loop {
+                        match area.get(&(point + i * dp)) {
+                            Seat::Occupied => break true,
+                            Seat::Empty => break false,
+                            Seat::Outside => break false,
+                            Seat::Floor => (),
                         }
-                    })
-                    .collect()
-            })
-            .collect();
-
-        Self::new(data).unwrap()
-    }
-
-    fn simulate(&self) -> SimulationStatus<Self> {
-        let mut prior_states: HashSet<Self> = HashSet::new();
-        let mut last_state = prior_states.get_or_insert(self.clone());
-        loop {
-            let next = last_state.next();
-            if next == *last_state {
-                break SimulationStatus::Stable(next);
-            }
-            if prior_states.contains(&next) {
-                break SimulationStatus::Infinite(next);
-            }
-            last_state = prior_states.get_or_insert(next);
+                        i += 1;
+                    }
+                }),
         }
     }
 }
 
-#[derive(Clone, Hash, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq, CharGridDebug)]
 struct Area {
-    width: usize,
-    height: usize,
-    data: Vec<Vec<Seat>>,
+    part: Part,
+    size: Vector2<isize>,
+    data: Box<[Box<[Seat]>]>,
 }
 
-impl Evolver<(usize, usize), Seat> for Area {
-    type Iter = Product<Range<usize>, Range<usize>>;
+impl CharGrid for Area {
+    type Element = Seat;
+
+    fn from_char(c: char) -> Self::Element {
+        c.into()
+    }
+
+    fn to_char(e: &Self::Element) -> char {
+        e.into()
+    }
+
+    fn from_data(size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
+    where
+        Self: Sized,
+    {
+        Ok(Area {
+            part: Part::PartA,
+            size: Vector2::new(size.0.try_into().unwrap(), size.1.try_into().unwrap()),
+            data,
+        })
+    }
+}
+
+impl Evolver<Seat> for Area {
+    type Point = Vector2<isize>;
+    type Iter = impl Iterator<Item = Self::Point>;
 
     fn new(other: &Self) -> Self {
         Area {
-            width: other.width,
-            height: other.height,
+            part: other.part,
+            size: other.size,
             data: other
                 .data
                 .iter()
@@ -190,6 +156,7 @@ impl Evolver<(usize, usize), Seat> for Area {
                             Seat::Empty => Seat::Empty,
                             Seat::Floor => Seat::Floor,
                             Seat::Occupied => Seat::Empty,
+                            Seat::Outside => Seat::Outside,
                         })
                         .collect()
                 })
@@ -197,157 +164,83 @@ impl Evolver<(usize, usize), Seat> for Area {
         }
     }
 
-    fn get(&self, pos: &(usize, usize)) -> Seat {
-        self.data[pos.1][pos.0]
+    fn get(&self, point: &Self::Point) -> Seat {
+        match self.point_usize(point) {
+            None => Seat::Outside,
+            Some(p) => self.data[p.y][p.x],
+        }
     }
 
-    fn set(&mut self, pos: &(usize, usize), val: Seat) {
-        self.data[pos.1][pos.0] = val;
+    fn set(&mut self, point: &Self::Point, value: Seat) {
+        let point = self.point_usize(point).unwrap();
+        self.data[point.y][point.x] = value;
     }
 
-    fn next_cell(&self, pos: &(usize, usize)) -> Seat {
-        todo!()
+    fn next_cell(&self, point: &Self::Point) -> Seat {
+        let occupied = self.part.point_occupied(self, point);
+        let orig = self.get(point);
+        match orig {
+            Seat::Empty => {
+                if occupied == 0 {
+                    Seat::Occupied
+                } else {
+                    orig
+                }
+            }
+            Seat::Occupied => {
+                if occupied >= self.part.min_needed_to_vacate() {
+                    Seat::Empty
+                } else {
+                    orig
+                }
+            }
+            _ => orig,
+        }
     }
 
     fn next_iter(&self) -> Self::Iter {
-        iproduct!(0..self.width, 0..self.height)
-    }
-}
-
-impl FromStr for Area {
-    type Err = AocError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        fn parse_row(line: &str) -> Vec<Seat> {
-            line.trim().chars().map(|c| c.into()).collect()
-        }
-
-        // Verify the data
-        let data = s.lines().map(|line| parse_row(line)).collect();
-        let height = data.len();
-        if height < 1 {
-            return Err(AocError::InvalidInput("Area vector has no rows!".into()));
-        }
-        let width = data[0].len();
-        if width < 1 {
-            return Err(AocError::InvalidInput(
-                "First area row has no elements!".into(),
-            ));
-        }
-        for (rn, row) in data.iter().enumerate() {
-            if row.len() != width {
-                return Err(AocError::InvalidInput(
-                    format!(
-                        "Area row {} has an incorrect width of {} when it should be {}",
-                        rn,
-                        row.len(),
-                        width
-                    )
-                    .into(),
-                ));
-            }
-        }
-        Ok(Area {
-            width,
-            height,
-            data,
-        })
-    }
-}
-
-impl Display for Area {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.data
-                .iter()
-                .map(|row| { row.iter().map(|s| -> char { s.into() }).collect::<String>() })
-                .collect::<Vec<String>>()
-                .join("\n")
-        )
-    }
-}
-
-impl Simulator for Area {
-    fn size(&self) -> (isize, isize) {
-        (
-            self.width.try_into().unwrap(),
-            self.height.try_into().unwrap(),
-        )
-    }
-
-    fn get(&self, point: &(isize, isize)) -> Option<Seat> {
-        self.valid_point(point).map(|(x, y)| self.data[y][x])
-    }
-}
-
-impl SimulatorPart<PartA> for Area {
-    fn point_occupied(&self, point: &(isize, isize)) -> u32 {
-        iproduct!((point.1 - 1)..=(point.1 + 1), (point.0 - 1)..=(point.0 + 1)).filter_count(
-            |(sy, sx)| {
-                !(*sx == point.0 && *sy == point.1)
-                    && matches!(self.get(&(*sx, *sy)), Some(Seat::Occupied))
-            },
-        )
-    }
-}
-
-impl SimulatorPart<PartB> for Area {
-    fn point_occupied(&self, point: &(isize, isize)) -> u32 {
-        struct Traverser<'a> {
-            area: &'a Area,
-            point: (isize, isize),
-            direction: (isize, isize),
-            stop: bool,
-        }
-        impl Traverser<'_> {
-            fn new(area: &Area, point: (isize, isize), direction: (isize, isize)) -> Traverser {
-                Traverser {
-                    area,
-                    point,
-                    direction,
-                    stop: false,
-                }
-            }
-        }
-        impl Iterator for Traverser<'_> {
-            type Item = Seat;
-
-            fn next(&mut self) -> Option<Self::Item> {
-                if self.stop {
-                    return None;
-                }
-
-                self.point = (
-                    self.point.0 + self.direction.0,
-                    self.point.1 + self.direction.1,
-                );
-
-                self.area.get(&self.point).map(|s| {
-                    self.stop = matches!(s, Seat::Empty) || matches!(s, Seat::Occupied);
-                    s
-                })
-            }
-        }
-
-        iproduct!(-1isize..=1, -1isize..=1)
-            .filter(|(dx, dy)| !(*dx == 0 && *dy == 0))
-            .map(|(dx, dy)| Traverser::new(self, *point, (dx, dy)).last())
-            .filter_count(|s| matches!(s, Some(Seat::Occupied)))
+        iproduct!(0..self.size.x, 0..self.size.y).map(|(x, y)| Vector2::new(x, y))
     }
 }
 
 impl Area {
+    fn set_part(&mut self, part: Part) {
+        self.part = part;
+    }
+
+    fn point_usize(&self, point: &Vector2<isize>) -> Option<Vector2<usize>> {
+        if (0..self.size.x).contains(&point.x) && (0..self.size.y).contains(&point.y) {
+            return Some(Vector2::new(
+                point.x.try_into().unwrap(),
+                point.y.try_into().unwrap(),
+            ));
+        }
+        None
+    }
+
     fn occupied(&self) -> u64 {
-        self.data
-            .iter()
-            .flat_map(|row| row.iter())
-            .filter_count(|s| matches!(s, Seat::Occupied))
+        self.next_iter()
+            .filter_count(|point| matches!(self.get(point), Seat::Occupied))
+    }
+
+    fn simulate(&self) -> SimulationStatus<Rc<Self>> {
+        let mut prior_states: HashSet<Rc<Self>> = HashSet::new();
+        let mut last_state = prior_states.get_or_insert(Rc::new(self.clone()));
+        for state in self.evolutions() {
+            //println!("{:?}\n", state);
+            if state == *last_state {
+                return SimulationStatus::Stable(state);
+            }
+            if prior_states.contains(&state) {
+                return SimulationStatus::Infinite(state);
+            }
+            last_state = prior_states.get_or_insert(state);
+        }
+        panic!("Somehow the evolver iterator ended!")
     }
 }
 
-fn check_simulation(status: SimulationStatus<Area>) -> AocResult<Answer> {
+fn check_simulation(status: SimulationStatus<Rc<Area>>) -> AocResult<Answer> {
     match status {
         SimulationStatus::Stable(a) => Ok(a.occupied().into()),
         SimulationStatus::Infinite(_) => Err(AocError::Process(
@@ -363,18 +256,20 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let area: Area = input.parse()?;
+            let area = Area::from_str(input)?;
+            area.tester();
 
             // Process
-            check_simulation(SimulatorPart::<PartA>::simulate(&area))
+            check_simulation(area.simulate())
         },
         // Part b)
         |input| {
             // Generation
-            let area: Area = input.parse()?;
+            let mut area = Area::from_str(input)?;
+            area.set_part(Part::PartB);
 
             // Process
-            check_simulation(SimulatorPart::<PartB>::simulate(&area))
+            check_simulation(area.simulate())
         },
     ],
 };

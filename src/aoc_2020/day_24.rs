@@ -7,6 +7,8 @@ use nom::{
     multi::many1,
 };
 use std::{collections::HashSet, convert::TryInto, fmt, str::FromStr};
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
 use crate::aoc::prelude::*;
 
@@ -44,7 +46,7 @@ wseweeenwnesenwwwswnew",
 
 type Point = Vector2<i32>;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, EnumIter)]
 enum Direction {
     East,
     West,
@@ -110,6 +112,7 @@ impl Route {
     }
 }
 
+#[derive(Clone)]
 struct Floor {
     black_tiles: HashSet<Point>,
 }
@@ -133,27 +136,55 @@ impl FromStr for Floor {
         Ok(Floor { black_tiles })
     }
 }
-impl Iterator for Floor {
-    type Item = HashSet<Point>;
+impl Evolver<bool> for Floor {
+    type Point = Point;
+    type Iter = impl Iterator<Item = Self::Point>;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut new_blacks = HashSet::new();
-        for point in self.iter() {
-            if self.black_tiles.contains(&point) {
-                // Tile is black
-                let adj = self.adjacent_blacks(&point);
-                if adj > 0 && adj <= 2 {
-                    new_blacks.insert(point);
-                }
-            } else {
-                // Tile is white
-                if self.adjacent_blacks(&point) == 2 {
-                    new_blacks.insert(point);
-                }
-            }
+    fn new(_other: &Self) -> Self {
+        Floor {
+            black_tiles: HashSet::new(),
         }
-        self.black_tiles = new_blacks.clone();
-        Some(new_blacks)
+    }
+
+    fn get(&self, point: &Self::Point) -> bool {
+        self.black_tiles.contains(point)
+    }
+
+    fn set(&mut self, point: &Self::Point, value: bool) {
+        if value {
+            self.black_tiles.insert(*point);
+        } else {
+            self.black_tiles.remove(point);
+        }
+    }
+
+    fn next_cell(&self, point: &Self::Point) -> bool {
+        let adj: usize = Direction::iter()
+            .map(|d| d.into())
+            .filter_count(|dp: &Point| self.get(&(*dp + point)));
+        if self.get(point) {
+            // Tile is black
+            adj > 0 && adj <= 2
+        } else {
+            // Tile is white
+            adj == 2
+        }
+    }
+
+    fn next_iter(&self) -> Self::Iter {
+        // Determine the range in x and y
+        let range = |f: fn(&Point) -> i32| {
+            let start = self.black_tiles.iter().map(|p| f(p)).min().unwrap_or(1);
+            let stop = self.black_tiles.iter().map(|p| f(p)).max().unwrap_or(-1);
+            (start - 1)..=(stop + 1)
+        };
+
+        iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Vector2::new(x, y))
+    }
+}
+impl Floor {
+    fn num_black_tiles(&self) -> u64 {
+        self.black_tiles.len().try_into().unwrap()
     }
 }
 impl fmt::Debug for Floor {
@@ -163,7 +194,7 @@ impl fmt::Debug for Floor {
         let mut row: Vec<char> = Vec::new();
 
         let mut last_y: Option<i32> = None;
-        for point in self.iter() {
+        for point in self.next_iter() {
             if let Some(y) = last_y {
                 if y != point.y {
                     rows.push(row);
@@ -189,31 +220,6 @@ impl fmt::Debug for Floor {
         Ok(())
     }
 }
-impl Floor {
-    fn adjacent_blacks(&self, point: &Point) -> usize {
-        [
-            Point::new(0, 1),
-            Point::new(0, -1),
-            Point::new(-1, 0),
-            Point::new(-1, -1),
-            Point::new(1, 0),
-            Point::new(1, 1),
-        ]
-        .iter()
-        .filter_count(|dp| self.black_tiles.contains(&(*dp + point)))
-    }
-
-    fn iter(&self) -> impl Iterator<Item = Point> {
-        // Determine the range in x and y
-        let range = |f: fn(&Point) -> i32| {
-            let start = self.black_tiles.iter().map(|p| f(p)).min().unwrap_or(1);
-            let stop = self.black_tiles.iter().map(|p| f(p)).max().unwrap_or(-1);
-            (start - 1)..=(stop + 1)
-        };
-
-        iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Vector2::new(x, y))
-    }
-}
 
 pub const SOLUTION: Solution = Solution {
     day: 24,
@@ -225,19 +231,20 @@ pub const SOLUTION: Solution = Solution {
             let floor: Floor = input.parse()?;
 
             // Process
-            Ok(Answer::Unsigned(
-                floor.black_tiles.len().try_into().unwrap(),
-            ))
+            Ok(floor.num_black_tiles().into())
         },
         // Part b)
         |input| {
             // Generation
-            let mut floor: Floor = input.parse()?;
+            let floor: Floor = input.parse()?;
 
             // Process
-            Ok(Answer::Unsigned(
-                floor.nth(100 - 1).unwrap().len().try_into().unwrap(),
-            ))
+            Ok(floor
+                .evolutions()
+                .nth(100 - 1)
+                .unwrap()
+                .num_black_tiles()
+                .into())
         },
     ],
 };

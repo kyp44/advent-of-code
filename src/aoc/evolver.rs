@@ -1,55 +1,56 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, rc::Rc};
 
-/// Something that evolves, typically a Conway's Game of Life type cell array.
-pub trait Evolver<C, T> {
-    type Iter: Iterator<Item = C>;
+/// Something that evolves, typically a Conway's-Game-of-Life-type cell array.
+pub trait Evolver<T> {
+    /// Type of the point to locate cells.
+    type Point;
+    /// Type of the iterator over the cells to create the next evolution.
+    type Iter: Iterator<Item = Self::Point>;
 
     /// Create a new cell array in the default state.
     fn new(other: &Self) -> Self;
 
     /// Get the value at the specified coordinates.
-    fn get(&self, pos: &C) -> T;
+    fn get(&self, point: &Self::Point) -> T;
 
     /// Set the value at the specified coordinates.
-    fn set(&mut self, pos: &C, val: T);
+    fn set(&mut self, point: &Self::Point, value: T);
 
     /// Given the coordinates of a cell, return the value of the same cell in the next step.
-    fn next_cell(&self, pos: &C) -> T;
+    fn next_cell(&self, point: &Self::Point) -> T;
 
     /// Get an iterator over the cells to be set in the next step.
     fn next_iter(&self) -> Self::Iter;
 
     /// Iterator over the steps in the evolution of the cell array.
-    fn iter(&self) -> EvolverIter<Self, C, T>
+    fn evolutions(&self) -> EvolverIter<Self, T>
     where
         Self: Sized + Clone,
     {
         EvolverIter {
-            current: self.clone(),
-            _phant1: PhantomData {},
-            _phant2: PhantomData {},
+            current: Rc::new(self.clone()),
+            _phant: PhantomData {},
         }
     }
 }
 
 /// Iterator to evolve a cell array.
-pub struct EvolverIter<E, C, T> {
-    current: E,
-    _phant1: PhantomData<C>,
-    _phant2: PhantomData<T>,
+pub struct EvolverIter<E, T> {
+    current: Rc<E>,
+    _phant: PhantomData<T>,
 }
-impl<E, C, T> Iterator for EvolverIter<E, C, T>
+impl<E, T> Iterator for EvolverIter<E, T>
 where
-    E: Evolver<C, T> + Clone,
+    E: Evolver<T> + Clone,
 {
-    type Item = E;
+    type Item = Rc<E>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut next = E::new(&self.current);
-        for coord in self.current.next_iter() {
-            next.set(&coord, self.current.next_cell(&coord));
+        for point in self.current.next_iter() {
+            next.set(&point, self.current.next_cell(&point));
         }
-        self.current = next.clone();
-        Some(next)
+        self.current = Rc::new(next);
+        Some(self.current.clone())
     }
 }

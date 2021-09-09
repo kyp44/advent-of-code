@@ -1,5 +1,4 @@
 use crate::aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -26,51 +25,35 @@ mod tests {
 }
 
 struct Map {
-    width: usize,
-    height: usize,
-    data: Vec<Vec<bool>>,
+    size: (usize, usize),
+    data: Box<[Box<[bool]>]>,
+}
+impl CharGrid for Map {
+    type Element = bool;
+
+    fn from_char(c: char) -> Self::Element {
+        c == '#'
+    }
+
+    fn to_char(e: &Self::Element) -> char {
+        if *e {
+            '#'
+        } else {
+            '.'
+        }
+    }
+
+    fn from_data(size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
+    where
+        Self: Sized,
+    {
+        Ok(Map { size, data })
+    }
 }
 
 impl Map {
     fn is_tree(&self, x: usize, y: usize) -> bool {
-        self.data[y][x % self.width]
-    }
-}
-
-impl FromStr for Map {
-    type Err = AocError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut liter = s.lines();
-        fn parse_row(line: &str) -> Vec<bool> {
-            line.trim().chars().map(|c| c != '.').collect()
-        }
-        let first_row = parse_row(
-            liter
-                .next()
-                .ok_or_else(|| AocError::InvalidInput("No lines".into()))?,
-        );
-        let width = first_row.len();
-        if width < 1 {
-            return Err(AocError::InvalidInput(
-                "First map line has no content!".into(),
-            ));
-        }
-        let mut data = vec![first_row];
-
-        for line in liter {
-            let row = parse_row(line);
-            if row.len() != width {
-                return Err(AocError::InvalidInput(
-                    format!("Map row '{}' has a length different from {}", line, width).into(),
-                ));
-            }
-            data.push(row);
-        }
-        Ok(Map {
-            width,
-            height: data.len(),
-            data,
-        })
+        self.data[y][x % self.size.0]
     }
 }
 
@@ -99,7 +82,7 @@ impl Iterator for MapDownhill<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // If past the map vertically then we are done
-        if self.y >= self.map.height {
+        if self.y >= self.map.size.1 {
             return None;
         }
 
