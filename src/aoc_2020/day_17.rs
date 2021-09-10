@@ -19,6 +19,37 @@ mod tests {
 
 type DimensionRange = RangeInclusive<i32>;
 
+#[derive(CharGridDebug)]
+struct Slice2D {
+    data: Box<[Box<[bool]>]>,
+}
+impl CharGrid for Slice2D {
+    type Element = bool;
+
+    fn from_char(c: char) -> Self::Element {
+        c == '#'
+    }
+
+    fn to_char(e: &Self::Element) -> char {
+        if *e {
+            '#'
+        } else {
+            '.'
+        }
+    }
+
+    fn from_data(_size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
+    where
+        Self: Sized,
+    {
+        Ok(Slice2D { data })
+    }
+
+    fn to_data(&self) -> &[Box<[Self::Element]>] {
+        &self.data
+    }
+}
+
 #[derive(Clone)]
 struct Dimension {
     dimensions: usize,
@@ -28,33 +59,20 @@ impl Debug for Dimension {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let ranges = self.ranges();
 
-        let print_grid = |f: &mut std::fmt::Formatter<'_>, cs: Vec<i32>| -> std::fmt::Result {
-            for y in ranges[1].clone() {
-                writeln!(
-                    f,
-                    "{}",
-                    ranges[0]
-                        .clone()
-                        .map(|x| {
-                            let mut point = vec![x, y];
-                            point.extend_from_slice(&cs);
-                            if self.get(&point) {
-                                '#'
-                            } else {
-                                '.'
-                            }
-                        })
-                        .collect::<String>()
-                )?;
-            }
-            Ok(())
-        };
-
         if self.dimensions > 2 {
             for coords in (2..self.dimensions)
                 .map(|i| ranges[i].clone())
                 .multi_cartesian_product()
             {
+                let slice = Slice2D::from_coordinates(
+                    &self
+                        .active_cubes
+                        .iter()
+                        .filter(|pt| pt[2..] == coords)
+                        .map(|v| (v[0], v[1]))
+                        .collect(),
+                )
+                .unwrap();
                 writeln!(
                     f,
                     "{}",
@@ -64,10 +82,14 @@ impl Debug for Dimension {
                         .map(|(i, v)| format!("x{} = {}", i + 3, v))
                         .join(", ")
                 )?;
-                print_grid(f, coords)?;
+                slice.fmt(f)?;
             }
         } else {
-            print_grid(f, vec![])?;
+            let slice = Slice2D::from_coordinates(
+                &self.active_cubes.iter().map(|v| (v[0], v[1])).collect(),
+            )
+            .unwrap();
+            slice.fmt(f)?;
         }
 
         Ok(())
@@ -82,18 +104,13 @@ impl Dimension {
         }
         Ok(Dimension {
             dimensions,
-            active_cubes: s
-                .lines()
-                .enumerate()
-                .flat_map(|(y, line)| {
-                    line.chars().enumerate().filter_map(move |(x, c)| match c {
-                        '.' => None,
-                        _ => {
-                            let mut point = vec![x.try_into().unwrap(), y.try_into().unwrap()];
-                            point.resize(dimensions, 0);
-                            Some(point)
-                        }
-                    })
+            active_cubes: Slice2D::from_str(s)?
+                .to_coordinates()
+                .iter()
+                .map(|(x, y)| {
+                    let mut v = vec![*x, *y];
+                    v.append(&mut vec![0; dimensions - 2]);
+                    v
                 })
                 .collect(),
         })
@@ -180,7 +197,7 @@ pub const SOLUTION: Solution = Solution {
             let dimension = Dimension::from_str(3, input)?;
 
             /*println!("{:?}", dimension);
-            for dim in dimension.evolutions().take(3) {
+            for dim in dimension.evolutions().take(5) {
                 println!("{:?}", dim);
             }*/
 
@@ -191,6 +208,11 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let dimension = Dimension::from_str(4, input)?;
+
+            /*println!("{:?}", dimension);
+            for dim in dimension.evolutions().take(5) {
+                println!("{:?}", dim);
+            }*/
 
             // Process
             Ok(dimension.evolutions().nth(5).unwrap().count_active().into())

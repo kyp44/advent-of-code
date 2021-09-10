@@ -5,13 +5,13 @@ use nom::sequence::delimited;
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
 use nom::{AsChar, InputIter, InputTakeAtPosition, Slice};
-use num::Unsigned;
+use num::{Integer, Unsigned};
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::RangeFrom;
+use std::ops::{Range, RangeFrom};
 use std::str::FromStr;
 use std::{fmt, fs};
 
@@ -21,10 +21,11 @@ mod evolver;
 /// Prelude
 pub mod prelude {
     pub use super::{
-        char_add, char_grid::CharGrid, evolver::Evolver, Answer, AnswerVec, AocError, AocResult,
-        DiscardInput, FilterCount, NomParseError, NomParseResult, Parseable, Sections, Solution,
-        SplitRuns, YearSolutions,
+        char_add, char_grid::CharGrid, char_grid::CharGridCoordinates, evolver::Evolver, Answer,
+        AnswerVec, AocError, AocResult, DiscardInput, FilterCount, HasRange, NomParseError,
+        NomParseResult, Parseable, Sections, Solution, SplitRuns, YearSolutions,
     };
+    pub use aoc_derive::CharGridDebug;
 }
 
 /// Custom error type for AoC problem functions.
@@ -216,6 +217,32 @@ where
 {
     fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> O {
         self.filter(f).count().try_into().unwrap()
+    }
+}
+
+/// Convenience function to get the range from an Iterator of integers.
+/// Any empty iterator will just have a range of 0..1.
+pub trait HasRange<T> {
+    fn range(self) -> Range<T>;
+}
+impl<T, I> HasRange<T> for I
+where
+    T: Integer + Copy,
+    I: Iterator<Item = T>,
+{
+    fn range(self) -> Range<T> {
+        let mut min = T::zero();
+        let mut max = T::zero();
+
+        for x in self {
+            if x < min {
+                min = x;
+            }
+            if x > max {
+                max = x;
+            }
+        }
+        min..(max + T::one())
     }
 }
 

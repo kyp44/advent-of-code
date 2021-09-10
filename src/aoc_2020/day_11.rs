@@ -1,5 +1,4 @@
 use crate::aoc::prelude::*;
-use aoc_derive::CharGridDebug;
 use cgmath::{Vector2, Zero};
 use itertools::iproduct;
 use std::{collections::HashSet, convert::TryInto, fmt::Display, hash::Hash, rc::Rc};
@@ -137,6 +136,10 @@ impl CharGrid for Area {
             data,
         })
     }
+
+    fn to_data(&self) -> &[Box<[Self::Element]>] {
+        &self.data
+    }
 }
 
 impl Evolver<Seat> for Area {
@@ -227,7 +230,7 @@ impl Area {
         let mut prior_states: HashSet<Rc<Self>> = HashSet::new();
         let mut last_state = prior_states.get_or_insert(Rc::new(self.clone()));
         for state in self.evolutions() {
-            //println!("{:?}\n", state);
+            //println!("{:?}", state);
             if state == *last_state {
                 return SimulationStatus::Stable(state);
             }
@@ -257,7 +260,6 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let area = Area::from_str(input)?;
-            area.tester();
 
             // Process
             check_simulation(area.simulate())

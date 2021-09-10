@@ -49,6 +49,10 @@ impl CharGrid for Map {
     {
         Ok(Map { size, data })
     }
+
+    fn to_data(&self) -> &[Box<[Self::Element]>] {
+        &self.data
+    }
 }
 
 impl Map {
