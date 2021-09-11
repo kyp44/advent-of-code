@@ -26,6 +26,10 @@ struct Slice2D {
 impl CharGrid for Slice2D {
     type Element = bool;
 
+    fn default() -> Self::Element {
+        false
+    }
+
     fn from_char(c: char) -> Self::Element {
         c == '#'
     }

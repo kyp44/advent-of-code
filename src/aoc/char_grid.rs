@@ -9,6 +9,21 @@ pub trait CharGrid {
     /// Type of each grid element.
     type Element;
 
+    /// Create new, blank grid.
+    fn blank(size: (usize, usize)) -> AocResult<Self>
+    where
+        Self: Sized,
+        Self::Element: Clone,
+    {
+        Self::from_data(
+            size,
+            vec![vec![Self::default(); size.0].into_boxed_slice(); size.1].into_boxed_slice(),
+        )
+    }
+
+    /// Default element for create new, blank grids.
+    fn default() -> Self::Element;
+
     /// Maps the read character to the Element.
     fn from_char(c: char) -> Self::Element;
 

@@ -158,48 +158,68 @@ enum Transform {
 }
 
 #[derive(Clone)]
-struct Image<T> {
-    width: usize,
-    height: usize,
-    pixels: Box<[Box<[T]>]>,
+struct Image {
+    size: (usize, usize),
+    pixels: Box<[Box<[bool]>]>,
 }
-impl<T> Image<T>
-where
-    T: Default + Copy,
-{
-    fn new(width: usize, height: usize) -> Self {
-        Image {
-            width,
-            height,
-            pixels: vec![vec![T::default(); width].into_boxed_slice(); height].into_boxed_slice(),
+
+impl CharGrid for Image {
+    type Element = bool;
+
+    fn default() -> Self::Element {
+        false
+    }
+
+    fn from_char(c: char) -> Self::Element {
+        c == '#'
+    }
+
+    fn to_char(e: &Self::Element) -> char {
+        if *e {
+            '#'
+        } else {
+            '.'
         }
     }
 
-    fn set(&mut self, rows: impl Iterator<Item = impl Iterator<Item = T>>) {
-        for (y, row) in (0..self.height).zip(rows) {
-            for (x, v) in (0..self.width).zip(row) {
+    fn from_data(size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
+    where
+        Self: Sized,
+    {
+        Ok(Image { size, pixels: data })
+    }
+
+    fn to_data(&self) -> &[Box<[Self::Element]>] {
+        &self.pixels
+    }
+}
+
+impl Image {
+    fn set(&mut self, rows: impl Iterator<Item = impl Iterator<Item = bool>>) {
+        for (y, row) in (0..self.size.1).zip(rows) {
+            for (x, v) in (0..self.size.0).zip(row) {
                 self.pixels[y][x] = v;
             }
         }
     }
 
     fn rot_90(&self) -> Self {
-        let mut out = Image::new(self.height, self.width);
+        let mut out = Image::blank(self.size).unwrap();
         out.set(
-            (0..self.width)
+            (0..self.size.0)
                 .rev()
-                .map(|x| (0..self.height).map(move |y| self.pixels[y][x])),
+                .map(|x| (0..self.size.1).map(move |y| self.pixels[y][x])),
         );
         out
     }
 
     fn flip_hor(&self) -> Self {
-        let mut out = Image::new(self.width, self.height);
+        let mut out = Image::blank(self.size).unwrap();
         out.set(self.pixels.iter().map(|row| row.iter().rev().copied()));
         out
     }
     fn flip_ver(&self) -> Self {
-        let mut out = Image::new(self.width, self.height);
+        let mut out = Image::blank(self.size).unwrap();
         out.set(self.pixels.iter().rev().map(|row| row.iter().copied()));
         out
     }
@@ -220,10 +240,10 @@ where
 
     fn adjoin_right(&self, right: &Self) -> Self {
         assert_eq!(
-            self.height, right.height,
+            self.size.1, right.size.1,
             "Images must have the same height to adjoin horizontally"
         );
-        let mut out = Image::new(self.width + right.width, self.height);
+        let mut out = Image::blank((self.size.0 + right.size.0, self.size.1)).unwrap();
         out.set(
             self.pixels
                 .iter()
@@ -235,10 +255,10 @@ where
 
     fn adjoin_below(&self, below: &Self) -> Self {
         assert_eq!(
-            self.width, below.width,
+            self.size.0, below.size.0,
             "Images must have the same width to adjoin vertically"
         );
-        let mut out = Image::new(self.width, self.height + below.height);
+        let mut out = Image::blank((self.size.0, self.size.1 + below.size.1)).unwrap();
         out.set(
             self.pixels
                 .iter()
@@ -248,11 +268,11 @@ where
         out
     }
 
-    fn slice(&self, point: &(usize, usize), width: usize, height: usize) -> Box<[&[T]]> {
+    fn slice(&self, point: &(usize, usize), width: usize, height: usize) -> Box<[&[bool]]> {
         self.pixels[point.1..point.1 + height]
             .iter()
             .map(|row| &row[point.0..point.0 + width])
-            .collect::<Vec<&[T]>>()
+            .collect::<Vec<&[bool]>>()
             .into_boxed_slice()
     }
 
@@ -261,56 +281,22 @@ where
         point: &(usize, usize),
         width: usize,
         height: usize,
-    ) -> Box<[&mut [T]]> {
+    ) -> Box<[&mut [bool]]> {
         self.pixels[point.1..point.1 + height]
             .iter_mut()
             .map(|row| &mut row[point.0..point.0 + width])
-            .collect::<Vec<&mut [T]>>()
+            .collect::<Vec<&mut [bool]>>()
             .into_boxed_slice()
     }
 }
-impl fmt::Display for Image<bool> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(
-            f,
-            "{}",
-            self.pixels
-                .iter()
-                .map(|row| row
-                    .iter()
-                    .map(|p| if *p { '#' } else { '.' })
-                    .collect::<String>())
-                .join("\n")
-        )
-    }
-}
-impl fmt::Debug for Image<bool> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(self, f)
-    }
-}
-impl<'a> Parseable<'a> for Image<bool> {
-    fn parser(input: &'a str) -> NomParseResult<Self> {
-        map(separated_list1(line_ending, many1(one_of(" .#"))), |rows| {
-            let height = rows.len();
-            let width = if height > 0 { rows[0].len() } else { 0 };
-            let mut image = Image::new(width, height);
-            image.set(
-                rows.into_iter()
-                    .map(|row| row.into_iter().map(|p| p == '#')),
-            );
-            image
-        })(input)
-    }
-}
-impl Image<bool> {
+impl Image {
     fn search(&self, image: &Self) -> Vec<(usize, usize)> {
         iproduct!(
-            0..=(self.height - image.height),
-            0..=(self.width - image.width)
+            0..=(self.size.1 - image.size.1),
+            0..=(self.size.0 - image.size.0)
         )
         .filter(|(y, x)| {
-            self.slice(&(*x, *y), image.width, image.height)
+            self.slice(&(*x, *y), image.size.0, image.size.1)
                 .iter()
                 .map(|row| row.iter())
                 .flatten()
@@ -322,7 +308,7 @@ impl Image<bool> {
     }
 
     fn subtract(&mut self, point: &(usize, usize), image: &Self) {
-        let mut slice = self.slice_mut(point, image.width, image.height);
+        let mut slice = self.slice_mut(point, image.size.0, image.size.1);
         for (p, sp) in slice
             .iter_mut()
             .map(|row| row.iter_mut())
@@ -339,7 +325,7 @@ impl Image<bool> {
 #[derive(Debug)]
 struct Tile {
     id: u64,
-    image: Image<bool>,
+    image: Image,
     edges: EnumMap<Edge, Vec<bool>>,
     edges_reversed: EnumMap<Edge, Vec<bool>>,
 }
@@ -347,20 +333,17 @@ impl FromStr for Tile {
     type Err = AocError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (id, full_image) = pair(
-            delimited(
-                tag("Tile "),
-                nom::character::complete::u64,
-                pair(tag(":"), line_ending),
-            ),
-            Image::<bool>::parser,
+        let (image_str, id) = delimited(
+            tag("Tile "),
+            nom::character::complete::u64,
+            pair(tag(":"), line_ending),
         )(s)
-        .finish()
-        .discard_input()?;
+        .finish()?;
+        let full_image = Image::from_str(image_str)?;
 
         // Verify the tile dimensions
-        let size = full_image.width;
-        if size != full_image.height || size < 3 {
+        let size = full_image.size.0;
+        if size != full_image.size.1 || size < 3 {
             return Err(AocError::InvalidInput(
                 format!("Tile {} must be square with at least a size of 3x3", id).into(),
             ));
@@ -542,7 +525,7 @@ impl<'a> TileMap<'a> {
         self.slots[y][x].as_ref()
     }
 
-    fn stitched_image(&self) -> AocResult<Image<bool>> {
+    fn stitched_image(&self) -> AocResult<Image> {
         // Check that all slots are filled
         if self
             .slots
@@ -674,7 +657,7 @@ pub const SOLUTION: Solution = Solution {
 
             // Process
             let image = solver.solve()?.stitched_image()?;
-            let sea_monster: Image<bool> = Image::from_str(
+            let sea_monster: Image = Image::from_str(
                 "                  # 
 #    ##    ##    ###
  #  #  #  #  #  #   ",

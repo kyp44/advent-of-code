@@ -118,6 +118,10 @@ struct Area {
 impl CharGrid for Area {
     type Element = Seat;
 
+    fn default() -> Self::Element {
+        Seat::Floor
+    }
+
     fn from_char(c: char) -> Self::Element {
         c.into()
     }
