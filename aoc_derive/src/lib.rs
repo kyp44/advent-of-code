@@ -1,8 +1,8 @@
 extern crate proc_macro;
 
-use proc_macro::{Span, TokenStream};
+use proc_macro::TokenStream;
 use quote::quote;
-use syn::{DeriveInput, Ident, Lit, Meta};
+use syn::{parse_macro_input, DeriveInput};
 
 struct DebugParams(syn::Ident);
 impl syn::parse::Parse for DebugParams {
@@ -16,25 +16,37 @@ impl syn::parse::Parse for DebugParams {
 
 #[proc_macro_derive(CharGridDebug, attributes(generic))]
 pub fn char_grid_debug(input: TokenStream) -> TokenStream {
-    let ast: DeriveInput = syn::parse(input).unwrap();
+    let ast: DeriveInput = syn::parse(input).expect("CharGridDebug item is not a struct or enum");
     let name = ast.ident;
 
-    let generic_attr = ast
+    if let Some(a) = ast
         .attrs
         .iter()
         .filter(|a| a.path.segments.len() == 1 && a.path.segments[0].ident == "generic")
-        .next();
-    if let Some(a) = generic_attr {
+        .next()
+    {
         let params: DebugParams =
             syn::parse2(a.tokens.clone()).expect("Invalid generic attribute!");
     }
 
     let output = quote! {
-    impl std::fmt::Debug for #name {
+    impl std::fmt::Debug for #name<bool> {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.out_fmt(f)
             }
     }
     };
+
+    // TODO test code
+    let ast: DeriveInput = syn::parse(output.into()).unwrap();
+
+    let output = quote! {
+    impl std::fmt::Debug for #name<bool> {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.out_fmt(f)
+            }
+    }
+    };
+
     output.into()
 }
