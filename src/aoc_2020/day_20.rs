@@ -4,9 +4,7 @@ use itertools::iproduct;
 use itertools::Itertools;
 use nom::{
     bytes::complete::tag,
-    character::complete::{line_ending, one_of},
-    combinator::map,
-    multi::{many1, separated_list1},
+    character::complete::line_ending,
     sequence::{delimited, pair},
     Finish,
 };
@@ -157,7 +155,7 @@ enum Transform {
     Rot90FlipV,
 }
 
-#[derive(Clone)]
+#[derive(Clone, CharGridDebug)]
 struct Image {
     size: (usize, usize),
     pixels: Box<[Box<[bool]>]>,
@@ -288,8 +286,7 @@ impl Image {
             .collect::<Vec<&mut [bool]>>()
             .into_boxed_slice()
     }
-}
-impl Image {
+
     fn search(&self, image: &Self) -> Vec<(usize, usize)> {
         iproduct!(
             0..=(self.size.1 - image.size.1),
@@ -333,7 +330,7 @@ impl FromStr for Tile {
     type Err = AocError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (image_str, id) = delimited(
+        let (image_str, id) = delimited::<_, _, _, _, NomParseError, _, _, _>(
             tag("Tile "),
             nom::character::complete::u64,
             pair(tag(":"), line_ending),
@@ -350,7 +347,7 @@ impl FromStr for Tile {
         }
 
         // Create image of interior
-        let mut image = Image::new(size - 2, size - 2);
+        let mut image = Image::blank((size - 2, size - 2))?;
         image.set(
             full_image.pixels[1..size - 1]
                 .iter()
@@ -490,7 +487,7 @@ struct TileMap<'a> {
     remaining: Vec<&'a Tile>,
     slots: Vec<Vec<Option<TileSlot<'a>>>>,
 }
-impl fmt::Display for TileMap<'_> {
+impl fmt::Debug for TileMap<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for y in 0..self.size {
             writeln!(
@@ -576,7 +573,7 @@ impl Solver {
             if map.remaining.is_empty() {
                 return Some(map);
             }
-            //println!("Have :\n {}", map);
+            //println!("Have :\n {:?}", map);
 
             for (tile_idx, tile) in map.remaining.iter().enumerate() {
                 for transform in Transform::iter() {
@@ -642,7 +639,7 @@ pub const SOLUTION: Solution = Solution {
 
             // Process
             let map = solver.solve()?;
-            //println!("Solution\n: {}", map);
+            //println!("Solution\n: {:?}", map);
 
             let size = map.size;
             Ok(iproduct!([0, size - 1], [0, size - 1])

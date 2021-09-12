@@ -139,6 +139,8 @@ impl Part for u8 {
     }
 }
 
+#[derive(CharGridDebug)]
+#[generic(bool)]
 struct LightGrid<T> {
     grid: Box<[Box<[T]>]>,
 }
@@ -167,20 +169,37 @@ impl LightGrid<bool> {
             .filter_count(|b| **b)
     }
 }
-impl fmt::Debug for LightGrid<bool> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for row in self.grid.iter() {
-            writeln!(
-                f,
-                "{}",
-                row.iter()
-                    .map(|b| if *b { '#' } else { '.' })
-                    .collect::<String>()
-            )?;
+impl CharGrid for LightGrid<bool> {
+    type Element = bool;
+
+    fn default() -> Self::Element {
+        false
+    }
+
+    fn from_char(c: char) -> Self::Element {
+        c == '#'
+    }
+
+    fn to_char(e: &Self::Element) -> char {
+        if *e {
+            '#'
+        } else {
+            '.'
         }
-        Ok(())
+    }
+
+    fn from_data(_size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
+    where
+        Self: Sized,
+    {
+        Ok(LightGrid { grid: data })
+    }
+
+    fn to_data(&self) -> &[Box<[Self::Element]>] {
+        &self.grid
     }
 }
+
 impl LightGrid<u8> {
     fn total_brightness(&self) -> u64 {
         self.grid
@@ -204,7 +223,7 @@ pub const SOLUTION: Solution = Solution {
             light_grid.execute_instruction(&Instruction::gather(input.lines())?);
 
             // Print the grid just to see what it is
-            //println!("{:?}", light_grid);
+            println!("{:?}", light_grid);
 
             // Process
             Ok(Answer::Unsigned(
