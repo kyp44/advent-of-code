@@ -11,7 +11,7 @@ use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
-use std::ops::{Range, RangeFrom};
+use std::ops::{RangeFrom, RangeInclusive};
 use std::str::FromStr;
 use std::{fmt, fs};
 
@@ -22,7 +22,7 @@ mod evolver;
 pub mod prelude {
     pub use super::{
         char_add, char_grid::CharGrid, char_grid::CharGridCoordinates, evolver::Evolver, Answer,
-        AnswerVec, AocError, AocResult, DiscardInput, FilterCount, HasRange, NomParseError,
+        AnswerVec, AocError, AocResult, DiscardInput, FilterCount, HasLen, HasRange, NomParseError,
         NomParseResult, Parseable, Sections, Solution, SplitRuns, YearSolutions,
     };
     pub use aoc_derive::CharGridDebug;
@@ -220,29 +220,47 @@ where
     }
 }
 
-/// Convenience function to get the range from an Iterator of integers.
+/// Convenience trait to get the range from an Iterator of integers.
 /// Any empty iterator will just have a range of 0..1.
 pub trait HasRange<T> {
-    fn range(self) -> Range<T>;
+    fn range(self) -> Option<RangeInclusive<T>>;
 }
 impl<T, I> HasRange<T> for I
 where
     T: Integer + Copy,
     I: Iterator<Item = T>,
 {
-    fn range(self) -> Range<T> {
-        let mut min = T::zero();
-        let mut max = T::zero();
+    fn range(self) -> Option<RangeInclusive<T>> {
+        let mut min = None;
+        let mut max = None;
 
         for x in self {
-            if x < min {
-                min = x;
+            if min.is_none() || x < min.unwrap() {
+                min = Some(x);
             }
-            if x > max {
-                max = x;
+            if max.is_none() || x > max.unwrap() {
+                max = Some(x);
             }
         }
-        min..(max + T::one())
+
+        if let (Some(min), Some(max)) = (min, max) {
+            Some(min..=max)
+        } else {
+            None
+        }
+    }
+}
+
+/// Convenience trait to determine the length of a range without iterating.
+pub trait HasLen<T> {
+    fn len(&self) -> T;
+}
+impl<T> HasLen<T> for RangeInclusive<T>
+where
+    T: Integer + Copy,
+{
+    fn len(&self) -> T {
+        *self.end() - *self.start() + T::one()
     }
 }
 

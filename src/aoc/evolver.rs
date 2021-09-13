@@ -2,9 +2,7 @@ use std::{marker::PhantomData, rc::Rc};
 
 /// Something that evolves, typically a Conway's-Game-of-Life-type cell array.
 pub trait Evolver<T> {
-    /// Type of the point to locate cells.
     type Point;
-    /// Type of the iterator over the cells to create the next evolution.
     type Iter: Iterator<Item = Self::Point>;
 
     /// Create a new cell array in the default state.

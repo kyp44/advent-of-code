@@ -1,4 +1,4 @@
-use std::{convert::TryInto, fmt};
+use std::convert::TryInto;
 
 use cgmath::Vector2;
 use itertools::iproduct;
@@ -140,7 +140,7 @@ impl Part for u8 {
 }
 
 #[derive(CharGridDebug)]
-#[generics(<bool>)]
+#[generics(bool)]
 struct LightGrid<T> {
     grid: Box<[Box<[T]>]>,
 }
@@ -223,7 +223,7 @@ pub const SOLUTION: Solution = Solution {
             light_grid.execute_instruction(&Instruction::gather(input.lines())?);
 
             // Print the grid just to see what it is
-            println!("{:?}", light_grid);
+            //println!("{:?}", light_grid);
 
             // Process
             Ok(Answer::Unsigned(

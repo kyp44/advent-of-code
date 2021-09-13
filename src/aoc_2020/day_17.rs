@@ -132,9 +132,9 @@ impl Dimension {
 
     fn ranges(&self) -> Vec<DimensionRange> {
         (0..self.dimensions)
-            .map(|i| {
-                let values: Vec<i32> = self.active_cubes.iter().map(|p| p[i]).collect();
-                (*values.iter().min().unwrap_or(&0))..=(*values.iter().max().unwrap_or(&0))
+            .map(|i| match self.active_cubes.iter().map(|p| p[i]).range() {
+                Some(r) => r,
+                None => 0..=0,
             })
             .collect()
     }

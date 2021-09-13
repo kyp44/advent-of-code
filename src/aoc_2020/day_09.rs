@@ -93,7 +93,8 @@ impl XmasPacket {
                 sum += *b;
                 if sum == invalid_n {
                     let slice = &self.numbers[ai..=ai + bi + 1];
-                    return Some(slice.iter().min().unwrap() + slice.iter().max().unwrap());
+                    let range = slice.iter().copied().range().unwrap();
+                    return Some(range.start() + range.end());
                 }
             }
         }

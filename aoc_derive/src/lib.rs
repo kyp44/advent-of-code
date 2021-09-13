@@ -1,10 +1,9 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use quote::{quote, ToTokens};
+use quote::ToTokens;
 use syn::{
-    parse_macro_input, parse_quote, punctuated::Punctuated, DeriveInput, GenericArgument, Ident,
-    ItemImpl, Token,
+    parse_macro_input, parse_quote, punctuated::Punctuated, DeriveInput, GenericArgument, ItemImpl,
 };
 
 struct GenericParams(Punctuated<GenericArgument, syn::token::Comma>);
@@ -36,21 +35,16 @@ pub fn char_grid_debug(input: TokenStream) -> TokenStream {
     if let Some(a) = ast
         .attrs
         .iter()
-        .filter(|a| a.path.segments.len() == 1 && a.path.segments[0].ident == "generics")
-        .next()
+        .find(|a| a.path.segments.len() == 1 && a.path.segments[0].ident == "generics")
     {
         let params: GenericParams =
             syn::parse2(a.tokens.clone()).expect("Invalid generic attribute!");
 
         // Add generics
         if let syn::Type::Path(ref mut p) = *output.self_ty {
-            let x = syn::AngleBracketedGenericArguments {
-                colon2_token: None,
-                lt_token: (),
-                args: params.0,
-                gt_token: (),
-            };
-            //p.path.segments[0].arguments = syn::PathArguments
+            let punctuated = params.0;
+            p.path.segments[0].arguments =
+                syn::PathArguments::AngleBracketed(parse_quote!(<#punctuated>))
         }
     }
 

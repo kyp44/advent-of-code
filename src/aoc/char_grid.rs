@@ -135,16 +135,25 @@ impl<C: CharGrid<Element = bool>> CharGridCoordinates for C {
     {
         let x_range = points.iter().map(|p| p.0).range();
         let y_range = points.iter().map(|p| p.1).range();
-        let width = (x_range.end - x_range.start).try_into().unwrap();
-        let height = (y_range.end - y_range.start).try_into().unwrap();
+        let width = match x_range {
+            Some(ref r) => r.len().try_into().unwrap(),
+            None => 1,
+        };
+        let height = match y_range {
+            Some(ref r) => r.len().try_into().unwrap(),
+            None => 1,
+        };
 
         let mut data = vec![vec![false; width].into_boxed_slice(); height].into_boxed_slice();
 
-        for point in iproduct!(0..width, 0..height) {
-            let x = N::try_from(point.0).unwrap() + x_range.start;
-            let y = N::try_from(point.1).unwrap() + y_range.start;
-            if points.contains(&(x, y)) {
-                data[point.1][point.0] = true;
+        // Set any points
+        if let (Some(xr), Some(yr)) = (x_range, y_range) {
+            for point in iproduct!(0..width, 0..height) {
+                let x = N::try_from(point.0).unwrap() + *xr.start();
+                let y = N::try_from(point.1).unwrap() + *yr.start();
+                if points.contains(&(x, y)) {
+                    data[point.1][point.0] = true;
+                }
             }
         }
         Self::from_data((width, height), data)

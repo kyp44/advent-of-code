@@ -173,10 +173,9 @@ impl Evolver<bool> for Floor {
 
     fn next_iter(&self) -> Self::Iter {
         // Determine the range in x and y
-        let range = |f: fn(&Point) -> i32| {
-            let start = self.black_tiles.iter().map(|p| f(p)).min().unwrap_or(1);
-            let stop = self.black_tiles.iter().map(|p| f(p)).max().unwrap_or(-1);
-            (start - 1)..=(stop + 1)
+        let range = |f: fn(&Point) -> i32| match self.black_tiles.iter().map(|p| f(p)).range() {
+            Some(r) => (r.start() - 1)..=(r.end() + 1),
+            None => 0..=0,
         };
 
         iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Vector2::new(x, y))
