@@ -140,7 +140,7 @@ impl Part for u8 {
 }
 
 #[derive(CharGridDebug)]
-#[generic(bool)]
+#[generics(<bool>)]
 struct LightGrid<T> {
     grid: Box<[Box<[T]>]>,
 }
