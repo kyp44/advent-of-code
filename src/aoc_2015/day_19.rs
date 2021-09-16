@@ -62,7 +62,7 @@ impl<'a> Parseable<'a> for Replacement<'a> {
 }
 impl<'a> fmt::Debug for Replacement<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} -> {}", self.from, self.to)
+        write!(f, "{} => {}", self.from, self.to)
     }
 }
 
@@ -112,27 +112,64 @@ impl<'a> Machine<'a> {
             .flatten()
     }
 
-    fn find_steps<'b: 'a>(&self, input: &'b str) -> Option<u64> {
-        if input.len() >= self.medicine.len() {
-            if input == self.medicine {
-                return Some(0);
-            }
-            return None;
+    /*fn find_steps(&self, target: &str, input: &str) -> Option<u64> {
+        println!("{}", input);
+        if input == target {
+            return Some(0);
         }
 
-        for s in self.replace_iter(input) {
-            // If what we have replaced so far doesn't match, there's no
-            // point in continuing down this dead end.
-            if !self.medicine.starts_with(s.precedent) {
-                return None;
-            }
-            //println!("Considering with prec '{}'", s.precedent,);
-            if let Some(i) = self.find_steps(&s.replaced) {
-                return Some(i + 1);
+        for idx in 0..input.len() {
+            let (pre, post) = input.split_at(idx);
+            for rep in self.replacements.iter().filter(|r| post.starts_with(r.to)) {
+                if let Some(s) = self.find_steps(
+                    target,
+                    &format!("{}{}", pre, post.replacen(rep.to, rep.from, 1)),
+                ) {
+                    return Some(s + 1);
+                }
             }
         }
 
         None
+    }*/
+
+    fn find_steps(&self, target: &str, input: &str) -> Option<u64> {
+        fn find_steps_rec<'a>(
+            replacements: &[Replacement<'_>],
+            bad_strs: &mut HashSet<String>,
+            target: &str,
+            input: String,
+        ) -> Option<u64> {
+            if input == target {
+                return Some(0);
+            } else if bad_strs.contains(&input) || input.find(target).is_some() {
+                // An assumption here is that the target string is not a part
+                // of any replacement to string, i.e. it cannot be further transformed.
+                // Thus, if it is an any non-equal string, this branch can be abandoned.
+                return None;
+            }
+            println!("{}", input);
+
+            // Try replacements recursively
+            for rep in replacements.iter() {
+                for rs in input.individual_replacements(rep.to, rep.from) {
+                    if let Some(i) = find_steps_rec(replacements, bad_strs, target, rs) {
+                        return Some(i + 1);
+                    }
+                }
+            }
+
+            // This string cannot be turned into the target.
+            bad_strs.insert(input);
+            None
+        }
+
+        find_steps_rec(
+            &self.replacements,
+            &mut HashSet::new(),
+            target,
+            input.to_string(),
+        )
     }
 }
 
@@ -164,7 +201,7 @@ pub const SOLUTION: Solution = Solution {
 
             // Process
             Ok(machine
-                .find_steps("e")
+                .find_steps("e", machine.medicine)
                 .ok_or_else(|| AocError::Process("Solution not found!".into()))?
                 .into())
         },

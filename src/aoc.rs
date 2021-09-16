@@ -22,8 +22,9 @@ mod evolver;
 pub mod prelude {
     pub use super::{
         char_add, char_grid::CharGrid, char_grid::CharGridCoordinates, evolver::Evolver, Answer,
-        AnswerVec, AocError, AocResult, DiscardInput, FilterCount, HasLen, HasRange, NomParseError,
-        NomParseResult, Parseable, Sections, Solution, SplitRuns, YearSolutions,
+        AnswerVec, AocError, AocResult, DiscardInput, FilterCount, HasLen, HasRange,
+        IndividualReplacements, NomParseError, NomParseResult, Parseable, Sections, Solution,
+        SplitRuns, YearSolutions,
     };
     pub use aoc_derive::CharGridDebug;
 }
@@ -264,12 +265,54 @@ where
     }
 }
 
+/// Iterator to replace occurrances in a string one at a time.
+pub struct Replacements<'a, 'b, 'c> {
+    original: &'a str,
+    idx: usize,
+    from: &'b str,
+    to: &'c str,
+}
+impl<'a, 'b, 'c> Replacements<'a, 'b, 'c> {
+    fn new(original: &'a str, from: &'b str, to: &'c str) -> Self {
+        Replacements {
+            original,
+            idx: 0,
+            from,
+            to,
+        }
+    }
+}
+impl Iterator for Replacements<'_, '_, '_> {
+    type Item = String;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.idx < self.original.len() {
+            let (pre, post) = self.original.split_at(self.idx);
+            self.idx += 1;
+            if post.starts_with(self.from) {
+                return Some(format!("{}{}", pre, post.replacen(self.from, self.to, 1)));
+            }
+        }
+        None
+    }
+}
+
+/// Trait to create a Replacements iterator.
+pub trait IndividualReplacements<'a, 'b, 'c> {
+    fn individual_replacements(&'a self, from: &'b str, to: &'c str) -> Replacements<'a, 'b, 'c>;
+}
+impl<'a, 'b, 'c> IndividualReplacements<'a, 'b, 'c> for str {
+    fn individual_replacements(&'a self, from: &'b str, to: &'c str) -> Replacements<'a, 'b, 'c> {
+        Replacements::new(self, from, to)
+    }
+}
+
 /// Increment a character by a certain number.
 pub fn char_add(c: char, i: u32) -> char {
     std::char::from_u32((c as u32) + i).unwrap_or(c)
 }
 
-/// Iteartor over runs of the same characters in strings.
+/// Itearator over runs of the same characters in strings.
 pub struct Runs<'a> {
     remaining: &'a str,
 }
