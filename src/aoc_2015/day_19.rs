@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::{collections::HashSet, fmt};
 
 use nom::{
     bytes::complete::tag, character::complete::alpha1, combinator::map, sequence::separated_pair,
@@ -60,6 +60,11 @@ impl<'a> Parseable<'a> for Replacement<'a> {
         )(input)
     }
 }
+impl<'a> fmt::Debug for Replacement<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} -> {}", self.from, self.to)
+    }
+}
 
 struct StrReplacement<'a> {
     precedent: &'a str,
@@ -68,26 +73,15 @@ struct StrReplacement<'a> {
 
 #[derive(Debug)]
 struct Machine<'a> {
-    replacements: HashMap<&'a str, Vec<&'a str>>,
+    replacements: Vec<Replacement<'a>>,
     medicine: &'a str,
 }
 impl<'a> Machine<'a> {
     fn from_str(s: &'a str) -> AocResult<Self> {
         let secs = s.trim().sections(2)?;
 
-        let mut replacements: HashMap<_, Vec<&str>> = HashMap::new();
-
-        for rep in Replacement::gather(secs[0].lines())? {
-            match replacements.get_mut(rep.from) {
-                Some(v) => v.push(rep.to),
-                None => {
-                    replacements.insert(rep.from, vec![rep.to]);
-                }
-            }
-        }
-
         Ok(Machine {
-            replacements,
+            replacements: Replacement::gather(secs[0].lines())?,
             medicine: secs[1],
         })
     }
@@ -96,18 +90,17 @@ impl<'a> Machine<'a> {
         &'a self,
         input: &'b str,
         idx: usize,
-    ) -> Option<impl Iterator<Item = StrReplacement<'b>> + 'a> {
+    ) -> impl Iterator<Item = StrReplacement<'b>> + 'a {
         let pre = &input[..idx];
         let check = &input[idx..];
-        for (from, vec) in self.replacements.iter() {
-            if check.starts_with(from) {
-                return Some(vec.iter().map(move |to| StrReplacement {
-                    precedent: pre,
-                    replaced: format!("{}{}", pre, check.replacen(from, to, 1)),
-                }));
-            }
-        }
-        None
+
+        self.replacements
+            .iter()
+            .filter(|r| check.starts_with(r.from))
+            .map(move |r| StrReplacement {
+                precedent: pre,
+                replaced: format!("{}{}", pre, check.replacen(r.from, r.to, 1)),
+            })
     }
 
     fn replace_iter<'b: 'a>(
@@ -115,7 +108,7 @@ impl<'a> Machine<'a> {
         input: &'b str,
     ) -> impl Iterator<Item = StrReplacement<'b>> + 'a {
         (0..input.len())
-            .filter_map(|idx| self.replace_idx_iter(input, idx))
+            .map(|idx| self.replace_idx_iter(input, idx))
             .flatten()
     }
 
@@ -153,8 +146,8 @@ pub const SOLUTION: Solution = Solution {
             let machine = Machine::from_str(input)?;
 
             /*println!("{:?}", machine);
-                for s in machine.replace_iter() {
-                    println!("{}", s);
+            for s in machine.replace_iter(machine.medicine) {
+                println!("{}", s.replaced);
             }*/
 
             // Process

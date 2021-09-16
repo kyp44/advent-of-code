@@ -18,10 +18,7 @@ itertools = "0.10.1"
 strum = "0.21"
 strum_macros = "0.21"
 bimap = "0.6.1"
-# TODO remove local num when fixed for sure
-# The published version of this had a compiler error with nightly
 num = "0.4.0"
-#num = { path = "num" }
 cgmath = "0.18"
 rayon = "1.5.1"
 enum-map = "1.1.1"
