@@ -13,7 +13,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![],
+    vec![576],
     "H => HO
 H => OH
 O => HH
@@ -80,8 +80,14 @@ impl<'a> Machine<'a> {
     fn from_str(s: &'a str) -> AocResult<Self> {
         let secs = s.trim().sections(2)?;
 
+        // Sorting these results in a greedy algorithm for part b),
+        // which converges in a reasonable time for the input.
+        let mut replacements = Replacement::gather(secs[0].lines())?;
+        replacements.sort_unstable_by_key(|r| r.to.len());
+        replacements.reverse();
+
         Ok(Machine {
-            replacements: Replacement::gather(secs[0].lines())?,
+            replacements,
             medicine: secs[1],
         })
     }
@@ -112,27 +118,6 @@ impl<'a> Machine<'a> {
             .flatten()
     }
 
-    /*fn find_steps(&self, target: &str, input: &str) -> Option<u64> {
-        println!("{}", input);
-        if input == target {
-            return Some(0);
-        }
-
-        for idx in 0..input.len() {
-            let (pre, post) = input.split_at(idx);
-            for rep in self.replacements.iter().filter(|r| post.starts_with(r.to)) {
-                if let Some(s) = self.find_steps(
-                    target,
-                    &format!("{}{}", pre, post.replacen(rep.to, rep.from, 1)),
-                ) {
-                    return Some(s + 1);
-                }
-            }
-        }
-
-        None
-    }*/
-
     fn find_steps(&self, target: &str, input: &str) -> Option<u64> {
         fn find_steps_rec<'a>(
             replacements: &[Replacement<'_>],
@@ -152,8 +137,20 @@ impl<'a> Machine<'a> {
 
             // Try replacements recursively
             for rep in replacements.iter() {
-                for rs in input.individual_replacements(rep.to, rep.from) {
-                    if let Some(i) = find_steps_rec(replacements, bad_strs, target, rs) {
+                // TODO
+                /*for rs in input.individual_replacements(rep.to, rep.from) {
+                            if let Some(i) = find_steps_rec(replacements, bad_strs, target, rs) {
+                                return Some(i + 1);
+                            }
+                }*/
+                if input.find(rep.to).is_some() {
+                    println!("Replacing '{}' with '{}'", rep.to, rep.from);
+                    if let Some(i) = find_steps_rec(
+                        replacements,
+                        bad_strs,
+                        target,
+                        input.replace(rep.to, rep.from),
+                    ) {
                         return Some(i + 1);
                     }
                 }
