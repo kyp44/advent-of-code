@@ -1,3 +1,10 @@
+/// I dislike this problem beacuse a solution in a reasonable amount of time
+/// depends on the specific input of the problem. In particular there are special
+/// Characters that can be transformed into their "meanings" when turning all the
+/// element names into single characters for ease of understanding.
+///
+/// For a disucssion of the properties of the input that allow this see:
+/// https://www.reddit.com/r/adventofcode/comments/3xflz8/day_19_solutions/
 use std::{collections::HashSet, fmt};
 
 use nom::{
@@ -13,7 +20,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![576],
+    vec![Unsigned(576), Unsigned(207)],
     "H => HO
 H => OH
 O => HH
@@ -45,112 +52,126 @@ HOHOHO",
     }
 }
 
-struct Replacement<'a> {
-    from: &'a str,
-    to: &'a str,
+struct Replacement {
+    from: String,
+    to: String,
 }
-impl<'a> Parseable<'a> for Replacement<'a> {
-    fn parser(input: &'a str) -> NomParseResult<Self>
+impl Parseable<'_> for Replacement {
+    fn parser(input: &str) -> NomParseResult<Self>
     where
         Self: Sized,
     {
         map(
             separated_pair(alpha1, trim(tag("=>")), alpha1),
-            |(from, to)| Replacement { from, to },
+            |(f, t): (&str, &str)| Replacement {
+                from: f.to_string(),
+                to: t.to_string(),
+            },
         )(input)
     }
 }
-impl<'a> fmt::Debug for Replacement<'a> {
+impl fmt::Debug for Replacement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} => {}", self.from, self.to)
+        write!(f, "'{}' => '{}'", self.from, self.to)
+    }
+}
+impl Replacement {
+    fn new(from: String, to: String) -> Self {
+        Replacement { from, to }
+    }
+
+    fn from_str(from: &str, to: &str) -> Self {
+        Self::new(from.to_string(), to.to_string())
     }
 }
 
-struct StrReplacement<'a> {
-    precedent: &'a str,
-    replaced: String,
-}
-
 #[derive(Debug)]
-struct Machine<'a> {
-    replacements: Vec<Replacement<'a>>,
-    medicine: &'a str,
+struct Machine {
+    replacements: Vec<Replacement>,
+    medicine: String,
 }
-impl<'a> Machine<'a> {
-    fn from_str(s: &'a str) -> AocResult<Self> {
+impl Machine {
+    fn from_str(s: &str) -> AocResult<Self> {
         let secs = s.trim().sections(2)?;
-
-        // Sorting these results in a greedy algorithm for part b),
-        // which converges in a reasonable time for the input.
         let mut replacements = Replacement::gather(secs[0].lines())?;
+
+        // For simplicity we replace all two-letter chemical names with a single
+        // and the special demarker chemicals (see notes above) with their characters,
+        // making it so that every symbol is only a single character.
+        let mut symbols = 'A'..'z';
+        // Gets a new, unused single-letter symbol.
+        let mut new_symbol = || loop {
+            match symbols.next() {
+                Some(c) => {
+                    let s = c.to_string();
+                    if replacements.iter().all(|r| r.from != s) && s != "Y" {
+                        break Some(s);
+                    }
+                }
+                None => break None,
+            }
+        };
+
+        // Add meta-replacements for two-letter elements and special elements
+        let mut meta_replacements = vec![
+            Replacement::from_str("Rn", "("),
+            Replacement::from_str("Y", ","),
+            Replacement::from_str("Ar", ")"),
+        ];
+        for symbol in replacements.iter().map(|r| &r.from) {
+            if symbol.len() > 1 && meta_replacements.iter().all(|r| r.from != *symbol) {
+                meta_replacements.push(Replacement::new(symbol.clone(), new_symbol().unwrap()));
+            }
+        }
+
+        // Now perform meta-replacements in the replacements and medicine
+        let mut medicine = secs[1].to_string();
+        for meta_rep in meta_replacements {
+            for rep in replacements.iter_mut() {
+                rep.to = rep.to.replace(&meta_rep.from, &meta_rep.to);
+                rep.from = rep.from.replace(&meta_rep.from, &meta_rep.to);
+            }
+            medicine = medicine.replace(&meta_rep.from, &meta_rep.to);
+        }
+
+        // Now make the search greedy
         replacements.sort_unstable_by_key(|r| r.to.len());
         replacements.reverse();
 
         Ok(Machine {
             replacements,
-            medicine: secs[1],
+            medicine,
         })
     }
 
-    fn replace_idx_iter<'b: 'a>(
-        &'a self,
-        input: &'b str,
-        idx: usize,
-    ) -> impl Iterator<Item = StrReplacement<'b>> + 'a {
-        let pre = &input[..idx];
-        let check = &input[idx..];
-
+    fn replace_iter<'a>(&'a self, input: &'a str) -> impl Iterator<Item = String> + 'a {
         self.replacements
             .iter()
-            .filter(|r| check.starts_with(r.from))
-            .map(move |r| StrReplacement {
-                precedent: pre,
-                replaced: format!("{}{}", pre, check.replacen(r.from, r.to, 1)),
-            })
-    }
-
-    fn replace_iter<'b: 'a>(
-        &'a self,
-        input: &'b str,
-    ) -> impl Iterator<Item = StrReplacement<'b>> + 'a {
-        (0..input.len())
-            .map(|idx| self.replace_idx_iter(input, idx))
+            .map(|r| input.individual_replacements(&r.from, &r.to))
             .flatten()
     }
 
     fn find_steps(&self, target: &str, input: &str) -> Option<u64> {
-        fn find_steps_rec<'a>(
-            replacements: &[Replacement<'_>],
+        fn find_steps_rec(
+            replacements: &[Replacement],
             bad_strs: &mut HashSet<String>,
             target: &str,
             input: String,
         ) -> Option<u64> {
             if input == target {
                 return Some(0);
-            } else if bad_strs.contains(&input) || input.find(target).is_some() {
+            } else if bad_strs.contains(&input) || input.contains(target) {
                 // An assumption here is that the target string is not a part
                 // of any replacement to string, i.e. it cannot be further transformed.
-                // Thus, if it is an any non-equal string, this branch can be abandoned.
+                // Thus, if it is in any non-equal string, this branch can be abandoned.
                 return None;
             }
-            println!("{}", input);
+            //println!("{}", input);
 
             // Try replacements recursively
             for rep in replacements.iter() {
-                // TODO
-                /*for rs in input.individual_replacements(rep.to, rep.from) {
-                            if let Some(i) = find_steps_rec(replacements, bad_strs, target, rs) {
-                                return Some(i + 1);
-                            }
-                }*/
-                if input.find(rep.to).is_some() {
-                    println!("Replacing '{}' with '{}'", rep.to, rep.from);
-                    if let Some(i) = find_steps_rec(
-                        replacements,
-                        bad_strs,
-                        target,
-                        input.replace(rep.to, rep.from),
-                    ) {
+                for rs in input.individual_replacements(&rep.to, &rep.from) {
+                    if let Some(i) = find_steps_rec(replacements, bad_strs, target, rs) {
                         return Some(i + 1);
                     }
                 }
@@ -179,26 +200,24 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let machine = Machine::from_str(input)?;
 
-            /*println!("{:?}", machine);
-            for s in machine.replace_iter(machine.medicine) {
-                println!("{}", s.replaced);
+            //println!("{:?}", machine);
+            /*for s in machine.replace_iter(&machine.medicine) {
+                println!("{}", s);
             }*/
 
             // Process
-            let set: HashSet<String> = machine
-                .replace_iter(machine.medicine)
-                .map(|sr| sr.replaced)
-                .collect();
+            let set: HashSet<String> = machine.replace_iter(&machine.medicine).collect();
             Ok(Answer::Unsigned(set.len().try_into().unwrap()))
         },
         // Part b)
         |input| {
             // Generation
             let machine = Machine::from_str(input)?;
+            //println!("{:?}", machine);
 
             // Process
             Ok(machine
-                .find_steps("e", machine.medicine)
+                .find_steps("e", &machine.medicine)
                 .ok_or_else(|| AocError::Process("Solution not found!".into()))?
                 .into())
         },
