@@ -29,14 +29,11 @@ mod tests {
     }
 }
 
+#[derive(new)]
 struct ListString<'a> {
     literal: &'a str,
 }
 impl<'a> ListString<'a> {
-    fn new(literal: &'a str) -> Self {
-        ListString { literal }
-    }
-
     fn escaped(&self) -> AocResult<String> {
         delimited(
             tag("\""),

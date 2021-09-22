@@ -1,4 +1,16 @@
-use crate::aoc::prelude::*;
+use std::{iter::Sum, ops::Add};
+
+use itertools::{iproduct, Itertools};
+use nom::{
+    bytes::complete::tag,
+    character::complete::multispace0,
+    combinator::map,
+    error::ParseError,
+    sequence::{delimited, tuple},
+    IResult,
+};
+
+use crate::aoc::{prelude::*, trim};
 
 #[cfg(test)]
 mod tests {
@@ -15,10 +27,26 @@ Armor: 2",
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, new)]
 struct Stats {
     damage: u32,
     armor: u32,
+}
+impl Add for &Stats {
+    type Output = Stats;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Stats::new(self.damage + rhs.damage, self.armor + rhs.armor)
+    }
+}
+impl<'a> Sum<&'a Stats> for Stats {
+    fn sum<I: Iterator<Item = &'a Stats>>(iter: I) -> Self {
+        let mut acc = Stats::new(0, 0);
+        for stats in iter {
+            acc = &acc + stats;
+        }
+        acc
+    }
 }
 
 #[derive(Debug)]
@@ -65,9 +93,94 @@ const RINGS: &[ShopItem] = &[
     shop_item!("Defense +3", 80, 0, 3),
 ];
 
-fn test() {
-    for weapon in WEAPONS.iter().none_iter() {
-        println!("{:?}", weapon);
+#[derive(Debug, new)]
+struct Character {
+    hit_points: u32,
+    stats: Stats,
+}
+impl Parseable<'_> for Character {
+    fn parser(input: &str) -> NomParseResult<Self>
+    where
+        Self: Sized,
+    {
+        fn line_parser<'a, E>(
+            label: &'static str,
+        ) -> impl FnMut(&'a str) -> IResult<&'a str, u32, E>
+        where
+            E: ParseError<&'a str>,
+        {
+            delimited(tag(label), trim(nom::character::complete::u32), multispace0)
+        }
+
+        map(
+            tuple((
+                line_parser("Hit Points:"),
+                line_parser("Damage:"),
+                line_parser("Armor:"),
+            )),
+            |(hp, d, a)| Character::new(hp, Stats::new(d, a)),
+        )(input)
+    }
+}
+impl Character {
+    fn battle(&self, other: &Self) -> bool {
+        let mut hp = self.hit_points;
+        let mut hpo = other.hit_points;
+
+        fn turn(astr: &str, bstr: &str, a: &Character, b: &Character, hp: &mut u32) -> bool {
+            let damage = a.attack(b);
+            *hp = hp.saturating_sub(damage);
+            /*println!(
+                "{} does {} damage; {} goes down to {} HP",
+                astr, damage, bstr, hp
+            );*/
+            *hp < 1
+        }
+
+        loop {
+            // Self turn
+            if turn("Self", "Other", self, other, &mut hpo) {
+                return true;
+            }
+
+            // Other's turn
+            if turn("Other", "Self", other, self, &mut hp) {
+                return false;
+            }
+        }
+    }
+
+    fn attack(&self, other: &Self) -> u32 {
+        self.stats.damage.saturating_sub(other.stats.armor).max(1)
+    }
+}
+
+#[derive(new)]
+struct Problem {
+    boss: Character,
+}
+impl Problem {
+    fn solve(&self) -> AocResult<u64> {
+        // Go through every combination of 1 weapon, 0-1 armor, and 0-2 rings
+        for (weapon, armor, rings) in iproduct!(
+            WEAPONS.iter(),
+            ARMORS.iter().none_iter(),
+            (0..=2).map(|n| RINGS.iter().combinations(n)).flatten()
+        ) {
+            let equipment = {
+                let mut v = vec![weapon];
+                if let Some(item) = armor {
+                    v.push(item);
+                }
+                v.extend(rings);
+                v
+            };
+
+            //println!("{}", equipment.iter().map(|item| item.name).join(", "));
+            let cost: u32 = equipment.iter().map(|item| item.cost).sum();
+            let player = Character::new(100, equipment.into_iter().map(|item| &item.stats).sum());
+        }
+        todo!()
     }
 }
 
@@ -78,10 +191,15 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            test();
+            let problem = Problem::new(Character::from_str(input)?);
+
+            // Just a test for the example battle
+            /*let player = Character::new(8, Stats::new(5, 5));
+            let boss = Character::new(12, Stats::new(7, 2));
+            player.battle(&boss);*/
 
             // Process
-            Ok(1u64.into())
+            Ok(problem.solve()?.into())
         },
     ],
 };

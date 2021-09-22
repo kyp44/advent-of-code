@@ -105,21 +105,14 @@ impl Ingredient {
 }
 
 /// Iterators over all permuations that sum to a particular value
+#[derive(new)]
 struct SumPermutations<T> {
     sum: T,
     bins: usize,
+    #[new(value = "None")]
     i: Option<T>,
+    #[new(value = "None")]
     sub: Option<Box<SumPermutations<T>>>,
-}
-impl<T> SumPermutations<T> {
-    fn new(sum: T, bins: usize) -> Self {
-        SumPermutations {
-            sum,
-            bins,
-            i: None,
-            sub: None,
-        }
-    }
 }
 impl<T> Iterator for SumPermutations<T>
 where

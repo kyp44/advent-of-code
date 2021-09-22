@@ -46,31 +46,17 @@ impl<'a> Parseable<'a> for Input<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, new)]
 struct Unary<'a> {
     input: Input<'a>,
     output: &'a str,
 }
-impl<'a> Unary<'a> {
-    fn new(input: Input<'a>, output: &'a str) -> Self {
-        Unary { input, output }
-    }
-}
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, new)]
 struct Binary<'a> {
     input1: Input<'a>,
     input2: Input<'a>,
     output: &'a str,
-}
-impl<'a> Binary<'a> {
-    fn new(input1: Input<'a>, input2: Input<'a>, output: &'a str) -> Self {
-        Binary {
-            input1,
-            input2,
-            output,
-        }
-    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

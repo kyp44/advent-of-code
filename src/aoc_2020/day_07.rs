@@ -41,20 +41,15 @@ dark violet bags contain no other bags.",
 }
 
 /// Associates a string bag color with an ID for more efficient comparisons
-#[derive(Debug)]
+#[derive(Debug, new)]
 struct BagTable<'a> {
+    #[new(value = "0")]
     next_id: u32,
+    #[new(value = "BiHashMap::new()")]
     bimap: BiHashMap<u32, &'a str>,
 }
 
 impl<'a> BagTable<'a> {
-    fn new() -> Self {
-        BagTable {
-            next_id: 0,
-            bimap: BiHashMap::new(),
-        }
-    }
-
     fn get_or_add_bag(&mut self, bag_str: &'a str) -> u32 {
         match self.bimap.get_by_right(bag_str) {
             Some(id) => *id,

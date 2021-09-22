@@ -52,6 +52,7 @@ HOHOHO",
     }
 }
 
+#[derive(new)]
 struct Replacement {
     from: String,
     to: String,
@@ -76,10 +77,6 @@ impl fmt::Debug for Replacement {
     }
 }
 impl Replacement {
-    fn new(from: String, to: String) -> Self {
-        Replacement { from, to }
-    }
-
     fn from_str(from: &str, to: &str) -> Self {
         Self::new(from.to_string(), to.to_string())
     }

@@ -23,8 +23,9 @@ mod tests {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, new)]
 struct Sue<'a> {
+    #[new(value = "0")]
     number: u16,
     compounds: HashMap<&'a str, u8>,
 }
@@ -44,14 +45,6 @@ impl<'a> Parseable<'a> for Sue<'a> {
                 compounds: cs.into_iter().collect(),
             },
         )(input.trim())
-    }
-}
-impl<'a> Sue<'a> {
-    fn new(compounds: HashMap<&'a str, u8>) -> Self {
-        Sue {
-            number: 0,
-            compounds,
-        }
     }
 }
 

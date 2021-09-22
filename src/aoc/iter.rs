@@ -49,17 +49,11 @@ where
 }
 
 /// Iterator adapter to an Option Iterator that includes None at the beginning.
+#[derive(new, Clone)]
 pub struct NoneIter<I> {
+    #[new(value = "false")]
     did_none: bool,
     iter: I,
-}
-impl<I> NoneIter<I> {
-    fn new(iter: I) -> Self {
-        NoneIter {
-            did_none: false,
-            iter,
-        }
-    }
 }
 impl<I> Iterator for NoneIter<I>
 where
@@ -93,21 +87,13 @@ where
 }
 
 /// Iterator to replace occurrances in a string one at a time.
+#[derive(new)]
 pub struct Replacements<'a, 'b, 'c> {
     original: &'a str,
+    #[new(value = "0")]
     idx: usize,
     from: &'b str,
     to: &'c str,
-}
-impl<'a, 'b, 'c> Replacements<'a, 'b, 'c> {
-    fn new(original: &'a str, from: &'b str, to: &'c str) -> Self {
-        Replacements {
-            original,
-            idx: 0,
-            from,
-            to,
-        }
-    }
 }
 impl Iterator for Replacements<'_, '_, '_> {
     type Item = String;

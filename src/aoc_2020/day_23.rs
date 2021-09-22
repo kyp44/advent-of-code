@@ -29,15 +29,11 @@ mod tests {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, new)]
 struct CupRef {
     rc: Weak<RefCell<Cup>>,
 }
 impl CupRef {
-    fn new(rc: Weak<RefCell<Cup>>) -> Self {
-        CupRef { rc }
-    }
-
     fn label(&self) -> Label {
         self.rc.upgrade().unwrap().borrow().label
     }
@@ -102,14 +98,10 @@ impl Iterator for CupIter {
 }
 
 type Label = u32;
+#[derive(new)]
 struct Cup {
     label: Label,
     next: Option<CupRef>,
-}
-impl Cup {
-    fn new(label: Label, next: Option<CupRef>) -> Cup {
-        Cup { label, next }
-    }
 }
 impl fmt::Debug for Cup {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

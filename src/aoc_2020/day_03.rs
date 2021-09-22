@@ -65,24 +65,15 @@ impl Map {
     }
 }
 
+#[derive(new)]
 struct MapDownhill<'a> {
     map: &'a Map,
     dx: usize,
     dy: usize,
+    #[new(value = "0")]
     x: usize,
+    #[new(value = "0")]
     y: usize,
-}
-
-impl MapDownhill<'_> {
-    fn new(map: &'_ Map, dx: usize, dy: usize) -> MapDownhill {
-        MapDownhill {
-            map,
-            dx,
-            dy,
-            x: 0,
-            y: 0,
-        }
-    }
 }
 
 impl Iterator for MapDownhill<'_> {

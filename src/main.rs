@@ -2,6 +2,9 @@
 #![feature(destructuring_assignment)]
 #![feature(type_alias_impl_trait)]
 
+#[macro_use]
+extern crate derive_new;
+
 mod aoc;
 mod aoc_2015;
 mod aoc_2020;

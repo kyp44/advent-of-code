@@ -16,14 +16,11 @@ mod tests {
     }
 }
 
+#[derive(new)]
 struct Transform {
     subject: u64,
+    #[new(value = "1")]
     value: u64,
-}
-impl Transform {
-    fn new(subject: u64) -> Transform {
-        Transform { subject, value: 1 }
-    }
 }
 impl Iterator for Transform {
     type Item = u64;
