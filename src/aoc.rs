@@ -7,8 +7,6 @@ use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
 use nom::{AsChar, InputIter, InputTakeAtPosition, Slice};
 use num::{Integer, Unsigned};
 use std::borrow::Cow;
-use std::convert::TryFrom;
-use std::convert::TryInto;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::ops::{RangeFrom, RangeInclusive};
@@ -17,14 +15,15 @@ use std::{fmt, fs};
 
 mod char_grid;
 mod evolver;
+mod iter;
 
 /// Prelude
 pub mod prelude {
     pub use super::{
-        char_add, char_grid::CharGrid, char_grid::CharGridCoordinates, evolver::Evolver, Answer,
-        AnswerVec, AocError, AocResult, DiscardInput, FilterCount, HasLen, HasRange,
-        IndividualReplacements, NomParseError, NomParseResult, Parseable, Sections, Solution,
-        SplitRuns, YearSolutions,
+        char_add, char_grid::CharGrid, char_grid::CharGridCoordinates, evolver::Evolver,
+        iter::FilterCount, iter::HasNoneIter, iter::HasRange, iter::IndividualReplacements,
+        iter::SplitRuns, Answer, AnswerVec, AocError, AocResult, DiscardInput, HasLen,
+        NomParseError, NomParseResult, Parseable, Sections, Solution, YearSolutions,
     };
     pub use aoc_derive::CharGridDebug;
 }
@@ -207,51 +206,6 @@ impl Sections for str {
     }
 }
 
-/// Convenience function to count from a filtered Iterator.
-pub trait FilterCount<T, O> {
-    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> O;
-}
-impl<T, I, O: TryFrom<usize>> FilterCount<T, O> for I
-where
-    I: Iterator<Item = T>,
-    <O as TryFrom<usize>>::Error: Debug,
-{
-    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> O {
-        self.filter(f).count().try_into().unwrap()
-    }
-}
-
-/// Convenience trait to get the range from an Iterator of integers.
-/// Any empty iterator will just have a range of 0..1.
-pub trait HasRange<T> {
-    fn range(self) -> Option<RangeInclusive<T>>;
-}
-impl<T, I> HasRange<T> for I
-where
-    T: Integer + Copy,
-    I: Iterator<Item = T>,
-{
-    fn range(self) -> Option<RangeInclusive<T>> {
-        let mut min = None;
-        let mut max = None;
-
-        for x in self {
-            if min.is_none() || x < min.unwrap() {
-                min = Some(x);
-            }
-            if max.is_none() || x > max.unwrap() {
-                max = Some(x);
-            }
-        }
-
-        if let (Some(min), Some(max)) = (min, max) {
-            Some(min..=max)
-        } else {
-            None
-        }
-    }
-}
-
 /// Convenience trait to determine the length of a range without iterating.
 pub trait HasLen<T> {
     fn len(&self) -> T;
@@ -265,84 +219,9 @@ where
     }
 }
 
-/// Iterator to replace occurrances in a string one at a time.
-pub struct Replacements<'a, 'b, 'c> {
-    original: &'a str,
-    idx: usize,
-    from: &'b str,
-    to: &'c str,
-}
-impl<'a, 'b, 'c> Replacements<'a, 'b, 'c> {
-    fn new(original: &'a str, from: &'b str, to: &'c str) -> Self {
-        Replacements {
-            original,
-            idx: 0,
-            from,
-            to,
-        }
-    }
-}
-impl Iterator for Replacements<'_, '_, '_> {
-    type Item = String;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while self.idx < self.original.len() {
-            let (pre, post) = self.original.split_at(self.idx);
-            self.idx += 1;
-            if post.starts_with(self.from) {
-                return Some(format!("{}{}", pre, post.replacen(self.from, self.to, 1)));
-            }
-        }
-        None
-    }
-}
-
-/// Trait to create a Replacements iterator.
-pub trait IndividualReplacements<'a, 'b, 'c> {
-    fn individual_replacements(&'a self, from: &'b str, to: &'c str) -> Replacements<'a, 'b, 'c>;
-}
-impl<'a, 'b, 'c> IndividualReplacements<'a, 'b, 'c> for str {
-    fn individual_replacements(&'a self, from: &'b str, to: &'c str) -> Replacements<'a, 'b, 'c> {
-        Replacements::new(self, from, to)
-    }
-}
-
 /// Increment a character by a certain number.
 pub fn char_add(c: char, i: u32) -> char {
     std::char::from_u32((c as u32) + i).unwrap_or(c)
-}
-
-/// Itearator over runs of the same characters in strings.
-pub struct Runs<'a> {
-    remaining: &'a str,
-}
-impl<'a> Iterator for Runs<'a> {
-    type Item = &'a str;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.remaining.is_empty() {
-            return None;
-        }
-
-        let first_char = self.remaining.chars().next().unwrap();
-        let end = match self.remaining.chars().position(|c| c != first_char) {
-            None => self.remaining.len(),
-            Some(i) => i,
-        };
-        let next = &self.remaining[0..end];
-        self.remaining = &self.remaining[end..];
-        Some(next)
-    }
-}
-
-/// Trait that allows splitting by runs on the same elements.
-pub trait SplitRuns {
-    fn split_runs(&self) -> Runs;
-}
-impl SplitRuns for str {
-    fn split_runs(&self) -> Runs {
-        Runs { remaining: self }
-    }
 }
 
 /// Allows for different answer types.

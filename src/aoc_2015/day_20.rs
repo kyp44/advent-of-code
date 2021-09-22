@@ -78,7 +78,6 @@ pub const SOLUTION: Solution = Solution {
                 println!("House {}: {}", h, delivery.presents[h - 1]);
             }*/
 
-            // Process
             Ok(delivery.first_house()?.into())
         },
         // Part b)
@@ -91,7 +90,6 @@ pub const SOLUTION: Solution = Solution {
                 println!("House {}: {}", h, delivery.presents[h - 1]);
             }*/
 
-            // Process
             Ok(delivery.first_house()?.into())
         },
     ],
