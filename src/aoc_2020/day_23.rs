@@ -9,7 +9,7 @@ use std::{
 use itertools::Itertools;
 use nom::{multi::many1, Finish};
 
-use crate::aoc::{prelude::*, single_digit};
+use crate::aoc::{parse::single_digit, prelude::*};
 
 #[cfg(test)]
 mod tests {

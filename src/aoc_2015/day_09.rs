@@ -10,7 +10,7 @@ use nom::{
     sequence::separated_pair,
 };
 
-use crate::aoc::{prelude::*, separated};
+use crate::aoc::{parse::separated, prelude::*};
 
 #[cfg(test)]
 mod tests {

@@ -1,5 +1,5 @@
+use crate::aoc::parse::trim;
 use crate::aoc::prelude::*;
-use crate::aoc::trim;
 use itertools::Itertools;
 use nom::{
     branch::alt,

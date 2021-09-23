@@ -9,7 +9,7 @@ use nom::{
     IResult,
 };
 
-use crate::aoc::{prelude::*, separated};
+use crate::aoc::{parse::separated, prelude::*};
 
 #[cfg(test)]
 mod tests {

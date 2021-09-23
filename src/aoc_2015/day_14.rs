@@ -6,7 +6,7 @@ use nom::{
     sequence::tuple,
 };
 
-use crate::aoc::{prelude::*, trim};
+use crate::aoc::{parse::trim, prelude::*};
 
 #[cfg(test)]
 mod tests {

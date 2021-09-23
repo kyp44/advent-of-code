@@ -36,7 +36,10 @@ struct Food {
     allergens: HashSet<Rc<String>>,
 }
 impl Parseable<'_> for Food {
-    fn parser(input: &str) -> crate::aoc::NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<Self>
+    where
+        Self: Sized,
+    {
         map(
             pair(
                 separated_list1(space1, alphanumeric1),

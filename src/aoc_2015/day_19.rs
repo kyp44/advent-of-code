@@ -11,7 +11,7 @@ use nom::{
     bytes::complete::tag, character::complete::alpha1, combinator::map, sequence::separated_pair,
 };
 
-use crate::aoc::{prelude::*, trim};
+use crate::aoc::{parse::trim, prelude::*};
 
 #[cfg(test)]
 mod tests {

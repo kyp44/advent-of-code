@@ -1,16 +1,9 @@
 use std::{iter::Sum, ops::Add};
 
 use itertools::{iproduct, Itertools, MinMaxResult};
-use nom::{
-    bytes::complete::tag,
-    character::complete::multispace0,
-    combinator::map,
-    error::ParseError,
-    sequence::{delimited, tuple},
-    IResult,
-};
+use nom::{combinator::map, sequence::tuple};
 
-use crate::aoc::{prelude::*, trim};
+use crate::aoc::{parse::field_line_parser, prelude::*};
 
 #[cfg(test)]
 mod tests {
@@ -103,20 +96,11 @@ impl Parseable<'_> for Character {
     where
         Self: Sized,
     {
-        fn line_parser<'a, E>(
-            label: &'static str,
-        ) -> impl FnMut(&'a str) -> IResult<&'a str, u32, E>
-        where
-            E: ParseError<&'a str>,
-        {
-            delimited(tag(label), trim(nom::character::complete::u32), multispace0)
-        }
-
         map(
             tuple((
-                line_parser("Hit Points:"),
-                line_parser("Damage:"),
-                line_parser("Armor:"),
+                field_line_parser("Hit Points:", nom::character::complete::u32),
+                field_line_parser("Damage:", nom::character::complete::u32),
+                field_line_parser("Armor:", nom::character::complete::u32),
             )),
             |(hp, d, a)| Character::new(hp, Stats::new(d, a)),
         )(input)
