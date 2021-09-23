@@ -63,7 +63,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.did_none {
-            self.iter.next().map(|v| Some(v))
+            self.iter.next().map(Some)
         } else {
             self.did_none = true;
             Some(None)

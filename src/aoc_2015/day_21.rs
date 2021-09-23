@@ -1,6 +1,6 @@
 use std::{iter::Sum, ops::Add};
 
-use itertools::{iproduct, Itertools};
+use itertools::{iproduct, Itertools, MinMaxResult};
 use nom::{
     bytes::complete::tag,
     character::complete::multispace0,
@@ -19,11 +19,11 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![],
-    "Hit Points: 109
-Damage: 8
-Armor: 2",
-    vec![0u64].answer_vec()
+    vec![Unsigned(111), Unsigned(188)],
+    "Hit Points: 90
+Damage: 3
+Armor: 3",
+    vec![23u64, 33].answer_vec()
     }
 }
 
@@ -51,14 +51,14 @@ impl<'a> Sum<&'a Stats> for Stats {
 
 #[derive(Debug)]
 struct ShopItem {
-    name: &'static str,
+    _name: &'static str,
     cost: u32,
     stats: Stats,
 }
 macro_rules! shop_item {
     ($name:literal, $cost: expr, $damage: expr, $armor: expr) => {
         ShopItem {
-            name: $name,
+            _name: $name,
             cost: $cost,
             stats: Stats {
                 damage: $damage,
@@ -127,12 +127,12 @@ impl Character {
         let mut hp = self.hit_points;
         let mut hpo = other.hit_points;
 
-        fn turn(astr: &str, bstr: &str, a: &Character, b: &Character, hp: &mut u32) -> bool {
+        fn turn(_astr: &str, _bstr: &str, a: &Character, b: &Character, hp: &mut u32) -> bool {
             let damage = a.attack(b);
             *hp = hp.saturating_sub(damage);
             /*println!(
                 "{} does {} damage; {} goes down to {} HP",
-                astr, damage, bstr, hp
+                _astr, damage, _bstr, hp
             );*/
             *hp < 1
         }
@@ -155,18 +155,44 @@ impl Character {
     }
 }
 
+trait Part {
+    fn select_cost(&self, min_max: &(u32, u32)) -> u32;
+    fn win_or_lose(&self, won: bool) -> bool;
+}
+struct PartA;
+impl Part for PartA {
+    fn select_cost(&self, min_max: &(u32, u32)) -> u32 {
+        min_max.0
+    }
+
+    fn win_or_lose(&self, won: bool) -> bool {
+        won
+    }
+}
+struct PartB;
+impl Part for PartB {
+    fn select_cost(&self, min_max: &(u32, u32)) -> u32 {
+        min_max.1
+    }
+
+    fn win_or_lose(&self, won: bool) -> bool {
+        !won
+    }
+}
+
 #[derive(new)]
 struct Problem {
     boss: Character,
 }
 impl Problem {
-    fn solve(&self) -> AocResult<u64> {
+    fn solve(&self, part: &dyn Part) -> AocResult<u64> {
         // Go through every combination of 1 weapon, 0-1 armor, and 0-2 rings
-        for (weapon, armor, rings) in iproduct!(
+        match iproduct!(
             WEAPONS.iter(),
             ARMORS.iter().none_iter(),
             (0..=2).map(|n| RINGS.iter().combinations(n)).flatten()
-        ) {
+        )
+        .filter_map(|(weapon, armor, rings)| {
             let equipment = {
                 let mut v = vec![weapon];
                 if let Some(item) = armor {
@@ -176,11 +202,22 @@ impl Problem {
                 v
             };
 
-            //println!("{}", equipment.iter().map(|item| item.name).join(", "));
+            //println!("{}", equipment.iter().map(|item| item._name).join(", "));
             let cost: u32 = equipment.iter().map(|item| item.cost).sum();
             let player = Character::new(100, equipment.into_iter().map(|item| &item.stats).sum());
+
+            if part.win_or_lose(player.battle(&self.boss)) {
+                Some(cost)
+            } else {
+                None
+            }
+        })
+        .minmax()
+        {
+            MinMaxResult::NoElements => Err(AocError::Process("The player can never win!".into())),
+            MinMaxResult::OneElement(m) => Ok(m.into()),
+            MinMaxResult::MinMax(min, max) => Ok(part.select_cost(&(min, max)).into()),
         }
-        todo!()
     }
 }
 
@@ -199,7 +236,15 @@ pub const SOLUTION: Solution = Solution {
             player.battle(&boss);*/
 
             // Process
-            Ok(problem.solve()?.into())
+            Ok(problem.solve(&PartA)?.into())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let problem = Problem::new(Character::from_str(input)?);
+
+            // Process
+            Ok(problem.solve(&PartB)?.into())
         },
     ],
 };
