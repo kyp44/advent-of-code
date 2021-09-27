@@ -26,5 +26,6 @@ year_solutions! {
     day_21,
     day_22,
     day_23,
+    day_24,
     }
 }
