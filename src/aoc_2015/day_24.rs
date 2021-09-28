@@ -1,7 +1,6 @@
 use std::{iter::repeat, str::FromStr};
 
 use itertools::Itertools;
-use partitions::PartitionVec;
 
 use crate::aoc::prelude::*;
 
@@ -79,36 +78,32 @@ impl Problem {
             }
         }
 
-        fn binary_partitions(items: &[u32]) -> impl Iterator<Item = PartitionVec<u32>> + '_ {
+        fn partitions(items: &[u32], num_sets: usize) -> impl Iterator<Item = Vec<Vec<u32>>> + '_ {
             repeat(BoolIter::new())
                 .take(items.len() - 1)
                 .multi_cartesian_product()
-                .filter(|gv| gv.iter().any(|b| !*b))
+                .filter(|gv| !gv.iter().all(|b| *b))
                 .map(|gv| {
-                    let mut partition: PartitionVec<u32> = items.iter().collect();
-                    let mut index = None;
+                    let mut v1 = vec![items[0]];
+                    let mut v2 = Vec::new();
                     for (i, group) in gv.into_iter().enumerate() {
                         if group {
-                            partition.union(0, i + 1);
+                            v1.push(items[i + 1])
                         } else {
-                            match index {
-                                None => {
-                                    index = Some(i + 1);
-                                }
-                                Some(idx) => partition.union(idx, i + 1),
-                            }
+                            v2.push(items[i + 1])
                         }
                     }
-                    partition
+                    vec![v1, v2]
                 })
         }
-        for bin_part in binary_partitions(&self.weights) {
-            println!(
-                "{}",
-                bin_part.all_sets().map(|s| format!("{:?}", s)).join(", ")
-            );
+
+        let items: Vec<u32> = vec![1, 2, 3, 4, 5];
+        let num_sets = 2;
+
+        for part in partitions(&items, num_sets) {
+            println!("{:?}", part);
         }
-        println!("TODO {}", binary_partitions(&self.weights).count());
+        println!("TODO {}", partitions(&items, num_sets).count());
         Ok(0)
     }
 }
