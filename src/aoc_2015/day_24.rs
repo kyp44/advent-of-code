@@ -89,7 +89,7 @@ impl Problem {
                     .take(items.len() - 1)
                     .multi_cartesian_product()
                     .filter(|gv| !gv.iter().all(|b| *b))
-                    .map(move |gv| {
+                    .filter_map(move |gv| {
                         let mut v1 = vec![items[0]];
                         let mut v2 = Vec::new();
                         for (i, group) in gv.into_iter().enumerate() {
@@ -102,7 +102,11 @@ impl Problem {
                         v1.sort_unstable();
                         v2.sort_unstable();
 
-                        (v1, v2)
+                        if v2.iter().sum::<u32>() == sum {
+                            Some((v1, v2))
+                        } else {
+                            None
+                        }
                     })
                 {
                     if num_sets == 2 {
