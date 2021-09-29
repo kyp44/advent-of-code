@@ -1,4 +1,4 @@
-use std::{iter::repeat, str::FromStr};
+use std::{collections::HashSet, iter::repeat, str::FromStr};
 
 use itertools::Itertools;
 
@@ -38,7 +38,7 @@ impl FromStr for Problem {
 
         // Verify that the packages can be split into three compartments
         let sum: u32 = weights.iter().sum();
-        if sum < 1 && sum % 3 != 0 {
+        if sum < 1 || sum % 3 != 0 {
             return Err(AocError::Process(format!("The weights have a sum of {}, and so cannot be split evenly into three compartments", sum).into()));
         }
 
@@ -50,10 +50,6 @@ impl FromStr for Problem {
 }
 impl Problem {
     fn solve(&self) -> AocResult<u64> {
-        let sum: u32 = self.weights.iter().sum();
-        assert!(sum % 2 == 0);
-        let size = sum / 2;
-
         #[derive(new, Clone)]
         struct BoolIter {
             #[new(value = "Some(false)")]
@@ -78,32 +74,60 @@ impl Problem {
             }
         }
 
-        fn partitions(items: &[u32], num_sets: usize) -> impl Iterator<Item = Vec<Vec<u32>>> + '_ {
-            repeat(BoolIter::new())
-                .take(items.len() - 1)
-                .multi_cartesian_product()
-                .filter(|gv| !gv.iter().all(|b| *b))
-                .map(|gv| {
-                    let mut v1 = vec![items[0]];
-                    let mut v2 = Vec::new();
-                    for (i, group) in gv.into_iter().enumerate() {
-                        if group {
-                            v1.push(items[i + 1])
-                        } else {
-                            v2.push(items[i + 1])
+        fn partitions(
+            mut items: Vec<u32>,
+            num_sets: usize,
+            sum: u32,
+        ) -> impl Iterator<Item = Vec<Vec<u32>>> {
+            let mut parts = HashSet::new();
+            items.sort_unstable();
+
+            if num_sets == 1 {
+                parts.insert(vec![items]);
+            } else if num_sets > 1 {
+                for (v1, v2) in repeat(BoolIter::new())
+                    .take(items.len() - 1)
+                    .multi_cartesian_product()
+                    .filter(|gv| !gv.iter().all(|b| *b))
+                    .map(move |gv| {
+                        let mut v1 = vec![items[0]];
+                        let mut v2 = Vec::new();
+                        for (i, group) in gv.into_iter().enumerate() {
+                            if group {
+                                v1.push(items[i + 1])
+                            } else {
+                                v2.push(items[i + 1])
+                            }
+                        }
+                        v1.sort_unstable();
+                        v2.sort_unstable();
+
+                        (v1, v2)
+                    })
+                {
+                    if num_sets == 2 {
+                        let mut v = vec![v1, v2];
+                        v.sort_unstable();
+                        parts.insert(v);
+                    } else if v1.len() >= num_sets - 1 {
+                        for mut v1s in partitions(v1, num_sets - 1, sum) {
+                            v1s.push(v2.clone());
+                            v1s.sort_unstable();
+                            parts.insert(v1s);
                         }
                     }
-                    vec![v1, v2]
-                })
+                }
+            }
+
+            parts.into_iter()
         }
 
-        let items: Vec<u32> = vec![1, 2, 3, 4, 5];
-        let num_sets = 2;
-
-        for part in partitions(&items, num_sets) {
+        let mut count = 0;
+        for part in partitions(self.weights.clone(), 3, self.group_weight) {
             println!("{:?}", part);
+            count += 1;
         }
-        println!("TODO {}", partitions(&items, num_sets).count());
+        println!("TODO {}", count);
         Ok(0)
     }
 }
