@@ -142,7 +142,7 @@ impl Problem {
             .finish()
             .discard_input()?
             .lines()
-            .map(|l| Ticket::from_str(l))
+            .map(Ticket::from_str)
             .collect::<Result<Vec<Ticket>, NomParseError>>()?;
         for ticket in nearby_tickets.iter() {
             verify_fields("A nearby", ticket)?;

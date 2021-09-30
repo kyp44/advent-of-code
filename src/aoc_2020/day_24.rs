@@ -173,7 +173,7 @@ impl Evolver<bool> for Floor {
 
     fn next_iter(&self) -> Self::Iter {
         // Determine the range in x and y
-        let range = |f: fn(&Point) -> i32| match self.black_tiles.iter().map(|p| f(p)).range() {
+        let range = |f: fn(&Point) -> i32| match self.black_tiles.iter().map(f).range() {
             Some(r) => (r.start() - 1)..=(r.end() + 1),
             None => 0..=0,
         };
