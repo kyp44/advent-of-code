@@ -1,6 +1,5 @@
-use std::{collections::HashSet, iter::repeat, str::FromStr};
-
 use itertools::Itertools;
+use std::{collections::HashSet, iter::repeat, str::FromStr};
 
 use crate::aoc::prelude::*;
 
@@ -50,79 +49,61 @@ impl FromStr for Problem {
 }
 impl Problem {
     fn solve(&self) -> AocResult<u64> {
-        #[derive(new, Clone)]
-        struct BoolIter {
-            #[new(value = "Some(false)")]
-            value: Option<bool>,
-        }
-        impl Iterator for BoolIter {
-            type Item = bool;
-
-            fn next(&mut self) -> Option<Self::Item> {
-                match self.value {
-                    None => self.value,
-                    Some(b) => {
-                        if b {
-                            self.value = None;
-                            Some(true)
-                        } else {
-                            self.value = Some(true);
-                            Some(false)
-                        }
-                    }
-                }
-            }
-        }
-
         fn partitions(
             mut items: Vec<u32>,
             num_sets: usize,
             sum: u32,
         ) -> impl Iterator<Item = Vec<Vec<u32>>> {
-            let mut parts = HashSet::new();
+            let mut parts = Vec::new();
             items.sort_unstable();
-
             if num_sets == 1 {
-                parts.insert(vec![items]);
+                parts.push(vec![items]);
             } else if num_sets > 1 {
-                for (v1, v2) in repeat(BoolIter::new())
-                    .take(items.len() - 1)
-                    .multi_cartesian_product()
-                    .filter(|gv| !gv.iter().all(|b| *b))
-                    .filter_map(move |gv| {
-                        let mut v1 = vec![items[0]];
+                for size in 1..=(items.len() - (num_sets - 1)) {
+                    // Is a set of this size always going to have a sum that is too large?
+                    if items[..size].iter().sum::<u32>() > sum {
+                        break;
+                    }
+
+                    // Now go through all sets of this size with the correct sum
+                    for mut set in items
+                        .iter()
+                        .combinations(size)
+                        .filter(|set| set.iter().copied().sum::<u32>() == sum)
+                    {
+                        // Now separate out the vector into the two vectors
+                        let mut v1 = Vec::new();
                         let mut v2 = Vec::new();
-                        for (i, group) in gv.into_iter().enumerate() {
-                            if group {
-                                v1.push(items[i + 1])
-                            } else {
-                                v2.push(items[i + 1])
+                        for p in items.iter() {
+                            match set.iter().position(|x| *x == p) {
+                                None => v2.push(*p),
+                                Some(i) => {
+                                    v1.push(*p);
+                                    set.remove(i);
+                                }
                             }
                         }
-                        v1.sort_unstable();
-                        v2.sort_unstable();
-
-                        if v2.iter().sum::<u32>() == sum {
-                            Some((v1, v2))
+                        if num_sets == 2 {
+                            if v2.iter().sum::<u32>() == sum {
+                                parts.push(vec![v1, v2]);
+                            }
                         } else {
-                            None
+                            // Run recursively to ensure that the remaining part can be divided
+                            if let Some(mut part) = partitions(v2, num_sets - 1, sum).next() {
+                                part.insert(0, v1.clone());
+                                if num_sets == 3 {
+                                    println!("{:?}", part);
+                                }
+
+                                parts.push(part);
+                            }
                         }
-                    })
-                {
-                    if num_sets == 2 {
-                        let mut v = vec![v1, v2];
-                        v.sort_unstable();
-                        parts.insert(v);
-                    } else if v1.len() >= num_sets - 1 {
-                        for mut v1s in partitions(v1, num_sets - 1, sum) {
-                            v1s.push(v2.clone());
-                            v1s.sort_unstable();
-                            parts.insert(v1s);
-                        }
+                    }
+                    if !parts.is_empty() {
+                        break;
                     }
                 }
             }
-
             parts.into_iter()
         }
 
