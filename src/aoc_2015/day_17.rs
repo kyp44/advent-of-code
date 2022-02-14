@@ -36,13 +36,12 @@ impl FromStr for Problem {
 impl Problem {
     fn combinations(&self, amount: u16) -> impl Iterator<Item = Vec<u16>> + '_ {
         (1..=self.containers.len())
-            .map(move |k| {
+            .flat_map(move |k| {
                 self.containers
                     .iter()
                     .combinations(k)
                     .map(|c| c.into_iter().copied().collect())
             })
-            .flatten()
             .filter(move |c: &Vec<u16>| c.iter().sum::<u16>() == amount)
     }
 }

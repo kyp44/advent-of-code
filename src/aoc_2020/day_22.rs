@@ -92,10 +92,10 @@ impl Deck {
         self.cards.len()
     }
 
-    fn new(&self, cards: &[u8]) -> Deck {
+    fn make_new(&self, cards: &[u8]) -> Deck {
         Deck {
             player: self.player,
-            cards: cards.iter().copied().collect(),
+            cards: cards.to_vec(),
         }
     }
 }
@@ -141,10 +141,10 @@ impl FromStr for Game {
     }
 }
 impl Game {
-    fn new(&self, cards1: &[u8], cards2: &[u8]) -> Game {
+    fn make_new(&self, cards1: &[u8], cards2: &[u8]) -> Game {
         Game {
-            player1: self.player1.new(cards1),
-            player2: self.player2.new(cards2),
+            player1: self.player1.make_new(cards1),
+            player2: self.player2.make_new(cards2),
         }
     }
 }
@@ -193,7 +193,7 @@ impl GamePart<PartB> for Game {
             let s2 = self.player2.len();
             if s1 >= c1.into() && s2 >= c2.into() {
                 //println!("Starting sub-game:");
-                let mut sub_game = self.new(
+                let mut sub_game = self.make_new(
                     &self.player1.cards[(s1 - Into::<usize>::into(c1))..],
                     &self.player2.cards[(s2 - Into::<usize>::into(c2))..],
                 );

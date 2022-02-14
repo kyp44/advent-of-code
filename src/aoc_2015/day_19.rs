@@ -144,8 +144,7 @@ impl Machine {
     fn replace_iter<'a>(&'a self, input: &'a str) -> impl Iterator<Item = String> + 'a {
         self.replacements
             .iter()
-            .map(|r| input.individual_replacements(&r.from, &r.to))
-            .flatten()
+            .flat_map(|r| input.individual_replacements(&r.from, &r.to))
     }
 
     fn find_steps(&self, target: &str, input: &str) -> Option<u64> {

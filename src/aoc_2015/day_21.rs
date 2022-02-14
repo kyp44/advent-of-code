@@ -174,7 +174,7 @@ impl Problem {
         match iproduct!(
             WEAPONS.iter(),
             ARMORS.iter().none_iter(),
-            (0..=2).map(|n| RINGS.iter().combinations(n)).flatten()
+            (0..=2).flat_map(|n| RINGS.iter().combinations(n))
         )
         .filter_map(|(weapon, armor, rings)| {
             let equipment = {

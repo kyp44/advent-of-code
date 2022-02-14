@@ -164,8 +164,7 @@ impl LightGrid<bool> {
     fn number_lit(&self) -> usize {
         self.grid
             .iter()
-            .map(|row| row.iter())
-            .flatten()
+            .flat_map(|row| row.iter())
             .filter_count(|b| **b)
     }
 }
@@ -204,8 +203,7 @@ impl LightGrid<u8> {
     fn total_brightness(&self) -> u64 {
         self.grid
             .iter()
-            .map(|row| row.iter())
-            .flatten()
+            .flat_map(|row| row.iter())
             .copied()
             .map::<u64, _>(|v| v.into())
             .sum()

@@ -295,9 +295,8 @@ impl Image {
         .filter(|(y, x)| {
             self.slice(&(*x, *y), image.size.0, image.size.1)
                 .iter()
-                .map(|row| row.iter())
-                .flatten()
-                .zip(image.pixels.iter().map(|row| row.iter()).flatten())
+                .flat_map(|row| row.iter())
+                .zip(image.pixels.iter().flat_map(|row| row.iter()))
                 .all(|(p, sp)| !sp || *p)
         })
         .map(|(y, x)| (x, y))
@@ -308,9 +307,8 @@ impl Image {
         let mut slice = self.slice_mut(point, image.size.0, image.size.1);
         for (p, sp) in slice
             .iter_mut()
-            .map(|row| row.iter_mut())
-            .flatten()
-            .zip(image.pixels.iter().map(|row| row.iter()).flatten())
+            .flat_map(|row| row.iter_mut())
+            .zip(image.pixels.iter().flat_map(|row| row.iter()))
         {
             if *sp {
                 *p = false;
@@ -356,8 +354,8 @@ impl FromStr for Tile {
 
         // Pull out the edges
         let edges: EnumMap<_, Vec<bool>> = enum_map! {
-            Edge::Top => full_image.pixels[0].iter().copied().collect(),
-            Edge::Bottom => full_image.pixels.last().unwrap().iter().copied().collect(),
+            Edge::Top => full_image.pixels[0].to_vec(),
+            Edge::Bottom => full_image.pixels.last().unwrap().to_vec(),
             Edge::Left => full_image.pixels.iter().map(|row| row[0]).collect(),
             Edge::Right => full_image.pixels.iter().map(|row| *row.last().unwrap()).collect(),
         };
@@ -527,8 +525,7 @@ impl<'a> TileMap<'a> {
         if self
             .slots
             .iter()
-            .map(|row| row.iter())
-            .flatten()
+            .flat_map(|row| row.iter())
             .any(|slot| slot.is_none())
         {
             return Err(AocError::Process(
@@ -674,8 +671,7 @@ pub const SOLUTION: Solution = Solution {
                         image
                             .pixels
                             .iter()
-                            .map(|row| row.iter().copied())
-                            .flatten()
+                            .flat_map(|row| row.iter().copied())
                             .filter_count(|p| *p),
                     ));
                 }

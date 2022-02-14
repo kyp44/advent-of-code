@@ -59,7 +59,7 @@ impl<'a> ListString<'a> {
     fn encoded(&self) -> String {
         format!(
             "\"{}\"",
-            self.literal.replace("\\", "\\\\").replace("\"", "\\\"")
+            self.literal.replace('\\', "\\\\").replace('\"', "\\\"")
         )
     }
 }

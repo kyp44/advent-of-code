@@ -84,8 +84,7 @@ impl FromStr for Problem {
         fn convert(foods: &[Food], f: fn(&Food) -> &HashSet<Rc<String>>) -> HashSet<Rc<String>> {
             foods
                 .iter()
-                .map(|food| f(food).iter().cloned())
-                .flatten()
+                .flat_map(|food| f(food).iter().cloned())
                 .collect()
         }
 
@@ -125,8 +124,7 @@ impl Problem {
         // possibilities for any allergen.
         let unsafe_ingredients = possibilities
             .values()
-            .map(|ings| ings.iter())
-            .flatten()
+            .flat_map(|ings| ings.iter())
             .cloned()
             .collect();
         let safe_ingredients = self

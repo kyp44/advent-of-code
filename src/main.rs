@@ -1,5 +1,4 @@
 #![feature(hash_set_entry)]
-#![feature(destructuring_assignment)]
 #![feature(type_alias_impl_trait)]
 
 #[macro_use]
@@ -8,6 +7,7 @@ extern crate derive_new;
 mod aoc;
 mod aoc_2015;
 mod aoc_2020;
+mod aoc_2021;
 
 use aoc::AocError;
 use itertools::Itertools;
@@ -35,7 +35,11 @@ fn main() -> anyhow::Result<()> {
     // Parse command line arguments
     let cli = Cli::from_args();
 
-    let all_year_solutions = vec![&aoc_2015::YEAR_SOLUTIONS, &aoc_2020::YEAR_SOLUTIONS];
+    let all_year_solutions = vec![
+        &aoc_2015::YEAR_SOLUTIONS,
+        &aoc_2020::YEAR_SOLUTIONS,
+        &aoc_2021::YEAR_SOLUTIONS,
+    ];
 
     if cli.list {
         // List all implemented solutions
