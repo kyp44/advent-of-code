@@ -66,6 +66,10 @@ fn main() -> anyhow::Result<()> {
             .iter()
             .find(|ys| ys.year == year)
             .ok_or(AocError::NoYear(year))?;
+        let day_range = 1..=25;
+        if !day_range.contains(&day) {
+            return Err(AocError::DayRange(day, day_range).into());
+        }
         let solution = year_solutions.get_day(day).ok_or(AocError::NoDay(day))?;
 
         // Run the solution

@@ -31,6 +31,7 @@ pub mod prelude {
 pub enum AocError {
     NoYear(u32),
     NoDay(u32),
+    DayRange(u32, RangeInclusive<u32>),
     NomParse(NomParseError),
     InvalidInput(Cow<'static, str>),
     Process(Cow<'static, str>),
@@ -40,6 +41,13 @@ impl Display for AocError {
         match self {
             AocError::NoYear(y) => write!(f, "Year {} is not yet solved", y),
             AocError::NoDay(d) => write!(f, "Day {} is not yet solved", d),
+            AocError::DayRange(d, r) => write!(
+                f,
+                "Day {} is not in the range of {}-{}",
+                d,
+                r.start(),
+                r.end()
+            ),
             AocError::NomParse(e) => write!(f, "{}", e),
             AocError::InvalidInput(s) => write!(f, "Invalid input: {}", s),
             AocError::Process(s) => write!(f, "Error while processing: {}", s),

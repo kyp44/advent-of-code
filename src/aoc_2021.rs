@@ -4,5 +4,6 @@ year_solutions! {
     year = 2021,
     days = {
     day_01,
+    day_02,
     }
 }
