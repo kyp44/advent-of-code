@@ -1,4 +1,8 @@
+use std::str::FromStr;
+
 use bitvec::prelude::BitVec;
+use itertools::Itertools;
+use nom::{character::complete::one_of, combinator::map, multi::many1};
 
 use crate::aoc::prelude::*;
 
@@ -9,7 +13,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(1)],
+    vec![Unsigned(112312)],
     "00100
 11110
 10110
@@ -26,9 +30,55 @@ mod tests {
     }
 }
 
-impl Parseable<'_> for BitVec {
+struct ReportLine {
+    bit_vec: BitVec,
+}
+
+impl Parseable<'_> for ReportLine {
     fn parser(input: &str) -> NomParseResult<Self> {
-        todo!()
+        map(many1(one_of("01")), |v| Self {
+            bit_vec: v
+                .into_iter()
+                .map(|b| if b == '1' { true } else { false })
+                .collect(),
+        })(input)
+    }
+}
+
+struct Report {
+    lines: Box<[ReportLine]>,
+    size: usize,
+}
+impl FromStr for Report {
+    type Err = AocError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lines = ReportLine::gather(s.lines())?.into_boxed_slice();
+        let size = lines[0].bit_vec.len();
+
+        if !lines.iter().map(|l| l.bit_vec.len()).all_equal() {
+            return Err(AocError::InvalidInput(
+                "Not all report lines have the same size".into(),
+            ));
+        }
+
+        Ok(Self { lines, size })
+    }
+}
+impl Report {
+    fn power_consumption(&self) -> AocResult<u64> {
+        let gamma: BitVec = (0..self.size)
+            .map(|n| {
+                let n_ones: usize = self.lines.iter().filter_count(|l| l.bit_vec[n]);
+                // 2*x > n  <=>  x > n - x
+                2 * n_ones > self.lines.len()
+            })
+            .collect();
+        let epsilon = !gamma.clone();
+
+        println!("gamma: {}, epsilon: {}", gamma, epsilon);
+
+        Ok(0)
     }
 }
 
@@ -39,12 +89,10 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            //let x = BitVec::gather(input);
-            // TODO
-            println!("{}", u16::from_str_radix("11110", 2).unwrap());
+            let report = Report::from_str(input)?;
 
             // Process
-            Ok(0u64.into())
+            Ok(report.power_consumption()?.into())
         },
     ],
 };
