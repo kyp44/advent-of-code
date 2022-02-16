@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use bitvec::prelude::BitVec;
 use itertools::Itertools;
 use nom::{character::complete::one_of, combinator::map, multi::many1};
 
@@ -31,7 +30,7 @@ mod tests {
 }
 
 struct ReportLine {
-    bit_vec: BitVec,
+    bit_vec: Vec<bool>,
 }
 
 impl Parseable<'_> for ReportLine {
@@ -42,6 +41,13 @@ impl Parseable<'_> for ReportLine {
                 .map(|b| if b == '1' { true } else { false })
                 .collect(),
         })(input)
+    }
+}
+impl Into<u64> for ReportLine {
+    fn into(self) -> u64 {
+        self.bit_vec
+            .into_iter()
+            .fold(0, |a, b| 2 * a + u64::from(b))
     }
 }
 
@@ -67,7 +73,7 @@ impl FromStr for Report {
 }
 impl Report {
     fn power_consumption(&self) -> AocResult<u64> {
-        let gamma: BitVec = (0..self.size)
+        let gamma = (0..self.size)
             .map(|n| {
                 let n_ones: usize = self.lines.iter().filter_count(|l| l.bit_vec[n]);
                 // 2*x > n  <=>  x > n - x
@@ -75,6 +81,7 @@ impl Report {
             })
             .collect();
         let epsilon = !gamma.clone();
+        let x: u64 = &gamma.into();
 
         println!("gamma: {}, epsilon: {}", gamma, epsilon);
 
