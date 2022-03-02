@@ -1,4 +1,4 @@
-use std::{cmp::max, ops::RangeInclusive, str::FromStr};
+use std::{cmp::max, iter::Rev, ops::RangeInclusive, str::FromStr};
 
 use cgmath::Vector2;
 use nom::{
@@ -17,7 +17,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(5835)],
+    vec![Unsigned(5835), Unsigned(17013)],
     "0,9 -> 5,9
 8,0 -> 0,8
 9,4 -> 3,4
@@ -77,17 +77,33 @@ impl Line {
                 range(self.from.y, self.to.y),
             ))
         } else {
-            LineIterator::new(LineType::Diagonal(
+            let diagonal_down = LineIterator::new(LineType::DiagonalDown(
                 range(self.from.x, self.to.x),
                 range(self.from.y, self.to.y),
-            ))
+            ));
+            let diagonal_up = LineIterator::new(LineType::DiagonalUp(
+                range(self.from.x, self.to.x),
+                range(self.from.y, self.to.y).rev(),
+            ));
+            if self.from.x < self.to.x {
+                if self.from.y < self.to.y {
+                    diagonal_down
+                } else {
+                    diagonal_up
+                }
+            } else if self.from.y < self.to.y {
+                diagonal_up
+            } else {
+                diagonal_down
+            }
         }
     }
 }
 enum LineType {
     Horizontal(RangeInclusive<usize>, usize),
     Vertical(usize, RangeInclusive<usize>),
-    Diagonal(RangeInclusive<usize>, RangeInclusive<usize>),
+    DiagonalDown(RangeInclusive<usize>, RangeInclusive<usize>),
+    DiagonalUp(RangeInclusive<usize>, Rev<RangeInclusive<usize>>),
 }
 struct LineIterator {
     line_type: LineType,
@@ -104,7 +120,8 @@ impl Iterator for LineIterator {
         match &mut self.line_type {
             LineType::Horizontal(xr, y) => xr.next().map(|x| (x, *y)),
             LineType::Vertical(x, yr) => yr.next().map(|y| (*x, y)),
-            LineType::Diagonal(xr, yr) => xr.next().zip(yr.next()),
+            LineType::DiagonalDown(xr, yr) => xr.next().zip(yr.next()),
+            LineType::DiagonalUp(xr, yr) => xr.next().zip(yr.next()),
         }
     }
 }
@@ -154,31 +171,18 @@ impl FloorMap {
 }
 
 trait Part {
-    fn set_floor_map(lines: &[Line], floor_map: &mut FloorMap);
+    fn line_filter(_line: &&Line) -> bool {
+        true
+    }
 }
 struct PartA {}
 impl Part for PartA {
-    fn set_floor_map(lines: &[Line], floor_map: &mut FloorMap) {
-        for line in lines
-            .iter()
-            .filter(|l| l.from.x == l.to.x || l.from.y == l.to.y)
-        {
-            for location in line.iter() {
-                floor_map.inc_location(location)
-            }
-        }
+    fn line_filter(line: &&Line) -> bool {
+        line.from.x == line.to.x || line.from.y == line.to.y
     }
 }
 struct PartB {}
-impl Part for PartB {
-    fn set_floor_map(lines: &[Line], floor_map: &mut FloorMap) {
-        for line in lines.iter() {
-            for location in line.iter() {
-                floor_map.inc_location(location)
-            }
-        }
-    }
-}
+impl Part for PartB {}
 
 struct Vents {
     lines: Box<[Line]>,
@@ -208,7 +212,11 @@ impl Vents {
         let mut floor_map = FloorMap::blank(size)?;
 
         // Now "draw" the lines on the map
-        P::set_floor_map(&self.lines, &mut floor_map);
+        for line in self.lines.iter().filter(P::line_filter) {
+            for loc in line.iter() {
+                floor_map.inc_location(loc)
+            }
+        }
 
         Ok(floor_map)
     }
@@ -242,8 +250,6 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let vents = Vents::from_str(input)?;
-            let map = vents.floor_map::<PartB>()?;
-            println!("{:?}", map);
 
             // Process
             Ok(u64::try_from(vents.num_overlap_points::<PartB>()?)
