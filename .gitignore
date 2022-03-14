@@ -1,3 +1,4 @@
 /target
 perf.data*
-aoc_derive/target
+/aoc_derive/target
+/src/aoc_2021/__pycache__/
