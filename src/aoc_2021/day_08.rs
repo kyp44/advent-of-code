@@ -132,31 +132,80 @@ impl Line {
                 .next()
                 .ok_or_else(|| AocError::Process(format!("No sets of length {} found", len).into()))
         };
-        let s1 = get_len(2)?;
-        let s7 = get_len(3)?;
+        let d1 = get_len(2)?;
+        let d4 = get_len(4)?;
+        let d7 = get_len(3)?;
+        let d8 = get_len(7)?;
 
-	fn err(c: char, msg: &str) -> AocError {
-	    AocError::Process(format("Problem deducing '{}': {}", c, msg).into());
-	}
-        fn only_element(c: char, iter: impl Iterator<Item = char>) -> AocResult<char> {
-	    let element = iter.next().ok_or_else(|| err(c, "set empty"))?;
-	    if iter.next().is_some() {
-		return Err(err(c, "set has more than one element"));
-	    }
-	    Ok(element)
+        fn err(c: char, msg: &str) -> AocError {
+            AocError::Process(format!("Problem deducing '{}': {}!", c, msg).into())
         }
-	let map_add = |c: char, mc: char| -> AocResult<char> {
-	    //map.insert(c, mc).
-	    
-	}
+        fn only_element<'a>(c: char, mut iter: impl Iterator<Item = &'a char>) -> AocResult<char> {
+            let element = iter.next().ok_or_else(|| err(c, "set empty"))?;
+            if iter.next().is_some() {
+                return Err(err(c, "set has more than one element"));
+            }
+            Ok(*element)
+        }
+        let mut map_add = |c: char, mc: char| -> AocResult<char> {
+            match map.insert(c, mc) {
+                Some(_) => Err(err(c, "map already exists")),
+                None => Ok(mc),
+            }
+        };
+        let length_intersection = |len: usize| -> HashSet<char> {
+            self.digits
+                .iter()
+                .filter_map(|d| {
+                    if d.segments.len() == len {
+                        Some(d.segments.clone())
+                    } else {
+                        None
+                    }
+                })
+                .reduce(|a, b| a.intersection(&b).map(|c| *c).collect())
+                .unwrap_or_else(|| HashSet::new())
+        };
 
-        // Deduce which character coorresponds to the variable name characters
-        let a = s7.segments.difference(&s1.segments);
+        // Deduce which character corresponds to the variable name characters
+        // This procedure was derived ahead of time usingn Python experimentation
+        let a = map_add(
+            'a',
+            only_element('a', d7.segments.difference(&d1.segments))?,
+        )?;
+        let is5 = length_intersection(5);
+        let is6 = length_intersection(6);
+        let g = map_add(
+            'g',
+            only_element('g', is5.intersection(&is6).filter(|c| **c != a))?,
+        )?;
+        let d = map_add(
+            'd',
+            only_element('d', is5.difference(&HashSet::from([a, g])))?,
+        )?;
+        let f = map_add('f', only_element('f', is6.intersection(&d1.segments))?)?;
+        let c = map_add(
+            'c',
+            only_element('c', d1.segments.iter().filter(|c| **c != f))?,
+        )?;
+        let b = map_add(
+            'b',
+            only_element('b', d4.segments.difference(&HashSet::from([c, d, f])))?,
+        )?;
+        map_add(
+            'e',
+            only_element(
+                'e',
+                d8.segments.difference(&HashSet::from([a, b, c, d, f, g])),
+            )?,
+        )?;
 
         Ok(map)
     }
 
     fn output_digits(&self) -> AocResult<Box<[u8]>> {
+        let map = self.solve()?;
+
         todo!()
     }
 }
