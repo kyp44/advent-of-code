@@ -4,6 +4,9 @@
 #[macro_use]
 extern crate derive_new;
 
+#[macro_use]
+extern crate lazy_static;
+
 mod aoc;
 mod aoc_2015;
 mod aoc_2020;

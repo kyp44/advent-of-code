@@ -1,3 +1,5 @@
+# Just a test script for deriving the logical deduction interactively
+
 # Segments as strings
 Ss = [
     "abcefg",
@@ -14,4 +16,3 @@ Ss = [
 
 # Segments as sets
 S = [set(s) for s in Ss]
-

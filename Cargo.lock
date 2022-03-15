@@ -14,6 +14,7 @@ dependencies = [
  "enum-map",
  "enum-map-derive",
  "itertools",
+ "lazy_static",
  "maplit",
  "md5",
  "nom",

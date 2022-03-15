@@ -29,6 +29,7 @@ maplit = "1.0.2"
 aoc_derive = { path = "aoc_derive" }
 derive-new = "0.5"
 partitions = "0.2"
+lazy_static = "1.4"
 
 [features]
 expensive = []
