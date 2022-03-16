@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
-use itertools::{process_results, Itertools};
+use itertools::Itertools;
 use nom::{
     bytes::complete::tag,
     character::complete::{one_of, space1},
@@ -18,7 +18,9 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(123)],
+    vec![Unsigned(330), Unsigned(1010472)],
+    "acedgfb cdfbe gcdfa fbcad dab cefabd cdfgeb eafb cagedb ab | cdfeb fcadb cdfeb cdbaf",
+    vec![0u64, 5353].answer_vec(),
     "be cfbegad cbdgef fgaecd cgeb fdcge agebfd fecdb fabcd edb | fdgacbe cefdb cefbgd gcbe
 edbfga begcd cbg gc gcadebf fbgde acbgfd abcde gfcbed gfec | fcgedb cgb dgebacf gc
 fgaebd cg bdaec gdafb agbcfd gdcbef bgcad gfac gcb cdgabef | cg cg fdcagb cbg
@@ -29,13 +31,19 @@ dbcfg fgd bdegcaf fgec aegbdf ecdfab fbedc dacgb gdcebf gf | cefg dcbef fcge gbc
 bdfegc cbegaf gecbf dfcage bdacg ed bedf ced adcbefg gebcd | ed bcgafe cdgba cbgef
 egadfb cdbfeg cegd fecab cgb gbdefca cg fgcdab egfdb bfceg | gbdfcae bgc cg cgb
 gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce",
-    vec![26u64].answer_vec()
+    vec![26u64, 61229].answer_vec()
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(Eq)]
 struct Digit {
     segments: HashSet<char>,
+}
+
+impl PartialEq for Digit {
+    fn eq(&self, other: &Self) -> bool {
+        self.segments == other.segments
+    }
 }
 impl Parseable<'_> for Digit {
     fn parser(input: &str) -> NomParseResult<Self> {
@@ -52,7 +60,7 @@ impl std::hash::Hash for Digit {
     }
 }
 impl Digit {
-    fn map(&self, map: HashMap<char, char>) -> Self {
+    fn map(&self, map: &HashMap<char, char>) -> Self {
         Digit {
             segments: self
                 .segments
@@ -89,8 +97,6 @@ struct Line {
 }
 impl Parseable<'_> for Line {
     fn parser(input: &str) -> NomParseResult<Self> {
-        let chars = "abcdefg";
-
         map(
             separated_pair(
                 separated_list1(space1, Digit::parser),
@@ -122,14 +128,7 @@ impl Line {
         let get_len = |len: usize| {
             self.digits
                 .iter()
-                .filter_map(|d| {
-                    if d.segments.len() == len {
-                        Some(d)
-                    } else {
-                        None
-                    }
-                })
-                .next()
+                .find(|d| d.segments.len() == len)
                 .ok_or_else(|| AocError::Process(format!("No sets of length {} found", len).into()))
         };
         let d1 = get_len(2)?;
@@ -137,18 +136,15 @@ impl Line {
         let d7 = get_len(3)?;
         let d8 = get_len(7)?;
 
-        fn err(c: char, msg: &str) -> AocError {
-            AocError::Process(format!("Problem deducing '{}': {}!", c, msg).into())
-        }
-        fn only_element<'a>(c: char, mut iter: impl Iterator<Item = &'a char>) -> AocResult<char> {
-            let element = iter.next().ok_or_else(|| err(c, "set empty"))?;
-            if iter.next().is_some() {
-                return Err(err(c, "set has more than one element"));
+        let mut map_add = |c: char, set: Vec<&char>| -> AocResult<char> {
+            fn err(c: char, msg: &str) -> AocError {
+                AocError::Process(format!("Problem deducing '{}': {}!", c, msg).into())
             }
-            Ok(*element)
-        }
-        let mut map_add = |c: char, mc: char| -> AocResult<char> {
-            match map.insert(c, mc) {
+            if set.len() != 1 {
+                return Err(err(c, "set does not have exactly one element"));
+            }
+            let mc = *set[0];
+            match map.insert(mc, c) {
                 Some(_) => Err(err(c, "map already exists")),
                 None => Ok(mc),
             }
@@ -163,41 +159,28 @@ impl Line {
                         None
                     }
                 })
-                .reduce(|a, b| a.intersection(&b).map(|c| *c).collect())
-                .unwrap_or_else(|| HashSet::new())
+                .reduce(|a, b| a.intersection(&b).copied().collect())
+                .unwrap_or_default()
         };
 
         // Deduce which character corresponds to the variable name characters
         // This procedure was derived ahead of time usingn Python experimentation
-        let a = map_add(
-            'a',
-            only_element('a', d7.segments.difference(&d1.segments))?,
-        )?;
+        let a = map_add('a', d7.segments.difference(&d1.segments).collect())?;
         let is5 = length_intersection(5);
         let is6 = length_intersection(6);
-        let g = map_add(
-            'g',
-            only_element('g', is5.intersection(&is6).filter(|c| **c != a))?,
-        )?;
-        let d = map_add(
-            'd',
-            only_element('d', is5.difference(&HashSet::from([a, g])))?,
-        )?;
-        let f = map_add('f', only_element('f', is6.intersection(&d1.segments))?)?;
-        let c = map_add(
-            'c',
-            only_element('c', d1.segments.iter().filter(|c| **c != f))?,
-        )?;
+        let g = map_add('g', is5.intersection(&is6).filter(|c| **c != a).collect())?;
+        let d = map_add('d', is5.difference(&HashSet::from([a, g])).collect())?;
+        let f = map_add('f', is6.intersection(&d1.segments).collect())?;
+        let c = map_add('c', d1.segments.iter().filter(|c| **c != f).collect())?;
         let b = map_add(
             'b',
-            only_element('b', d4.segments.difference(&HashSet::from([c, d, f])))?,
+            d4.segments.difference(&HashSet::from([c, d, f])).collect(),
         )?;
         map_add(
             'e',
-            only_element(
-                'e',
-                d8.segments.difference(&HashSet::from([a, b, c, d, f, g])),
-            )?,
+            d8.segments
+                .difference(&HashSet::from([a, b, c, d, f, g]))
+                .collect(),
         )?;
 
         Ok(map)
@@ -206,7 +189,24 @@ impl Line {
     fn output_digits(&self) -> AocResult<Box<[u8]>> {
         let map = self.solve()?;
 
-        todo!()
+        self.output
+            .iter()
+            .map(|d| {
+                let mapped = d.map(&map);
+                DIGITS
+                    .get(&mapped)
+                    .ok_or_else(|| {
+                        AocError::Process(
+                            format!(
+                                "Mapped segments '{}', not a valid digit!",
+                                mapped.segments.iter().collect::<String>()
+                            )
+                            .into(),
+                        )
+                    })
+                    .map(|v| *v)
+            })
+            .collect()
     }
 }
 
@@ -218,10 +218,40 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let lines = Line::gather(input.lines())?;
+            let count_digits = vec![1, 4, 7, 8];
+            let num_digits = lines
+                .into_iter()
+                .map(|line| {
+                    Ok(line
+                        .output_digits()?
+                        .iter()
+                        .filter_count(|d| count_digits.contains(d)))
+                })
+                .collect::<AocResult<Vec<usize>>>()?;
 
-            println!("Map: {:?}", lines[0].solve()?);
             // Process
-            Ok(0u64.into())
+            Ok(Answer::Unsigned(
+                num_digits.into_iter().sum::<usize>().try_into().unwrap(),
+            ))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let lines = Line::gather(input.lines())?;
+            let num_digits = lines
+                .into_iter()
+                .map(|line| {
+                    Ok(line
+                        .output_digits()?
+                        .iter()
+                        .zip([1000u64, 100, 10, 1])
+                        .map(|(d, m)| m * u64::from(*d))
+                        .sum())
+                })
+                .collect::<AocResult<Vec<u64>>>()?;
+
+            // Process
+            Ok(num_digits.into_iter().sum::<u64>().into())
         },
     ],
 };
