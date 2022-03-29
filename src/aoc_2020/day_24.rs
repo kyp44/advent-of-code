@@ -138,7 +138,6 @@ impl FromStr for Floor {
 }
 impl Evolver<bool> for Floor {
     type Point = Point;
-    type Iter = impl Iterator<Item = Self::Point>;
 
     fn new(_other: &Self) -> Self {
         Floor {
@@ -171,14 +170,14 @@ impl Evolver<bool> for Floor {
         }
     }
 
-    fn next_iter(&self) -> Self::Iter {
+    fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
         // Determine the range in x and y
         let range = |f: fn(&Point) -> i32| match self.black_tiles.iter().map(f).range() {
             Some(r) => (r.start() - 1)..=(r.end() + 1),
             None => 0..=0,
         };
 
-        iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Vector2::new(x, y))
+        Box::new(iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Vector2::new(x, y)))
     }
 }
 impl Floor {

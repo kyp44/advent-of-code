@@ -9,19 +9,19 @@ use std::{fmt, fs};
 
 use self::parse::NomParseError;
 
-mod char_grid;
 mod evolver;
+mod grid;
 mod iter;
 pub mod parse;
 
 /// Prelude
 pub mod prelude {
     pub use super::{
-        char_add, char_grid::CharGrid, char_grid::CharGridCoordinates, evolver::Evolver,
-        iter::FilterCount, iter::HasNoneIter, iter::HasRange, iter::IndividualReplacements,
-        iter::SplitRuns, parse::DiscardInput, parse::NomParseError, parse::NomParseResult,
-        parse::Parseable, parse::Sections, Answer, AnswerVec, AocError, AocResult, HasLen,
-        Solution, YearSolutions,
+        char_add, evolver::Evolver, grid::CharGrid, grid::CharGridCoordinates, grid::Grid,
+        grid::GridPoint, iter::FilterCount, iter::HasNoneIter, iter::HasRange,
+        iter::IndividualReplacements, iter::SplitRuns, parse::DiscardInput, parse::NomParseError,
+        parse::NomParseResult, parse::Parseable, parse::Sections, Answer, AnswerVec, AocError,
+        AocResult, HasLen, Solution, YearSolutions,
     };
     pub use aoc_derive::CharGridDebug;
 }

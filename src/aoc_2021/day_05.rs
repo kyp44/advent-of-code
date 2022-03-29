@@ -128,40 +128,42 @@ impl Iterator for LineIterator {
 
 #[derive(CharGridDebug)]
 struct FloorMap {
+    size: (usize, usize),
     data: Box<[Box<[u8]>]>,
 }
-impl CharGrid for FloorMap {
+impl Grid for FloorMap {
     type Element = u8;
 
-    fn default() -> Self::Element {
-        0
+    fn size(&self) -> (usize, usize) {
+        self.size
     }
 
-    fn from_char(c: char) -> Self::Element {
-        if c == '.' {
-            0
-        } else {
-            c.to_digit(10).unwrap().try_into().unwrap()
+    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
+        &mut self.data[point.1][point.0]
+    }
+}
+impl CharGrid for FloorMap {
+    fn default(size: (usize, usize)) -> Self {
+        Self {
+            size,
+            data: vec![vec![0; size.0].into_boxed_slice()].into_boxed_slice(),
         }
     }
 
-    fn to_char(e: &Self::Element) -> char {
+    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
+        if c == '.' {
+            Some(0)
+        } else {
+            c.to_digit(10).map(|v| v.try_into().unwrap())
+        }
+    }
+
+    fn to_char(e: &<Self as Grid>::Element) -> char {
         if *e == 0 {
             '.'
         } else {
             char::from_digit((*e).into(), 10).unwrap()
         }
-    }
-
-    fn from_data(_size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
-    where
-        Self: Sized,
-    {
-        Ok(Self { data })
-    }
-
-    fn to_data(&self) -> &[Box<[Self::Element]>] {
-        &self.data
     }
 }
 impl FloorMap {
@@ -209,7 +211,7 @@ impl Vents {
         let size = (max(|p| p.x) + 1, max(|p| p.y) + 1);
 
         // Create blank map
-        let mut floor_map = FloorMap::blank(size)?;
+        let mut floor_map = FloorMap::default(size);
 
         // Now "draw" the lines on the map
         for line in self.lines.iter().filter(P::line_filter) {

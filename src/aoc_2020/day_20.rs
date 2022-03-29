@@ -160,35 +160,39 @@ struct Image {
     size: (usize, usize),
     pixels: Box<[Box<[bool]>]>,
 }
-
-impl CharGrid for Image {
+impl Grid for Image {
     type Element = bool;
 
-    fn default() -> Self::Element {
-        false
+    fn size(&self) -> (usize, usize) {
+        self.size
     }
 
-    fn from_char(c: char) -> Self::Element {
-        c == '#'
+    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
+        &mut self.pixels[point.1][point.0]
+    }
+}
+impl CharGrid for Image {
+    fn default(size: (usize, usize)) -> Self {
+        Self {
+            size,
+            pixels: vec![vec![false; size.0].into_boxed_slice()].into_boxed_slice(),
+        }
     }
 
-    fn to_char(e: &Self::Element) -> char {
+    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
+        match c {
+            '#' => Some(true),
+            '.' => Some(false),
+            _ => None,
+        }
+    }
+
+    fn to_char(e: &<Self as Grid>::Element) -> char {
         if *e {
             '#'
         } else {
             '.'
         }
-    }
-
-    fn from_data(size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
-    where
-        Self: Sized,
-    {
-        Ok(Image { size, pixels: data })
-    }
-
-    fn to_data(&self) -> &[Box<[Self::Element]>] {
-        &self.pixels
     }
 }
 
@@ -202,7 +206,7 @@ impl Image {
     }
 
     fn rot_90(&self) -> Self {
-        let mut out = Image::blank(self.size).unwrap();
+        let mut out = Image::default(self.size);
         out.set(
             (0..self.size.0)
                 .rev()
@@ -212,12 +216,12 @@ impl Image {
     }
 
     fn flip_hor(&self) -> Self {
-        let mut out = Image::blank(self.size).unwrap();
+        let mut out = Image::default(self.size);
         out.set(self.pixels.iter().map(|row| row.iter().rev().copied()));
         out
     }
     fn flip_ver(&self) -> Self {
-        let mut out = Image::blank(self.size).unwrap();
+        let mut out = Image::default(self.size);
         out.set(self.pixels.iter().rev().map(|row| row.iter().copied()));
         out
     }
@@ -241,7 +245,7 @@ impl Image {
             self.size.1, right.size.1,
             "Images must have the same height to adjoin horizontally"
         );
-        let mut out = Image::blank((self.size.0 + right.size.0, self.size.1)).unwrap();
+        let mut out = Image::default((self.size.0 + right.size.0, self.size.1));
         out.set(
             self.pixels
                 .iter()
@@ -256,7 +260,7 @@ impl Image {
             self.size.0, below.size.0,
             "Images must have the same width to adjoin vertically"
         );
-        let mut out = Image::blank((self.size.0, self.size.1 + below.size.1)).unwrap();
+        let mut out = Image::default((self.size.0, self.size.1 + below.size.1));
         out.set(
             self.pixels
                 .iter()
@@ -345,7 +349,7 @@ impl FromStr for Tile {
         }
 
         // Create image of interior
-        let mut image = Image::blank((size - 2, size - 2))?;
+        let mut image = Image::default((size - 2, size - 2));
         image.set(
             full_image.pixels[1..size - 1]
                 .iter()

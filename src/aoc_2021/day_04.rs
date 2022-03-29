@@ -53,7 +53,7 @@ impl Parseable<'_> for BoardCell {
         map(nom::character::complete::u8, |v| v.into())(input)
     }
 }
-
+// TODO use Grid trait
 struct BingoBoard {
     rows: Box<[Box<[BoardCell]>]>,
 }

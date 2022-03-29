@@ -21,36 +21,42 @@ type DimensionRange = RangeInclusive<i32>;
 
 #[derive(CharGridDebug)]
 struct Slice2D {
+    size: (usize, usize),
     data: Box<[Box<[bool]>]>,
 }
-impl CharGrid for Slice2D {
+impl Grid for Slice2D {
     type Element = bool;
 
-    fn default() -> Self::Element {
-        false
+    fn size(&self) -> (usize, usize) {
+        self.size
     }
 
-    fn from_char(c: char) -> Self::Element {
-        c == '#'
+    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
+        &mut self.data[point.1][point.0]
+    }
+}
+impl CharGrid for Slice2D {
+    fn default(size: (usize, usize)) -> Self {
+        Self {
+            size,
+            data: vec![vec![false; size.0].into_boxed_slice()].into_boxed_slice(),
+        }
     }
 
-    fn to_char(e: &Self::Element) -> char {
+    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
+        match c {
+            '#' => Some(true),
+            '.' => Some(false),
+            _ => None,
+        }
+    }
+
+    fn to_char(e: &<Self as Grid>::Element) -> char {
         if *e {
             '#'
         } else {
             '.'
         }
-    }
-
-    fn from_data(_size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
-    where
-        Self: Sized,
-    {
-        Ok(Slice2D { data })
-    }
-
-    fn to_data(&self) -> &[Box<[Self::Element]>] {
-        &self.data
     }
 }
 
@@ -146,7 +152,6 @@ impl Dimension {
 
 impl Evolver<bool> for Dimension {
     type Point = Vec<i32>;
-    type Iter = impl Iterator<Item = Self::Point>;
 
     fn new(other: &Self) -> Self {
         Dimension {
@@ -182,12 +187,14 @@ impl Evolver<bool> for Dimension {
         (self.get(point) && neighbors == 2) || neighbors == 3
     }
 
-    fn next_iter(&self) -> Self::Iter {
-        self.ranges()
-            .iter()
-            .map(|r| (r.start() - 1)..=(r.end() + 1))
-            .into_iter()
-            .multi_cartesian_product()
+    fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
+        Box::new(
+            self.ranges()
+                .iter()
+                .map(|r| (r.start() - 1)..=(r.end() + 1))
+                .into_iter()
+                .multi_cartesian_product(),
+        )
     }
 }
 

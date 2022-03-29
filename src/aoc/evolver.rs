@@ -2,8 +2,8 @@ use std::{marker::PhantomData, rc::Rc};
 
 /// Something that evolves, typically a Conway's-Game-of-Life-type cell array.
 pub trait Evolver<T> {
+    /// Point to address elements
     type Point;
-    type Iter: Iterator<Item = Self::Point>;
 
     /// Create a new cell array in the default state.
     fn new(other: &Self) -> Self;
@@ -18,7 +18,7 @@ pub trait Evolver<T> {
     fn next_cell(&self, point: &Self::Point) -> T;
 
     /// Get an iterator over the cells to be set in the next step.
-    fn next_iter(&self) -> Self::Iter;
+    fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>>;
 
     /// Iterator over the steps in the evolution of the cell array.
     fn evolutions(&self) -> EvolverIter<Self, T>

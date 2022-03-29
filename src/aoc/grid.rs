@@ -4,48 +4,100 @@ use super::prelude::*;
 use itertools::{iproduct, Itertools};
 use num::Integer;
 
-/// A data structure that can be represented by a grid of characters
-pub trait CharGrid {
+/// Specifies elements of a CharGrid
+pub type GridPoint = (usize, usize);
+
+/// A data structed that can be represented as a 2D grid of elements
+pub trait Grid: Sized {
     /// Type of each grid element.
     type Element;
 
-    /// Create new, blank grid.
-    fn blank(size: (usize, usize)) -> AocResult<Self>
-    where
-        Self: Sized,
-        Self::Element: Clone,
-    {
-        Self::from_data(
-            size,
-            vec![vec![Self::default(); size.0].into_boxed_slice(); size.1].into_boxed_slice(),
-        )
+    /// Size of the grid
+    fn size(&self) -> (usize, usize);
+
+    /// Get mutable reference to an element
+    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element;
+
+    /// Get element at a point
+    fn get_element(&self, point: &GridPoint) -> Self::Element {
+        *self.element_at(point)
     }
 
-    /// Default element for create new, blank grids.
-    fn default() -> Self::Element;
+    /// Set element at a point
+    fn set_element(&mut self, point: &GridPoint, value: Self::Element) {
+        *self.element_at(point) = value;
+    }
+
+    /// Validate and convert signed point to unsigned
+    fn valid_point(&self, x: isize, y: isize) -> Option<GridPoint> {
+        if x >= 0 && y >= 0 {
+            let x = x.try_into().unwrap();
+            let y = y.try_into().unwrap();
+            let size = self.size();
+            if x < size.0 && y < size.1 {
+                Some((x, y))
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Iterate over all points
+    fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>> {
+        let size = self.size();
+        Box::new(iproduct!(0..size.1, 0..size.0).map(|(y, x)| (x, y)))
+    }
+
+    /// Iterator over neighbors point
+    fn neighbor_points(
+        &self,
+        point: &GridPoint,
+        include_diagonals: bool,
+        include_self: bool,
+    ) -> Box<dyn Iterator<Item = GridPoint> + '_> {
+        Box::new(iproduct!(-1isize..=1, -1isize..=1).filter_map(|(dy, dx)| {
+            let npoint = self.valid_point(
+                isize::try_from(point.0).unwrap() + dx,
+                isize::try_from(point.1).unwrap() + dy,
+            );
+            if dx == 0 && dy == 0 {
+                if include_self {
+                    npoint
+                } else {
+                    None
+                }
+            } else if !include_diagonals && (dx + dy).abs() != 1 {
+                None
+            } else {
+                npoint
+            }
+        }))
+    }
+}
+
+/// A data structure that can be represented by a 2D grid of characters
+pub trait CharGrid: Grid {
+    /// Default grid of a certain size
+    fn default(size: (usize, usize)) -> Self;
 
     /// Maps the read character to the Element.
-    fn from_char(c: char) -> Self::Element;
+    fn from_char(c: char) -> Option<<Self as Grid>::Element>;
 
     /// Maps the Element to a character for display purposes.
-    fn to_char(e: &Self::Element) -> char;
-
-    /// Creates the structure from a read grid.
-    fn from_data(size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
-    where
-        Self: Sized;
-
-    /// Supplies the grid data.
-    fn to_data(&self) -> &[Box<[Self::Element]>];
+    fn to_char(e: &<Self as Grid>::Element) -> char;
 
     /// Formats the structure as a grid of characters.
     fn out_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let size = self.size();
         writeln!(
             f,
             "{}",
-            self.to_data()
-                .iter()
-                .map(|row| row.iter().map(|e| Self::to_char(e)).collect::<String>())
+            (0..size.1)
+                .map(|y| (0..size.0)
+                    .map(|x| Self::to_char(&self.get_element(&(x, y))))
+                    .collect::<String>())
                 .join("\n")
         )
     }

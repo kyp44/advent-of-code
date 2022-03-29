@@ -1,8 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::aoc::prelude::*;
-use cgmath::{Vector2, Zero};
-use itertools::iproduct;
+use cgmath::Vector2;
 
 #[cfg(test)]
 mod tests {
@@ -41,22 +40,39 @@ impl Part for PartB {
 #[derive(Clone, CharGridDebug)]
 #[generics(PartB)]
 struct LightGrid<P> {
-    size: (isize, isize),
+    size: (usize, usize),
     data: Box<[Box<[bool]>]>,
     phant: PhantomData<P>,
 }
-impl<P: Part> CharGrid for LightGrid<P> {
+impl<P: Part> Grid for LightGrid<P> {
     type Element = bool;
 
-    fn default() -> Self::Element {
-        false
+    fn size(&self) -> (usize, usize) {
+        self.size
     }
 
-    fn from_char(c: char) -> Self::Element {
-        c == '#'
+    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
+        &mut self.data[point.1][point.0]
+    }
+}
+impl<P: Part> CharGrid for LightGrid<P> {
+    fn default(size: (usize, usize)) -> Self {
+        Self {
+            size,
+            data: vec![vec![false; size.0].into_boxed_slice()].into_boxed_slice(),
+            phant: PhantomData::new(),
+        }
     }
 
-    fn to_char(e: &Self::Element) -> char {
+    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
+        match c {
+            '#' => Some(true),
+            '.' => Some(false),
+            _ => None,
+        }
+    }
+
+    fn to_char(e: &<Self as Grid>::Element) -> char {
         if *e {
             '#'
         } else {
@@ -64,6 +80,8 @@ impl<P: Part> CharGrid for LightGrid<P> {
         }
     }
 
+    /*
+    TODO need to put this somewhere, GOD DAMMIT
     fn from_data(size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
     where
         Self: Sized,
@@ -74,7 +92,7 @@ impl<P: Part> CharGrid for LightGrid<P> {
             phant: PhantomData {},
         };
 
-        // Trun stuck lights on
+        // Turn stuck lights on
         for point in grid.next_iter() {
             if P::stuck(&grid.size, &point) {
                 let up = grid.point_usize(&point).unwrap();
@@ -82,45 +100,25 @@ impl<P: Part> CharGrid for LightGrid<P> {
             }
         }
         Ok(grid)
-    }
-
-    fn to_data(&self) -> &[Box<[Self::Element]>] {
-        &self.data
-    }
+    }*/
 }
 impl<P: Part> Evolver<bool> for LightGrid<P> {
-    type Point = Vector2<isize>;
-    type Iter = impl Iterator<Item = Self::Point>;
+    type Point = GridPoint;
 
     fn new(other: &Self) -> Self {
-        let size = (
-            other.size.0.try_into().unwrap(),
-            other.size.1.try_into().unwrap(),
-        );
-        let data =
-            vec![vec![Self::default(); size.0].into_boxed_slice(); size.1].into_boxed_slice();
-        Self::from_data(size, data).unwrap()
+        Self::default(other.size)
     }
 
     fn get(&self, point: &Self::Point) -> bool {
-        match self.point_usize(point) {
-            None => false,
-            Some(p) => self.data[p.y][p.x],
-        }
+        self.get_element(point)
     }
 
     fn set(&mut self, point: &Self::Point, value: bool) {
-        if !P::stuck(&self.size, point) {
-            let up = self.point_usize(point).unwrap();
-            self.data[up.y][up.x] = value;
-        }
+        self.set_element(point, value)
     }
 
     fn next_cell(&self, point: &Self::Point) -> bool {
-        let occupied: usize = iproduct!(-1isize..=1, -1isize..=1)
-            .map(|(dx, dy)| Vector2::new(dx, dy))
-            .filter(|dp| *dp != Vector2::zero())
-            .filter_count(|dp| self.get(&(point + dp)));
+        let occupied: usize = self.neighbor_points(point, true, false).count();
         if self.get(point) {
             occupied == 2 || occupied == 3
         } else {
@@ -128,21 +126,11 @@ impl<P: Part> Evolver<bool> for LightGrid<P> {
         }
     }
 
-    fn next_iter(&self) -> Self::Iter {
-        iproduct!(0..self.size.0, 0..self.size.1).map(|(x, y)| Vector2::new(x, y))
+    fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
+        self.all_points()
     }
 }
 impl<P: Part> LightGrid<P> {
-    fn point_usize(&self, point: &Vector2<isize>) -> Option<Vector2<usize>> {
-        if (0..self.size.0).contains(&point.x) && (0..self.size.1).contains(&point.y) {
-            return Some(Vector2::new(
-                point.x.try_into().unwrap(),
-                point.y.try_into().unwrap(),
-            ));
-        }
-        None
-    }
-
     fn lights_on(&self) -> u64 {
         self.next_iter().filter_count(|point| self.get(point))
     }

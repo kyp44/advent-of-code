@@ -28,34 +28,39 @@ struct Map {
     size: (usize, usize),
     data: Box<[Box<[bool]>]>,
 }
-impl CharGrid for Map {
+impl Grid for Map {
     type Element = bool;
 
-    fn default() -> Self::Element {
-        false
+    fn size(&self) -> (usize, usize) {
+        self.size
     }
 
-    fn from_char(c: char) -> Self::Element {
-        c == '#'
+    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
+        &mut self.data[point.1][point.0]
+    }
+}
+impl CharGrid for Map {
+    fn default(size: (usize, usize)) -> Self {
+        Self {
+            size,
+            data: vec![vec![false; size.0].into_boxed_slice()].into_boxed_slice(),
+        }
     }
 
-    fn to_char(e: &Self::Element) -> char {
+    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
+        match c {
+            '#' => Some(true),
+            '.' => Some(false),
+            _ => None,
+        }
+    }
+
+    fn to_char(e: &<Self as Grid>::Element) -> char {
         if *e {
             '#'
         } else {
             '.'
         }
-    }
-
-    fn from_data(size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
-    where
-        Self: Sized,
-    {
-        Ok(Map { size, data })
-    }
-
-    fn to_data(&self) -> &[Box<[Self::Element]>] {
-        &self.data
     }
 }
 

@@ -26,30 +26,31 @@ struct FloorMap {
     size: (usize, usize),
     map: Box<[Box<[u8]>]>,
 }
-impl CharGrid for FloorMap {
+impl Grid for FloorMap {
     type Element = u8;
 
-    fn default() -> Self::Element {
-        0
+    fn size(&self) -> (usize, usize) {
+        self.size
     }
 
-    fn from_char(c: char) -> Self::Element {
-        c.to_digit(10).unwrap().try_into().unwrap()
+    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
+        &mut self.map[point.1][point.0]
+    }
+}
+impl CharGrid for FloorMap {
+    fn default(size: (usize, usize)) -> Self {
+        Self {
+            size,
+            map: vec![vec![0; size.0].into_boxed_slice()].into_boxed_slice(),
+        }
     }
 
-    fn to_char(e: &Self::Element) -> char {
-        char::from_digit(u32::from(*e), 10).unwrap()
+    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
+        c.to_digit(10).map(|v| v.try_into().unwrap())
     }
 
-    fn from_data(size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
-    where
-        Self: Sized,
-    {
-        Ok(FloorMap { size, map: data })
-    }
-
-    fn to_data(&self) -> &[Box<[Self::Element]>] {
-        &self.map
+    fn to_char(e: &<Self as Grid>::Element) -> char {
+        char::from_digit((*e).into(), 10).unwrap()
     }
 }
 impl FloorMap {
