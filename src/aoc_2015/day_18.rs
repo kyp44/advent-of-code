@@ -40,31 +40,33 @@ impl Part for PartB {
 #[derive(Clone, CharGridDebug)]
 #[generics(PartB)]
 struct LightGrid<P> {
-    size: (usize, usize),
+    size: GridSize,
     data: Box<[Box<[bool]>]>,
     phant: PhantomData<P>,
 }
-impl<P: Part> Grid for LightGrid<P> {
-    type Element = bool;
-
-    fn size(&self) -> (usize, usize) {
-        self.size
-    }
-
-    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
-        &mut self.data[point.1][point.0]
-    }
-}
-impl<P: Part> CharGrid for LightGrid<P> {
-    fn default(size: (usize, usize)) -> Self {
+impl<P: Part> Grid<bool> for LightGrid<P> {
+    fn default(size: GridSize) -> Self {
         Self {
             size,
-            data: vec![vec![false; size.0].into_boxed_slice()].into_boxed_slice(),
-            phant: PhantomData::new(),
+            data: vec![vec![false; size.x].into_boxed_slice(); size.y].into_boxed_slice(),
+            phant: PhantomData {},
         }
     }
 
-    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
+    fn size(&self) -> &GridSize {
+        &self.size
+    }
+
+    fn get(&self, point: &GridPoint) -> &bool {
+        &self.data[point.y][point.x]
+    }
+
+    fn set(&mut self, point: &GridPoint, value: bool) {
+        self.data[point.y][point.x] = value;
+    }
+}
+impl<P: Part> CharGrid<bool> for LightGrid<P> {
+    fn from_char(c: char) -> Option<bool> {
         match c {
             '#' => Some(true),
             '.' => Some(false),
@@ -72,7 +74,7 @@ impl<P: Part> CharGrid for LightGrid<P> {
         }
     }
 
-    fn to_char(e: &<Self as Grid>::Element) -> char {
+    fn to_char(e: &bool) -> char {
         if *e {
             '#'
         } else {
@@ -109,17 +111,17 @@ impl<P: Part> Evolver<bool> for LightGrid<P> {
         Self::default(other.size)
     }
 
-    fn get(&self, point: &Self::Point) -> bool {
-        self.get_element(point)
+    fn get_element(&self, point: &Self::Point) -> bool {
+        *self.get(point)
     }
 
-    fn set(&mut self, point: &Self::Point, value: bool) {
-        self.set_element(point, value)
+    fn set_element(&mut self, point: &Self::Point, value: bool) {
+        self.set(point, value)
     }
 
     fn next_cell(&self, point: &Self::Point) -> bool {
         let occupied: usize = self.neighbor_points(point, true, false).count();
-        if self.get(point) {
+        if self.get_element(point) {
             occupied == 2 || occupied == 3
         } else {
             occupied == 3
@@ -132,7 +134,7 @@ impl<P: Part> Evolver<bool> for LightGrid<P> {
 }
 impl<P: Part> LightGrid<P> {
     fn lights_on(&self) -> u64 {
-        self.next_iter().filter_count(|point| self.get(point))
+        self.next_iter().filter_count(|point| *self.get(point))
     }
 }
 

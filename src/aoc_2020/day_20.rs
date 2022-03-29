@@ -157,29 +157,31 @@ enum Transform {
 
 #[derive(Clone, CharGridDebug)]
 struct Image {
-    size: (usize, usize),
+    size: GridSize,
     pixels: Box<[Box<[bool]>]>,
 }
-impl Grid for Image {
-    type Element = bool;
-
-    fn size(&self) -> (usize, usize) {
-        self.size
-    }
-
-    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
-        &mut self.pixels[point.1][point.0]
-    }
-}
-impl CharGrid for Image {
-    fn default(size: (usize, usize)) -> Self {
+impl Grid<bool> for Image {
+    fn default(size: GridSize) -> Self {
         Self {
             size,
-            pixels: vec![vec![false; size.0].into_boxed_slice()].into_boxed_slice(),
+            pixels: vec![vec![false; size.x].into_boxed_slice(); size.y].into_boxed_slice(),
         }
     }
 
-    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
+    fn size(&self) -> &GridSize {
+        &self.size
+    }
+
+    fn get(&self, point: &GridPoint) -> &bool {
+        &self.pixels[point.y][point.x]
+    }
+
+    fn set(&mut self, point: &GridPoint, value: bool) {
+        self.pixels[point.y][point.x] = value;
+    }
+}
+impl CharGrid<bool> for Image {
+    fn from_char(c: char) -> Option<bool> {
         match c {
             '#' => Some(true),
             '.' => Some(false),
@@ -187,7 +189,7 @@ impl CharGrid for Image {
         }
     }
 
-    fn to_char(e: &<Self as Grid>::Element) -> char {
+    fn to_char(e: &bool) -> char {
         if *e {
             '#'
         } else {
@@ -197,32 +199,35 @@ impl CharGrid for Image {
 }
 
 impl Image {
-    fn set(&mut self, rows: impl Iterator<Item = impl Iterator<Item = bool>>) {
-        for (y, row) in (0..self.size.1).zip(rows) {
+    fn set_todo(&mut self, rows: impl Iterator<Item = impl Iterator<Item = bool>>) {
+        todo!()
+        /*for (y, row) in (0..self.size.y).zip(rows) {
             for (x, v) in (0..self.size.0).zip(row) {
                 self.pixels[y][x] = v;
             }
-        }
+        }*/
     }
 
     fn rot_90(&self) -> Self {
+        todo!()
+        /*
         let mut out = Image::default(self.size);
-        out.set(
+        out.set_todo(
             (0..self.size.0)
                 .rev()
-                .map(|x| (0..self.size.1).map(move |y| self.pixels[y][x])),
+                .map(|x| (0..self.size.y).map(move |y| self.pixels[y][x])),
         );
-        out
+        out*/
     }
 
     fn flip_hor(&self) -> Self {
         let mut out = Image::default(self.size);
-        out.set(self.pixels.iter().map(|row| row.iter().rev().copied()));
+        out.set_todo(self.pixels.iter().map(|row| row.iter().rev().copied()));
         out
     }
     fn flip_ver(&self) -> Self {
         let mut out = Image::default(self.size);
-        out.set(self.pixels.iter().rev().map(|row| row.iter().copied()));
+        out.set_todo(self.pixels.iter().rev().map(|row| row.iter().copied()));
         out
     }
 
@@ -241,33 +246,37 @@ impl Image {
     }
 
     fn adjoin_right(&self, right: &Self) -> Self {
+        todo!()
+        /*
         assert_eq!(
-            self.size.1, right.size.1,
+            self.size.y, right.size.y,
             "Images must have the same height to adjoin horizontally"
         );
-        let mut out = Image::default((self.size.0 + right.size.0, self.size.1));
-        out.set(
+        let mut out = Image::default((self.size.x + right.size.x, self.size.y));
+        out.set_todo(
             self.pixels
                 .iter()
                 .zip(right.pixels.iter())
                 .map(|(l, r)| l.iter().chain(r.iter()).copied()),
         );
-        out
+        out*/
     }
 
     fn adjoin_below(&self, below: &Self) -> Self {
+        todo!()
+        /*
         assert_eq!(
-            self.size.0, below.size.0,
+            self.size.x, below.size.x,
             "Images must have the same width to adjoin vertically"
         );
-        let mut out = Image::default((self.size.0, self.size.1 + below.size.1));
-        out.set(
+        let mut out = Image::default((self.size.x, self.size.y + below.size.y));
+        out.set_todo(
             self.pixels
                 .iter()
                 .chain(below.pixels.iter())
                 .map(|row| row.iter().copied()),
         );
-        out
+        out*/
     }
 
     fn slice(&self, point: &(usize, usize), width: usize, height: usize) -> Box<[&[bool]]> {
@@ -293,11 +302,11 @@ impl Image {
 
     fn search(&self, image: &Self) -> Vec<(usize, usize)> {
         iproduct!(
-            0..=(self.size.1 - image.size.1),
-            0..=(self.size.0 - image.size.0)
+            0..=(self.size.y - image.size.y),
+            0..=(self.size.x - image.size.x)
         )
         .filter(|(y, x)| {
-            self.slice(&(*x, *y), image.size.0, image.size.1)
+            self.slice(&(*x, *y), image.size.x, image.size.y)
                 .iter()
                 .flat_map(|row| row.iter())
                 .zip(image.pixels.iter().flat_map(|row| row.iter()))
@@ -308,7 +317,7 @@ impl Image {
     }
 
     fn subtract(&mut self, point: &(usize, usize), image: &Self) {
-        let mut slice = self.slice_mut(point, image.size.0, image.size.1);
+        let mut slice = self.slice_mut(point, image.size.x, image.size.y);
         for (p, sp) in slice
             .iter_mut()
             .flat_map(|row| row.iter_mut())
@@ -341,16 +350,17 @@ impl FromStr for Tile {
         let full_image = Image::from_str(image_str)?;
 
         // Verify the tile dimensions
-        let size = full_image.size.0;
-        if size != full_image.size.1 || size < 3 {
+        let size = full_image.size.x;
+        if size != full_image.size.y || size < 3 {
             return Err(AocError::InvalidInput(
                 format!("Tile {} must be square with at least a size of 3x3", id).into(),
             ));
         }
 
-        // Create image of interior
+        todo!()
+        /*// Create image of interior
         let mut image = Image::default((size - 2, size - 2));
-        image.set(
+        image.set_????(
             full_image.pixels[1..size - 1]
                 .iter()
                 .map(|row| row[1..size - 1].iter().copied()),
@@ -375,7 +385,7 @@ impl FromStr for Tile {
             image,
             edges,
             edges_reversed,
-        })
+        })*/
     }
 }
 impl Tile {

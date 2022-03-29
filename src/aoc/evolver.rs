@@ -9,10 +9,10 @@ pub trait Evolver<T> {
     fn new(other: &Self) -> Self;
 
     /// Get the value at the specified coordinates.
-    fn get(&self, point: &Self::Point) -> T;
+    fn get_element(&self, point: &Self::Point) -> T;
 
     /// Set the value at the specified coordinates.
-    fn set(&mut self, point: &Self::Point, value: T);
+    fn set_element(&mut self, point: &Self::Point, value: T);
 
     /// Given the coordinates of a cell, return the value of the same cell in the next step.
     fn next_cell(&self, point: &Self::Point) -> T;
@@ -46,7 +46,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let mut next = E::new(&self.current);
         for point in self.current.next_iter() {
-            next.set(&point, self.current.next_cell(&point));
+            next.set_element(&point, self.current.next_cell(&point));
         }
         self.current = Rc::new(next);
         Some(self.current.clone())

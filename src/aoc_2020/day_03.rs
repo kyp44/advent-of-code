@@ -1,4 +1,5 @@
 use crate::aoc::prelude::*;
+use cgmath::Zero;
 
 #[cfg(test)]
 mod tests {
@@ -24,30 +25,8 @@ mod tests {
     }
 }
 
-struct Map {
-    size: (usize, usize),
-    data: Box<[Box<[bool]>]>,
-}
-impl Grid for Map {
-    type Element = bool;
-
-    fn size(&self) -> (usize, usize) {
-        self.size
-    }
-
-    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
-        &mut self.data[point.1][point.0]
-    }
-}
-impl CharGrid for Map {
-    fn default(size: (usize, usize)) -> Self {
-        Self {
-            size,
-            data: vec![vec![false; size.0].into_boxed_slice()].into_boxed_slice(),
-        }
-    }
-
-    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
+impl CharGrid<bool> for BasicGrid<bool> {
+    fn from_char(c: char) -> Option<bool> {
         match c {
             '#' => Some(true),
             '.' => Some(false),
@@ -55,7 +34,7 @@ impl CharGrid for Map {
         }
     }
 
-    fn to_char(e: &<Self as Grid>::Element) -> char {
+    fn to_char(e: &bool) -> char {
         if *e {
             '#'
         } else {
@@ -64,21 +43,18 @@ impl CharGrid for Map {
     }
 }
 
-impl Map {
-    fn is_tree(&self, x: usize, y: usize) -> bool {
-        self.data[y][x % self.size.0]
+impl BasicGrid<bool> {
+    fn is_tree(&self, point: &GridPoint) -> bool {
+        *self.get(point)
     }
 }
 
 #[derive(new)]
 struct MapDownhill<'a> {
-    map: &'a Map,
-    dx: usize,
-    dy: usize,
-    #[new(value = "0")]
-    x: usize,
-    #[new(value = "0")]
-    y: usize,
+    map: &'a BasicGrid<bool>,
+    slope: GridPoint,
+    #[new(value = "GridPoint::zero()")]
+    point: GridPoint,
 }
 
 impl Iterator for MapDownhill<'_> {
@@ -86,23 +62,22 @@ impl Iterator for MapDownhill<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // If past the map vertically then we are done
-        if self.y >= self.map.size.1 {
+        if self.point.y >= self.map.size().y {
             return None;
         }
 
         // Get current position
-        let tree = self.map.is_tree(self.x, self.y);
+        let tree = self.map.is_tree(&self.point);
 
         // Ready the next position
-        self.x += self.dx;
-        self.y += self.dy;
+        self.point += self.slope;
 
         Some(tree)
     }
 }
 
-fn count_slope(map: &Map, x: usize, y: usize) -> u64 {
-    MapDownhill::new(map, x, y).filter_count(|t| *t)
+fn count_slope(map: &BasicGrid<bool>, slope: GridPoint) -> u64 {
+    MapDownhill::new(map, slope).filter_count(|t| *t)
 }
 
 pub const SOLUTION: Solution = Solution {
@@ -112,21 +87,21 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let map = Map::from_str(input)?;
+            let map = BasicGrid::from_str(input)?;
 
             // Process
-            Ok(count_slope(&map, 3, 1).into())
+            Ok(count_slope(&map, GridPoint::new(3, 1)).into())
         },
         // Part b)
         |input| {
             // Generation
-            let map = Map::from_str(input)?;
+            let map = BasicGrid::from_str(input)?;
 
             // Process
             let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
             Ok(slopes
                 .iter()
-                .map(|(x, y)| count_slope(&map, *x, *y))
+                .map(|(x, y)| count_slope(&map, GridPoint::new(*x, *y)))
                 .product::<u64>()
                 .into())
         },

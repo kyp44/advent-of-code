@@ -145,11 +145,11 @@ impl Evolver<bool> for Floor {
         }
     }
 
-    fn get(&self, point: &Self::Point) -> bool {
+    fn get_element(&self, point: &Self::Point) -> bool {
         self.black_tiles.contains(point)
     }
 
-    fn set(&mut self, point: &Self::Point, value: bool) {
+    fn set_element(&mut self, point: &Self::Point, value: bool) {
         if value {
             self.black_tiles.insert(*point);
         } else {
@@ -160,8 +160,8 @@ impl Evolver<bool> for Floor {
     fn next_cell(&self, point: &Self::Point) -> bool {
         let adj: usize = Direction::iter()
             .map(|d| d.into())
-            .filter_count(|dp: &Point| self.get(&(*dp + point)));
-        if self.get(point) {
+            .filter_count(|dp: &Point| self.get_element(&(*dp + point)));
+        if self.get_element(point) {
             // Tile is black
             adj > 0 && adj <= 2
         } else {

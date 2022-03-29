@@ -128,29 +128,31 @@ impl Iterator for LineIterator {
 
 #[derive(CharGridDebug)]
 struct FloorMap {
-    size: (usize, usize),
+    size: GridSize,
     data: Box<[Box<[u8]>]>,
 }
-impl Grid for FloorMap {
-    type Element = u8;
-
-    fn size(&self) -> (usize, usize) {
-        self.size
-    }
-
-    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
-        &mut self.data[point.1][point.0]
-    }
-}
-impl CharGrid for FloorMap {
-    fn default(size: (usize, usize)) -> Self {
+impl Grid<u8> for FloorMap {
+    fn default(size: GridSize) -> Self {
         Self {
             size,
-            data: vec![vec![0; size.0].into_boxed_slice()].into_boxed_slice(),
+            data: vec![vec![0; size.x].into_boxed_slice(); size.y].into_boxed_slice(),
         }
     }
 
-    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
+    fn size(&self) -> &GridSize {
+        &self.size
+    }
+
+    fn get(&self, point: &GridPoint) -> &u8 {
+        &self.data[point.y][point.x]
+    }
+
+    fn set(&mut self, point: &GridPoint, value: u8) {
+        self.data[point.y][point.x] = value;
+    }
+}
+impl CharGrid<u8> for FloorMap {
+    fn from_char(c: char) -> Option<u8> {
         if c == '.' {
             Some(0)
         } else {
@@ -158,7 +160,7 @@ impl CharGrid for FloorMap {
         }
     }
 
-    fn to_char(e: &<Self as Grid>::Element) -> char {
+    fn to_char(e: &u8) -> char {
         if *e == 0 {
             '.'
         } else {
@@ -200,6 +202,8 @@ impl FromStr for Vents {
 }
 impl Vents {
     fn floor_map<P: Part>(&self) -> AocResult<FloorMap> {
+        todo!()
+        /*
         // First determine how large the grid needs to be
         let max = |f: fn(&Point) -> usize| {
             self.lines
@@ -220,17 +224,19 @@ impl Vents {
             }
         }
 
-        Ok(floor_map)
+        Ok(floor_map)*/
     }
 
     fn num_overlap_points<P: Part>(&self) -> AocResult<usize> {
+        todo!()
+        /*
         Ok(self
             .floor_map::<P>()?
             .to_data()
             .iter()
             .flat_map(|row| row.iter())
             .filter(|v| **v > 1)
-            .count())
+            .count())*/
     }
 }
 

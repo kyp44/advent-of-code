@@ -1,41 +1,43 @@
 use std::{cmp::Eq, collections::HashSet, fmt::Debug, hash::Hash};
 
 use super::prelude::*;
+use cgmath::Vector2;
 use itertools::{iproduct, Itertools};
 use num::Integer;
 
 /// Specifies elements of a CharGrid
-pub type GridPoint = (usize, usize);
+pub type GridPoint = Vector2<usize>;
+pub type GridSize = Vector2<usize>;
 
 /// A data structed that can be represented as a 2D grid of elements
-pub trait Grid: Sized {
-    /// Type of each grid element.
-    type Element;
+pub trait Grid<E>: Sized {
+    /// Default grid of a certain size
+    fn default(size: GridSize) -> Self;
 
     /// Size of the grid
-    fn size(&self) -> (usize, usize);
-
-    /// Get mutable reference to an element
-    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element;
+    fn size(&self) -> &GridSize;
 
     /// Get element at a point
-    fn get_element(&self, point: &GridPoint) -> Self::Element {
-        *self.element_at(point)
-    }
+    fn get(&self, point: &GridPoint) -> &E;
 
     /// Set element at a point
-    fn set_element(&mut self, point: &GridPoint, value: Self::Element) {
-        *self.element_at(point) = value;
+    fn set(&mut self, point: &GridPoint, value: E);
+
+    /// Create from data
+    fn from_data(data: impl Iterator<Item = impl Iterator<Item = E>>) -> Self {
+        // TODO
+        let mut grid = Self::default(GridSize::new(1, 1));
+        grid
     }
 
     /// Validate and convert signed point to unsigned
-    fn valid_point(&self, x: isize, y: isize) -> Option<GridPoint> {
-        if x >= 0 && y >= 0 {
-            let x = x.try_into().unwrap();
-            let y = y.try_into().unwrap();
+    fn valid_point(&self, point: &Vector2<isize>) -> Option<GridPoint> {
+        if point.x >= 0 && point.y >= 0 {
+            let x = point.x.try_into().unwrap();
+            let y = point.y.try_into().unwrap();
             let size = self.size();
-            if x < size.0 && y < size.1 {
-                Some((x, y))
+            if x < size.x && y < size.y {
+                Some(GridPoint::new(x, y))
             } else {
                 None
             }
@@ -47,46 +49,46 @@ pub trait Grid: Sized {
     /// Iterate over all points
     fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>> {
         let size = self.size();
-        Box::new(iproduct!(0..size.1, 0..size.0).map(|(y, x)| (x, y)))
+        Box::new(iproduct!(0..size.y, 0..size.x).map(|(y, x)| GridPoint::new(x, y)))
     }
 
     /// Iterator over neighbors point
-    fn neighbor_points(
-        &self,
-        point: &GridPoint,
+    fn neighbor_points<'a>(
+        &'a self,
+        point: &'a GridPoint,
         include_diagonals: bool,
         include_self: bool,
-    ) -> Box<dyn Iterator<Item = GridPoint> + '_> {
-        Box::new(iproduct!(-1isize..=1, -1isize..=1).filter_map(|(dy, dx)| {
-            let npoint = self.valid_point(
-                isize::try_from(point.0).unwrap() + dx,
-                isize::try_from(point.1).unwrap() + dy,
-            );
-            if dx == 0 && dy == 0 {
-                if include_self {
-                    npoint
-                } else {
+    ) -> Box<dyn Iterator<Item = GridPoint> + 'a> {
+        Box::new(
+            iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
+                // TODO
+                let npoint = self.valid_point(&Vector2::new(
+                    isize::try_from(point.x).unwrap() + dx,
+                    isize::try_from(point.y).unwrap() + dy,
+                ));
+                if dx == 0 && dy == 0 {
+                    if include_self {
+                        npoint
+                    } else {
+                        None
+                    }
+                } else if !include_diagonals && (dx + dy).abs() != 1 {
                     None
+                } else {
+                    npoint
                 }
-            } else if !include_diagonals && (dx + dy).abs() != 1 {
-                None
-            } else {
-                npoint
-            }
-        }))
+            }),
+        )
     }
 }
 
 /// A data structure that can be represented by a 2D grid of characters
-pub trait CharGrid: Grid {
-    /// Default grid of a certain size
-    fn default(size: (usize, usize)) -> Self;
-
+pub trait CharGrid<E>: Grid<E> {
     /// Maps the read character to the Element.
-    fn from_char(c: char) -> Option<<Self as Grid>::Element>;
+    fn from_char(c: char) -> Option<E>;
 
     /// Maps the Element to a character for display purposes.
-    fn to_char(e: &<Self as Grid>::Element) -> char;
+    fn to_char(e: &E) -> char;
 
     /// Formats the structure as a grid of characters.
     fn out_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -94,9 +96,9 @@ pub trait CharGrid: Grid {
         writeln!(
             f,
             "{}",
-            (0..size.1)
-                .map(|y| (0..size.0)
-                    .map(|x| Self::to_char(&self.get_element(&(x, y))))
+            (0..size.y)
+                .map(|y| (0..size.x)
+                    .map(|x| Self::to_char(&self.get(&GridPoint::new(x, y))))
                     .collect::<String>())
                 .join("\n")
         )
@@ -107,15 +109,24 @@ pub trait CharGrid: Grid {
     where
         Self: Sized,
     {
+        todo!()
+        /*
         let data = s
             .lines()
             .map(|line| {
-                line.chars()
-                    .map(Self::from_char)
-                    .collect::<Vec<Self::Element>>()
-                    .into_boxed_slice()
+                Ok(line
+                    .chars()
+                    .map(|c| {
+                        Self::from_char(c).ok_or_else(|| {
+                            AocError::InvalidInput(
+                                format!("Invalid character found: '{}'", c).into(),
+                            )
+                        })
+                    })
+                    .collect::<AocResult<Vec<E>>>()?
+                    .into_boxed_slice())
             })
-            .collect::<Vec<Box<[Self::Element]>>>()
+            .collect::<AocResult<Vec<Box<[E]>>>>()?
             .into_boxed_slice();
 
         // Verify that all of the rows have the same width
@@ -141,7 +152,7 @@ pub trait CharGrid: Grid {
             }
         }
 
-        Self::from_data((width, height), data)
+        Self::from_data((width, height), data)*/
     }
 }
 
@@ -165,17 +176,18 @@ pub trait CharGridCoordinates {
         Self: Sized;
 }
 
-impl<C: CharGrid<Element = bool>> CharGridCoordinates for C {
+impl<C: CharGrid<bool>> CharGridCoordinates for C {
     fn to_coordinates<N>(&self) -> HashSet<(N, N)>
     where
         N: TryFrom<usize> + Hash + Eq,
         <N as TryFrom<usize>>::Error: Debug,
     {
-        let data = self.to_data();
+        todo!()
+        /*let data = self.to_data();
         iproduct!(0..data[0].len(), 0..data.len())
             .filter(|(x, y)| data[*y][*x])
             .map(|(x, y)| -> (N, N) { (N::try_from(x).unwrap(), N::try_from(y).unwrap()) })
-            .collect()
+            .collect()*/
     }
 
     fn from_coordinates<N>(points: &HashSet<(N, N)>) -> AocResult<Self>
@@ -185,6 +197,8 @@ impl<C: CharGrid<Element = bool>> CharGridCoordinates for C {
         <N as TryFrom<usize>>::Error: Debug,
         Self: Sized,
     {
+        todo!()
+        /*
         let x_range = points.iter().map(|p| p.0).range();
         let y_range = points.iter().map(|p| p.1).range();
         let width = match x_range {
@@ -208,6 +222,32 @@ impl<C: CharGrid<Element = bool>> CharGridCoordinates for C {
                 }
             }
         }
-        Self::from_data((width, height), data)
+        Self::from_data((width, height), data)*/
+    }
+}
+
+#[derive(Clone, Hash, PartialEq, Eq)]
+pub struct BasicGrid<T> {
+    size: GridSize,
+    grid: Box<[Box<[T]>]>,
+}
+impl<T: Default + Clone> Grid<T> for BasicGrid<T> {
+    fn default(size: GridSize) -> Self {
+        Self {
+            size,
+            grid: vec![vec![T::default(); size.x].into_boxed_slice(); size.y].into_boxed_slice(),
+        }
+    }
+
+    fn size(&self) -> &GridSize {
+        &self.size
+    }
+
+    fn get(&self, point: &GridPoint) -> &T {
+        &self.grid[point.y][point.x]
+    }
+
+    fn set(&mut self, point: &GridPoint, value: T) {
+        self.grid[point.y][point.x] = value;
     }
 }

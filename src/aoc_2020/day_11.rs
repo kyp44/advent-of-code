@@ -1,7 +1,7 @@
 use crate::aoc::prelude::*;
 use cgmath::{Vector2, Zero};
 use itertools::iproduct;
-use std::{collections::HashSet, fmt::Display, hash::Hash, rc::Rc};
+use std::{collections::HashSet, fmt::Display, hash::Hash, rc::Rc, str::FromStr};
 
 #[cfg(test)]
 mod tests {
@@ -30,7 +30,6 @@ enum Seat {
     Floor,
     Empty,
     Occupied,
-    Outside,
 }
 
 impl From<char> for Seat {
@@ -49,8 +48,13 @@ impl From<&Seat> for char {
             Seat::Floor => '.',
             Seat::Empty => 'L',
             Seat::Occupied => '#',
-            Seat::Outside => 'O',
         }
+    }
+}
+
+impl Default for Seat {
+    fn default() -> Self {
+        Seat::Floor
     }
 }
 
@@ -85,22 +89,31 @@ impl Part {
 
     /// Number of occupied seats for a given seat according to the rules for each part
     fn point_occupied(&self, area: &Area, point: &GridPoint) -> u8 {
+        let area = &area.area;
         match self {
             Part::PartA => area
                 .neighbor_points(point, true, false)
-                .filter_count(|point| area.get(point) == Seat::Occupied),
+                .filter_count(|point| *area.get(point) == Seat::Occupied),
             Part::PartB => iproduct!(-1isize..=1, -1isize..=1)
                 .map(|(dx, dy)| Vector2::new(dx, dy))
                 .filter(|dp| *dp != Vector2::zero())
                 .filter_count(|dp| {
                     let mut i = 1;
                     loop {
-                        match area.get(&(point + i * dp)) {
-                            Seat::Occupied => break true,
-                            Seat::Empty => break false,
-                            Seat::Outside => break false,
-                            Seat::Floor => (),
+                        let point = Vector2::<isize>::new(
+                            point.x.try_into().unwrap(),
+                            point.y.try_into().unwrap(),
+                        );
+
+                        match area.valid_point(&(point + i * dp)) {
+                            Some(p) => match area.get(&p) {
+                                Seat::Occupied => break true,
+                                Seat::Empty => break false,
+                                Seat::Floor => (),
+                            },
+                            None => break false,
                         }
+
                         i += 1;
                     }
                 }),
@@ -108,38 +121,29 @@ impl Part {
     }
 }
 
-#[derive(Clone, Hash, PartialEq, Eq, CharGridDebug)]
+//TODO
+#[derive(Clone, Hash, PartialEq, Eq, new)]
 struct Area {
     part: Part,
-    size: (usize, usize),
-    data: Box<[Box<[Seat]>]>,
+    area: BasicGrid<Seat>,
 }
-impl Grid for Area {
-    type Element = Seat;
-
-    fn size(&self) -> (usize, usize) {
-        self.size
-    }
-
-    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
-        &mut self.data[point.1][point.0]
-    }
-}
-impl CharGrid for Area {
-    fn default(size: (usize, usize)) -> Self {
-        Self {
-            part: Part::PartA,
-            size,
-            data: vec![vec![Seat::Floor; size.0].into_boxed_slice(); size.1].into_boxed_slice(),
-        }
-    }
-
-    fn from_char(c: char) -> Option<Self::Element> {
+impl CharGrid<Seat> for BasicGrid<Seat> {
+    fn from_char(c: char) -> Option<Seat> {
         Some(c.into())
     }
 
-    fn to_char(e: &Self::Element) -> char {
+    fn to_char(e: &Seat) -> char {
         e.into()
+    }
+}
+impl FromStr for Area {
+    type Err = AocError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Area {
+            part: Part::PartA,
+            area: BasicGrid::from_str(s)?,
+        })
     }
 }
 
@@ -169,26 +173,20 @@ impl Evolver<Seat> for Area {
     }*/
 
     fn new(other: &Self) -> Self {
-        let mut area = Area::default(other.size);
-        area.set_part(other.part);
-        area
+        Area::new(other.part, BasicGrid::default(*other.area.size()))
     }
 
-    fn get(&self, point: &Self::Point) -> Seat {
-        match self.point_usize(point) {
-            None => Seat::Outside,
-            Some(p) => self.data[p.y][p.x],
-        }
+    fn get_element(&self, point: &Self::Point) -> Seat {
+        *self.area.get(point)
     }
 
-    fn set(&mut self, point: &Self::Point, value: Seat) {
-        let point = self.point_usize(point).unwrap();
-        self.data[point.y][point.x] = value;
+    fn set_element(&mut self, point: &Self::Point, value: Seat) {
+        self.area.set(point, value)
     }
 
     fn next_cell(&self, point: &Self::Point) -> Seat {
         let occupied = self.part.point_occupied(self, point);
-        let orig = self.get(point);
+        let orig = self.get_element(point);
         match orig {
             Seat::Empty => {
                 if occupied == 0 {
@@ -209,7 +207,7 @@ impl Evolver<Seat> for Area {
     }
 
     fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
-        self.all_points()
+        self.area.all_points()
     }
 }
 
@@ -220,7 +218,7 @@ impl Area {
 
     fn occupied(&self) -> u64 {
         self.next_iter()
-            .filter_count(|point| matches!(self.get(point), Seat::Occupied))
+            .filter_count(|point| matches!(self.get_element(point), Seat::Occupied))
     }
 
     fn simulate(&self) -> SimulationStatus<Rc<Self>> {

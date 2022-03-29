@@ -19,47 +19,6 @@ mod tests {
 
 type DimensionRange = RangeInclusive<i32>;
 
-#[derive(CharGridDebug)]
-struct Slice2D {
-    size: (usize, usize),
-    data: Box<[Box<[bool]>]>,
-}
-impl Grid for Slice2D {
-    type Element = bool;
-
-    fn size(&self) -> (usize, usize) {
-        self.size
-    }
-
-    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
-        &mut self.data[point.1][point.0]
-    }
-}
-impl CharGrid for Slice2D {
-    fn default(size: (usize, usize)) -> Self {
-        Self {
-            size,
-            data: vec![vec![false; size.0].into_boxed_slice()].into_boxed_slice(),
-        }
-    }
-
-    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
-        match c {
-            '#' => Some(true),
-            '.' => Some(false),
-            _ => None,
-        }
-    }
-
-    fn to_char(e: &<Self as Grid>::Element) -> char {
-        if *e {
-            '#'
-        } else {
-            '.'
-        }
-    }
-}
-
 #[derive(Clone)]
 struct Dimension {
     dimensions: usize,
@@ -74,7 +33,7 @@ impl Debug for Dimension {
                 .map(|i| ranges[i].clone())
                 .multi_cartesian_product()
             {
-                let slice = Slice2D::from_coordinates(
+                let slice = BasicGrid::<bool>::from_coordinates(
                     &self
                         .active_cubes
                         .iter()
@@ -92,14 +51,14 @@ impl Debug for Dimension {
                         .map(|(i, v)| format!("x{} = {}", i + 3, v))
                         .join(", ")
                 )?;
-                slice.fmt(f)?;
+                slice.out_fmt(f)?;
             }
         } else {
-            let slice = Slice2D::from_coordinates(
+            let slice = BasicGrid::<bool>::from_coordinates(
                 &self.active_cubes.iter().map(|v| (v[0], v[1])).collect(),
             )
             .unwrap();
-            slice.fmt(f)?;
+            slice.out_fmt(f)?;
         }
 
         Ok(())
@@ -114,7 +73,7 @@ impl Dimension {
         }
         Ok(Dimension {
             dimensions,
-            active_cubes: Slice2D::from_str(s)?
+            active_cubes: BasicGrid::<bool>::from_str(s)?
                 .to_coordinates()
                 .iter()
                 .map(|(x, y)| {
@@ -160,12 +119,12 @@ impl Evolver<bool> for Dimension {
         }
     }
 
-    fn get(&self, point: &Self::Point) -> bool {
+    fn get_element(&self, point: &Self::Point) -> bool {
         self.verify_point(point);
         self.active_cubes.contains(point)
     }
 
-    fn set(&mut self, point: &Self::Point, value: bool) {
+    fn set_element(&mut self, point: &Self::Point, value: bool) {
         self.verify_point(point);
         if value {
             self.active_cubes.insert(point.clone());
@@ -182,9 +141,9 @@ impl Evolver<bool> for Dimension {
                 (v - 1)..=(v + 1)
             })
             .multi_cartesian_product()
-            .filter_count(|pt| pt != point && self.get(pt));
+            .filter_count(|pt| pt != point && self.get_element(pt));
 
-        (self.get(point) && neighbors == 2) || neighbors == 3
+        (self.get_element(point) && neighbors == 2) || neighbors == 3
     }
 
     fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {

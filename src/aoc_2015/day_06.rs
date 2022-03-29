@@ -142,13 +142,13 @@ impl Part for u8 {
 #[derive(CharGridDebug)]
 #[generics(bool)]
 struct LightGrid<T> {
-    size: (usize, usize),
+    size: GridSize,
     grid: Box<[Box<[T]>]>,
 }
 impl<T: Clone + Part> LightGrid<T> {
     fn new(size: usize) -> Self {
         LightGrid {
-            size: (size, size),
+            size: GridSize::new(size, size),
             grid: vec![vec![T::initial(); size].into_boxed_slice(); size].into_boxed_slice(),
         }
     }
@@ -170,26 +170,28 @@ impl LightGrid<bool> {
             .filter_count(|b| **b)
     }
 }
-impl Grid for LightGrid<bool> {
-    type Element = bool;
-
-    fn size(&self) -> (usize, usize) {
-        self.size
-    }
-
-    fn element_at(&mut self, point: &GridPoint) -> &mut Self::Element {
-        &mut self.grid[point.1][point.0]
-    }
-}
-impl CharGrid for LightGrid<bool> {
-    fn default(size: (usize, usize)) -> Self {
+impl<T: Default + Clone> Grid<T> for LightGrid<T> {
+    fn default(size: GridSize) -> Self {
         Self {
             size,
-            grid: vec![vec![false; size.0].into_boxed_slice()].into_boxed_slice(),
+            grid: vec![vec![T::default(); size.x].into_boxed_slice(); size.y].into_boxed_slice(),
         }
     }
 
-    fn from_char(c: char) -> Option<<Self as Grid>::Element> {
+    fn size(&self) -> &GridSize {
+        &self.size
+    }
+
+    fn get(&self, point: &GridPoint) -> &T {
+        &self.grid[point.y][point.x]
+    }
+
+    fn set(&mut self, point: &GridPoint, value: T) {
+        self.grid[point.y][point.x] = value;
+    }
+}
+impl CharGrid<bool> for LightGrid<bool> {
+    fn from_char(c: char) -> Option<bool> {
         match c {
             '#' => Some(true),
             '.' => Some(false),
@@ -197,7 +199,7 @@ impl CharGrid for LightGrid<bool> {
         }
     }
 
-    fn to_char(e: &<Self as Grid>::Element) -> char {
+    fn to_char(e: &bool) -> char {
         if *e {
             '#'
         } else {
