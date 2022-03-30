@@ -5,11 +5,13 @@ use cgmath::Vector2;
 use itertools::{iproduct, Itertools};
 use num::Integer;
 
-/// Specifies elements of a CharGrid
+/// Specifies elements of a Grid
 pub type GridPoint = Vector2<usize>;
+/// Specifies sizes of a Grid
 pub type GridSize = Vector2<usize>;
 
-/// A data structed that can be represented as a 2D grid of elements
+/// A data structure that can be represented as a 2D grid of elements
+/// To add this trait automatically to structs, use the grid_fields attrbute macro and the Grid derive macro.
 pub trait Grid<E>: Sized {
     /// Default grid of a certain size
     fn default(size: GridSize) -> Self;
@@ -52,6 +54,11 @@ pub trait Grid<E>: Sized {
         Box::new(iproduct!(0..size.y, 0..size.x).map(|(y, x)| GridPoint::new(x, y)))
     }
 
+    /// Iterate over all values
+    fn all_values(&self) -> Box<dyn Iterator<Item = &E>> {
+        Box::new(self.all_points().map(|p| self.get(p)))
+    }
+
     /// Iterator over neighbors point
     fn neighbor_points<'a>(
         &'a self,
@@ -79,6 +86,29 @@ pub trait Grid<E>: Sized {
                 }
             }),
         )
+    }
+}
+
+/// For types that have a grid component
+trait HasGrid<E> {
+    fn grid_ref(&self) -> &BasicGrid<E>;
+    fn grid_ref_mut(&mut self) -> &mut BasicGrid<E>;
+}
+impl<E, G: HasGrid<E>> Grid<E> for G {
+    fn default(size: GridSize) -> Self {
+        todo!()
+    }
+
+    fn size(&self) -> &GridSize {
+        self.grid_ref().size()
+    }
+
+    fn get(&self, point: &GridPoint) -> &E {
+        self.grid_ref().get(point)
+    }
+
+    fn set(&mut self, point: &GridPoint, value: E) {
+        self.grid_ref_mut().set(point, value)
     }
 }
 
@@ -223,31 +253,5 @@ impl<C: CharGrid<bool>> CharGridCoordinates for C {
             }
         }
         Self::from_data((width, height), data)*/
-    }
-}
-
-#[derive(Clone, Hash, PartialEq, Eq)]
-pub struct BasicGrid<T> {
-    size: GridSize,
-    grid: Box<[Box<[T]>]>,
-}
-impl<T: Default + Clone> Grid<T> for BasicGrid<T> {
-    fn default(size: GridSize) -> Self {
-        Self {
-            size,
-            grid: vec![vec![T::default(); size.x].into_boxed_slice(); size.y].into_boxed_slice(),
-        }
-    }
-
-    fn size(&self) -> &GridSize {
-        &self.size
-    }
-
-    fn get(&self, point: &GridPoint) -> &T {
-        &self.grid[point.y][point.x]
-    }
-
-    fn set(&mut self, point: &GridPoint, value: T) {
-        self.grid[point.y][point.x] = value;
     }
 }

@@ -142,14 +142,12 @@ impl Part for u8 {
 #[derive(CharGridDebug)]
 #[generics(bool)]
 struct LightGrid<T> {
-    size: GridSize,
-    grid: Box<[Box<[T]>]>,
+    grid: BasicGrid<T>,
 }
 impl<T: Clone + Part> LightGrid<T> {
     fn new(size: usize) -> Self {
         LightGrid {
-            size: GridSize::new(size, size),
-            grid: vec![vec![T::initial(); size].into_boxed_slice(); size].into_boxed_slice(),
+            grid: BasicGrid::default(GridSize::new(size, size)),
         }
     }
 }
@@ -157,40 +155,17 @@ impl<T: Part> LightGrid<T> {
     fn execute_instruction(&mut self, instructions: &[Instruction]) {
         for inst in instructions {
             for point in inst.rect.iter() {
-                self.grid[point.y][point.x].update(&inst.action);
+                self.grid.element_at(&point).update(&inst.action);
             }
         }
     }
 }
 impl LightGrid<bool> {
     fn number_lit(&self) -> usize {
-        self.grid
-            .iter()
-            .flat_map(|row| row.iter())
-            .filter_count(|b| **b)
+        self.grid.all_values().filter_count(|b| **b)
     }
 }
-impl<T: Default + Clone> Grid<T> for LightGrid<T> {
-    fn default(size: GridSize) -> Self {
-        Self {
-            size,
-            grid: vec![vec![T::default(); size.x].into_boxed_slice(); size.y].into_boxed_slice(),
-        }
-    }
-
-    fn size(&self) -> &GridSize {
-        &self.size
-    }
-
-    fn get(&self, point: &GridPoint) -> &T {
-        &self.grid[point.y][point.x]
-    }
-
-    fn set(&mut self, point: &GridPoint, value: T) {
-        self.grid[point.y][point.x] = value;
-    }
-}
-impl CharGrid<bool> for LightGrid<bool> {
+impl CharGrid<bool> for BasicGrid<bool> {
     fn from_char(c: char) -> Option<bool> {
         match c {
             '#' => Some(true),
@@ -211,8 +186,7 @@ impl CharGrid<bool> for LightGrid<bool> {
 impl LightGrid<u8> {
     fn total_brightness(&self) -> u64 {
         self.grid
-            .iter()
-            .flat_map(|row| row.iter())
+            .all_values()
             .copied()
             .map::<u64, _>(|v| v.into())
             .sum()
@@ -230,6 +204,7 @@ pub const SOLUTION: Solution = Solution {
             light_grid.execute_instruction(&Instruction::gather(input.lines())?);
 
             // Print the grid just to see what it is
+            // TODO: make sure this works
             //println!("{:?}", light_grid);
 
             // Process

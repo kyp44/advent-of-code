@@ -1,7 +1,3 @@
-use std::collections::HashSet;
-
-use itertools::iproduct;
-
 use crate::aoc::prelude::*;
 
 #[cfg(test)]
@@ -30,6 +26,13 @@ mod tests {
 5283751526",
     vec![1656u64].answer_vec()
     }
+}
+
+#[grid_fields(u16)]
+#[derive(Grid)]
+struct Test {
+    x: u8,
+    y: bool,
 }
 
 /*type Point = (usize, usize);
