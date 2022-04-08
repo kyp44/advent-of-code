@@ -142,12 +142,12 @@ impl Part for u8 {
 #[derive(CharGridDebug)]
 #[generics(bool)]
 struct LightGrid<T> {
-    grid: BasicGrid<T>,
+    grid: Grid<T>,
 }
-impl<T: Clone + Part> LightGrid<T> {
+impl<T: Clone + Part + Default> LightGrid<T> {
     fn new(size: usize) -> Self {
         LightGrid {
-            grid: BasicGrid::default(GridSize::new(size, size)),
+            grid: Grid::default(GridSize::new(size, size)),
         }
     }
 }
@@ -165,7 +165,11 @@ impl LightGrid<bool> {
         self.grid.all_values().filter_count(|b| **b)
     }
 }
-impl CharGrid<bool> for BasicGrid<bool> {
+impl CharGrid<bool> for LightGrid<bool> {
+    fn get_grid(&self) -> &Grid<bool> {
+        &self.grid
+    }
+
     fn from_char(c: char) -> Option<bool> {
         match c {
             '#' => Some(true),
@@ -204,7 +208,6 @@ pub const SOLUTION: Solution = Solution {
             light_grid.execute_instruction(&Instruction::gather(input.lines())?);
 
             // Print the grid just to see what it is
-            // TODO: make sure this works
             //println!("{:?}", light_grid);
 
             // Process

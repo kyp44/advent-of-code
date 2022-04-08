@@ -1,7 +1,8 @@
-use std::marker::PhantomData;
+use std::{collections::HashSet, marker::PhantomData, str::FromStr};
+
+use maplit::hashset;
 
 use crate::aoc::prelude::*;
-use cgmath::Vector2;
 
 #[cfg(test)]
 mod tests {
@@ -22,8 +23,9 @@ mod tests {
 }
 
 trait Part {
-    fn stuck(_size: &(isize, isize), _point: &Vector2<isize>) -> bool {
-        false
+    fn stuck_points(_grid: &Grid<bool>) -> HashSet<GridPoint> {
+        // No stuck points by default
+        HashSet::new()
     }
 }
 #[derive(Clone)]
@@ -32,38 +34,22 @@ impl Part for PartA {}
 #[derive(Clone)]
 struct PartB;
 impl Part for PartB {
-    fn stuck(size: &(isize, isize), point: &Vector2<isize>) -> bool {
-        (point.x == 0 || point.x == size.0 - 1) && (point.y == 0 || point.y == size.1 - 1)
+    fn stuck_points(grid: &Grid<bool>) -> HashSet<GridPoint> {
+        let size = grid.size();
+        hashset![
+            GridPoint::new(0, 0),
+            GridPoint::new(size.x - 1, 0),
+            GridPoint::new(0, size.y - 1),
+            GridPoint::new(size.x - 1, size.y - 1),
+        ]
     }
 }
 
 #[derive(Clone, CharGridDebug)]
 #[generics(PartB)]
 struct LightGrid<P> {
-    size: GridSize,
-    data: Box<[Box<[bool]>]>,
+    grid: Grid<bool>,
     phant: PhantomData<P>,
-}
-impl<P: Part> Grid<bool> for LightGrid<P> {
-    fn default(size: GridSize) -> Self {
-        Self {
-            size,
-            data: vec![vec![false; size.x].into_boxed_slice(); size.y].into_boxed_slice(),
-            phant: PhantomData {},
-        }
-    }
-
-    fn size(&self) -> &GridSize {
-        &self.size
-    }
-
-    fn get(&self, point: &GridPoint) -> &bool {
-        &self.data[point.y][point.x]
-    }
-
-    fn set(&mut self, point: &GridPoint, value: bool) {
-        self.data[point.y][point.x] = value;
-    }
 }
 impl<P: Part> CharGrid<bool> for LightGrid<P> {
     fn from_char(c: char) -> Option<bool> {
@@ -82,45 +68,50 @@ impl<P: Part> CharGrid<bool> for LightGrid<P> {
         }
     }
 
-    /*
-    TODO need to put this somewhere, GOD DAMMIT
-    fn from_data(size: (usize, usize), data: Box<[Box<[Self::Element]>]>) -> AocResult<Self>
-    where
-        Self: Sized,
-    {
-        let mut grid = LightGrid {
-            size: (size.0.try_into().unwrap(), size.1.try_into().unwrap()),
-            data,
-            phant: PhantomData {},
-        };
+    fn get_grid(&self) -> &Grid<bool> {
+        &self.grid
+    }
+}
+impl<P: Part> FromStr for LightGrid<P> {
+    type Err = AocError;
 
-        // Turn stuck lights on
-        for point in grid.next_iter() {
-            if P::stuck(&grid.size, &point) {
-                let up = grid.point_usize(&point).unwrap();
-                grid.data[up.y][up.x] = true;
-            }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut grid = Self::grid_from_str(s)?;
+        for point in P::stuck_points(&grid) {
+            grid.set(&point, true);
         }
-        Ok(grid)
-    }*/
+        Ok(Self {
+            grid,
+            phant: PhantomData {},
+        })
+    }
 }
 impl<P: Part> Evolver<bool> for LightGrid<P> {
     type Point = GridPoint;
 
     fn new(other: &Self) -> Self {
-        Self::default(other.size)
+        Self {
+            grid: Grid::default(*other.grid.size()),
+            phant: PhantomData {},
+        }
     }
 
     fn get_element(&self, point: &Self::Point) -> bool {
-        *self.get(point)
+        *self.grid.get(point)
     }
 
     fn set_element(&mut self, point: &Self::Point, value: bool) {
-        self.set(point, value)
+        self.grid.set(point, value)
     }
 
     fn next_cell(&self, point: &Self::Point) -> bool {
-        let occupied: usize = self.neighbor_points(point, true, false).count();
+        if P::stuck_points(&self.grid).contains(point) {
+            return true;
+        }
+        let occupied: usize = self
+            .grid
+            .neighbor_points(point, true, false)
+            .filter_count(|p| self.get_element(p));
         if self.get_element(point) {
             occupied == 2 || occupied == 3
         } else {
@@ -129,12 +120,12 @@ impl<P: Part> Evolver<bool> for LightGrid<P> {
     }
 
     fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
-        self.all_points()
+        Box::new(self.grid.all_points())
     }
 }
 impl<P: Part> LightGrid<P> {
     fn lights_on(&self) -> u64 {
-        self.next_iter().filter_count(|point| *self.get(point))
+        self.next_iter().filter_count(|point| *self.grid.get(point))
     }
 }
 

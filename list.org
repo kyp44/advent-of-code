@@ -1,5 +1,7 @@
-* TODO src/aoc_2015/day_06.rs
-* TODO src/aoc_2015/day_18.rs
+* DONE src/aoc_2015/day_06.rs
+  CLOSED: [2022-04-08 Fri 16:49]
+* DONE src/aoc_2015/day_18.rs
+  CLOSED: [2022-04-08 Fri 17:40]
 * TODO src/aoc_2020/day_03.rs
 * TODO src/aoc_2020/day_11.rs
 * TODO src/aoc_2020/day_17.rs

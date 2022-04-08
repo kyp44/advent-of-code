@@ -17,15 +17,13 @@ pub mod parse;
 /// Prelude
 pub mod prelude {
     pub use super::{
-        char_add, evolver::Evolver, grid::CharGrid, grid::CharGridCoordinates, grid::Grid,
+        char_add, evolver::Evolver, grid::CharGrid, grid::GridCoordinates, grid::Grid,
         grid::GridPoint, grid::GridSize, iter::FilterCount, iter::HasNoneIter, iter::HasRange,
         iter::IndividualReplacements, iter::SplitRuns, parse::DiscardInput, parse::NomParseError,
         parse::NomParseResult, parse::Parseable, parse::Sections, Answer, AnswerVec, AocError,
         AocResult, HasLen, Solution, YearSolutions,
     };
-    pub use aoc_derive::grid_fields;
     pub use aoc_derive::CharGridDebug;
-    pub use aoc_derive::Grid;
 }
 
 /// Custom error type for AoC problem functions.

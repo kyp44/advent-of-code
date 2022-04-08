@@ -10,30 +10,106 @@ pub type GridPoint = Vector2<usize>;
 /// Specifies sizes of a Grid
 pub type GridSize = Vector2<usize>;
 
-/// A data structure that can be represented as a 2D grid of elements
-/// To add this trait automatically to structs, use the grid_fields attrbute macro and the Grid derive macro.
-pub trait Grid<E>: Sized {
-    /// Default grid of a certain size
-    fn default(size: GridSize) -> Self;
+/// A grid of arbitrary data
+#[derive(Clone)]
+pub struct Grid<T> {
+    size: GridSize,
+    data: Box<[Box<[T]>]>,
+}
+impl<T: Default + Clone> Grid<T> {
+    pub fn default(size: GridSize) -> Self {
+        Self {
+            size,
+            data: vec![vec![T::default(); size.x].into_boxed_slice(); size.y].into_boxed_slice(),
+        }
+    }
+}
 
+impl<T> Grid<T> {
     /// Size of the grid
-    fn size(&self) -> &GridSize;
+    pub fn size(&self) -> &GridSize {
+        &self.size
+    }
 
     /// Get element at a point
-    fn get(&self, point: &GridPoint) -> &E;
+    pub fn get(&self, point: &GridPoint) -> &T {
+        &self.data[point.y][point.x]
+    }
 
     /// Set element at a point
-    fn set(&mut self, point: &GridPoint, value: E);
+    pub fn set(&mut self, point: &GridPoint, value: T) {
+        *self.element_at(point) = value;
+    }
+
+    /// Get mut reference to an element
+    pub fn element_at(&mut self, point: &GridPoint) -> &mut T {
+        &mut self.data[point.y][point.x]
+    }
 
     /// Create from data
-    fn from_data(data: impl Iterator<Item = impl Iterator<Item = E>>) -> Self {
-        // TODO
-        let mut grid = Self::default(GridSize::new(1, 1));
-        grid
+    //TODO we can probably get rid of this
+    /*
+    pub fn from_iters(data: impl Iterator<Item = impl Iterator<Item = T>>) -> AocResult<Self> {
+        let data: Box<[Box<[T]>]> = data.map(|row| row.collect()).collect();
+
+        // Verify that we have at least one row
+        let height = data.len();
+        if height < 1 {
+            return Err(AocError::InvalidInput("The grid has no content!".into()));
+        }
+
+        // Verify that all the row widths are the same
+        let width = data[0].len();
+        for row in data.iter() {
+            if row.len() != width {
+                return Err(AocError::InvalidInput(
+                    format!(
+                        "Grid row has a length of {} instead of the expected {}",
+                        row.len(),
+                        width
+                    )
+                    .into(),
+                ));
+            }
+        }
+
+        Ok(Self {
+            size: GridSize::new(width, height),
+            data,
+        })
+    }*/
+
+    /// From data with verification
+    pub fn from_data(data: Box<[Box<[T]>]>) -> AocResult<Self> {
+        // Verify that we have at least one row
+        let height = data.len();
+        if height < 1 {
+            return Err(AocError::InvalidInput("The grid has no content!".into()));
+        }
+
+        // Verify that all the row widths are the same
+        let width = data[0].len();
+        for row in data.iter() {
+            if row.len() != width {
+                return Err(AocError::InvalidInput(
+                    format!(
+                        "Grid row has a length of {} instead of the expected {}",
+                        row.len(),
+                        width
+                    )
+                    .into(),
+                ));
+            }
+        }
+
+        Ok(Self {
+            size: GridSize::new(width, height),
+            data,
+        })
     }
 
     /// Validate and convert signed point to unsigned
-    fn valid_point(&self, point: &Vector2<isize>) -> Option<GridPoint> {
+    pub fn valid_point(&self, point: &Vector2<isize>) -> Option<GridPoint> {
         if point.x >= 0 && point.y >= 0 {
             let x = point.x.try_into().unwrap();
             let y = point.y.try_into().unwrap();
@@ -49,103 +125,75 @@ pub trait Grid<E>: Sized {
     }
 
     /// Iterate over all points
-    fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>> {
+    pub fn all_points(&self) -> impl Iterator<Item = GridPoint> {
         let size = self.size();
         Box::new(iproduct!(0..size.y, 0..size.x).map(|(y, x)| GridPoint::new(x, y)))
     }
 
     /// Iterate over all values
-    fn all_values(&self) -> Box<dyn Iterator<Item = &E>> {
-        Box::new(self.all_points().map(|p| self.get(p)))
+    pub fn all_values(&self) -> impl Iterator<Item = &T> {
+        Box::new(self.all_points().map(|p| self.get(&p)))
     }
 
     /// Iterator over neighbors point
-    fn neighbor_points<'a>(
+    pub fn neighbor_points<'a>(
         &'a self,
         point: &'a GridPoint,
         include_diagonals: bool,
         include_self: bool,
-    ) -> Box<dyn Iterator<Item = GridPoint> + 'a> {
-        Box::new(
-            iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
-                // TODO
-                let npoint = self.valid_point(&Vector2::new(
-                    isize::try_from(point.x).unwrap() + dx,
-                    isize::try_from(point.y).unwrap() + dy,
-                ));
-                if dx == 0 && dy == 0 {
-                    if include_self {
-                        npoint
-                    } else {
-                        None
-                    }
-                } else if !include_diagonals && (dx + dy).abs() != 1 {
-                    None
-                } else {
+    ) -> impl Iterator<Item = GridPoint> + 'a {
+        iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
+            let npoint = self.valid_point(&Vector2::new(
+                isize::try_from(point.x).unwrap() + dx,
+                isize::try_from(point.y).unwrap() + dy,
+            ));
+            if dx == 0 && dy == 0 {
+                if include_self {
                     npoint
+                } else {
+                    None
                 }
-            }),
-        )
-    }
-}
-
-/// For types that have a grid component
-trait HasGrid<E> {
-    fn grid_ref(&self) -> &BasicGrid<E>;
-    fn grid_ref_mut(&mut self) -> &mut BasicGrid<E>;
-}
-impl<E, G: HasGrid<E>> Grid<E> for G {
-    fn default(size: GridSize) -> Self {
-        todo!()
-    }
-
-    fn size(&self) -> &GridSize {
-        self.grid_ref().size()
-    }
-
-    fn get(&self, point: &GridPoint) -> &E {
-        self.grid_ref().get(point)
-    }
-
-    fn set(&mut self, point: &GridPoint, value: E) {
-        self.grid_ref_mut().set(point, value)
+            } else if !include_diagonals && (dx + dy).abs() != 1 {
+                None
+            } else {
+                npoint
+            }
+        })
     }
 }
 
 /// A data structure that can be represented by a 2D grid of characters
-pub trait CharGrid<E>: Grid<E> {
+pub trait CharGrid<T> {
     /// Maps the read character to the Element.
-    fn from_char(c: char) -> Option<E>;
+    fn from_char(c: char) -> Option<T>;
 
     /// Maps the Element to a character for display purposes.
-    fn to_char(e: &E) -> char;
+    fn to_char(e: &T) -> char;
+
+    /// Retrieve the Grid
+    fn get_grid(&self) -> &Grid<T>;
 
     /// Formats the structure as a grid of characters.
     fn out_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let size = self.size();
+        let grid = self.get_grid();
+        let size = grid.size();
         writeln!(
             f,
             "{}",
             (0..size.y)
                 .map(|y| (0..size.x)
-                    .map(|x| Self::to_char(&self.get(&GridPoint::new(x, y))))
+                    .map(|x| Self::to_char(grid.get(&GridPoint::new(x, y))))
                     .collect::<String>())
                 .join("\n")
         )
     }
 
     /// Construct from a character grid.
-    fn from_str(s: &str) -> AocResult<Self>
-    where
-        Self: Sized,
-    {
-        todo!()
-        /*
+    fn grid_from_str(s: &str) -> AocResult<Grid<T>> {
         let data = s
             .lines()
             .map(|line| {
-                Ok(line
-                    .chars()
+                line.chars()
                     .map(|c| {
                         Self::from_char(c).ok_or_else(|| {
                             AocError::InvalidInput(
@@ -153,44 +201,18 @@ pub trait CharGrid<E>: Grid<E> {
                             )
                         })
                     })
-                    .collect::<AocResult<Vec<E>>>()?
-                    .into_boxed_slice())
+                    .collect()
             })
-            .collect::<AocResult<Vec<Box<[E]>>>>()?
-            .into_boxed_slice();
-
-        // Verify that all of the rows have the same width
-        let height = data.len();
-        let err = Err(AocError::InvalidInput("The grid has no content!".into()));
-        if height < 1 {
-            return err;
-        }
-        let width = data[0].len();
-        if width < 1 {
-            return err;
-        }
-        for row in data.iter() {
-            if row.len() != width {
-                return Err(AocError::InvalidInput(
-                    format!(
-                        "Grid row has a length of {} instead of the expected {}",
-                        row.len(),
-                        width
-                    )
-                    .into(),
-                ));
-            }
-        }
-
-        Self::from_data((width, height), data)*/
+            .collect::<Result<_, _>>()?;
+        Ok(Grid::from_data(data)?)
     }
 }
 
-/// A boolean CharGrid can be alternatively represented as a set of coordinates.
-pub trait CharGridCoordinates {
+/// A boolean Grid can be alternatively represented as a set of coordinates.
+pub trait GridCoordinates {
     /// Determine the 2D coordinates of the true cells, with the indices
     /// Being the coordinates in the boxed data.
-    fn to_coordinates<N>(&self) -> HashSet<(N, N)>
+    fn to_coordinates<N>(&self) -> HashSet<GridPoint>
     where
         N: TryFrom<usize> + Hash + Eq,
         <N as TryFrom<usize>>::Error: Debug;
@@ -198,7 +220,7 @@ pub trait CharGridCoordinates {
     /// Construct the grid from 2D coordinates of set cells, where the size is
     /// determined from from the min and max coordinates. If the set is empty,
     /// then the grid with be 1x1 with the single cell being unset.
-    fn from_coordinates<N>(points: &HashSet<(N, N)>) -> AocResult<Self>
+    fn from_coordinates<N>(points: &HashSet<GridPoint>) -> AocResult<Self>
     where
         N: Integer + Copy + Clone + TryInto<usize> + TryFrom<usize> + Eq + Hash,
         <N as TryInto<usize>>::Error: Debug,
@@ -206,52 +228,31 @@ pub trait CharGridCoordinates {
         Self: Sized;
 }
 
-impl<C: CharGrid<bool>> CharGridCoordinates for C {
-    fn to_coordinates<N>(&self) -> HashSet<(N, N)>
-    where
-        N: TryFrom<usize> + Hash + Eq,
-        <N as TryFrom<usize>>::Error: Debug,
-    {
-        todo!()
-        /*let data = self.to_data();
-        iproduct!(0..data[0].len(), 0..data.len())
-            .filter(|(x, y)| data[*y][*x])
-            .map(|(x, y)| -> (N, N) { (N::try_from(x).unwrap(), N::try_from(y).unwrap()) })
-            .collect()*/
+impl GridCoordinates for Grid<bool> {
+    fn to_coordinates<N>(&self) -> HashSet<GridPoint> {
+        self.all_points().filter(|p| *self.get(p)).collect()
     }
 
-    fn from_coordinates<N>(points: &HashSet<(N, N)>) -> AocResult<Self>
+    fn from_coordinates<N>(points: &HashSet<GridPoint>) -> AocResult<Self>
     where
         N: Integer + Copy + Clone + TryInto<usize> + TryFrom<usize> + Eq + Hash,
         <N as TryInto<usize>>::Error: Debug,
         <N as TryFrom<usize>>::Error: Debug,
         Self: Sized,
     {
-        todo!()
-        /*
-        let x_range = points.iter().map(|p| p.0).range();
-        let y_range = points.iter().map(|p| p.1).range();
-        let width = match x_range {
-            Some(ref r) => r.len().try_into().unwrap(),
-            None => 1,
-        };
-        let height = match y_range {
-            Some(ref r) => r.len().try_into().unwrap(),
-            None => 1,
-        };
-
-        let mut data = vec![vec![false; width].into_boxed_slice(); height].into_boxed_slice();
-
-        // Set any points
-        if let (Some(xr), Some(yr)) = (x_range, y_range) {
-            for point in iproduct!(0..width, 0..height) {
-                let x = N::try_from(point.0).unwrap() + *xr.start();
-                let y = N::try_from(point.1).unwrap() + *yr.start();
-                if points.contains(&(x, y)) {
-                    data[point.1][point.0] = true;
-                }
-            }
+        let x_range = points.iter().map(|p| p.x).range();
+        let y_range = points.iter().map(|p| p.y).range();
+        if x_range.is_none() || y_range.is_none() {
+            return Err(AocError::InvalidInput(
+                "Cannot create grid because no coordinates were passed".into(),
+            ));
         }
-        Self::from_data((width, height), data)*/
+        let size = GridSize::new(x_range.unwrap().len(), y_range.unwrap().len());
+        let mut grid = Self::default(size);
+
+        for point in points {
+            grid.set(point, true);
+        }
+        Ok(grid)
     }
 }

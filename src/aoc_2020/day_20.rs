@@ -157,28 +157,7 @@ enum Transform {
 
 #[derive(Clone, CharGridDebug)]
 struct Image {
-    size: GridSize,
-    pixels: Box<[Box<[bool]>]>,
-}
-impl Grid<bool> for Image {
-    fn default(size: GridSize) -> Self {
-        Self {
-            size,
-            pixels: vec![vec![false; size.x].into_boxed_slice(); size.y].into_boxed_slice(),
-        }
-    }
-
-    fn size(&self) -> &GridSize {
-        &self.size
-    }
-
-    fn get(&self, point: &GridPoint) -> &bool {
-        &self.pixels[point.y][point.x]
-    }
-
-    fn set(&mut self, point: &GridPoint, value: bool) {
-        self.pixels[point.y][point.x] = value;
-    }
+    pixels: Grid<bool>,
 }
 impl CharGrid<bool> for Image {
     fn from_char(c: char) -> Option<bool> {

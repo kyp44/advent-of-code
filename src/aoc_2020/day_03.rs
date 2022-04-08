@@ -25,7 +25,11 @@ mod tests {
     }
 }
 
-impl CharGrid<bool> for BasicGrid<bool> {
+struct Map {
+    grid: Grid<bool>,
+}
+
+impl CharGrid<bool> for Map {
     fn from_char(c: char) -> Option<bool> {
         match c {
             '#' => Some(true),
@@ -43,15 +47,15 @@ impl CharGrid<bool> for BasicGrid<bool> {
     }
 }
 
-impl BasicGrid<bool> {
+impl Map {
     fn is_tree(&self, point: &GridPoint) -> bool {
-        *self.get(point)
+        *self.grid.get(point)
     }
 }
 
 #[derive(new)]
 struct MapDownhill<'a> {
-    map: &'a BasicGrid<bool>,
+    map: &'a Map,
     slope: GridPoint,
     #[new(value = "GridPoint::zero()")]
     point: GridPoint,
@@ -76,7 +80,7 @@ impl Iterator for MapDownhill<'_> {
     }
 }
 
-fn count_slope(map: &BasicGrid<bool>, slope: GridPoint) -> u64 {
+fn count_slope(map: &Grid<bool>, slope: GridPoint) -> u64 {
     MapDownhill::new(map, slope).filter_count(|t| *t)
 }
 
@@ -87,7 +91,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let map = BasicGrid::from_str(input)?;
+            let map = Grid::from_str(input)?;
 
             // Process
             Ok(count_slope(&map, GridPoint::new(3, 1)).into())
@@ -95,7 +99,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let map = BasicGrid::from_str(input)?;
+            let map = Grid::from_str(input)?;
 
             // Process
             let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];

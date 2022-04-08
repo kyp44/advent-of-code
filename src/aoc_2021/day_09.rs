@@ -23,28 +23,7 @@ mod tests {
 
 #[derive(CharGridDebug)]
 struct FloorMap {
-    size: GridSize,
-    map: Box<[Box<[u8]>]>,
-}
-impl Grid<u8> for FloorMap {
-    fn default(size: GridSize) -> Self {
-        Self {
-            size,
-            map: vec![vec![0; size.x].into_boxed_slice(); size.y].into_boxed_slice(),
-        }
-    }
-
-    fn size(&self) -> &GridSize {
-        &self.size
-    }
-
-    fn get(&self, point: &GridPoint) -> &u8 {
-        &self.map[point.y][point.x]
-    }
-
-    fn set(&mut self, point: &GridPoint, value: u8) {
-        self.map[point.y][point.x] = value;
-    }
+    map: Grid<u8>,
 }
 impl CharGrid<u8> for FloorMap {
     fn from_char(c: char) -> Option<u8> {

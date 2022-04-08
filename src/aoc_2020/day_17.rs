@@ -33,12 +33,12 @@ impl Debug for Dimension {
                 .map(|i| ranges[i].clone())
                 .multi_cartesian_product()
             {
-                let slice = BasicGrid::<bool>::from_coordinates(
+                let slice = Grid::<bool>::from_coordinates(
                     &self
                         .active_cubes
                         .iter()
                         .filter(|pt| pt[2..] == coords)
-                        .map(|v| (v[0], v[1]))
+                        .map(|v| GridPoint::new(v[0].try_into().unwrap(), v[1].try_into().unwrap()))
                         .collect(),
                 )
                 .unwrap();
@@ -54,7 +54,7 @@ impl Debug for Dimension {
                 slice.out_fmt(f)?;
             }
         } else {
-            let slice = BasicGrid::<bool>::from_coordinates(
+            let slice = Grid::<bool>::from_coordinates(
                 &self.active_cubes.iter().map(|v| (v[0], v[1])).collect(),
             )
             .unwrap();
@@ -73,7 +73,7 @@ impl Dimension {
         }
         Ok(Dimension {
             dimensions,
-            active_cubes: BasicGrid::<bool>::from_str(s)?
+            active_cubes: Grid::<bool>::from_str(s)?
                 .to_coordinates()
                 .iter()
                 .map(|(x, y)| {
@@ -166,10 +166,11 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let dimension = Dimension::from_str(3, input)?;
 
-            /*println!("{:?}", dimension);
+            // TODO comment back out prolly
+            println!("{:?}", dimension);
             for dim in dimension.evolutions().take(5) {
                 println!("{:?}", dim);
-            }*/
+            }
 
             // Process
             Ok(dimension.evolutions().nth(5).unwrap().count_active().into())
@@ -179,10 +180,11 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let dimension = Dimension::from_str(4, input)?;
 
-            /*println!("{:?}", dimension);
+            // TODO comment back out prolly
+            println!("{:?}", dimension);
             for dim in dimension.evolutions().take(5) {
                 println!("{:?}", dim);
-            }*/
+            }
 
             // Process
             Ok(dimension.evolutions().nth(5).unwrap().count_active().into())

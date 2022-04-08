@@ -125,9 +125,9 @@ impl Part {
 #[derive(Clone, Hash, PartialEq, Eq, new)]
 struct Area {
     part: Part,
-    area: BasicGrid<Seat>,
+    area: Grid<Seat>,
 }
-impl CharGrid<Seat> for BasicGrid<Seat> {
+impl CharGrid<Seat> for Grid<Seat> {
     fn from_char(c: char) -> Option<Seat> {
         Some(c.into())
     }
@@ -142,7 +142,7 @@ impl FromStr for Area {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Area {
             part: Part::PartA,
-            area: BasicGrid::from_str(s)?,
+            area: Grid::from_str(s)?,
         })
     }
 }
@@ -173,7 +173,7 @@ impl Evolver<Seat> for Area {
     }*/
 
     fn new(other: &Self) -> Self {
-        Area::new(other.part, BasicGrid::default(*other.area.size()))
+        Area::new(other.part, Grid::default(*other.area.size()))
     }
 
     fn get_element(&self, point: &Self::Point) -> Seat {

@@ -28,13 +28,6 @@ mod tests {
     }
 }
 
-#[grid_fields(u16)]
-#[derive(Grid)]
-struct Test {
-    x: u8,
-    y: bool,
-}
-
 /*type Point = (usize, usize);
 
 #[derive(CharGridDebug, Clone)]
