@@ -1,9 +1,8 @@
-use std::{cmp::Eq, collections::HashSet, fmt::Debug, hash::Hash};
+use std::{cmp::Eq, collections::HashSet, hash::Hash};
 
 use super::prelude::*;
 use cgmath::Vector2;
 use itertools::{iproduct, Itertools};
-use num::Integer;
 
 /// Specifies elements of a Grid
 pub type GridPoint = Vector2<usize>;
@@ -11,7 +10,7 @@ pub type GridPoint = Vector2<usize>;
 pub type GridSize = Vector2<usize>;
 
 /// A grid of arbitrary data
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Grid<T> {
     size: GridSize,
     data: Box<[Box<[T]>]>,
@@ -212,46 +211,37 @@ pub trait CharGrid<T> {
 pub trait GridCoordinates {
     /// Determine the 2D coordinates of the true cells, with the indices
     /// Being the coordinates in the boxed data.
-    fn to_coordinates<N>(&self) -> HashSet<GridPoint>
-    where
-        N: TryFrom<usize> + Hash + Eq,
-        <N as TryFrom<usize>>::Error: Debug;
+    fn to_coordinates(&self) -> HashSet<GridPoint>;
 
     /// Construct the grid from 2D coordinates of set cells, where the size is
     /// determined from from the min and max coordinates. If the set is empty,
     /// then the grid with be 1x1 with the single cell being unset.
-    fn from_coordinates<N>(points: &HashSet<GridPoint>) -> AocResult<Self>
+    fn from_coordinates(points: &HashSet<Vector2<isize>>) -> AocResult<Self>
     where
-        N: Integer + Copy + Clone + TryInto<usize> + TryFrom<usize> + Eq + Hash,
-        <N as TryInto<usize>>::Error: Debug,
-        <N as TryFrom<usize>>::Error: Debug,
         Self: Sized;
 }
 
 impl GridCoordinates for Grid<bool> {
-    fn to_coordinates<N>(&self) -> HashSet<GridPoint> {
+    fn to_coordinates(&self) -> HashSet<GridPoint> {
         self.all_points().filter(|p| *self.get(p)).collect()
     }
 
-    fn from_coordinates<N>(points: &HashSet<GridPoint>) -> AocResult<Self>
-    where
-        N: Integer + Copy + Clone + TryInto<usize> + TryFrom<usize> + Eq + Hash,
-        <N as TryInto<usize>>::Error: Debug,
-        <N as TryFrom<usize>>::Error: Debug,
-        Self: Sized,
-    {
-        let x_range = points.iter().map(|p| p.x).range();
-        let y_range = points.iter().map(|p| p.y).range();
-        if x_range.is_none() || y_range.is_none() {
-            return Err(AocError::InvalidInput(
-                "Cannot create grid because no coordinates were passed".into(),
-            ));
-        }
-        let size = GridSize::new(x_range.unwrap().len(), y_range.unwrap().len());
+    fn from_coordinates(points: &HashSet<Vector2<isize>>) -> AocResult<Self> {
+        let x_range = points.iter().map(|p| p.x).range().unwrap_or_else(|| 0..=0);
+        let y_range = points.iter().map(|p| p.y).range().unwrap_or_else(|| 0..=0);
+        let size = GridSize::new(
+            x_range.len().try_into().unwrap(),
+            y_range.len().try_into().unwrap(),
+        );
         let mut grid = Self::default(size);
 
-        for point in points {
-            grid.set(point, true);
+        for point in points.iter().map(|p| {
+            GridPoint::new(
+                (p.x - x_range.start()).try_into().unwrap(),
+                (p.y - y_range.start()).try_into().unwrap(),
+            )
+        }) {
+            grid.set(&point, true);
         }
         Ok(grid)
     }

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::aoc::prelude::*;
 use cgmath::Zero;
 
@@ -30,6 +32,10 @@ struct Map {
 }
 
 impl CharGrid<bool> for Map {
+    fn get_grid(&self) -> &Grid<bool> {
+        &self.grid
+    }
+
     fn from_char(c: char) -> Option<bool> {
         match c {
             '#' => Some(true),
@@ -46,10 +52,20 @@ impl CharGrid<bool> for Map {
         }
     }
 }
+impl FromStr for Map {
+    type Err = AocError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self {
+            grid: Self::grid_from_str(s)?,
+        })
+    }
+}
 
 impl Map {
     fn is_tree(&self, point: &GridPoint) -> bool {
-        *self.grid.get(point)
+        let x = point.x % self.grid.size().x;
+        *self.grid.get(&GridPoint::new(x, point.y))
     }
 }
 
@@ -66,7 +82,7 @@ impl Iterator for MapDownhill<'_> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // If past the map vertically then we are done
-        if self.point.y >= self.map.size().y {
+        if self.point.y >= self.map.grid.size().y {
             return None;
         }
 
@@ -80,7 +96,7 @@ impl Iterator for MapDownhill<'_> {
     }
 }
 
-fn count_slope(map: &Grid<bool>, slope: GridPoint) -> u64 {
+fn count_slope(map: &Map, slope: GridPoint) -> u64 {
     MapDownhill::new(map, slope).filter_count(|t| *t)
 }
 
@@ -91,7 +107,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let map = Grid::from_str(input)?;
+            let map = Map::from_str(input)?;
 
             // Process
             Ok(count_slope(&map, GridPoint::new(3, 1)).into())
@@ -99,7 +115,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let map = Grid::from_str(input)?;
+            let map = Map::from_str(input)?;
 
             // Process
             let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];

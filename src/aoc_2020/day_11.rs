@@ -89,11 +89,11 @@ impl Part {
 
     /// Number of occupied seats for a given seat according to the rules for each part
     fn point_occupied(&self, area: &Area, point: &GridPoint) -> u8 {
-        let area = &area.area;
+        let grid = &area.grid;
         match self {
-            Part::PartA => area
+            Part::PartA => grid
                 .neighbor_points(point, true, false)
-                .filter_count(|point| *area.get(point) == Seat::Occupied),
+                .filter_count(|point| *grid.get(point) == Seat::Occupied),
             Part::PartB => iproduct!(-1isize..=1, -1isize..=1)
                 .map(|(dx, dy)| Vector2::new(dx, dy))
                 .filter(|dp| *dp != Vector2::zero())
@@ -105,8 +105,8 @@ impl Part {
                             point.y.try_into().unwrap(),
                         );
 
-                        match area.valid_point(&(point + i * dp)) {
-                            Some(p) => match area.get(&p) {
+                        match grid.valid_point(&(point + i * dp)) {
+                            Some(p) => match grid.get(&p) {
                                 Seat::Occupied => break true,
                                 Seat::Empty => break false,
                                 Seat::Floor => (),
@@ -121,13 +121,16 @@ impl Part {
     }
 }
 
-//TODO
 #[derive(Clone, Hash, PartialEq, Eq, new)]
 struct Area {
     part: Part,
-    area: Grid<Seat>,
+    grid: Grid<Seat>,
 }
-impl CharGrid<Seat> for Grid<Seat> {
+impl CharGrid<Seat> for Area {
+    fn get_grid(&self) -> &Grid<Seat> {
+        &self.grid
+    }
+
     fn from_char(c: char) -> Option<Seat> {
         Some(c.into())
     }
@@ -142,7 +145,7 @@ impl FromStr for Area {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Area {
             part: Part::PartA,
-            area: Grid::from_str(s)?,
+            grid: Self::grid_from_str(s)?,
         })
     }
 }
@@ -150,38 +153,16 @@ impl FromStr for Area {
 impl Evolver<Seat> for Area {
     type Point = GridPoint;
 
-    /* TODO why did we map this?
-        fn new(other: &Self) -> Self {
-            let mut area = Area {
-                part: other.part,
-                size: other.size,
-                data: other
-                    .data
-                    .iter()
-                    .map(|row| {
-                        row.iter()
-                            .map(|s| match s {
-                                Seat::Empty => Seat::Empty,
-                                Seat::Floor => Seat::Floor,
-                                Seat::Occupied => Seat::Empty,
-                                Seat::Outside => Seat::Outside,
-                            })
-                            .collect()
-                    })
-                    .collect(),
-            };
-    }*/
-
     fn new(other: &Self) -> Self {
-        Area::new(other.part, Grid::default(*other.area.size()))
+        Area::new(other.part, Grid::default(*other.grid.size()))
     }
 
     fn get_element(&self, point: &Self::Point) -> Seat {
-        *self.area.get(point)
+        *self.grid.get(point)
     }
 
     fn set_element(&mut self, point: &Self::Point, value: Seat) {
-        self.area.set(point, value)
+        self.grid.set(point, value)
     }
 
     fn next_cell(&self, point: &Self::Point) -> Seat {
@@ -207,7 +188,7 @@ impl Evolver<Seat> for Area {
     }
 
     fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
-        self.area.all_points()
+        Box::new(self.grid.all_points())
     }
 }
 

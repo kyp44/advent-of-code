@@ -1,4 +1,5 @@
 use crate::aoc::prelude::*;
+use cgmath::Vector2;
 use itertools::Itertools;
 use std::{collections::HashSet, convert::TryInto, fmt::Debug, ops::RangeInclusive};
 
@@ -17,12 +18,38 @@ mod tests {
     }
 }
 
-type DimensionRange = RangeInclusive<i32>;
+type DimensionRange = RangeInclusive<isize>;
+
+#[derive(new)]
+struct Slice {
+    grid: Grid<bool>,
+}
+impl CharGrid<bool> for Slice {
+    fn get_grid(&self) -> &Grid<bool> {
+        &self.grid
+    }
+
+    fn from_char(c: char) -> Option<bool> {
+        match c {
+            '#' => Some(true),
+            '.' => Some(false),
+            _ => None,
+        }
+    }
+
+    fn to_char(e: &bool) -> char {
+        if *e {
+            '#'
+        } else {
+            '.'
+        }
+    }
+}
 
 #[derive(Clone)]
 struct Dimension {
     dimensions: usize,
-    active_cubes: HashSet<Vec<i32>>,
+    active_cubes: HashSet<Vec<isize>>,
 }
 impl Debug for Dimension {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -33,15 +60,18 @@ impl Debug for Dimension {
                 .map(|i| ranges[i].clone())
                 .multi_cartesian_product()
             {
-                let slice = Grid::<bool>::from_coordinates(
-                    &self
-                        .active_cubes
-                        .iter()
-                        .filter(|pt| pt[2..] == coords)
-                        .map(|v| GridPoint::new(v[0].try_into().unwrap(), v[1].try_into().unwrap()))
-                        .collect(),
-                )
-                .unwrap();
+                let slice = Slice::new(
+                    Grid::<bool>::from_coordinates(
+                        &self
+                            .active_cubes
+                            .iter()
+                            .filter(|pt| pt[2..] == coords)
+                            .map(|v| Vector2::new(v[0], v[1]))
+                            .collect(),
+                    )
+                    .unwrap(),
+                );
+
                 writeln!(
                     f,
                     "{}",
@@ -54,10 +84,16 @@ impl Debug for Dimension {
                 slice.out_fmt(f)?;
             }
         } else {
-            let slice = Grid::<bool>::from_coordinates(
-                &self.active_cubes.iter().map(|v| (v[0], v[1])).collect(),
-            )
-            .unwrap();
+            let slice = Slice::new(
+                Grid::<bool>::from_coordinates(
+                    &self
+                        .active_cubes
+                        .iter()
+                        .map(|v| Vector2::new(v[0], v[1]))
+                        .collect(),
+                )
+                .unwrap(),
+            );
             slice.out_fmt(f)?;
         }
 
@@ -73,11 +109,11 @@ impl Dimension {
         }
         Ok(Dimension {
             dimensions,
-            active_cubes: Grid::<bool>::from_str(s)?
+            active_cubes: Slice::grid_from_str(s)?
                 .to_coordinates()
                 .iter()
-                .map(|(x, y)| {
-                    let mut v = vec![*x, *y];
+                .map(|p| {
+                    let mut v = vec![p.x.try_into().unwrap(), p.y.try_into().unwrap()];
                     v.append(&mut vec![0; dimensions - 2]);
                     v
                 })
@@ -85,7 +121,7 @@ impl Dimension {
         })
     }
 
-    fn verify_point(&self, point: &[i32]) {
+    fn verify_point(&self, point: &[isize]) {
         if point.len() != self.dimensions {
             panic!(
                 "Trying to access a {}-dimensional pocket dimension with a {}-dimensional point",
@@ -110,7 +146,7 @@ impl Dimension {
 }
 
 impl Evolver<bool> for Dimension {
-    type Point = Vec<i32>;
+    type Point = Vec<isize>;
 
     fn new(other: &Self) -> Self {
         Dimension {
@@ -166,11 +202,10 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let dimension = Dimension::from_str(3, input)?;
 
-            // TODO comment back out prolly
-            println!("{:?}", dimension);
+            /*println!("{:?}", dimension);
             for dim in dimension.evolutions().take(5) {
                 println!("{:?}", dim);
-            }
+            }*/
 
             // Process
             Ok(dimension.evolutions().nth(5).unwrap().count_active().into())
@@ -180,11 +215,10 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let dimension = Dimension::from_str(4, input)?;
 
-            // TODO comment back out prolly
-            println!("{:?}", dimension);
+            /*println!("{:?}", dimension);
             for dim in dimension.evolutions().take(5) {
                 println!("{:?}", dim);
-            }
+            }*/
 
             // Process
             Ok(dimension.evolutions().nth(5).unwrap().count_active().into())
