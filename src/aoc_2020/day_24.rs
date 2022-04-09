@@ -228,6 +228,8 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let floor: Floor = input.parse()?;
 
+            //println!("{:?}", floor);
+
             // Process
             Ok(floor.num_black_tiles().into())
         },

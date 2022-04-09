@@ -155,7 +155,7 @@ enum Transform {
     Rot90FlipV,
 }
 
-#[derive(Clone, CharGridDebug)]
+#[derive(Clone, CharGridDebug, new)]
 struct Image {
     pixels: Grid<bool>,
 }
@@ -168,6 +168,7 @@ impl CharGrid<bool> for Image {
         match c {
             '#' => Some(true),
             '.' => Some(false),
+            ' ' => Some(false),
             _ => None,
         }
     }
@@ -190,33 +191,45 @@ impl FromStr for Image {
     }
 }
 impl Image {
-    fn set_from_iters(&mut self, rows: impl Iterator<Item = impl Iterator<Item = bool>>) {
-        for (y, row) in (0..self.pixels.size().y).zip(rows) {
-            for (x, v) in (0..self.pixels.size().x).zip(row) {
-                self.pixels.set(&GridPoint::new(x, y), v);
-            }
+    fn default(size: GridSize) -> Self {
+        Self {
+            pixels: Grid::default(size),
         }
     }
 
+    /// Returns an image rotated 90 degrees counter-clockwise
     fn rot_90(&self) -> Self {
         let size = self.pixels.size();
-        let mut out = Image::default(size);
-        out.set_from_iters(
-            (0..size.x)
-                .rev()
-                .map(|x| (0..size.y).map(move |y| self.pixels.get(GridPoint::new(x, y))))
-        );
+        let mut out = Image::default(GridSize::new(size.y, size.x));
+        for point in self.pixels.all_points() {
+            out.pixels.set(
+                &GridPoint::new(point.y, size.x - 1 - point.x),
+                *self.pixels.get(&point),
+            );
+        }
         out
     }
 
     fn flip_hor(&self) -> Self {
-        let mut out = Image::default(self.size);
-        out.set_from_iters(self.pixels.iter().map(|row| row.iter().rev().copied()));
+        let size = self.pixels.size();
+        let mut out = Image::default(*size);
+        for point in self.pixels.all_points() {
+            out.pixels.set(
+                &GridPoint::new(size.x - 1 - point.x, point.y),
+                *self.pixels.get(&point),
+            )
+        }
         out
     }
     fn flip_ver(&self) -> Self {
-        let mut out = Image::default(self.size);
-        out.set_from_iters(self.pixels.iter().rev().map(|row| row.iter().copied()));
+        let size = self.pixels.size();
+        let mut out = Image::default(*size);
+        for point in self.pixels.all_points() {
+            out.pixels.set(
+                &GridPoint::new(point.x, size.y - 1 - point.y),
+                *self.pixels.get(&point),
+            )
+        }
         out
     }
 
@@ -235,86 +248,83 @@ impl Image {
     }
 
     fn adjoin_right(&self, right: &Self) -> Self {
+        let size = self.pixels.size();
+        let right_size = right.pixels.size();
         assert_eq!(
-            self.size.y, right.size.y,
+            size.y, right_size.y,
             "Images must have the same height to adjoin horizontally"
         );
-        let mut out = Image::default((self.size.x + right.size.x, self.size.y));
-        out.set_from_iters(
-            self.pixels
-                .iter()
-                .zip(right.pixels.iter())
-                .map(|(l, r)| l.iter().chain(r.iter()).copied()),
-        );
-        out*/
+        let width = size.x + right_size.x;
+        let mut out = Image::default(GridSize::new(width, size.y));
+        for x in 0..width {
+            for y in 0..size.y {
+                let point = GridPoint::new(x, y);
+                out.pixels.set(
+                    &point,
+                    if x < size.x {
+                        *self.pixels.get(&point)
+                    } else {
+                        *right.pixels.get(&GridPoint::new(point.x - size.x, point.y))
+                    },
+                )
+            }
+        }
+        out
     }
 
     fn adjoin_below(&self, below: &Self) -> Self {
-        todo!()
-        /*
+        let size = self.pixels.size();
+        let below_size = below.pixels.size();
         assert_eq!(
-            self.size.x, below.size.x,
+            size.x, below_size.x,
             "Images must have the same width to adjoin vertically"
         );
-        let mut out = Image::default((self.size.x, self.size.y + below.size.y));
-        out.set_from_iters(
-            self.pixels
-                .iter()
-                .chain(below.pixels.iter())
-                .map(|row| row.iter().copied()),
-        );
-        out*/
-    }
-
-    fn slice(&self, point: &(usize, usize), width: usize, height: usize) -> Box<[&[bool]]> {
-        self.pixels[point.1..point.1 + height]
-            .iter()
-            .map(|row| &row[point.0..point.0 + width])
-            .collect::<Vec<&[bool]>>()
-            .into_boxed_slice()
-    }
-
-    fn slice_mut(
-        &mut self,
-        point: &(usize, usize),
-        width: usize,
-        height: usize,
-    ) -> Box<[&mut [bool]]> {
-        self.pixels[point.1..point.1 + height]
-            .iter_mut()
-            .map(|row| &mut row[point.0..point.0 + width])
-            .collect::<Vec<&mut [bool]>>()
-            .into_boxed_slice()
-    }
-
-    fn search(&self, image: &Self) -> Vec<(usize, usize)> {
-        iproduct!(
-            0..=(self.size.y - image.size.y),
-            0..=(self.size.x - image.size.x)
-        )
-        .filter(|(y, x)| {
-            self.slice(&(*x, *y), image.size.x, image.size.y)
-                .iter()
-                .flat_map(|row| row.iter())
-                .zip(image.pixels.iter().flat_map(|row| row.iter()))
-                .all(|(p, sp)| !sp || *p)
-        })
-        .map(|(y, x)| (x, y))
-        .collect()
-    }
-
-    fn subtract(&mut self, point: &(usize, usize), image: &Self) {
-        todo!()
-            /*let mut slice = self.slice_mut(point, image.size.x, image.size.y);
-        for (p, sp) in slice
-            .iter_mut()
-            .flat_map(|row| row.iter_mut())
-            .zip(image.pixels.iter().flat_map(|row| row.iter()))
-        {
-            if *sp {
-                *p = false;
+        let height = size.y + below_size.y;
+        let mut out = Image::default(GridSize::new(size.x, height));
+        for x in 0..size.x {
+            for y in 0..height {
+                let point = GridPoint::new(x, y);
+                out.pixels.set(
+                    &point,
+                    if y < size.y {
+                        *self.pixels.get(&point)
+                    } else {
+                        *below.pixels.get(&GridPoint::new(point.x, point.y - size.y))
+                    },
+                )
             }
-        }*/
+        }
+        out
+    }
+
+    fn search(&self, image: &Self) -> Vec<GridPoint> {
+        let size = self.pixels.size();
+        let image_size = image.pixels.size();
+
+        iproduct!(0..=(size.y - image_size.y), 0..=(size.x - image_size.x))
+            .filter_map(|(y, x)| {
+                let point = GridPoint::new(x, y);
+                let sub_image = self.pixels.sub_grid(&point, *image_size);
+                if image
+                    .pixels
+                    .all_values()
+                    .zip(sub_image.all_values())
+                    .all(|(pi, ps)| !pi || *ps)
+                {
+                    Some(point)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    fn subtract(&mut self, point: &GridPoint, image: &Self) {
+        for image_point in image.pixels.all_points() {
+            if *image.pixels.get(&image_point) {
+                self.pixels.set(&(point + &image_point), false);
+            }
+        }
     }
 }
 
@@ -339,27 +349,25 @@ impl FromStr for Tile {
 
         // Verify the tile dimensions
         let size = full_image.pixels.size().x;
-        if size != full_image.pixels.size().y || size < 3 {
+        if full_image.pixels.size().y != size || size < 3 {
             return Err(AocError::InvalidInput(
                 format!("Tile {} must be square with at least a size of 3x3", id).into(),
             ));
         }
 
-        todo!()
-        /*// Create image of interior
-        let mut image = Image::default((size - 2, size - 2));
-        image.set_????(
-            full_image.pixels[1..size - 1]
-                .iter()
-                .map(|row| row[1..size - 1].iter().copied()),
+        // Create image of interior
+        let image = Image::new(
+            full_image
+                .pixels
+                .sub_grid(&GridPoint::new(1, 1), GridSize::new(size - 2, size - 2)),
         );
 
         // Pull out the edges
         let edges: EnumMap<_, Vec<bool>> = enum_map! {
-            Edge::Top => full_image.pixels[0].to_vec(),
-            Edge::Bottom => full_image.pixels.last().unwrap().to_vec(),
-            Edge::Left => full_image.pixels.iter().map(|row| row[0]).collect(),
-            Edge::Right => full_image.pixels.iter().map(|row| *row.last().unwrap()).collect(),
+            Edge::Top => full_image.pixels.row_iter(0).cloned().collect(),
+            Edge::Bottom => full_image.pixels.row_iter(full_image.pixels.size().y-1).cloned().collect(),
+            Edge::Left => full_image.pixels.col_iter(0).cloned().collect(),
+            Edge::Right => full_image.pixels.col_iter(full_image.pixels.size().x - 1).cloned().collect(),
         };
         let mut edges_reversed = EnumMap::default();
         for (k, v) in edges.iter() {
@@ -373,7 +381,7 @@ impl FromStr for Tile {
             image,
             edges,
             edges_reversed,
-        })*/
+        })
     }
 }
 impl Tile {
@@ -483,18 +491,17 @@ struct TileSlot<'a> {
 
 #[derive(Clone)]
 struct TileMap<'a> {
-    size: usize,
     remaining: Vec<&'a Tile>,
-    slots: Vec<Vec<Option<TileSlot<'a>>>>,
+    slots: Grid<Option<TileSlot<'a>>>,
 }
 impl fmt::Debug for TileMap<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for y in 0..self.size {
+        for row in self.slots.rows_iter() {
             writeln!(
                 f,
                 "{}",
-                &(0..self.size)
-                    .map(|x| match self.get(x, y) {
+                row.iter()
+                    .map(|slot| match slot {
                         Some(t) => format!("{} {}", t.tile.id, t.transform),
                         None => "-".to_string(),
                     })
@@ -508,35 +515,33 @@ impl<'a> TileMap<'a> {
     fn new(tile_set: &'a TileSet) -> Self {
         let size = tile_set.size;
         TileMap {
-            size,
             remaining: tile_set.tiles.iter().collect(),
-            slots: vec![vec![None; size]; size],
+            slots: Grid::default(GridSize::new(size, size)),
         }
     }
 
-    fn set(&mut self, x: usize, y: usize, tile: &'a Tile, transform: Transform) {
-        self.slots[y][x] = Some(TileSlot { tile, transform });
+    fn size(&self) -> usize {
+        self.slots.size().x
     }
 
-    fn get(&self, x: usize, y: usize) -> Option<&TileSlot> {
-        self.slots[y][x].as_ref()
+    fn set(&mut self, point: &GridPoint, tile: &'a Tile, transform: Transform) {
+        self.slots.set(point, Some(TileSlot { tile, transform }));
+    }
+
+    fn get(&self, point: &GridPoint) -> Option<&TileSlot> {
+        self.slots.get(point).as_ref()
     }
 
     fn stitched_image(&self) -> AocResult<Image> {
         // Check that all slots are filled
-        if self
-            .slots
-            .iter()
-            .flat_map(|row| row.iter())
-            .any(|slot| slot.is_none())
-        {
+        if self.slots.all_values().any(|s| s.is_none()) {
             return Err(AocError::Process(
                 "Cannot stitch image because not every slot in the map is set".into(),
             ));
         }
         Ok(self
             .slots
-            .iter()
+            .rows_iter()
             .map(|row| {
                 row.iter()
                     .map(|slot| {
@@ -583,7 +588,7 @@ impl Solver {
                     let mut fits = true;
                     // Do we need to match to the right side of the tile to the left?
                     if x > 0 {
-                        let left_slot = map.get(x - 1, y).unwrap();
+                        let left_slot = map.get(&GridPoint::new(x - 1, y)).unwrap();
                         if tile.get_edge(Edge::Left, transform)
                             != left_slot.tile.get_edge(Edge::Right, left_slot.transform)
                         {
@@ -593,7 +598,7 @@ impl Solver {
                     // Do we need to match the top side of the tile with the bottom
                     // side of the tile above?
                     if y > 0 {
-                        let above_slot = map.get(x, y - 1).unwrap();
+                        let above_slot = map.get(&GridPoint::new(x, y - 1)).unwrap();
                         if tile.get_edge(Edge::Top, transform)
                             != above_slot.tile.get_edge(Edge::Bottom, above_slot.transform)
                         {
@@ -605,9 +610,9 @@ impl Solver {
                         // The tile fits, so place it and work on the next tile
                         //println!("It fit!");
                         let mut map = map.clone();
-                        map.set(x, y, tile, transform);
+                        map.set(&GridPoint::new(x, y), tile, transform);
                         map.remaining.remove(tile_idx);
-                        let (x, y) = if x == map.size - 1 {
+                        let (x, y) = if x == map.size() - 1 {
                             (0, y + 1)
                         } else {
                             (x + 1, y)
@@ -640,9 +645,9 @@ pub const SOLUTION: Solution = Solution {
             let map = solver.solve()?;
             //println!("Solution\n: {:?}", map);
 
-            let size = map.size;
+            let size = map.size();
             Ok(iproduct!([0, size - 1], [0, size - 1])
-                .map(|(x, y)| map.get(x, y).unwrap().tile.id)
+                .map(|(x, y)| map.get(&GridPoint::new(x, y)).unwrap().tile.id)
                 .product::<u64>()
                 .into())
         },
@@ -668,13 +673,9 @@ pub const SOLUTION: Solution = Solution {
                         image.subtract(&point, &sea_monster)
                     }
 
-                    // Count the rough spots
+                    // Count the rough spots (i.e. points not part of a sea monster)
                     return Ok(Answer::Unsigned(
-                        image
-                            .pixels
-                            .iter()
-                            .flat_map(|row| row.iter().copied())
-                            .filter_count(|p| *p),
+                        image.pixels.all_values().filter_count(|v| **v),
                     ));
                 }
             }

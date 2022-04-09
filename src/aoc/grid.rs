@@ -1,3 +1,4 @@
+use core::slice::SlicePattern;
 use std::{cmp::Eq, collections::HashSet, hash::Hash};
 
 use super::prelude::*;
@@ -44,39 +45,6 @@ impl<T> Grid<T> {
     pub fn element_at(&mut self, point: &GridPoint) -> &mut T {
         &mut self.data[point.y][point.x]
     }
-
-    /// Create from data
-    //TODO we can probably get rid of this
-    /*
-    pub fn from_iters(data: impl Iterator<Item = impl Iterator<Item = T>>) -> AocResult<Self> {
-        let data: Box<[Box<[T]>]> = data.map(|row| row.collect()).collect();
-
-        // Verify that we have at least one row
-        let height = data.len();
-        if height < 1 {
-            return Err(AocError::InvalidInput("The grid has no content!".into()));
-        }
-
-        // Verify that all the row widths are the same
-        let width = data[0].len();
-        for row in data.iter() {
-            if row.len() != width {
-                return Err(AocError::InvalidInput(
-                    format!(
-                        "Grid row has a length of {} instead of the expected {}",
-                        row.len(),
-                        width
-                    )
-                    .into(),
-                ));
-            }
-        }
-
-        Ok(Self {
-            size: GridSize::new(width, height),
-            data,
-        })
-    }*/
 
     /// From data with verification
     pub fn from_data(data: Box<[Box<[T]>]>) -> AocResult<Self> {
@@ -134,6 +102,21 @@ impl<T> Grid<T> {
         Box::new(self.all_points().map(|p| self.get(&p)))
     }
 
+    /// Iterate over a row
+    pub fn row_iter(&self, row: usize) -> impl Iterator<Item = &T> {
+        self.data[row].iter()
+    }
+
+    /// Iterator over column
+    pub fn col_iter(&self, col: usize) -> impl Iterator<Item = &T> {
+        (0..self.size.y).map(move |y| &self.data[y][col])
+    }
+
+    /// Iterator over all rows as slices
+    pub fn rows_iter(&self) -> impl Iterator<Item = &[T]> {
+        self.data.iter().map(|row| row.as_slice())
+    }
+
     /// Iterator over neighbors point
     pub fn neighbor_points<'a>(
         &'a self,
@@ -158,6 +141,17 @@ impl<T> Grid<T> {
                 npoint
             }
         })
+    }
+
+    pub fn sub_grid(&self, point: &GridPoint, size: GridSize) -> Self
+    where
+        T: Default + Clone,
+    {
+        let mut out = Self::default(size);
+        for out_point in out.all_points() {
+            out.set(&out_point, self.get(&(*point + out_point)).clone());
+        }
+        out
     }
 }
 

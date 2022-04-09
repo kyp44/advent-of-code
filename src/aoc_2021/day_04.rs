@@ -53,30 +53,32 @@ impl Parseable<'_> for BoardCell {
         map(nom::character::complete::u8, |v| v.into())(input)
     }
 }
-// TODO use Grid trait
+
 struct BingoBoard {
-    rows: Box<[Box<[BoardCell]>]>,
+    grid: Grid<BoardCell>,
 }
 impl Parseable<'_> for BingoBoard {
     fn parser(input: &str) -> NomParseResult<Self> {
-        map(
-            separated_list1(
-                line_ending,
-                trim(separated_list1(space1, BoardCell::parser)),
-            ),
-            |rows| Self {
-                rows: rows.into_iter().map(|row| row.into_boxed_slice()).collect(),
+        let (input, rows) = separated_list1(
+            line_ending,
+            trim(separated_list1(space1, BoardCell::parser)),
+        )(input)?;
+
+        Ok((
+            input,
+            Self {
+                grid: Grid::from_data(rows.into_iter().map(|row| row.into_boxed_slice()).collect())
+                    .unwrap(),
             },
-        )(input)
+        ))
     }
 }
 impl BingoBoard {
     fn call(&mut self, number: u8) -> bool {
-        for row in self.rows.iter_mut() {
-            for cell in row.iter_mut() {
-                if cell.number == number {
-                    cell.hit = true;
-                }
+        for point in self.grid.all_points() {
+            let cell = self.grid.element_at(&point);
+            if cell.number == number {
+                cell.hit = true;
             }
         }
         self.check_win()
@@ -84,15 +86,15 @@ impl BingoBoard {
 
     fn check_win(&self) -> bool {
         // Check rows first
-        for row in self.rows.iter() {
+        for row in self.grid.rows_iter() {
             if row.iter().all(|c| c.hit) {
                 return true;
             }
         }
 
         // Check columns
-        for i in 0..self.rows[0].len() {
-            if self.rows.iter().all(|r| r[i].hit) {
+        for col in 0..self.grid.size().x {
+            if self.grid.col_iter(col).all(|cell| cell.hit) {
                 return true;
             }
         }
@@ -101,9 +103,8 @@ impl BingoBoard {
     }
 
     fn score(&self, last_number: u8) -> u64 {
-        self.rows
-            .iter()
-            .flat_map(|r| r.iter())
+        self.grid
+            .all_values()
             .filter_map(|c| {
                 if c.hit {
                     None
@@ -130,14 +131,9 @@ impl FromStr for BingoGame {
 
         // Verify boards
         for (board_num, board) in boards.iter().enumerate() {
-            if board.rows.len() != 5 {
+            if *board.grid.size() != GridSize::new(5, 5) {
                 return Err(AocError::InvalidInput(
-                    format!("Board {} does not have exactly 5 rows", board_num).into(),
-                ));
-            }
-            if board.rows.iter().any(|row| row.len() != 5) {
-                return Err(AocError::InvalidInput(
-                    format!("Board {} has a row without exactly 5 elements", board_num).into(),
+                    format!("Board {} is not 5 x 5", board_num).into(),
                 ));
             }
         }

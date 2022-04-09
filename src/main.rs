@@ -1,5 +1,6 @@
 #![feature(hash_set_entry)]
 #![feature(type_alias_impl_trait)]
+#![feature(slice_pattern)]
 
 #[macro_use]
 extern crate derive_new;

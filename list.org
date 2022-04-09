@@ -8,9 +8,12 @@
   CLOSED: [2022-04-08 Fri 18:25]
 * DONE src/aoc_2020/day_17.rs
   CLOSED: [2022-04-08 Fri 19:48]
-* TODO src/aoc_2020/day_20.rs
-* TODO src/aoc_2020/day_24.rs
-* TODO src/aoc_2021/day_04.rs
+* DONE src/aoc_2020/day_20.rs
+  CLOSED: [2022-04-09 Sat 16:58]
+* DONE src/aoc_2020/day_24.rs
+  CLOSED: [2022-04-09 Sat 17:06]
+* DONE src/aoc_2021/day_04.rs
+  CLOSED: [2022-04-09 Sat 17:42]
 * TODO src/aoc_2021/day_05.rs
 * TODO src/aoc_2021/day_09.rs
 * TODO src/aoc_2021/day_11.rs
