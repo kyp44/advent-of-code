@@ -1,6 +1,6 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, str::FromStr};
 
-use itertools::{iproduct, Itertools};
+use itertools::Itertools;
 
 use crate::aoc::prelude::*;
 
@@ -23,9 +23,22 @@ mod tests {
 
 #[derive(CharGridDebug)]
 struct FloorMap {
-    map: Grid<u8>,
+    grid: Grid<u8>,
+}
+impl FromStr for FloorMap {
+    type Err = AocError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self {
+            grid: Self::grid_from_str(s)?,
+        })
+    }
 }
 impl CharGrid<u8> for FloorMap {
+    fn get_grid(&self) -> &Grid<u8> {
+        &self.grid
+    }
+
     fn from_char(c: char) -> Option<u8> {
         c.to_digit(10).map(|v| v.try_into().unwrap())
     }
@@ -36,41 +49,37 @@ impl CharGrid<u8> for FloorMap {
 }
 impl FloorMap {
     fn low_points(&self) -> impl Iterator<Item = GridPoint> + '_ {
-        self.all_points().filter_map(|point| {
-            let height = self.get(&point);
-            if self
-                .neighbor_points(&point, false, false)
-                .all(|p| height < self.get(&p))
-            {
-                Some(point)
-            } else {
-                None
-            }
+        self.grid.all_points().filter(|point| {
+            let height = self.grid.get(point);
+            self.grid
+                .neighbor_points(point, false, false)
+                .all(|p| height < self.grid.get(&p))
         })
     }
 
     fn low_heights(&self) -> impl Iterator<Item = u8> + '_ {
-        self.low_points().map(|p| *self.get(&p))
+        self.low_points().map(|p| *self.grid.get(&p))
     }
 
     fn basin_region_size(&self, point: GridSize, points: &mut HashSet<GridPoint>) -> u64 {
         // Base cases
-        if *self.get(&point) == 9 || points.contains(&point) {
+        if *self.grid.get(&point) == 9 || points.contains(&point) {
             return 0;
         }
 
         let mut reg_size = 1;
+        let size = self.grid.size();
         points.insert(point);
         if point.x > 0 {
             reg_size += self.basin_region_size(point - GridPoint::unit_x(), points);
         }
-        if point.x < self.size.x - 1 {
+        if point.x < size.x - 1 {
             reg_size += self.basin_region_size(point + GridPoint::unit_x(), points);
         }
         if point.y > 0 {
             reg_size += self.basin_region_size(point - GridPoint::unit_y(), points);
         }
-        if point.y < self.size.y - 1 {
+        if point.y < size.y - 1 {
             reg_size += self.basin_region_size(point + GridPoint::unit_y(), points);
         }
 

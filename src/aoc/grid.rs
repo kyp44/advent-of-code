@@ -197,7 +197,7 @@ pub trait CharGrid<T> {
                     .collect()
             })
             .collect::<Result<_, _>>()?;
-        Ok(Grid::from_data(data)?)
+        Grid::from_data(data)
     }
 }
 
@@ -221,8 +221,8 @@ impl GridCoordinates for Grid<bool> {
     }
 
     fn from_coordinates(points: &HashSet<Vector2<isize>>) -> AocResult<Self> {
-        let x_range = points.iter().map(|p| p.x).range().unwrap_or_else(|| 0..=0);
-        let y_range = points.iter().map(|p| p.y).range().unwrap_or_else(|| 0..=0);
+        let x_range = points.iter().map(|p| p.x).range().unwrap_or(0..=0);
+        let y_range = points.iter().map(|p| p.y).range().unwrap_or(0..=0);
         let size = GridSize::new(
             x_range.len().try_into().unwrap(),
             y_range.len().try_into().unwrap(),

@@ -322,7 +322,7 @@ impl Image {
     fn subtract(&mut self, point: &GridPoint, image: &Self) {
         for image_point in image.pixels.all_points() {
             if *image.pixels.get(&image_point) {
-                self.pixels.set(&(point + &image_point), false);
+                self.pixels.set(&(point + image_point), false);
             }
         }
     }

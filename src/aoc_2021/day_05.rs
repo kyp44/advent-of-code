@@ -1,6 +1,5 @@
 use std::{cmp::max, iter::Rev, ops::RangeInclusive, str::FromStr};
 
-use cgmath::Vector2;
 use nom::{
     bytes::complete::tag,
     character::complete::multispace0,
@@ -32,22 +31,20 @@ mod tests {
     }
 }
 
-type Point = Vector2<usize>;
-
 struct Line {
-    from: Point,
-    to: Point,
+    from: GridPoint,
+    to: GridPoint,
 }
 impl Parseable<'_> for Line {
     fn parser(input: &str) -> NomParseResult<Self> {
-        fn point_parser(input: &str) -> NomParseResult<Point> {
+        fn point_parser(input: &str) -> NomParseResult<GridPoint> {
             map(
                 separated_pair(
                     nom::character::complete::u16,
                     delimited(multispace0, tag(","), multispace0),
                     nom::character::complete::u16,
                 ),
-                |(x, y)| Point::new(x.into(), y.into()),
+                |(x, y)| GridPoint::new(x.into(), y.into()),
             )(input)
         }
         map(
@@ -105,23 +102,23 @@ enum LineType {
     DiagonalDown(RangeInclusive<usize>, RangeInclusive<usize>),
     DiagonalUp(RangeInclusive<usize>, Rev<RangeInclusive<usize>>),
 }
+#[derive(new)]
 struct LineIterator {
     line_type: LineType,
 }
-impl LineIterator {
-    fn new(line_type: LineType) -> Self {
-        LineIterator { line_type }
-    }
-}
 impl Iterator for LineIterator {
-    type Item = (usize, usize);
+    type Item = GridPoint;
 
     fn next(&mut self) -> Option<Self::Item> {
         match &mut self.line_type {
-            LineType::Horizontal(xr, y) => xr.next().map(|x| (x, *y)),
-            LineType::Vertical(x, yr) => yr.next().map(|y| (*x, y)),
-            LineType::DiagonalDown(xr, yr) => xr.next().zip(yr.next()),
-            LineType::DiagonalUp(xr, yr) => xr.next().zip(yr.next()),
+            LineType::Horizontal(xr, y) => xr.next().map(|x| GridPoint::new(x, *y)),
+            LineType::Vertical(x, yr) => yr.next().map(|y| GridPoint::new(*x, y)),
+            LineType::DiagonalDown(xr, yr) => {
+                xr.next().zip(yr.next()).map(|(x, y)| GridPoint::new(x, y))
+            }
+            LineType::DiagonalUp(xr, yr) => {
+                xr.next().zip(yr.next()).map(|(x, y)| GridPoint::new(x, y))
+            }
         }
     }
 }
@@ -131,6 +128,10 @@ struct FloorMap {
     grid: Grid<u8>,
 }
 impl CharGrid<u8> for FloorMap {
+    fn get_grid(&self) -> &Grid<u8> {
+        &self.grid
+    }
+
     fn from_char(c: char) -> Option<u8> {
         if c == '.' {
             Some(0)
@@ -148,8 +149,14 @@ impl CharGrid<u8> for FloorMap {
     }
 }
 impl FloorMap {
-    fn inc_location(&mut self, location: (usize, usize)) {
-        self.data[location.1][location.0] += 1;
+    fn default(size: GridSize) -> Self {
+        Self {
+            grid: Grid::default(size),
+        }
+    }
+
+    fn inc_location(&mut self, location: &GridPoint) {
+        *self.grid.element_at(location) += 1;
     }
 }
 
@@ -181,17 +188,15 @@ impl FromStr for Vents {
 }
 impl Vents {
     fn floor_map<P: Part>(&self) -> AocResult<FloorMap> {
-        todo!()
-        /*
         // First determine how large the grid needs to be
-        let max = |f: fn(&Point) -> usize| {
+        let max = |f: fn(&GridPoint) -> usize| {
             self.lines
                 .iter()
                 .map(|l| max(f(&l.from), f(&l.to)))
                 .max()
                 .unwrap()
         };
-        let size = (max(|p| p.x) + 1, max(|p| p.y) + 1);
+        let size = GridSize::new(max(|p| p.x) + 1, max(|p| p.y) + 1);
 
         // Create blank map
         let mut floor_map = FloorMap::default(size);
@@ -199,23 +204,19 @@ impl Vents {
         // Now "draw" the lines on the map
         for line in self.lines.iter().filter(P::line_filter) {
             for loc in line.iter() {
-                floor_map.inc_location(loc)
+                floor_map.inc_location(&loc)
             }
         }
 
-        Ok(floor_map)*/
+        Ok(floor_map)
     }
 
     fn num_overlap_points<P: Part>(&self) -> AocResult<usize> {
-        todo!()
-        /*
         Ok(self
             .floor_map::<P>()?
-            .to_data()
-            .iter()
-            .flat_map(|row| row.iter())
-            .filter(|v| **v > 1)
-            .count())*/
+            .grid
+            .all_values()
+            .filter_count(|v| **v > 1))
     }
 }
 
