@@ -1,11 +1,7 @@
-use std::{
-    collections::{HashMap, HashSet},
-    rc::Rc,
-    str::FromStr,
-};
+use std::{collections::HashSet, fmt::Debug, rc::Rc};
 
 use itertools::Itertools;
-use maplit::hashset;
+
 use nom::{
     bytes::complete::tag, character::complete::alphanumeric1, combinator::map,
     sequence::separated_pair,
@@ -20,7 +16,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-        vec![Unsigned(123)],
+        vec![Unsigned(4011), Unsigned(123)],
     "start-A
 start-b
 A-c
@@ -28,24 +24,54 @@ A-b
 b-d
 A-end
 b-end",
-        vec![123u64].answer_vec()
+        vec![10u64, 36].answer_vec(),
+    "dc-end
+HN-start
+start-kj
+dc-start
+dc-HN
+LN-dc
+HN-end
+kj-sa
+kj-HN
+kj-dc",
+    vec![19u64, 103].answer_vec(),
+    "fs-end
+he-DX
+fs-he
+start-DX
+pj-DX
+end-zg
+zg-sl
+zg-pj
+pj-he
+RW-he
+fs-DX
+pj-RW
+zg-RW
+start-pj
+he-WI
+zg-he
+pj-fs
+start-RW",
+    vec![226u64, 3509].answer_vec()
         }
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Copy, Clone)]
 enum CaveType {
-    START,
-    END,
-    BIG,
-    SMALL,
+    Start,
+    End,
+    Big,
+    Small,
 }
 impl From<&str> for CaveType {
     fn from(s: &str) -> Self {
         match s {
-            "start" => Self::START,
-            "end" => Self::END,
-            s if s.to_lowercase() == s => Self::SMALL,
-            _ => Self::BIG,
+            "start" => Self::Start,
+            "end" => Self::End,
+            s if s.to_lowercase() == s => Self::Small,
+            _ => Self::Big,
         }
     }
 }
@@ -53,8 +79,7 @@ impl From<&str> for CaveType {
 #[derive(Eq)]
 struct Cave<'a> {
     name: &'a str,
-    node_type: CaveType,
-    connected: Vec<Rc<Self>>,
+    cave_type: CaveType,
 }
 impl PartialEq for Cave<'_> {
     fn eq(&self, other: &Self) -> bool {
@@ -66,35 +91,60 @@ impl std::hash::Hash for Cave<'_> {
         self.name.hash(state);
     }
 }
+impl Debug for Cave<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
 impl<'a> Cave<'a> {
     fn new(name: &'a str) -> Self {
         Self {
             name,
-            node_type: name.into(),
-            connected: Vec::new(),
+            cave_type: name.into(),
         }
-    }
-
-    fn add_connection(&mut self, cave: Rc<Self>) {
-        self.connected.push(cave);
     }
 
     fn has_name(&self, name: &str) -> bool {
         self.name == name
     }
+
+    fn has_type(&self, cave_type: CaveType) -> bool {
+        self.cave_type == cave_type
+    }
+}
+
+struct Passage<'a> {
+    caves: (Rc<Cave<'a>>, Rc<Cave<'a>>),
+}
+impl<'a> Passage<'a> {
+    fn new(a: &Rc<Cave<'a>>, b: &Rc<Cave<'a>>) -> Self {
+        Self {
+            caves: (a.clone(), b.clone()),
+        }
+    }
+
+    fn connects(&self, cave: &Rc<Cave<'a>>) -> Option<&Rc<Cave<'a>>> {
+        if *cave == self.caves.0 {
+            Some(&self.caves.1)
+        } else if *cave == self.caves.1 {
+            Some(&self.caves.0)
+        } else {
+            None
+        }
+    }
 }
 
 struct CaveSystem<'a> {
     start: Rc<Cave<'a>>,
+    caves: Vec<Rc<Cave<'a>>>,
+    passages: Vec<Passage<'a>>,
 }
-impl FromStr for CaveSystem<'_> {
-    type Err = AocError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        struct Passage<'b> {
+impl<'a> CaveSystem<'a> {
+    fn from_str(s: &'a str) -> Result<Self, AocError> {
+        struct RawPassage<'b> {
             caves: [&'b str; 2],
         }
-        impl<'b> Parseable<'b> for Passage<'b> {
+        impl<'b> Parseable<'b> for RawPassage<'b> {
             fn parser(input: &'b str) -> NomParseResult<Self> {
                 map(
                     separated_pair(alphanumeric1, tag("-"), alphanumeric1),
@@ -102,38 +152,87 @@ impl FromStr for CaveSystem<'_> {
                 )(input)
             }
         }
-        impl Passage<'_> {
-            fn connected(&self, from: &str) -> Option<&str> {
-                let [a, b] = self.caves;
-                if from == a {
-                    Some(b)
-                } else if from == b {
-                    Some(a)
-                } else {
-                    None
-                }
-            }
-        }
 
-        let passages = Passage::gather(s.lines())?;
+        let raw_passages = RawPassage::gather(s.lines())?;
 
-        // First create all the Caves
-        let mut cave_map: HashMap<&str, Rc<Cave>> = passages
+        // Build all the caves
+        let caves: Vec<Rc<Cave<'_>>> = raw_passages
             .iter()
             .flat_map(|p| p.caves.iter())
             .unique()
-            .map(|name| (*name, Rc::new(Cave::new(name))))
+            .map(|name| Rc::new(Cave::new(name)))
             .collect();
 
-        // Now buid the connections for each cave
-        // TODO: This doesn't compile due to mutability, need a better solution
-        /*for (name, cave) in cave_map.iter_mut() {
-            for conn_name in passages.iter().filter_map(|p| p.connected(name)).unique() {
-                cave.add_connection(cave_map.get_mut(conn_name).unwrap().clone());
-            }
-        }*/
+        fn find_cave<'b, 'c>(
+            caves: &'b [Rc<Cave<'c>>],
+            f: impl Fn(&Cave) -> bool,
+        ) -> Result<&'b Rc<Cave<'c>>, AocError> {
+            caves
+                .iter()
+                .find(|c| f(c))
+                .ok_or_else(|| AocError::InvalidInput("Could not find cave".into()))
+        }
+        let passages = raw_passages
+            .into_iter()
+            .map(|rp| -> Result<_, AocError> {
+                Ok(Passage::new(
+                    find_cave(&caves, |c| c.has_name(rp.caves[0]))?,
+                    find_cave(&caves, |c| c.has_name(rp.caves[1]))?,
+                ))
+            })
+            .collect::<Result<_, _>>()?;
 
-        todo!()
+        Ok(Self {
+            start: find_cave(&caves, |c| c.has_type(CaveType::Start))?.clone(),
+            caves,
+            passages,
+        })
+    }
+
+    fn connecting_caves<'b>(
+        &'b self,
+        cave: &'b Rc<Cave<'a>>,
+    ) -> impl Iterator<Item = &Rc<Cave<'a>>> + 'b {
+        self.passages.iter().filter_map(|p| p.connects(cave))
+    }
+
+    fn paths(&self) -> Result<Vec<Vec<&Rc<Cave<'a>>>>, AocError> {
+        // Paths from the given cave to the end having already visited some
+        fn paths_rec<'b, 'c>(
+            system: &'b CaveSystem<'c>,
+            cave: &'b Rc<Cave<'c>>,
+            visited: &HashSet<&'b Rc<Cave<'c>>>,
+        ) -> Option<Vec<Vec<&'b Rc<Cave<'c>>>>> {
+            let mut paths = Vec::new();
+
+            if cave.has_type(CaveType::End) {
+                // We've reached the end so this is the only path
+                paths.push(vec![cave]);
+            } else if cave.has_type(CaveType::Small) && visited.contains(cave) {
+                // Cannot revisit this cave so this is invalid
+                return None;
+            } else {
+                // We are in a cave that can be revisted (and isn't the end)
+                let mut visited = visited.clone();
+                visited.insert(cave);
+                for next_cave in system
+                    .connecting_caves(cave)
+                    .filter(|c| !c.has_type(CaveType::Start))
+                {
+                    if let Some(sub_paths) = paths_rec(system, next_cave, &visited) {
+                        for mut sub_path in sub_paths.into_iter() {
+                            sub_path.insert(0, cave);
+                            paths.push(sub_path);
+                        }
+                    }
+                }
+            }
+
+            Some(paths)
+        }
+
+        paths_rec(self, &self.start, &HashSet::new())
+            .ok_or_else(|| AocError::Process("No valid paths were found".into()))
     }
 }
 
@@ -145,9 +244,24 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let cave_system = CaveSystem::from_str(input)?;
+            let paths = cave_system.paths()?;
+
+            /*for path in paths.iter() {
+                println!("{:?}", path);
+            }
+            println!();*/
 
             // Process
-            Ok(0u64.into())
+            Ok(Answer::Unsigned(paths.len().try_into().unwrap()))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let cave_system = CaveSystem::from_str(input)?;
+            let paths = cave_system.paths()?;
+
+            // Process
+            Ok(Answer::Unsigned(paths.len().try_into().unwrap()))
         },
     ],
 };
