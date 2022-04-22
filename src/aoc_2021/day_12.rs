@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt::Debug, rc::Rc};
+use std::{borrow::Borrow, collections::HashSet, fmt::Debug, rc::Rc};
 
 use itertools::Itertools;
 
@@ -16,7 +16,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-        vec![Unsigned(4011), Unsigned(123)],
+        vec![Unsigned(4011), Unsigned(108035)],
     "start-A
 start-b
 A-c
@@ -123,15 +123,21 @@ impl<'a> Passage<'a> {
         }
     }
 
-    fn connects(&self, cave: &Rc<Cave<'a>>) -> Option<&Rc<Cave<'a>>> {
-        if *cave == self.caves.0 {
+    fn connects(&self, cave: &Cave<'a>) -> Option<&Cave<'a>> {
+        if cave == self.caves.0.borrow() {
             Some(&self.caves.1)
-        } else if *cave == self.caves.1 {
+        } else if cave == self.caves.1.borrow() {
             Some(&self.caves.0)
         } else {
             None
         }
     }
+}
+
+#[derive(Clone)]
+enum SpecialCave<'a, 'c> {
+    None,
+    Some { cave: &'a Cave<'c>, count: u8 },
 }
 
 struct CaveSystem<'a> {
@@ -189,40 +195,50 @@ impl<'a> CaveSystem<'a> {
         })
     }
 
-    fn connecting_caves<'b>(
-        &'b self,
-        cave: &'b Rc<Cave<'a>>,
-    ) -> impl Iterator<Item = &Rc<Cave<'a>>> + 'b {
+    fn connecting_caves<'b>(&'b self, cave: &'b Cave<'a>) -> impl Iterator<Item = &Cave<'a>> + 'b {
         self.passages.iter().filter_map(|p| p.connects(cave))
     }
 
-    fn paths(&self) -> Result<Vec<Vec<&Rc<Cave<'a>>>>, AocError> {
+    fn paths(&self, special_cave: SpecialCave) -> Result<HashSet<Vec<&Cave<'a>>>, AocError> {
         // Paths from the given cave to the end having already visited some
         fn paths_rec<'b, 'c>(
             system: &'b CaveSystem<'c>,
-            cave: &'b Rc<Cave<'c>>,
-            visited: &HashSet<&'b Rc<Cave<'c>>>,
-        ) -> Option<Vec<Vec<&'b Rc<Cave<'c>>>>> {
-            let mut paths = Vec::new();
+            cave: &'b Cave<'c>,
+            visited: &HashSet<&'b Cave<'c>>,
+            mut special_cave: SpecialCave,
+        ) -> Option<HashSet<Vec<&'b Cave<'c>>>> {
+            let mut paths = HashSet::new();
 
             if cave.has_type(CaveType::End) {
                 // We've reached the end so this is the only path
-                paths.push(vec![cave]);
+                paths.insert(vec![cave]);
             } else if cave.has_type(CaveType::Small) && visited.contains(cave) {
                 // Cannot revisit this cave so this is invalid
                 return None;
             } else {
                 // We are in a cave that can be revisted (and isn't the end)
                 let mut visited = visited.clone();
-                visited.insert(cave);
+
+                // If special only mark as visited if allowed visits have been exhausted
+                if let SpecialCave::Some {cave: spec_cave, count } = special_cave && spec_cave == cave {
+		    if count == 1 {
+			visited.insert(cave);
+		    } else {
+			special_cave = SpecialCave::Some {cave: spec_cave, count: count - 1};
+		    }
+                } else {
+                    visited.insert(cave);
+		}
                 for next_cave in system
                     .connecting_caves(cave)
                     .filter(|c| !c.has_type(CaveType::Start))
                 {
-                    if let Some(sub_paths) = paths_rec(system, next_cave, &visited) {
+                    if let Some(sub_paths) =
+                        paths_rec(system, next_cave, &visited, special_cave.clone())
+                    {
                         for mut sub_path in sub_paths.into_iter() {
                             sub_path.insert(0, cave);
-                            paths.push(sub_path);
+                            paths.insert(sub_path);
                         }
                     }
                 }
@@ -231,8 +247,16 @@ impl<'a> CaveSystem<'a> {
             Some(paths)
         }
 
-        paths_rec(self, &self.start, &HashSet::new())
+        paths_rec(self, &self.start, &HashSet::new(), special_cave)
             .ok_or_else(|| AocError::Process("No valid paths were found".into()))
+    }
+
+    fn paths_special(&self) -> Result<HashSet<Vec<&Cave<'a>>>, AocError> {
+        let mut paths = HashSet::new();
+        for cave in self.caves.iter().filter(|c| c.has_type(CaveType::Small)) {
+            paths.extend(self.paths(SpecialCave::Some { cave, count: 2 })?)
+        }
+        Ok(paths)
     }
 }
 
@@ -244,7 +268,7 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let cave_system = CaveSystem::from_str(input)?;
-            let paths = cave_system.paths()?;
+            let paths = cave_system.paths(SpecialCave::None)?;
 
             /*for path in paths.iter() {
                 println!("{:?}", path);
@@ -258,7 +282,7 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let cave_system = CaveSystem::from_str(input)?;
-            let paths = cave_system.paths()?;
+            let paths = cave_system.paths_special()?;
 
             // Process
             Ok(Answer::Unsigned(paths.len().try_into().unwrap()))
