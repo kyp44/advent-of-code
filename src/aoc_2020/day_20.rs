@@ -168,7 +168,6 @@ impl CharGrid<bool> for Image {
         match c {
             '#' => Some(true),
             '.' => Some(false),
-            ' ' => Some(false),
             _ => None,
         }
     }

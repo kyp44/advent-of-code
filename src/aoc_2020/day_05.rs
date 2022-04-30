@@ -35,7 +35,7 @@ impl Parseable<'_> for Seat {
             bit0: char,
             bit1: char,
             len: usize,
-        ) -> impl FnMut(&str) -> NomParseResult<u32> {
+        ) -> impl FnMut(&str) -> NomParseResult<'_, u32> {
             move |input| {
                 map(
                     take_while_m_n(len, len, |c: char| c == bit0 || c == bit1),

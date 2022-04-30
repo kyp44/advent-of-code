@@ -62,14 +62,12 @@ impl Debug for Dimension {
             {
                 let slice = Slice::new(
                     Grid::<bool>::from_coordinates(
-                        &self
+                        self
                             .active_cubes
                             .iter()
                             .filter(|pt| pt[2..] == coords)
-                            .map(|v| Vector2::new(v[0], v[1]))
-                            .collect(),
-                    )
-                    .unwrap(),
+                            .map(|v| Vector2::new(v[0], v[1])),
+                    ),
                 );
 
                 writeln!(
@@ -86,13 +84,11 @@ impl Debug for Dimension {
         } else {
             let slice = Slice::new(
                 Grid::<bool>::from_coordinates(
-                    &self
+                    self
                         .active_cubes
                         .iter()
-                        .map(|v| Vector2::new(v[0], v[1]))
-                        .collect(),
-                )
-                .unwrap(),
+                        .map(|v| Vector2::new(v[0], v[1])),
+                                        ),
             );
             slice.out_fmt(f)?;
         }

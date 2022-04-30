@@ -201,35 +201,21 @@ pub trait CharGrid<T> {
     }
 }
 
-/// A boolean Grid can be alternatively represented as a set of coordinates.
-pub trait GridCoordinates {
-    /// Determine the 2D coordinates of the true cells, with the indices
-    /// Being the coordinates in the boxed data.
-    fn to_coordinates(&self) -> HashSet<GridPoint>;
-
-    /// Construct the grid from 2D coordinates of set cells, where the size is
-    /// determined from from the min and max coordinates. If the set is empty,
-    /// then the grid with be 1x1 with the single cell being unset.
-    fn from_coordinates(points: &HashSet<Vector2<isize>>) -> AocResult<Self>
-    where
-        Self: Sized;
-}
-
-impl GridCoordinates for Grid<bool> {
-    fn to_coordinates(&self) -> HashSet<GridPoint> {
+impl Grid<bool> {
+    pub fn to_coordinates(&self) -> HashSet<GridPoint> {
         self.all_points().filter(|p| *self.get(p)).collect()
     }
 
-    fn from_coordinates(points: &HashSet<Vector2<isize>>) -> AocResult<Self> {
-        let x_range = points.iter().map(|p| p.x).range().unwrap_or(0..=0);
-        let y_range = points.iter().map(|p| p.y).range().unwrap_or(0..=0);
+    pub fn from_coordinates(points: impl Iterator<Item = Vector2<isize>> + Clone) -> Self {
+        let x_range = points.clone().map(|p| p.x).range().unwrap_or(0..=0);
+        let y_range = points.clone().map(|p| p.y).range().unwrap_or(0..=0);
         let size = GridSize::new(
             x_range.len().try_into().unwrap(),
             y_range.len().try_into().unwrap(),
         );
         let mut grid = Self::default(size);
 
-        for point in points.iter().map(|p| {
+        for point in points.map(|p| {
             GridPoint::new(
                 (p.x - x_range.start()).try_into().unwrap(),
                 (p.y - y_range.start()).try_into().unwrap(),
@@ -237,6 +223,6 @@ impl GridCoordinates for Grid<bool> {
         }) {
             grid.set(&point, true);
         }
-        Ok(grid)
+        grid
     }
 }
