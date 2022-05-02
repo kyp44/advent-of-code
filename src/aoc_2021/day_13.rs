@@ -1,7 +1,7 @@
-use std::{collections::HashSet, str::FromStr, fmt::Debug};
+use std::{collections::HashSet, str::FromStr, fmt::Debug, rc::Rc};
 
 use cgmath::Vector2;
-use nom::{combinator::map, sequence::separated_pair, bytes::complete::tag};
+use nom::{combinator::map, sequence::{separated_pair, preceded}, bytes::complete::tag, character::complete::{multispace1, one_of}};
 
 use crate::aoc::{prelude::*, parse::trim};
 
@@ -10,9 +10,9 @@ mod tests {
     use super::*;
     use crate::solution_test;
     use Answer::Unsigned;
-
+    
     solution_test! {
-        vec![Unsigned(123)],
+        vec![Unsigned(592), Unsigned(94)],
     "6,10
 0,14
 9,10
@@ -34,11 +34,11 @@ mod tests {
 
 fold along y=7
 fold along x=5",
-        vec![12u64].answer_vec()
+        vec![17u64, 16].answer_vec()
     }
 }
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 struct Point {
     point: Vector2<isize>,
 }
@@ -56,7 +56,15 @@ impl Parseable<'_> for Point {
         )(input)
     }
 }
+impl Point {
+    fn new(x: isize, y: isize) -> Self {
+        Self {
+            point: Vector2::new(x, y),
+        }
+    }
+}
 
+#[derive(Clone)]
 struct Page {
     dots: HashSet<Point>,
 }
@@ -72,14 +80,95 @@ impl FromStr for Page {
 impl Debug for Page {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let grid = Grid::from_coordinates(self.dots.iter().map(|p| p.point));
-        writeln!(f, "{:?}", "quaggles")
+        writeln!(f, "{:?}", grid)
+    }
+}
+impl Page {
+    fn fold(&self, fold: &Fold) -> Self {
+        let mut dots = HashSet::new();
+        match fold {
+            Fold::Vertical(fx) => {
+                for dot in self.dots.iter().map(|p| p.point) {
+                    dots.insert(Point::new(if dot.x <= *fx { dot.x } else { 2*fx - dot.x}, dot.y));
+                }
+            },
+            Fold::Horizontal(fy) => {
+                for dot in self.dots.iter().map(|p| p.point) {
+                    dots.insert(Point::new(dot.x, if dot.y <= *fy { dot.y } else { 2*fy - dot.y}));
+                }
+            },
+        }
+        Self {
+            dots,
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.dots.len()
     }
 }
 
 
+#[derive(Clone, Copy)]
 enum Fold {
-    Vertical(usize),
-    Horizontal(usize),
+    Vertical(isize),
+    Horizontal(isize),
+}
+impl Parseable<'_> for Fold {
+    fn parser(input: &str) -> NomParseResult<Self> {
+        map(
+            preceded(
+            preceded(tag("fold along"), multispace1),
+            separated_pair(one_of("xy"), tag("="), nom::character::complete::u32)
+            ),
+            |(dir, val)| {
+                let val = val.try_into().unwrap();
+                match dir {
+                    'x' => Self::Vertical(val),
+                    _ => Self::Horizontal(val),
+                }
+            }
+        )(input)
+    }
+}
+
+struct Problem {
+    page: Page,
+    folds: Box<[Fold]>,
+}
+impl FromStr for Problem {
+    type Err = AocError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let sections = s.sections(2)?;
+
+        Ok(Self {
+            page: Page::from_str(sections[0])?,
+            folds: Fold::gather(sections[1].lines())?.into_boxed_slice(),
+        })
+    }
+}
+impl Problem {
+    fn apply_folds(&self) -> FoldedPages {
+        FoldedPages {
+            page: Rc::new(self.page.clone()),
+            folds: self.folds.iter(),
+        }
+    }
+}
+struct FoldedPages<'a> {
+    page: Rc<Page>,
+    folds: std::slice::Iter<'a, Fold>,
+}
+impl Iterator for FoldedPages<'_> {
+    type Item = Rc<Page>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.folds.next().map(|fold| {
+            self.page = Rc::new(self.page.fold(fold));
+            self.page.clone()
+        })
+    }
 }
 
 pub const SOLUTION: Solution = Solution {
@@ -89,9 +178,29 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
+            let problem = Problem::from_str(input)?;
+            let first_fold = problem.apply_folds().next().unwrap();
+
+            //println!("{:?}\n", problem.page);
+            //println!("{:?}\n", first_fold);
 
             // Process
-            Ok(0u64.into())
+            Ok(Answer::Unsigned(first_fold.len().try_into().unwrap()))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let problem = Problem::from_str(input)?;
+            
+            // This is a little annoying because it requires looking at letters in the folded image,
+            // which cannot reallly be done in automated way easily.
+            let last_page = problem.apply_folds().last().unwrap();
+            println!("Part b) folded image:\n");
+            println!("{:?}", last_page);
+            println!("Part b) actual answer: JGAJEFKU\n");
+
+            // Process
+            Ok(Answer::Unsigned(last_page.len().try_into().unwrap()))
         },
     ],
 };

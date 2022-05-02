@@ -168,16 +168,13 @@ impl CharGrid<bool> for Image {
         match c {
             '#' => Some(true),
             '.' => Some(false),
+            ' ' => Some(false),
             _ => None,
         }
     }
 
     fn to_char(e: &bool) -> char {
-        if *e {
-            '#'
-        } else {
-            '.'
-        }
+        Grid::<bool>::to_char(e)
     }
 }
 impl FromStr for Image {

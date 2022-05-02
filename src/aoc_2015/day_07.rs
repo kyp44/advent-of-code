@@ -168,7 +168,7 @@ impl<'a> Circuit<'a> {
 
     fn determine_signal<'b>(&'b mut self, wire: &'a str) -> AocResult<u16> {
         // Recursive internal function
-        fn det_sig<'a, 'b: 'a>(
+        fn det_sig<'a: 'b, 'b>(
             wire_values: &'b RefCell<HashMap<&'a str, u16>>,
             elements: &'b [Element<'a>],
             wire: &'a str,

@@ -226,3 +226,30 @@ impl Grid<bool> {
         grid
     }
 }
+
+impl CharGrid<bool> for Grid<bool> {
+    fn get_grid(&self) -> &Grid<bool> {
+        self
+    }
+
+    fn from_char(c: char) -> Option<bool> {
+        match c {
+            '#' => Some(true),
+            '.' => Some(false),
+            _ => None,
+        }
+    }
+
+    fn to_char(e: &bool) -> char {
+        if *e {
+            '#'
+        } else {
+            '.'
+        }
+    }
+}
+impl core::fmt::Debug for Grid<bool> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.out_fmt(f)
+    }
+}
