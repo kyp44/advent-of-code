@@ -1,6 +1,8 @@
 use super::{AocError, AocResult};
 use nom::bytes::complete::tag;
-use nom::character::complete::{multispace0, space0, space1};
+use nom::character::complete::{multispace0, space0, space1, satisfy};
+use nom::character::is_alphanumeric;
+use nom::error::ParseError;
 use nom::sequence::delimited;
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
@@ -106,6 +108,23 @@ where
     E: nom::error::ParseError<I>,
 {
     delimited(space0, inner, space0)
+}
+
+/// A nom parser that takes a single alphanumberic character, which
+/// somehow is not built into nom
+pub fn single_alphanumeric<I, E>(input: I) -> IResult<I, char, E>
+where
+    I: Slice<RangeFrom<usize>> + InputIter,
+    <I as InputIter>::Item: AsChar,
+    E: nom::error::ParseError<I>,
+{
+    satisfy(|c| {
+        if let Ok(b) = c.try_into() {
+            is_alphanumeric(b)
+        } else {
+            false
+        }
+    })(input)
 }
 
 /// A nom combinator that requires some whitespace around a parser.
