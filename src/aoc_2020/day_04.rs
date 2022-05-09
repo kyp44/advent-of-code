@@ -117,7 +117,7 @@ impl PassportField {
             HairColor => {
                 let res: NomParseResult<&str> = all_consuming(preceded(
                     tag("#"),
-                    take_while_m_n(6, 6, |c: char| c.is_digit(16)),
+                    take_while_m_n(6, 6, |c: char| c.is_ascii_hexdigit()),
                 ))(value);
                 res.is_ok()
             }
@@ -135,7 +135,7 @@ impl PassportField {
             }
             PassportId => {
                 let res: NomParseResult<&str> =
-                    all_consuming(take_while_m_n(9, 9, |c: char| c.is_digit(10)))(value);
+                    all_consuming(take_while_m_n(9, 9, |c: char| c.is_ascii_digit()))(value);
                 res.is_ok()
             }
             CountryId => true,

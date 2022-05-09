@@ -1,8 +1,7 @@
 use super::{AocError, AocResult};
 use nom::bytes::complete::tag;
-use nom::character::complete::{multispace0, space0, space1, satisfy};
+use nom::character::complete::{multispace0, satisfy, space0, space1};
 use nom::character::is_alphanumeric;
-use nom::error::ParseError;
 use nom::sequence::delimited;
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
