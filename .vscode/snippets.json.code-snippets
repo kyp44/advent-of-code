@@ -1,0 +1,37 @@
+{
+	"New problem": {
+		"scope": "rust",
+		"prefix": "new-problem",
+		"body": [
+			"use crate::aoc::prelude::*;",
+			"",
+			"#[cfg(test)]",
+			"mod tests {",
+			"use super::*;",
+			"use crate::solution_test;",
+			"use Answer::Unsigned;",
+			"",
+			"solution_test! {",
+			"vec![Unsigned(123)],",
+			"\"\",",
+			"vec![123u64].answer_vec()",
+			"}",
+			"}",
+			"",
+			"pub const SOLUTION: Solution = Solution {",
+			"day: $1,",
+			"name: \"$2\",",
+			"solvers: &[",
+			"// Part a)",
+			"|input| {",
+			"// Generation",
+			"",
+			"// Process",
+			"Ok(0u64.into())",
+			"},",
+			"],",
+			"};"
+		],
+		"description": "Insert a new AOC problem"
+	}
+}
