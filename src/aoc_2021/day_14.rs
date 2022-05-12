@@ -1,6 +1,12 @@
-use std::{rc::Rc, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    iter::Sum,
+    ops::{Add, RangeInclusive},
+    str::FromStr,
+};
 
-use itertools::Itertools;
+use itertools::{iproduct, Itertools};
+use maplit::hashset;
 use nom::{
     bytes::complete::tag,
     character::complete::alphanumeric1,
@@ -20,7 +26,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-        vec![Unsigned(123)],
+        vec![Unsigned(2194), Unsigned(2360298895777)],
     "NNCB
 
 CH -> B
@@ -43,7 +49,6 @@ CN -> C",
     }
 }
 
-#[derive(Clone, new)]
 struct Formula {
     elements: Vec<char>,
 }
@@ -60,23 +65,12 @@ impl std::fmt::Debug for Formula {
     }
 }
 impl Formula {
-    fn occurances(&self) -> impl Iterator<Item = Occurance> + '_ {
-        self.elements.iter().unique().map(|e| Occurance {
-            element: *e,
-            number: self.elements.iter().filter_count(|fe| *fe == e),
-        })
+    fn pairs(&self) -> impl Iterator<Item = Pair> + '_ {
+        self.elements.iter().copied().tuple_windows()
     }
 }
 
-struct Occurance {
-    element: char,
-    number: usize,
-}
-impl std::fmt::Debug for Occurance {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.element, self.number)
-    }
-}
+type Pair = (char, char);
 
 #[derive(Debug)]
 struct PairInsertion {
@@ -101,71 +95,131 @@ impl Parseable<'_> for PairInsertion {
     }
 }
 impl PairInsertion {
-    fn matches(&self, elements: &(&char, &char)) -> bool {
-        self.left == *elements.0 && self.right == *elements.1
+    fn pair(&self) -> Pair {
+        (self.left, self.right)
+    }
+
+    fn chars(&self) -> impl Iterator<Item = char> {
+        hashset![self.left, self.right, self.insert].into_iter()
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Occurances {
+    map: HashMap<char, u64>,
+}
+impl Occurances {
+    fn new() -> Self {
+        Self {
+            map: HashMap::new(),
+        }
+    }
+
+    fn get(&self, c: &char) -> u64 {
+        match self.map.get(c) {
+            Some(o) => *o,
+            None => 0,
+        }
+    }
+
+    fn increment(&mut self, c: char) {
+        *self.map.entry(c).or_insert(0) += 1;
+    }
+
+    fn range(&self) -> RangeInclusive<u64> {
+        self.map.values().copied().range().unwrap_or(0..=0)
+    }
+}
+impl From<char> for Occurances {
+    fn from(c: char) -> Self {
+        let mut occurances = Self::new();
+        occurances.increment(c);
+        occurances
+    }
+}
+impl Add for &Occurances {
+    type Output = Occurances;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        let mut map = HashMap::new();
+        let chars: HashSet<char> = self.map.keys().chain(rhs.map.keys()).copied().collect();
+
+        for c in chars.into_iter() {
+            map.insert(c, self.get(&c) + rhs.get(&c));
+        }
+
+        Self::Output { map }
+    }
+}
+impl Sum for Occurances {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.reduce(|o1, o2| &o1 + &o2)
+            .unwrap_or_else(Occurances::new)
     }
 }
 
 #[derive(Debug)]
 struct PolymerBuilder {
     template: Formula,
-    pair_insertions: Box<[PairInsertion]>,
+    pair_insertions: HashMap<Pair, PairInsertion>,
+    chars: HashSet<char>,
 }
 impl FromStr for PolymerBuilder {
     type Err = AocError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let secs = s.sections(2)?;
+        let pair_insertions = PairInsertion::gather(secs[1].lines())?;
+        let chars = pair_insertions.iter().flat_map(|p| p.chars()).collect();
 
         Ok(Self {
             template: Formula::from_str(secs[0])?,
-            pair_insertions: PairInsertion::gather(secs[1].lines())?.into_boxed_slice(),
+            pair_insertions: pair_insertions
+                .into_iter()
+                .map(|ip| (ip.pair(), ip))
+                .collect(),
+            chars,
         })
     }
 }
 impl PolymerBuilder {
-    fn build(&self) -> Polymers {
-        Polymers::new(self)
-    }
-}
-struct Polymers<'a> {
-    builder: &'a PolymerBuilder,
-    formula: Rc<Formula>,
-}
-impl<'a> Polymers<'a> {
-    fn new(builder: &'a PolymerBuilder) -> Self {
-        Self {
-            builder,
-            formula: Rc::new(builder.template.clone()),
-        }
-    }
-}
-impl Iterator for Polymers<'_> {
-    type Item = Rc<Formula>;
+    fn occurances(&self, nth: usize) -> Occurances {
+        let mut occurances_map: HashMap<(Pair, usize), Occurances> =
+            self.pairs().map(|p| ((p, 0), p.0.into())).collect();
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut formula = Vec::new();
-
-        // Look for pair matches in a ssliding window
-        for elements in self.formula.elements.iter().tuple_windows() {
-            match self
-                .builder
-                .pair_insertions
-                .iter()
-                .find(|p| p.matches(&elements))
-            {
-                Some(pair) => {
-                    formula.push(pair.left);
-                    formula.push(pair.insert);
-                }
-                None => formula.push(*elements.0),
+        // First, build up occurances for all levels
+        for level in 1..=nth {
+            // Go through every combination of characters
+            for pair in self.pairs() {
+                let occurances = match self.pair_insertions.get(&pair) {
+                    Some(ip) => {
+                        occurances_map
+                            .get(&((pair.0, ip.insert), level - 1))
+                            .unwrap()
+                            + occurances_map
+                                .get(&((ip.insert, pair.1), level - 1))
+                                .unwrap()
+                    }
+                    None => pair.0.into(),
+                };
+                occurances_map.insert((pair, level), occurances);
             }
         }
-        // Need to add the last element
-        formula.push(*self.formula.elements.last().unwrap());
-        self.formula = Rc::new(Formula::new(formula));
 
-        Some(self.formula.clone())
+        // Now go through the template and add occurances
+        let mut occurances = self
+            .template
+            .pairs()
+            .map(|p| occurances_map.get(&(p, nth)).unwrap().clone())
+            .sum::<Occurances>();
+
+        // Need to add the last element, which is otherwise not included
+        occurances.increment(*self.template.elements.last().unwrap());
+        occurances
+    }
+
+    fn pairs(&self) -> impl Iterator<Item = Pair> + '_ {
+        iproduct!(self.chars.iter().copied(), self.chars.iter().copied())
     }
 }
 
@@ -177,45 +231,19 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let builder = PolymerBuilder::from_str(input)?;
-            let final_formula = builder.build().nth(9).unwrap();
-
-            for formula in builder.build().take(4) {
-                println!("{:?}", formula)
-            }
-            for occurance in final_formula
-                .occurances()
-                .sorted_unstable_by_key(|o| o.number)
-            {
-                println!("{:?}", occurance);
-            }
-
-            let range = final_formula
-                .occurances()
-                .map(|o| o.number)
-                .range()
-                .unwrap();
+            let range = builder.occurances(10).range();
 
             // Process
-            Ok(Answer::Unsigned(
-                (range.end() - range.start()).try_into().unwrap(),
-            ))
+            Ok((range.end() - range.start()).into())
         },
         // Part b)
-        /*|input| {
+        |input| {
             // Generation
             let builder = PolymerBuilder::from_str(input)?;
-            let final_formula = builder.build().nth(39).unwrap();
-
-            let range = final_formula
-                .occurances()
-                .map(|o| o.number)
-                .range()
-                .unwrap();
+            let range = builder.occurances(40).range();
 
             // Process
-            Ok(Answer::Unsigned(
-                (range.end() - range.start()).try_into().unwrap(),
-            ))
-        },*/
+            Ok((range.end() - range.start()).into())
+        },
     ],
 };
