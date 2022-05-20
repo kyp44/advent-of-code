@@ -30,7 +30,7 @@ mod tests {
         }
 }
 
-#[derive(CharGridDebug, Clone)]
+#[derive(Clone)]
 struct Octopi {
     grid: Grid<u8>,
 }
@@ -39,21 +39,8 @@ impl FromStr for Octopi {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self {
-            grid: Self::grid_from_str(s)?,
+            grid: Grid::grid_from_str(s)?,
         })
-    }
-}
-impl CharGrid<u8> for Octopi {
-    fn get_grid(&self) -> &Grid<u8> {
-        &self.grid
-    }
-
-    fn from_char(c: char) -> Option<u8> {
-        c.to_digit(10).map(|d| d.try_into().unwrap())
-    }
-
-    fn to_char(e: &u8) -> char {
-        char::from_digit((*e).into(), 10).unwrap()
     }
 }
 impl Octopi {

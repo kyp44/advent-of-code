@@ -226,7 +226,6 @@ impl Grid<bool> {
         grid
     }
 }
-
 impl CharGrid<bool> for Grid<bool> {
     fn get_grid(&self) -> &Grid<bool> {
         self
@@ -249,6 +248,26 @@ impl CharGrid<bool> for Grid<bool> {
     }
 }
 impl core::fmt::Debug for Grid<bool> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.out_fmt(f)
+    }
+}
+
+/// Grid for single digit numbers
+impl CharGrid<u8> for Grid<u8> {
+    fn get_grid(&self) -> &Grid<u8> {
+        self
+    }
+
+    fn from_char(c: char) -> Option<u8> {
+        c.to_digit(10).map(|d| d.try_into().unwrap())
+    }
+
+    fn to_char(e: &u8) -> char {
+        char::from_digit((*e).into(), 10).unwrap()
+    }
+}
+impl core::fmt::Debug for Grid<u8> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.out_fmt(f)
     }

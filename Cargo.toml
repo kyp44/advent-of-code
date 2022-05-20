@@ -4,6 +4,10 @@ version = "0.1.0"
 authors = ["dwhitman"]
 edition = "2021"
 
+# This enables flamegraph to work on release builds
+[profile.release]
+debug = true
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -30,6 +34,7 @@ aoc_derive = { path = "aoc_derive" }
 derive-new = "0.5"
 partitions = "0.2"
 lazy_static = "1.4"
+priority-queue = "1.2"
 
 [features]
 expensive = []

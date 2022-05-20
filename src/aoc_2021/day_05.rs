@@ -136,7 +136,7 @@ impl CharGrid<u8> for FloorMap {
         if c == '.' {
             Some(0)
         } else {
-            c.to_digit(10).map(|v| v.try_into().unwrap())
+            Grid::from_char(c)
         }
     }
 
@@ -144,7 +144,7 @@ impl CharGrid<u8> for FloorMap {
         if *e == 0 {
             '.'
         } else {
-            char::from_digit((*e).into(), 10).unwrap()
+            Grid::to_char(e)
         }
     }
 }
