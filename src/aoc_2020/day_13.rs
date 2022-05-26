@@ -43,7 +43,7 @@ struct Schedule {
 }
 
 impl Parseable<'_> for Schedule {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
             separated_pair(
                 nom::character::complete::u64,

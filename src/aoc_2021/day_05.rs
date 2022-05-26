@@ -36,8 +36,8 @@ struct Line {
     to: GridPoint,
 }
 impl Parseable<'_> for Line {
-    fn parser(input: &str) -> NomParseResult<Self> {
-        fn point_parser(input: &str) -> NomParseResult<GridPoint> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
+        fn point_parser(input: &str) -> NomParseResult<&str, GridPoint> {
             map(
                 separated_pair(
                     nom::character::complete::u16,

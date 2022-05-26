@@ -90,7 +90,7 @@ struct Expression<'a> {
     elements: Vec<Element>,
 }
 impl<'a> Parseable<'a> for Expression<'a> {
-    fn parser(input: &'a str) -> NomParseResult<Self> {
+    fn parser(input: &'a str) -> NomParseResult<&str, Self> {
         all_consuming(map(
             many1(alt((
                 map(trim(nom::character::complete::u64), Element::Number),

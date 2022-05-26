@@ -41,7 +41,7 @@ struct HappinessChange<'a> {
     change: i64,
 }
 impl<'a> Parseable<'a> for HappinessChange<'a> {
-    fn parser(input: &'a str) -> NomParseResult<Self> {
+    fn parser(input: &'a str) -> NomParseResult<&str, Self> {
         map(
             tuple((
                 take_until(" "),

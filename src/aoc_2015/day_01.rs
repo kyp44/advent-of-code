@@ -42,7 +42,7 @@ enum Direction {
     Down,
 }
 impl Parseable<'_> for Direction {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(one_of("()"), |c| match c {
             '(' => Direction::Up,
             ')' => Direction::Down,
@@ -63,7 +63,7 @@ struct Directions {
     directions: Box<[Direction]>,
 }
 impl Parseable<'_> for Directions {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(many1(Direction::parser), |v| Directions {
             directions: v.into_boxed_slice(),
         })(input)

@@ -2,6 +2,7 @@ use super::{AocError, AocResult};
 use nom::bytes::complete::tag;
 use nom::character::complete::{multispace0, satisfy, space0, space1};
 use nom::character::is_alphanumeric;
+use nom::error::{make_error, VerboseErrorKind};
 use nom::sequence::delimited;
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
@@ -10,6 +11,9 @@ use num::Unsigned;
 use std::fmt;
 use std::ops::RangeFrom;
 use std::str::FromStr;
+
+/// Type of nom input when parsing bits
+pub type BitInput<'a> = (&'a [u8], usize);
 
 /// This custom parse error type is needed because the desired Nom VerboseError
 /// keeps references to the input string where that could not be parsed.
@@ -21,26 +25,58 @@ pub struct NomParseError {
 }
 impl nom::error::ParseError<&str> for NomParseError {
     fn from_error_kind(input: &str, kind: ErrorKind) -> Self {
-        NomParseError {
+        Self {
             verbose_error: VerboseError::from_error_kind(input.to_string(), kind),
         }
     }
 
     fn append(input: &str, kind: ErrorKind, other: Self) -> Self {
-        NomParseError {
+        Self {
             verbose_error: VerboseError::append(input.to_string(), kind, other.verbose_error),
         }
     }
 }
+const BITS_STR: &str = "(bits)";
+impl nom::error::ParseError<BitInput<'_>> for NomParseError {
+    fn from_error_kind(input: BitInput, kind: ErrorKind) -> Self {
+        Self {
+            verbose_error: VerboseError::from_error_kind(BITS_STR.to_string(), kind),
+        }
+    }
+
+    fn append(input: BitInput, kind: ErrorKind, other: Self) -> Self {
+        Self {
+            verbose_error: VerboseError::append(BITS_STR.to_string(), kind, other.verbose_error),
+        }
+    }
+}
 impl nom::error::ContextError<&str> for NomParseError {}
+impl nom::error::ContextError<BitInput<'_>> for NomParseError {}
 impl fmt::Display for NomParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.verbose_error, f)
     }
 }
+impl NomParseError {
+    pub fn nom_err_for_str(i: &str, msg: &'static str) -> nom::Err<Self> {
+        return nom::Err::Failure(NomParseError {
+            verbose_error: VerboseError {
+                errors: vec![(i.to_string(), VerboseErrorKind::Context(msg))],
+            },
+        });
+    }
+
+    pub fn nom_err_for_bits(msg: &'static str) -> nom::Err<Self> {
+        return nom::Err::Failure(NomParseError {
+            verbose_error: VerboseError {
+                errors: vec![(BITS_STR.to_string(), VerboseErrorKind::Context(msg))],
+            },
+        });
+    }
+}
 
 /// Type containing the result of a nom parsing.
-pub type NomParseResult<'a, U> = IResult<&'a str, U, NomParseError>;
+pub type NomParseResult<I, U> = IResult<I, U, NomParseError>;
 
 /// This should be a part of the nom library in my opinion.
 pub trait DiscardInput<U, E> {
@@ -58,7 +94,7 @@ impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
 /// See here: https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299
 pub trait Parseable<'a> {
     /// Parser function for nom.
-    fn parser(input: &'a str) -> NomParseResult<Self>
+    fn parser(input: &'a str) -> NomParseResult<&str, Self>
     where
         Self: Sized;
 
@@ -67,7 +103,7 @@ pub trait Parseable<'a> {
     where
         Self: Sized,
     {
-        Self::parser(input).finish().map(|t| t.1)
+        Self::parser(input).finish().discard_input()
     }
 
     /// Gathers a vector of items from an iterator with each item being a string to parse.
@@ -89,8 +125,9 @@ pub trait Parseable<'a> {
 }
 
 /// Parseable for simple numbers.
+// TODO can we get rid of this with the new nom numeric parsers?
 impl<T: Unsigned + FromStr> Parseable<'_> for T {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(digit1, |ns: &str| match ns.parse() {
             Ok(v) => v,
             Err(_) => panic!("nom did not parse a numeric value correctly"),

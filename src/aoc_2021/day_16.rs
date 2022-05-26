@@ -1,6 +1,8 @@
+use std::str::FromStr;
+
 use bitbuffer::{BigEndian, BitReadBuffer, BitWriteStream};
 use hex::decode;
-use nom::{bits::complete::take, multi::count, IResult};
+use nom::{bits::complete::take, multi::count, Finish};
 
 use crate::aoc::prelude::*;
 
@@ -29,16 +31,15 @@ mod tests {
     }
 }
 
-type BitInput<'a> = (&'a [u8], usize);
-
 #[derive(Debug)]
 enum PacketType {
     Literal(u64),
     Operator(Box<[Packet]>),
 }
 impl PacketType {
-    fn parser(i: BitInput) -> IResult<BitInput, Self> {
+    fn parser(i: BitInput) -> NomParseResult<BitInput, (Self, usize)> {
         let (i, type_id) = take(3usize)(i)?;
+        let mut taken_bits = 3;
         Ok(match type_id {
             4u8 => {
                 // Literal, so extract the value
@@ -58,12 +59,16 @@ impl PacketType {
                         break;
                     }
                 }
+                taken_bits += num_bits;
 
                 // Read complete literal value
                 let read_buffer = BitReadBuffer::new(&bytes, BigEndian);
                 (
                     input,
-                    Self::Literal(read_buffer.read_int(0, num_bits).unwrap()),
+                    (
+                        Self::Literal(read_buffer.read_int(0, num_bits).unwrap()),
+                        taken_bits,
+                    ),
                 )
             }
             _ => {
@@ -72,14 +77,36 @@ impl PacketType {
 
                 if length_type_id == 0 {
                     // Total subsequent packet length is in the next 15 bits
-                    let (i, total_bits): (BitInput, u16) = take(15usize)(i)?;
+                    let (mut i, mut total_bits): (BitInput, usize) = take(15usize)(i)?;
+                    taken_bits += 15 + total_bits;
+                    let mut packets = Vec::new();
 
-                    (i, Self::Literal(0))
+                    while total_bits > 0 {
+                        let (inp, (packet, bits)) = Packet::parser(i)?;
+                        if bits > usize::from(total_bits) {
+                            return Err(NomParseError::nom_err_for_bits(
+                                "Packet took more bits than expected",
+                            ));
+                        }
+                        i = inp;
+                        total_bits -= bits;
+                        packets.push(packet)
+                    }
+
+                    (i, (Self::Operator(packets.into_boxed_slice()), taken_bits))
                 } else {
                     // Number of subsequent packets is in the next 11 bits
                     let (i, num_packets): (BitInput, u16) = take(11usize)(i)?;
+                    taken_bits += 11;
                     let (i, packets) = count(Packet::parser, num_packets.into())(i)?;
-                    (i, Self::Operator(packets.into_boxed_slice()))
+                    taken_bits += packets.iter().map(|t| t.1).sum::<usize>();
+                    (
+                        i,
+                        (
+                            Self::Operator(packets.into_iter().map(|t| t.0).collect()),
+                            taken_bits,
+                        ),
+                    )
                 }
             }
         })
@@ -92,21 +119,29 @@ struct Packet {
     packet_type: PacketType,
 }
 impl Packet {
-    fn parser(i: BitInput) -> IResult<BitInput, Self> {
+    fn parser(i: BitInput) -> NomParseResult<BitInput, (Self, usize)> {
         let (i, version) = take(3usize)(i)?;
-        let (i, packet_type) = PacketType::parser(i)?;
+        let (i, (packet_type, type_bits)) = PacketType::parser(i)?;
         Ok((
             i,
-            Self {
-                version,
-                packet_type,
-            },
+            (
+                Self {
+                    version,
+                    packet_type,
+                },
+                3 + type_bits,
+            ),
         ))
     }
 }
+impl FromStr for Packet {
+    type Err = AocError;
 
-fn hex_decode(i: &str) -> AocResult<Vec<u8>> {
-    decode(i).map_err(|_| AocError::InvalidInput("invalid hex input".into()))
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = decode(s).map_err(|_| AocError::InvalidInput("invalid hex input".into()))?;
+        let (packet, _) = Self::parser((&bytes, 0)).finish().discard_input()?;
+        Ok(packet)
+    }
 }
 
 pub const SOLUTION: Solution = Solution {
@@ -116,8 +151,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let bytes = hex_decode(input)?;
-            let packet = Packet::parser((&bytes, 0));
+            let packet = Packet::from_str(input)?;
 
             println!("TODO: {:?}", packet);
 

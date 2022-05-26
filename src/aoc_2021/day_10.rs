@@ -70,7 +70,7 @@ impl Chunk {
     }
 }
 impl Parseable<'_> for Chunk {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(one_of("()[]{}<>"), |c| {
             use ChunkType::*;
             use Parity::*;
@@ -100,7 +100,7 @@ struct Line {
     chunks: Box<[Chunk]>,
 }
 impl Parseable<'_> for Line {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(all_consuming(trim(many1(Chunk::parser))), |chunks| Self {
             chunks: chunks.into_boxed_slice(),
         })(input)

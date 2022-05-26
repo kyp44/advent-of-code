@@ -53,7 +53,7 @@ struct Formula {
     elements: Vec<char>,
 }
 impl Parseable<'_> for Formula {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(alphanumeric1, |s: &str| Self {
             elements: s.chars().collect(),
         })(input)
@@ -79,7 +79,7 @@ struct PairInsertion {
     insert: char,
 }
 impl Parseable<'_> for PairInsertion {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
             separated_pair(
                 pair(single_alphanumeric, single_alphanumeric),

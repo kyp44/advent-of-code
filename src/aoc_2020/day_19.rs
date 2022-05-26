@@ -91,7 +91,7 @@ enum Rule<'a> {
     Seq(Vec<Vec<usize>>),
 }
 impl<'a> Parseable<'a> for Rule<'a> {
-    fn parser(input: &'a str) -> NomParseResult<Self> {
+    fn parser(input: &'a str) -> NomParseResult<&str, Self> {
         let quote = "\"";
         alt((
             map(

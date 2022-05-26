@@ -76,7 +76,7 @@ enum Operation {
 }
 
 impl Parseable<'_> for Operation {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         use nom::character::complete::u64 as cu64;
         alt((
             map(

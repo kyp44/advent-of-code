@@ -44,7 +44,7 @@ enum Instruction {
 }
 
 impl Parseable<'_> for Instruction {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
             pair(one_of("NSEWLRF"), nom::character::complete::i32),
             |(c, n)| {

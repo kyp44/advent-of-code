@@ -28,7 +28,7 @@ enum Direction {
     Up(u8),
 }
 impl Parseable<'_> for Direction {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         alt((
             map(
                 field_line_parser("forward", nom::character::complete::u8),

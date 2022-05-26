@@ -1,16 +1,21 @@
-use std::{collections::HashSet, str::FromStr, fmt::Debug, rc::Rc};
+use std::{collections::HashSet, fmt::Debug, rc::Rc, str::FromStr};
 
 use cgmath::Vector2;
-use nom::{combinator::map, sequence::{separated_pair, preceded}, bytes::complete::tag, character::complete::{multispace1, one_of}};
+use nom::{
+    bytes::complete::tag,
+    character::complete::{multispace1, one_of},
+    combinator::map,
+    sequence::{preceded, separated_pair},
+};
 
-use crate::aoc::{prelude::*, parse::trim};
+use crate::aoc::{parse::trim, prelude::*};
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::solution_test;
     use Answer::Unsigned;
-    
+
     solution_test! {
         vec![Unsigned(592), Unsigned(94)],
     "6,10
@@ -43,7 +48,7 @@ struct Point {
     point: Vector2<isize>,
 }
 impl Parseable<'_> for Point {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
             separated_pair(
                 nom::character::complete::i32,
@@ -51,8 +56,8 @@ impl Parseable<'_> for Point {
                 nom::character::complete::i32,
             ),
             |(x, y)| Self {
-                point: Vector2::new(x.try_into().unwrap(), y.try_into().unwrap())
-            }
+                point: Vector2::new(x.try_into().unwrap(), y.try_into().unwrap()),
+            },
         )(input)
     }
 }
@@ -89,18 +94,22 @@ impl Page {
         match fold {
             Fold::Vertical(fx) => {
                 for dot in self.dots.iter().map(|p| p.point) {
-                    dots.insert(Point::new(if dot.x <= *fx { dot.x } else { 2*fx - dot.x}, dot.y));
+                    dots.insert(Point::new(
+                        if dot.x <= *fx { dot.x } else { 2 * fx - dot.x },
+                        dot.y,
+                    ));
                 }
-            },
+            }
             Fold::Horizontal(fy) => {
                 for dot in self.dots.iter().map(|p| p.point) {
-                    dots.insert(Point::new(dot.x, if dot.y <= *fy { dot.y } else { 2*fy - dot.y}));
+                    dots.insert(Point::new(
+                        dot.x,
+                        if dot.y <= *fy { dot.y } else { 2 * fy - dot.y },
+                    ));
                 }
-            },
+            }
         }
-        Self {
-            dots,
-        }
+        Self { dots }
     }
 
     fn len(&self) -> usize {
@@ -108,18 +117,17 @@ impl Page {
     }
 }
 
-
 #[derive(Clone, Copy)]
 enum Fold {
     Vertical(isize),
     Horizontal(isize),
 }
 impl Parseable<'_> for Fold {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
             preceded(
-            preceded(tag("fold along"), multispace1),
-            separated_pair(one_of("xy"), tag("="), nom::character::complete::u32)
+                preceded(tag("fold along"), multispace1),
+                separated_pair(one_of("xy"), tag("="), nom::character::complete::u32),
             ),
             |(dir, val)| {
                 let val = val.try_into().unwrap();
@@ -127,7 +135,7 @@ impl Parseable<'_> for Fold {
                     'x' => Self::Vertical(val),
                     _ => Self::Horizontal(val),
                 }
-            }
+            },
         )(input)
     }
 }
@@ -191,7 +199,7 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let problem = Problem::from_str(input)?;
-            
+
             // This is a little annoying because it requires looking at letters in the folded image,
             // which cannot reallly be done in automated way easily.
             let last_page = problem.apply_folds().last().unwrap();

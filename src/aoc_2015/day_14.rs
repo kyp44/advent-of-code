@@ -29,7 +29,7 @@ struct Reindeer<'a> {
     rest_time: u64,
 }
 impl<'a> Parseable<'a> for Reindeer<'a> {
-    fn parser(input: &'a str) -> NomParseResult<Self> {
+    fn parser(input: &'a str) -> NomParseResult<&str, Self> {
         map(
             tuple((
                 take_until(" "),

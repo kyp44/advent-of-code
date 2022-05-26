@@ -82,7 +82,7 @@ impl Character {
     }
 }
 impl Parseable<'_> for Character {
-    fn parser(input: &str) -> NomParseResult<Self>
+    fn parser(input: &str) -> NomParseResult<&str, Self>
     where
         Self: Sized,
     {

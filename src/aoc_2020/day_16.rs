@@ -54,7 +54,7 @@ struct Field {
     valid_ranges: Vec<RangeInclusive<u32>>,
 }
 impl Parseable<'_> for Field {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         use nom::character::complete::u32 as cu32;
         map(
             separated_pair(
@@ -91,7 +91,7 @@ struct Ticket {
 }
 
 impl Parseable<'_> for Ticket {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         Ok((
             "",
             Ticket {
@@ -136,7 +136,7 @@ impl Problem {
         verify_fields("Your", &your_ticket)?;
 
         // Parse nearby tickets and verify the number of fields
-        let result: NomParseResult<_> =
+        let result: NomParseResult<&str, _> =
             preceded(pair(tag("nearby tickets:"), multispace1), rest)(sections[2]);
         let nearby_tickets = result
             .finish()

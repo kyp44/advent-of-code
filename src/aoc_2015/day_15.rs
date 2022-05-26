@@ -35,7 +35,7 @@ struct Ingredient {
     calories: i64,
 }
 impl Parseable<'_> for Ingredient {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
             tuple((
                 take_until(":"),

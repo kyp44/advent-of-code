@@ -39,7 +39,7 @@ struct Game {
 }
 
 impl Parseable<'_> for Game {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
             separated_list1(
                 tuple((space0, tag(","), space0)),

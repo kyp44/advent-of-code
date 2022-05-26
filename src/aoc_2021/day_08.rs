@@ -46,7 +46,7 @@ impl PartialEq for Digit {
     }
 }
 impl Parseable<'_> for Digit {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(many1(one_of("abcdefg")), |chars| Digit {
             segments: chars.into_iter().collect(),
         })(input)
@@ -96,7 +96,7 @@ struct Line {
     output: Box<[Digit]>,
 }
 impl Parseable<'_> for Line {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
             separated_pair(
                 separated_list1(space1, Digit::parser),

@@ -30,7 +30,7 @@ struct Sue<'a> {
     compounds: HashMap<&'a str, u8>,
 }
 impl<'a> Parseable<'a> for Sue<'a> {
-    fn parser(input: &'a str) -> NomParseResult<Self> {
+    fn parser(input: &'a str) -> NomParseResult<&str, Self> {
         map(
             separated_pair(
                 preceded(tag("Sue "), nom::character::complete::u16),

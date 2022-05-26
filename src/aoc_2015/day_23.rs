@@ -33,7 +33,7 @@ enum Register {
     B,
 }
 impl Parseable<'_> for Register {
-    fn parser(input: &str) -> NomParseResult<Self>
+    fn parser(input: &str) -> NomParseResult<&str, Self>
     where
         Self: Sized,
     {
@@ -54,7 +54,7 @@ enum Instruction {
     JumpIfOne(Register, i32),
 }
 impl Parseable<'_> for Instruction {
-    fn parser(input: &str) -> NomParseResult<Self>
+    fn parser(input: &str) -> NomParseResult<&str, Self>
     where
         Self: Sized,
     {

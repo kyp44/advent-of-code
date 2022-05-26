@@ -58,7 +58,7 @@ struct Replacement {
     to: String,
 }
 impl Parseable<'_> for Replacement {
-    fn parser(input: &str) -> NomParseResult<Self>
+    fn parser(input: &str) -> NomParseResult<&str, Self>
     where
         Self: Sized,
     {

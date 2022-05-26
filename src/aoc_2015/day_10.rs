@@ -26,7 +26,7 @@ struct Sequence {
     current: Option<String>,
 }
 impl Parseable<'_> for Sequence {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(digit1, |ds: &str| Sequence {
             current: Some(ds.to_string()),
         })(input.trim())

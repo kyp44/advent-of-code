@@ -50,7 +50,7 @@ struct Deck {
     cards: Vec<u8>,
 }
 impl Parseable<'_> for Deck {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
             pair(
                 delimited(

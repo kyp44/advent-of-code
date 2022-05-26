@@ -37,7 +37,7 @@ enum Action {
     TurnOff,
 }
 impl Parseable<'_> for Action {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         use Action::*;
         alt((
             value(TurnOn, tag("turn on")),
@@ -50,7 +50,7 @@ impl Parseable<'_> for Action {
 type Point = Vector2<usize>;
 // NOTE: This cannot be done as a Parseable implementation due
 // to a potential conflict.
-fn point_parser(input: &str) -> NomParseResult<Point> {
+fn point_parser(input: &str) -> NomParseResult<&str, Point> {
     use nom::character::complete::u64 as cu64;
     map(separated_pair(cu64, tag(","), cu64), |(x, y)| {
         Vector2::new(x.try_into().unwrap(), y.try_into().unwrap())
@@ -62,7 +62,7 @@ struct Rect {
     upper_right: Point,
 }
 impl Parseable<'_> for Rect {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map_opt(
             separated_pair(
                 point_parser,
@@ -97,7 +97,7 @@ struct Instruction {
     rect: Rect,
 }
 impl Parseable<'_> for Instruction {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
             separated_pair(Action::parser, space1, Rect::parser),
             |(a, r)| Instruction { action: a, rect: r },

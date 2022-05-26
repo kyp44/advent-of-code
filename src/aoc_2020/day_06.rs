@@ -48,7 +48,7 @@ type Questions = HashSet<char>;
 // probably just more efficient to accept an fn instead (certainly rather than boxing).
 fn make_questions_parser(
     reducer: fn(Questions, Questions) -> Questions,
-) -> impl Fn(&str) -> NomParseResult<'_, Questions> {
+) -> impl Fn(&str) -> NomParseResult<&str, Questions> {
     move |input| {
         context(
             "questions",

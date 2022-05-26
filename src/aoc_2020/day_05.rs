@@ -28,14 +28,14 @@ struct Seat {
 }
 
 impl Parseable<'_> for Seat {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         // Creates a parser closure for a letter-coded binary value of a
         // certain number of bits.
         fn binary_parser(
             bit0: char,
             bit1: char,
             len: usize,
-        ) -> impl FnMut(&str) -> NomParseResult<'_, u32> {
+        ) -> impl FnMut(&str) -> NomParseResult<&str, u32> {
             move |input| {
                 map(
                     take_while_m_n(len, len, |c: char| c == bit0 || c == bit1),

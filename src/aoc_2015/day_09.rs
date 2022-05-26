@@ -35,7 +35,7 @@ struct Distance<'a> {
 }
 
 impl<'a> Parseable<'a> for Distance<'a> {
-    fn parser(input: &'a str) -> NomParseResult<Self> {
+    fn parser(input: &'a str) -> NomParseResult<&str, Self> {
         map(
             separated_pair(
                 separated_pair(take_until(" "), separated(tag("to")), take_until(" ")),

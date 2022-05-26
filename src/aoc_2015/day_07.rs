@@ -38,7 +38,7 @@ enum Input<'a> {
     Wire(&'a str),
 }
 impl<'a> Parseable<'a> for Input<'a> {
-    fn parser(input: &'a str) -> NomParseResult<Self> {
+    fn parser(input: &'a str) -> NomParseResult<&str, Self> {
         alt((
             map(nom::character::complete::u16, Input::Value),
             map(alpha1, Input::Wire),
@@ -69,7 +69,7 @@ enum Element<'a> {
     Or(Binary<'a>),
 }
 impl<'a> Parseable<'a> for Element<'a> {
-    fn parser(input: &'a str) -> NomParseResult<Self> {
+    fn parser(input: &'a str) -> NomParseResult<&str, Self> {
         /// A nom parser for the input/output separator
         fn io_sep<'a, E>(input: &'a str) -> IResult<&str, (), E>
         where

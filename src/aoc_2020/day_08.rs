@@ -37,7 +37,7 @@ enum Instruction {
 }
 
 impl Parseable<'_> for Instruction {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         context(
             "instruction",
             map(

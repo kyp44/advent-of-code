@@ -32,7 +32,7 @@ enum Direction {
     West,
 }
 impl Parseable<'_> for Direction {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         use Direction::*;
         map(one_of("^>v<"), |s| match s {
             '^' => North,
@@ -98,7 +98,7 @@ struct Houses {
     directions: Vec<Direction>,
 }
 impl Parseable<'_> for Houses {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(many1(Direction::parser), |directions| Houses { directions })(input)
     }
 }

@@ -30,7 +30,7 @@ struct PasswordPolicy {
 }
 
 impl Parseable<'_> for PasswordPolicy {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         use nom::character::complete::u32 as cu32;
         context(
             "password policy",
@@ -53,7 +53,7 @@ struct Password {
 }
 
 impl Parseable<'_> for Password {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         context(
             "password",
             separated_pair(PasswordPolicy::parser, tag(": "), rest),

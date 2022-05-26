@@ -102,7 +102,7 @@ impl PassportField {
                 Err(_) => false,
             },
             Height => {
-                let res: NomParseResult<(u32, &str)> = all_consuming(pair(
+                let res: NomParseResult<&str, (u32, &str)> = all_consuming(pair(
                     nom::character::complete::u32,
                     alt((tag("cm"), tag("in"))),
                 ))(value);
@@ -115,14 +115,14 @@ impl PassportField {
                 }
             }
             HairColor => {
-                let res: NomParseResult<&str> = all_consuming(preceded(
+                let res: NomParseResult<&str, &str> = all_consuming(preceded(
                     tag("#"),
                     take_while_m_n(6, 6, |c: char| c.is_ascii_hexdigit()),
                 ))(value);
                 res.is_ok()
             }
             EyeColor => {
-                let res: NomParseResult<&str> = all_consuming(alt((
+                let res: NomParseResult<&str, &str> = all_consuming(alt((
                     tag("amb"),
                     tag("blu"),
                     tag("brn"),
@@ -134,7 +134,7 @@ impl PassportField {
                 res.is_ok()
             }
             PassportId => {
-                let res: NomParseResult<&str> =
+                let res: NomParseResult<&str, &str> =
                     all_consuming(take_while_m_n(9, 9, |c: char| c.is_ascii_digit()))(value);
                 res.is_ok()
             }
@@ -149,7 +149,7 @@ type Passport<'a> = HashMap<PassportField, &'a str>;
 // beause of annoying lifetime issues that apparently have no solution in Rust.
 // It also could not be implemented as a normal method on Passport since
 // this is a foreign type.
-fn parse_passport<'a>(input: &'a str) -> NomParseResult<Passport<'a>> {
+fn parse_passport<'a>(input: &'a str) -> NomParseResult<&str, Passport<'a>> {
     context(
         "passport data",
         map(

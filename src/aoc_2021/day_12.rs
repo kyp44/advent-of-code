@@ -151,7 +151,7 @@ impl<'a> CaveSystem<'a> {
             caves: [&'b str; 2],
         }
         impl<'b> Parseable<'b> for RawPassage<'b> {
-            fn parser(input: &'b str) -> NomParseResult<Self> {
+            fn parser(input: &'b str) -> NomParseResult<&str, Self> {
                 map(
                     separated_pair(alphanumeric1, tag("-"), alphanumeric1),
                     |(a, b)| Self { caves: [a, b] },

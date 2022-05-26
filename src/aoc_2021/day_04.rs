@@ -49,7 +49,7 @@ impl From<u8> for BoardCell {
     }
 }
 impl Parseable<'_> for BoardCell {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(nom::character::complete::u8, |v| v.into())(input)
     }
 }
@@ -58,7 +58,7 @@ struct BingoBoard {
     grid: Grid<BoardCell>,
 }
 impl Parseable<'_> for BingoBoard {
-    fn parser(input: &str) -> NomParseResult<Self> {
+    fn parser(input: &str) -> NomParseResult<&str, Self> {
         let (input, rows) = separated_list1(
             line_ending,
             trim(separated_list1(space1, BoardCell::parser)),

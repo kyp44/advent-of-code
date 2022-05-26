@@ -36,7 +36,7 @@ struct Food {
     allergens: HashSet<Rc<String>>,
 }
 impl Parseable<'_> for Food {
-    fn parser(input: &str) -> NomParseResult<Self>
+    fn parser(input: &str) -> NomParseResult<&str, Self>
     where
         Self: Sized,
     {
