@@ -2,7 +2,7 @@ use super::{AocError, AocResult};
 use nom::bytes::complete::tag;
 use nom::character::complete::{multispace0, satisfy, space0, space1};
 use nom::character::is_alphanumeric;
-use nom::error::{make_error, VerboseErrorKind};
+use nom::error::VerboseErrorKind;
 use nom::sequence::delimited;
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
@@ -38,13 +38,13 @@ impl nom::error::ParseError<&str> for NomParseError {
 }
 const BITS_STR: &str = "(bits)";
 impl nom::error::ParseError<BitInput<'_>> for NomParseError {
-    fn from_error_kind(input: BitInput, kind: ErrorKind) -> Self {
+    fn from_error_kind(_input: BitInput, kind: ErrorKind) -> Self {
         Self {
             verbose_error: VerboseError::from_error_kind(BITS_STR.to_string(), kind),
         }
     }
 
-    fn append(input: BitInput, kind: ErrorKind, other: Self) -> Self {
+    fn append(_input: BitInput, kind: ErrorKind, other: Self) -> Self {
         Self {
             verbose_error: VerboseError::append(BITS_STR.to_string(), kind, other.verbose_error),
         }
@@ -58,20 +58,20 @@ impl fmt::Display for NomParseError {
     }
 }
 impl NomParseError {
-    pub fn nom_err_for_str(i: &str, msg: &'static str) -> nom::Err<Self> {
-        return nom::Err::Failure(NomParseError {
+    /*pub fn nom_err_for_str(i: &str, msg: &'static str) -> nom::Err<Self> {
+        nom::Err::Failure(NomParseError {
             verbose_error: VerboseError {
                 errors: vec![(i.to_string(), VerboseErrorKind::Context(msg))],
             },
-        });
-    }
+        })
+    }*/
 
     pub fn nom_err_for_bits(msg: &'static str) -> nom::Err<Self> {
-        return nom::Err::Failure(NomParseError {
+        nom::Err::Failure(NomParseError {
             verbose_error: VerboseError {
                 errors: vec![(BITS_STR.to_string(), VerboseErrorKind::Context(msg))],
             },
-        });
+        })
     }
 }
 
@@ -125,7 +125,6 @@ pub trait Parseable<'a> {
 }
 
 /// Parseable for simple numbers.
-// TODO can we get rid of this with the new nom numeric parsers?
 impl<T: Unsigned + FromStr> Parseable<'_> for T {
     fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(digit1, |ns: &str| match ns.parse() {

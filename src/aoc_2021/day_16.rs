@@ -13,13 +13,13 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(123)],
+    vec![Unsigned(963)],
     "D2FE28",
     vec![6u64].answer_vec(),
     "38006F45291200",
-    vec![123u64].answer_vec(),
+    vec![9u64].answer_vec(),
     "EE00D40C823060",
-    vec![123u64].answer_vec(),
+    vec![14u64].answer_vec(),
     "8A004A801A8002F478",
     vec![16u64].answer_vec(),
     "620080001611562C8802118E34",
@@ -54,12 +54,12 @@ impl PacketType {
                     let (i, nibble): (BitInput, u8) = take(4usize)(i)?;
                     write_stream.write_int(nibble, 4).unwrap();
                     num_bits += 4;
+                    taken_bits += 5;
                     input = i;
                     if last == 0 {
                         break;
                     }
                 }
-                taken_bits += num_bits;
 
                 // Read complete literal value
                 let read_buffer = BitReadBuffer::new(&bytes, BigEndian);
@@ -72,24 +72,26 @@ impl PacketType {
                 )
             }
             _ => {
-                // Get length type ID
+                // Operator, so get length type ID
                 let (i, length_type_id): (BitInput, u8) = take(1usize)(i)?;
+                taken_bits += 1;
 
                 if length_type_id == 0 {
                     // Total subsequent packet length is in the next 15 bits
-                    let (mut i, mut total_bits): (BitInput, usize) = take(15usize)(i)?;
-                    taken_bits += 15 + total_bits;
+                    let (mut i, mut total_bits_left): (BitInput, usize) = take(15usize)(i)?;
+                    taken_bits += 15 + total_bits_left;
                     let mut packets = Vec::new();
 
-                    while total_bits > 0 {
-                        let (inp, (packet, bits)) = Packet::parser(i)?;
-                        if bits > usize::from(total_bits) {
+                    while total_bits_left > 0 {
+                        let (inp, (packet, num_bits)) = Packet::parser(i)?;
+
+                        if num_bits > total_bits_left {
                             return Err(NomParseError::nom_err_for_bits(
                                 "Packet took more bits than expected",
                             ));
                         }
                         i = inp;
-                        total_bits -= bits;
+                        total_bits_left -= num_bits;
                         packets.push(packet)
                     }
 
@@ -111,6 +113,13 @@ impl PacketType {
             }
         })
     }
+
+    fn version_sum(&self) -> u64 {
+        match self {
+            PacketType::Literal(_) => 0,
+            PacketType::Operator(packets) => packets.iter().map(|p| p.version_sum()).sum(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -122,6 +131,7 @@ impl Packet {
     fn parser(i: BitInput) -> NomParseResult<BitInput, (Self, usize)> {
         let (i, version) = take(3usize)(i)?;
         let (i, (packet_type, type_bits)) = PacketType::parser(i)?;
+
         Ok((
             i,
             (
@@ -133,12 +143,17 @@ impl Packet {
             ),
         ))
     }
+
+    fn version_sum(&self) -> u64 {
+        self.packet_type.version_sum() + u64::from(self.version)
+    }
 }
 impl FromStr for Packet {
     type Err = AocError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = decode(s).map_err(|_| AocError::InvalidInput("invalid hex input".into()))?;
+        let bytes =
+            decode(s.trim()).map_err(|_| AocError::InvalidInput("invalid hex input".into()))?;
         let (packet, _) = Self::parser((&bytes, 0)).finish().discard_input()?;
         Ok(packet)
     }
@@ -153,10 +168,10 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let packet = Packet::from_str(input)?;
 
-            println!("TODO: {:?}", packet);
+            //println!("Packet: {:?}", packet);
 
             // Process
-            Ok(0u64.into())
+            Ok(packet.version_sum().into())
         },
     ],
 };
