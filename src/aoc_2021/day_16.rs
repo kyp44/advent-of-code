@@ -13,28 +13,53 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(963)],
+    vec![Unsigned(963), Unsigned(123)],
     "D2FE28",
-    vec![6u64].answer_vec(),
+    vec![6u64, 123].answer_vec(),
     "38006F45291200",
-    vec![9u64].answer_vec(),
+    vec![9u64, 123].answer_vec(),
     "EE00D40C823060",
-    vec![14u64].answer_vec(),
+    vec![14u64, 123].answer_vec(),
     "8A004A801A8002F478",
-    vec![16u64].answer_vec(),
+    vec![16u64, 123].answer_vec(),
     "620080001611562C8802118E34",
-    vec![12u64].answer_vec(),
+    vec![12u64, 123].answer_vec(),
     "C0015000016115A2E0802F182340",
-    vec![23u64].answer_vec(),
+    vec![23u64, 123].answer_vec(),
     "A0016C880162017C3686B18A3D4780",
-    vec![31u64].answer_vec()
+    vec![31u64, 123].answer_vec()
+    }
+}
+
+#[derive(Debug)]
+enum Operation {
+    Sum,
+    Product,
+    Minimum,
+    Maximum,
+    GreaterThan,
+    LessThan,
+    EqualTo,
+}
+impl Operation {
+    fn from_value(v: u8) -> Option<Self> {
+        match v {
+            0 => Some(Self::Sum),
+            1 => Some(Self::Product),
+            2 => Some(Self::Minimum),
+            3 => Some(Self::Maximum),
+            5 => Some(Self::GreaterThan),
+            6 => Some(Self::LessThan),
+            7 => Some(Self::EqualTo),
+            _ => None,
+        }
     }
 }
 
 #[derive(Debug)]
 enum PacketType {
     Literal(u64),
-    Operator(Box<[Packet]>),
+    Operator(Operation, Box<[Packet]>),
 }
 impl PacketType {
     fn parser(i: BitInput) -> NomParseResult<BitInput, (Self, usize)> {
@@ -72,7 +97,11 @@ impl PacketType {
                 )
             }
             _ => {
-                // Operator, so get length type ID
+                // Operator, so first determine operation
+                let operation = Operation::from_value(type_id)
+                    .ok_or_else(|| NomParseError::nom_err_for_bits("Unknown operator"))?;
+
+                // Now get length type ID and packets
                 let (i, length_type_id): (BitInput, u8) = take(1usize)(i)?;
                 taken_bits += 1;
 
@@ -95,7 +124,13 @@ impl PacketType {
                         packets.push(packet)
                     }
 
-                    (i, (Self::Operator(packets.into_boxed_slice()), taken_bits))
+                    (
+                        i,
+                        (
+                            Self::Operator(operation, packets.into_boxed_slice()),
+                            taken_bits,
+                        ),
+                    )
                 } else {
                     // Number of subsequent packets is in the next 11 bits
                     let (i, num_packets): (BitInput, u16) = take(11usize)(i)?;
@@ -105,7 +140,7 @@ impl PacketType {
                     (
                         i,
                         (
-                            Self::Operator(packets.into_iter().map(|t| t.0).collect()),
+                            Self::Operator(operation, packets.into_iter().map(|t| t.0).collect()),
                             taken_bits,
                         ),
                     )
@@ -117,7 +152,7 @@ impl PacketType {
     fn version_sum(&self) -> u64 {
         match self {
             PacketType::Literal(_) => 0,
-            PacketType::Operator(packets) => packets.iter().map(|p| p.version_sum()).sum(),
+            PacketType::Operator(_, packets) => packets.iter().map(|p| p.version_sum()).sum(),
         }
     }
 }
@@ -169,6 +204,16 @@ pub const SOLUTION: Solution = Solution {
             let packet = Packet::from_str(input)?;
 
             //println!("Packet: {:?}", packet);
+
+            // Process
+            Ok(packet.version_sum().into())
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let packet = Packet::from_str(input)?;
+
+            println!("Packet: {:?}", packet);
 
             // Process
             Ok(packet.version_sum().into())
