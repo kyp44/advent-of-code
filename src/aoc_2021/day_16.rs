@@ -13,21 +13,37 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(963), Unsigned(123)],
+    vec![Unsigned(963), Unsigned(1549026292886)],
     "D2FE28",
-    vec![6u64, 123].answer_vec(),
+    vec![Some(Unsigned(6)), None],
     "38006F45291200",
-    vec![9u64, 123].answer_vec(),
+    vec![Some(Unsigned(9)), None],
     "EE00D40C823060",
-    vec![14u64, 123].answer_vec(),
+    vec![Some(Unsigned(14)), None],
     "8A004A801A8002F478",
-    vec![16u64, 123].answer_vec(),
+    vec![Some(Unsigned(16)), None],
     "620080001611562C8802118E34",
-    vec![12u64, 123].answer_vec(),
+    vec![Some(Unsigned(12)), None],
     "C0015000016115A2E0802F182340",
-    vec![23u64, 123].answer_vec(),
+    vec![Some(Unsigned(23)), None],
     "A0016C880162017C3686B18A3D4780",
-    vec![31u64, 123].answer_vec()
+    vec![Some(Unsigned(31)), None],
+    "C200B40A82",
+    vec![None, Some(Unsigned(3))],
+    "04005AC33890",
+    vec![None, Some(Unsigned(54))],
+    "880086C3E88112",
+    vec![None, Some(Unsigned(7))],
+    "CE00C43D881120",
+    vec![None, Some(Unsigned(9))],
+    "D8005AC2A8F0",
+    vec![None, Some(Unsigned(1))],
+    "F600BC2D8F",
+    vec![None, Some(Unsigned(0))],
+    "9C005AC2F8F0",
+    vec![None, Some(Unsigned(0))],
+    "9C0141080250320F1802104A08",
+    vec![None, Some(Unsigned(1))]
     }
 }
 
@@ -155,6 +171,69 @@ impl PacketType {
             PacketType::Operator(_, packets) => packets.iter().map(|p| p.version_sum()).sum(),
         }
     }
+
+    fn evaluate(&self) -> AocResult<u64> {
+        Ok(match self {
+            PacketType::Literal(v) => *v,
+            PacketType::Operator(operation, packets) => {
+                fn min_one_err(operation: &Operation) -> AocError {
+                    AocError::Process(
+                        format!("Operation {:?} must have at least one operand", operation).into(),
+                    )
+                }
+                let exactly_two = |operation: &Operation| -> AocResult<(u64, u64)> {
+                    if packets.len() != 2 {
+                        Err(AocError::Process(
+                            format!("Operation {:?} must have exactly two operands", operation)
+                                .into(),
+                        ))
+                    } else {
+                        Ok((packets[0].evaluate()?, packets[1].evaluate()?))
+                    }
+                };
+
+                let values =
+                    || -> AocResult<Vec<u64>> { packets.iter().map(|p| p.evaluate()).collect() };
+
+                match *operation {
+                    Operation::Sum => values()?.into_iter().sum(),
+                    Operation::Product => values()?.into_iter().product(),
+                    Operation::Minimum => values()?
+                        .into_iter()
+                        .min()
+                        .ok_or_else(|| min_one_err(operation))?,
+                    Operation::Maximum => values()?
+                        .into_iter()
+                        .max()
+                        .ok_or_else(|| min_one_err(operation))?,
+                    Operation::GreaterThan => {
+                        let vals = exactly_two(operation)?;
+                        if vals.0 > vals.1 {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Operation::LessThan => {
+                        let vals = exactly_two(operation)?;
+                        if vals.0 < vals.1 {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                    Operation::EqualTo => {
+                        let vals = exactly_two(operation)?;
+                        if vals.0 == vals.1 {
+                            1
+                        } else {
+                            0
+                        }
+                    }
+                }
+            }
+        })
+    }
 }
 
 #[derive(Debug)]
@@ -181,6 +260,10 @@ impl Packet {
 
     fn version_sum(&self) -> u64 {
         self.packet_type.version_sum() + u64::from(self.version)
+    }
+
+    fn evaluate(&self) -> AocResult<u64> {
+        self.packet_type.evaluate()
     }
 }
 impl FromStr for Packet {
@@ -213,10 +296,10 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let packet = Packet::from_str(input)?;
 
-            println!("Packet: {:?}", packet);
+            //println!("Packet: {:?}", packet);
 
             // Process
-            Ok(packet.version_sum().into())
+            Ok(packet.evaluate()?.into())
         },
     ],
 };
