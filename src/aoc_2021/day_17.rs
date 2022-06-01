@@ -1,7 +1,7 @@
-use std::ops::RangeInclusive;
-
-use fraction::{Fraction, GenericFraction};
+use cgmath::{Vector2, Zero};
+use itertools::iproduct;
 use nom::{bytes::complete::tag, combinator::map, sequence::separated_pair};
+use std::ops::RangeInclusive;
 
 use crate::aoc::{
     parse::{field_line_parser, trim},
@@ -15,9 +15,9 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(123)],
+    vec![Unsigned(3003), Unsigned(940)],
     "target area: x=20..30, y=-10..-5",
-    vec![123u64].answer_vec()
+    vec![45u64, 112].answer_vec()
     }
 }
 
@@ -55,38 +55,60 @@ impl Parseable<'_> for TargetArea {
     }
 }
 impl TargetArea {
-    fn highest_peak(&self) -> u64 {
-        let range_x: RangeInclusive<u64> =
-            (*self.range_x.start()).try_into().unwrap()..=(*self.range_x.end()).try_into().unwrap();
-        let mut biggest_peak = 0;
-        // Try different upward initial velocities (the upper bound is arbitrary)
-        for vyi in 9..=9 {
-            let mut y_peak = 0;
-            // Find y step points until the target is hit or it goes below it
-            for n in 0.. {
-                let y = n * vyi - n * (n - 1) / 2;
-                y_peak = y_peak.max(y);
-                println!("TODO wtf {} {} {}", y, y_peak, self.range_y.contains(&y));
-                if self.range_y.contains(&y) {
-                    // In the target range in y, so now see if there is an initial x velocity that puts it in the target area at this step
-                    let n: u64 = n.try_into().unwrap();
+    /// Trajectory peaks for tractories that hit the target
+    fn peaks(&self) -> impl Iterator<Item = i32> + '_ {
+        // These were derived analytically
+        let vyi_max = -(*self.range_y.start() + 1);
+        let vxi_min =
+            ((f32::sqrt((1 + *self.range_x.start() * 8) as f32) - 1f32) / 2f32).ceil() as i32;
 
-                    // This was derived analytically such that there is such an initial x velocity iff a <= n <= b
-                    let a = Fraction::new(*range_x.start(), n) + Fraction::new(n + 1, 2u64);
-                    let b = Fraction::new(*range_x.end(), n) + Fraction::new(n - 1, 2u64);
-                    println!("TODO a b {:.3} {:.3}", a, b);
-                    if a.ceil() <= b.floor() {
-                        // There is such a n initial x velocity
-                        biggest_peak = biggest_peak.max(y_peak);
-                        println!("TODO have a good one with peak {} at vyi {}!", y_peak, vyi);
-                        break;
-                    }
-                } else if y < *self.range_y.start() {
-                    break;
+        // Go through every initial velocity that has a chance of hitting the target
+        iproduct!(
+            vxi_min..=*self.range_x.end(),
+            *self.range_y.start()..=vyi_max
+        )
+        .filter_map(|velocity| {
+            let mut peak = 0;
+            for point in Trajectory::new(velocity.into()) {
+                peak = peak.max(point.y);
+
+                if self.range_x.contains(&point.x) && self.range_y.contains(&point.y) {
+                    return Some(peak);
+                } else if point.y < *self.range_y.start() {
+                    return None;
                 }
             }
-        }
-        0
+            None
+        })
+    }
+}
+
+type Vector = Vector2<i32>;
+
+#[derive(new)]
+struct Trajectory {
+    #[new(value = "Vector::zero()")]
+    point: Vector,
+    velocity: Vector,
+}
+impl Iterator for Trajectory {
+    type Item = Vector;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let ret = self.point;
+
+        // Determine next point and velocity
+        self.point += self.velocity;
+        self.velocity += Vector::new(
+            match self.velocity.x.cmp(&0) {
+                std::cmp::Ordering::Less => 1,
+                std::cmp::Ordering::Equal => 0,
+                std::cmp::Ordering::Greater => -1,
+            },
+            -1,
+        );
+
+        Some(ret)
     }
 }
 
@@ -99,11 +121,20 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let target_area = TargetArea::from_str(input)?;
 
-            println!("Target area: {:?}", target_area);
-            target_area.highest_peak();
+            // Process
+            Ok(Answer::Unsigned(
+                target_area.peaks().max().unwrap().try_into().unwrap(),
+            ))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let target_area = TargetArea::from_str(input)?;
 
             // Process
-            Ok(0u64.into())
+            Ok(Answer::Unsigned(
+                target_area.peaks().count().try_into().unwrap(),
+            ))
         },
     ],
 };

@@ -22,7 +22,7 @@ itertools = "0.10.1"
 strum = "0.21"
 strum_macros = "0.21"
 bimap = "0.6.1"
-num = "0.4.0"
+num = "0.4"
 cgmath = "0.18"
 rayon = "1.5.1"
 enum-map = "1.1.1"
@@ -37,7 +37,6 @@ lazy_static = "1.4"
 priority-queue = "1.2"
 hex = "0.4"
 bitbuffer = "0.10"
-fraction = "0.10"
 
 [features]
 expensive = []
