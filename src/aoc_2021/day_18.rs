@@ -1,12 +1,10 @@
-use std::fmt::Write;
-
+use itertools::Itertools;
 use nom::{
     branch::alt,
     bytes::complete::tag,
     combinator::map,
     sequence::{delimited, separated_pair},
 };
-use trees::{Node, Tree};
 
 use crate::aoc::{parse::trim, prelude::*};
 
@@ -23,29 +21,19 @@ mod tests {
     }
 }
 
-enum Side {
-    Left,
-    Right,
-    Root,
+enum Element {
+    Open,
+    Close,
+    Num(u8),
 }
-enum NodeType {
-    Branch,
-    Leaf(u8),
-}
-#[derive(new)]
-struct NodeData {
-    side: Side,
-    node_type: NodeType,
-}
-#[derive(new)]
 struct Number {
-    tree: Tree<NodeData>,
+    stack: Vec<Element>,
 }
 impl Parseable<'_> for Number {
     fn parser(input: &str) -> NomParseResult<&str, Self> {
         alt((
-            map(nom::character::complete::u8, |v| {
-                Number::new(Tree::new(NodeData::new(Side::Root, NodeType::Leaf(v))))
+            map(nom::character::complete::u8, |v| Number {
+                stack: vec![Element::Num(v)],
             }),
             map(
                 delimited(
@@ -53,13 +41,12 @@ impl Parseable<'_> for Number {
                     separated_pair(Self::parser, trim(tag(",")), Self::parser),
                     tag("]"),
                 ),
-                |(mut tl, mut tr)| {
-                    tl.tree.root_mut().data_mut().side = Side::Left;
-                    tr.tree.root_mut().data_mut().side = Side::Right;
-                    let mut root = Tree::new(NodeData::new(Side::Root, NodeType::Branch));
-                    root.push_back(tl.tree);
-                    root.push_back(tr.tree);
-                    Self::new(root)
+                |(left, right)| {
+                    let mut vec = vec![Element::Open];
+                    vec.extend(left.stack);
+                    vec.extend(right.stack);
+                    vec.push(Element::Close);
+                    Number { stack: vec }
                 },
             ),
         ))(input)
@@ -67,56 +54,77 @@ impl Parseable<'_> for Number {
 }
 impl std::fmt::Debug for Number {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        fn format_node(f: &mut std::fmt::Formatter<'_>, node: &Node<NodeData>) -> std::fmt::Result {
-            match node.data().node_type {
-                NodeType::Branch => {
-                    f.write_char('[')?;
-                    format_node(f, node.front().unwrap())?;
-                    f.write_char(',')?;
-                    format_node(f, node.back().unwrap())?;
-                    f.write_char(']')
-                }
-                NodeType::Leaf(v) => write!(f, "{}", v),
-            }
-        }
-        format_node(f, self.tree.root())?;
-        f.write_char('\n')
+        writeln!(
+            f,
+            "{}",
+            self.stack
+                .iter()
+                .map(|e| {
+                    match e {
+                        Element::Open => "[".to_string(),
+                        Element::Close => "]".to_string(),
+                        Element::Num(v) => format!("{}", v),
+                    }
+                })
+                .join(" ")
+        )
     }
 }
 impl Number {
     fn reduce(&mut self) {
         // First find any sufficiently deep nodes with two leaves
-        for node in self.tree.bfs_children_mut().iter {}
-    }
-}
-
-trait NodeUtils {
-    fn next_left(&self) -> Option<&mut Self>;
-    fn next_right(&self) -> Option<&mut Self>;
-    fn depth(&self) -> usize;
-}
-impl NodeUtils for Node<NodeData> {
-    fn next_left(&self) -> Option<&mut Self> {
-        todo!()
+        //for node in self.tree.bfs_children_mut().iter {}
     }
 
-    fn next_right(&self) -> Option<&mut Self> {
-        todo!()
-    }
-
-    fn depth(&self) -> usize {
-        let mut depth = 0;
-        let mut node = self;
-        loop {
-            match node.parent() {
-                Some(p) => {
-                    node = p;
-                    depth += 1;
+    /// Look for a pair to explode and returns whether this was done or not.
+    fn explode(&mut self) -> bool {
+        let pairs: Vec<(usize, u8, u8)> = self
+            .stack
+            .iter()
+            .tuple_windows()
+            .enumerate()
+            .filter_map(|(i, (a, b, c, d))| {
+                if matches!(a, Element::Open) && matches!(d, Element::Close) {
+                    if let (Element::Num(ln), Element::Num(rn)) = (b, c) {
+                        Some((i, *ln, *rn))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
                 }
-                None => break,
+            })
+            .collect();
+        for (i, ln, rn) in pairs {
+            // Found a purely numeric pair
+            if self.stack.iter().take(i).fold(0, |a, e| match e {
+                Element::Open => a + 1,
+                Element::Close => a - 1,
+                Element::Num(_) => a,
+            }) >= 4
+            {
+                // The pair is sufficiently deep so explode it!
+                // Add the pair numbers to the adjacent numbers if they exist
+                let stack = self.stack.as_mut_slice();
+                for e in stack[0..i].iter_mut().rev() {
+                    if let Element::Num(v) = e {
+                        *v += ln;
+                        break;
+                    }
+                }
+                for e in stack[i + 4..].iter_mut() {
+                    if let Element::Num(v) = e {
+                        *v += rn;
+                        break;
+                    }
+                }
+                // Now replace the pair
+                self.stack.splice(i..i + 4, [Element::Num(0)]);
+
+                return true;
             }
         }
-        depth
+        false
     }
 }
 
@@ -127,8 +135,14 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let numbers = Number::gather(input.lines())?;
+            let mut numbers = Number::gather(input.lines())?;
 
+            println!("TODO: {:?}", numbers[0]);
+            numbers[0].explode();
+            println!("TODO: {:?}", numbers[0]);
+            numbers[0].explode();
+            println!("TODO: {:?}", numbers[0]);
+            numbers[0].explode();
             println!("TODO: {:?}", numbers[0]);
 
             // Process

@@ -37,7 +37,6 @@ lazy_static = "1.4"
 priority-queue = "1.2"
 hex = "0.4"
 bitbuffer = "0.10"
-trees = "0.4"
 
 [features]
 expensive = []
