@@ -58,13 +58,13 @@ impl fmt::Display for NomParseError {
     }
 }
 impl NomParseError {
-    pub fn nom_err_for_str(i: &str, msg: &'static str) -> nom::Err<Self> {
+    /*pub fn nom_err_for_str(i: &str, msg: &'static str) -> nom::Err<Self> {
         nom::Err::Failure(NomParseError {
             verbose_error: VerboseError {
                 errors: vec![(i.to_string(), VerboseErrorKind::Context(msg))],
             },
         })
-    }
+    }*/
 
     pub fn nom_err_for_bits(msg: &'static str) -> nom::Err<Self> {
         nom::Err::Failure(NomParseError {
