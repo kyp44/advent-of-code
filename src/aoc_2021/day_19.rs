@@ -1,7 +1,11 @@
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::ops::Add;
 use std::{collections::HashSet, str::FromStr};
 
 use cgmath::{Quaternion, Vector3, Zero};
 use itertools::iproduct;
+use maplit::hashset;
 use nom::{
     bytes::complete::tag,
     combinator::map,
@@ -21,7 +25,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(123)],
+    vec![Unsigned(438), Unsigned(123)],
     "--- scanner 0 ---
 404,-588,-901
 528,-643,409
@@ -158,7 +162,7 @@ mod tests {
 891,-625,532
 -652,-548,-490
 30,-46,-14",
-        vec![123u64].answer_vec()
+        vec![79u64, 3621].answer_vec()
     }
 }
 
@@ -171,6 +175,13 @@ struct Point {
 impl From<Vector> for Point {
     fn from(vect: Vector) -> Self {
         Point { vect }
+    }
+}
+impl Add for Point {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        (self.vect + rhs.vect).into()
     }
 }
 impl Parseable<'_> for Point {
@@ -239,7 +250,7 @@ impl RotationAngle {
     }
 }
 
-#[derive(new, Clone)]
+#[derive(new, Clone, Debug)]
 struct RotationQuaternion {
     divisor: i32,
     quat: Quaternion<i32>,
@@ -258,14 +269,6 @@ impl RotationQuaternion {
         Self {
             divisor: self.divisor * other.divisor,
             quat: other.quat.mul(self.quat),
-        }
-    }
-
-    // Inverse rotation
-    fn inverse(self) -> Self {
-        Self {
-            divisor: self.divisor,
-            quat: self.quat.conj(),
         }
     }
 
@@ -290,6 +293,7 @@ impl RotationQuaternion {
 /// scanner B in the coordinate system of scanner A, and the rotation
 /// needed to bring points relative to scanner A into the coordinate
 /// system of scanner A prior to translating.
+#[derive(Clone, Debug)]
 struct Transposer {
     location: Point,
     rotation: RotationQuaternion,
@@ -298,11 +302,21 @@ impl Transposer {
     /// Transposes a point relative to scanner B to be relative
     /// to scanner A.
     fn transpose_point(&self, point: Point) -> Point {
-        (self.rotation.rotate_point(point).vect + self.location.vect).into()
+        self.rotation.rotate_point(point) + self.location
+    }
+
+    /// Composes transpositions.
+    /// If this is a transposer from scanner B to A, and other is from C
+    /// to B, then the result transposes C to A.
+    fn compose(self, other: Self) -> Self {
+        Self {
+            location: self.rotation.rotate_point(other.location) + self.location,
+            rotation: other.rotation.and_then(self.rotation),
+        }
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq)]
 struct Scanner {
     number: u8,
     points: Box<[Point]>,
@@ -324,17 +338,17 @@ impl FromStr for Scanner {
         Ok(Self { number, points })
     }
 }
-impl Scanner {
-    /// Rotate all the points of the scanner
-    fn rotate_points(
-        &self,
-        rotation_quaternion: RotationQuaternion,
-    ) -> impl Iterator<Item = Point> + Clone + '_ {
-        self.points
-            .iter()
-            .map(move |p| rotation_quaternion.rotate_point(*p))
+impl PartialEq for Scanner {
+    fn eq(&self, other: &Self) -> bool {
+        self.number == other.number
     }
-
+}
+impl Hash for Scanner {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.number.hash(state);
+    }
+}
+impl Scanner {
     /// Try to correlate a scanner with this one.
     /// Returns the Transposer from this scanner to the other.
     fn try_to_correlate(&self, other: &Self) -> Option<Transposer> {
@@ -342,8 +356,9 @@ impl Scanner {
         for rotation in RotationQuaternion::orientations() {
             // Try every pairing of points to find the relative difference
             let other_points: HashSet<Vector> = other
-                .rotate_points(rotation.clone())
-                .map(|p| p.vect)
+                .points
+                .iter()
+                .map(|p| rotation.rotate_point(*p).vect)
                 .collect();
             for (ps, po) in iproduct!(self.points.iter(), other_points.iter()) {
                 let delta = ps.vect - po;
@@ -364,58 +379,70 @@ impl Scanner {
         }
         None
     }
+}
 
-    /// TODO
-    fn try_to_correlate_test(&self, other: &Self) -> Option<Transposer> {
-        // First try every possible orientation
-        for (roti, rotation) in RotationQuaternion::orientations().enumerate() {
-            // Try every pairing of points to find the relative difference
-            let other_points: Vec<Vector> = other
-                .rotate_points(rotation.clone())
-                .map(|p| p.vect)
-                .collect();
-            for (ps, (poi, po)) in iproduct!(self.points.iter(), other_points.iter().enumerate()) {
-                let delta = ps.vect - po;
+type Correlations<'a> = HashMap<&'a Scanner, Transposer>;
 
-                if ps.vect == Vector::new(-618, -824, -621) && poi == 0 && roti == 10 {
-                    println!("TODO vects: {:?} {:?} {:?}", ps.vect, other.points[poi], po);
-                    println!("TODO delta for rot {}: {:?}", roti, delta);
+struct ScannerNetwork {
+    scanners: Box<[Scanner]>,
+}
+impl FromStr for ScannerNetwork {
+    type Err = AocError;
 
-                    println!("TODO shifted S0 points:");
-                    for v in self.points.iter().map(|p| p.vect - delta) {
-                        println!("{:?}", v);
-                    }
-                    println!("TODO rotated S1 points:");
-                    for v in other_points.iter() {
-                        println!("{:?}", v);
-                    }
-                    println!(
-                        "Matching count: {}",
-                        self.points
-                            .iter()
-                            .filter(|p| other_points.contains(&(p.vect - delta)))
-                            .count()
-                    );
-                }
-                if roti == 10 {}
-                if self
-                    .points
-                    .iter()
-                    .filter(|p| other_points.contains(&(p.vect - delta)))
-                    .count()
-                    >= 12
-                {
-                    // We have a sufficient number of correlated points!
-                    return Some(Transposer {
-                        location: delta.into(),
-                        rotation: rotation,
-                    });
-                }
-            }
-        }
-        None
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self {
+            scanners: s
+                .split("\n\n")
+                .map(|ss| Scanner::from_str(ss))
+                .collect::<AocResult<Box<[Scanner]>>>()?,
+        })
     }
 }
+impl ScannerNetwork {
+    fn correlate(&self) -> Correlations {
+        // Recursively correlate all scanners
+        fn correlate_rec<'a>(
+            from: &'a Scanner,
+            scanners: &'a [Scanner],
+            correlated: HashSet<&Scanner>,
+        ) -> Correlations<'a> {
+            // Try every scanner that is not already correlated
+            let mut correlations = Correlations::new();
+            for to in scanners.iter().filter(|s| !correlated.contains(*s)) {
+                if let Some(transposer) = from.try_to_correlate(to) {
+                    // Add this to the list of correlated scanners
+                    let mut new_correlated = correlated.clone();
+                    new_correlated.insert(to);
+
+                    // Now recurse to get with which uncorrelated scanners this is also correlated
+                    // and map these additional sub-correlations back to the original scanner.
+                    correlations.extend(
+                        correlate_rec(to, scanners, new_correlated)
+                            .into_iter()
+                            .map(|(s, t)| (s, transposer.clone().compose(t))),
+                    );
+
+                    // Add this correlation
+                    correlations.insert(to, transposer);
+                }
+            }
+            correlations
+        }
+
+        // Get all scanners relative to scanner 0
+        correlate_rec(
+            &self.scanners[0],
+            &self.scanners,
+            hashset![&self.scanners[0]],
+        )
+    }
+}
+
+// TODO: Maybe this can be done with an enum type with None and variants for each
+// problem that needs data sharing.
+// NOTE: Tried to share state between part a) and part b) for time saving reason
+// but could not come up with a good solution to this. A general approach would
+// be great but, not sure how it can be done.
 
 pub const SOLUTION: Solution = Solution {
     day: 19,
@@ -424,21 +451,33 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let scanners = input
-                .split("\n\n")
-                .map(|ss| Scanner::from_str(ss))
-                .collect::<AocResult<Box<[Scanner]>>>()?;
+            let network = ScannerNetwork::from_str(input)?;
 
-            let transposer = scanners[0].try_to_correlate(&scanners[1]).unwrap();
-            println!("Scanner 1 in S0: {:?}", transposer.location);
-            let transposer2 = scanners[1].try_to_correlate(&scanners[4]).unwrap();
-            println!(
-                "Scanner 4 in S0: {:?}",
-                transposer.transpose_point(transposer2.location)
-            );
+            // Correlate
+            let correlations = network.correlate();
 
-            // Process
-            Ok(0u64.into())
+            // Now build a set of all points (beacons) relative to scanner 0
+            let mut points: HashSet<Point> = network.scanners[0].points.iter().copied().collect();
+            for (scanner, transposer) in correlations.iter() {
+                points.extend(
+                    scanner
+                        .points
+                        .iter()
+                        .map(|p| transposer.transpose_point(*p)),
+                );
+            }
+
+            Ok(Answer::Unsigned(points.len().try_into().unwrap()))
         },
+        // Part b)
+        /*|input| {
+            // Generation
+            let network = ScannerNetwork::from_str(input)?;
+
+            // Correlate
+            let correlations = network.correlate();
+
+            Ok(0u64.into())
+        },*/
     ],
 };
