@@ -168,6 +168,11 @@ type Vector = Vector3<i32>;
 struct Point {
     vect: Vector,
 }
+impl From<Vector> for Point {
+    fn from(vect: Vector) -> Self {
+        Point { vect }
+    }
+}
 impl Parseable<'_> for Point {
     fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
@@ -256,6 +261,14 @@ impl RotationQuaternion {
         }
     }
 
+    // Inverse rotation
+    fn inverse(self) -> Self {
+        Self {
+            divisor: self.divisor,
+            quat: self.quat.conj(),
+        }
+    }
+
     /// Iterates over the 24 possible rotation function representing possible scanner orientations
     fn orientations() -> impl Iterator<Item = Self> {
         let facing_rotations: [RotationQuaternion; 6] = [
@@ -273,9 +286,20 @@ impl RotationQuaternion {
 }
 
 /// Relation of one Scanner to another.
-struct Relation {
-    location: Vector,
+/// The Transposer of scanner A to scanner B represents the location of
+/// scanner B in the coordinate system of scanner A, and the rotation
+/// needed to bring points relative to scanner A into the coordinate
+/// system of scanner A prior to translating.
+struct Transposer {
+    location: Point,
     rotation: RotationQuaternion,
+}
+impl Transposer {
+    /// Transposes a point relative to scanner B to be relative
+    /// to scanner A.
+    fn transpose_point(&self, point: Point) -> Point {
+        (self.rotation.rotate_point(point).vect + self.location.vect).into()
+    }
 }
 
 #[derive(Debug)]
@@ -312,10 +336,8 @@ impl Scanner {
     }
 
     /// Try to correlate a scanner with this one.
-    /// If successful, the Relation represents the position of the other scanner
-    /// in the coordinate system of this one, and the rotation needed to bring
-    /// points of the other scanner into this scanner's coordinate system.
-    fn try_to_correlate(&self, other: &Self) -> Option<Relation> {
+    /// Returns the Transposer from this scanner to the other.
+    fn try_to_correlate(&self, other: &Self) -> Option<Transposer> {
         // First try every possible orientation
         for rotation in RotationQuaternion::orientations() {
             // Try every pairing of points to find the relative difference
@@ -328,13 +350,64 @@ impl Scanner {
                 if self
                     .points
                     .iter()
-                    .filter(|p| other_points.contains(&(p.vect + delta)))
+                    .filter(|p| other_points.contains(&(p.vect - delta)))
                     .count()
                     >= 12
                 {
                     // We have a sufficient number of correlated points!
-                    return Some(Relation {
-                        location: delta,
+                    return Some(Transposer {
+                        location: delta.into(),
+                        rotation: rotation,
+                    });
+                }
+            }
+        }
+        None
+    }
+
+    /// TODO
+    fn try_to_correlate_test(&self, other: &Self) -> Option<Transposer> {
+        // First try every possible orientation
+        for (roti, rotation) in RotationQuaternion::orientations().enumerate() {
+            // Try every pairing of points to find the relative difference
+            let other_points: Vec<Vector> = other
+                .rotate_points(rotation.clone())
+                .map(|p| p.vect)
+                .collect();
+            for (ps, (poi, po)) in iproduct!(self.points.iter(), other_points.iter().enumerate()) {
+                let delta = ps.vect - po;
+
+                if ps.vect == Vector::new(-618, -824, -621) && poi == 0 && roti == 10 {
+                    println!("TODO vects: {:?} {:?} {:?}", ps.vect, other.points[poi], po);
+                    println!("TODO delta for rot {}: {:?}", roti, delta);
+
+                    println!("TODO shifted S0 points:");
+                    for v in self.points.iter().map(|p| p.vect - delta) {
+                        println!("{:?}", v);
+                    }
+                    println!("TODO rotated S1 points:");
+                    for v in other_points.iter() {
+                        println!("{:?}", v);
+                    }
+                    println!(
+                        "Matching count: {}",
+                        self.points
+                            .iter()
+                            .filter(|p| other_points.contains(&(p.vect - delta)))
+                            .count()
+                    );
+                }
+                if roti == 10 {}
+                if self
+                    .points
+                    .iter()
+                    .filter(|p| other_points.contains(&(p.vect - delta)))
+                    .count()
+                    >= 12
+                {
+                    // We have a sufficient number of correlated points!
+                    return Some(Transposer {
+                        location: delta.into(),
                         rotation: rotation,
                     });
                 }
@@ -356,10 +429,13 @@ pub const SOLUTION: Solution = Solution {
                 .map(|ss| Scanner::from_str(ss))
                 .collect::<AocResult<Box<[Scanner]>>>()?;
 
-            let relation = scanners[0].try_to_correlate(&scanners[1]).unwrap();
-            for point in scanners[1].rotate_points(relation.rotation) {
-                println!("TODO {:?}", point);
-            }
+            let transposer = scanners[0].try_to_correlate(&scanners[1]).unwrap();
+            println!("Scanner 1 in S0: {:?}", transposer.location);
+            let transposer2 = scanners[1].try_to_correlate(&scanners[4]).unwrap();
+            println!(
+                "Scanner 4 in S0: {:?}",
+                transposer.transpose_point(transposer2.location)
+            );
 
             // Process
             Ok(0u64.into())
