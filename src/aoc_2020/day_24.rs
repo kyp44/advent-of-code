@@ -226,7 +226,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let floor: Floor = input.parse()?;
+            let floor: Floor = input.expect_input()?.parse()?;
 
             //println!("{:?}", floor);
 
@@ -236,7 +236,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let floor: Floor = input.parse()?;
+            let floor: Floor = input.expect_input()?.parse()?;
 
             // Process
             Ok(floor

@@ -21,7 +21,7 @@ pub mod prelude {
         iter::FilterCount, iter::HasNoneIter, iter::HasRange, iter::IndividualReplacements,
         iter::SplitRuns, parse::BitInput, parse::DiscardInput, parse::NomParseError,
         parse::NomParseResult, parse::Parseable, parse::Sections, Answer, AnswerVec, AocError,
-        AocResult, HasLen, Solution, YearSolutions,
+        AocResult, HasLen, Solution, SolverData, SolverReturn, YearSolutions,
     };
     pub use aoc_derive::CharGridDebug;
 }
@@ -103,11 +103,78 @@ impl From<String> for Answer {
     }
 }
 
+use super::aoc_2021::day_19::BeaconScannerData;
+
+//// Represents data that can be passed to or from solver.
+pub enum SolverData<'a> {
+    Input(&'a str),
+    Year2021Day19(BeaconScannerData),
+}
+impl<'a> SolverData<'a> {
+    pub fn expect_input(&self) -> AocResult<&'a str> {
+        if let Self::Input(s) = self {
+            Ok(s)
+        } else {
+            Err(AocError::InvalidInput(
+                "Expected string input but got data".into(),
+            ))
+        }
+    }
+}
+
+/// To easily extract data from SolverData and create an error if not there
+#[macro_export]
+macro_rules! expect_data {
+    ($var:ident, $input:expr) => {
+        if let SolverData::$var(it) = $input {
+            Ok(it)
+        } else {
+            Err(AocError::InvalidInput(
+                format!("Expected {} data but did not get it", stringify!($var)).into(),
+            ))
+        }
+    };
+}
+
+pub struct SolverReturn<'a> {
+    answer: Answer,
+    data: Option<SolverData<'a>>,
+}
+impl<'a> SolverReturn<'a> {
+    pub fn with_data(answer: Answer, data: SolverData<'a>) -> Self {
+        Self {
+            answer,
+            data: Some(data),
+        }
+    }
+}
+impl From<Answer> for SolverReturn<'_> {
+    fn from(answer: Answer) -> Self {
+        SolverReturn { answer, data: None }
+    }
+}
+impl From<u64> for SolverReturn<'_> {
+    fn from(n: u64) -> Self {
+        Answer::from(n).into()
+    }
+}
+impl From<i64> for SolverReturn<'_> {
+    fn from(n: i64) -> Self {
+        Answer::from(n).into()
+    }
+}
+impl From<String> for SolverReturn<'_> {
+    fn from(s: String) -> Self {
+        Answer::from(s).into()
+    }
+}
+
 /// Represents the solver for a day's puzzle.
+type SolverFunc = fn(SolverData) -> AocResult<SolverReturn>;
 pub struct Solution {
     pub day: u32,
     pub name: &'static str,
-    pub solvers: &'static [fn(&str) -> AocResult<Answer>],
+    pub solvers: &'static [SolverFunc],
 }
 impl Solution {
     /// Constructs the title.
@@ -115,18 +182,37 @@ impl Solution {
         format!("Day {}: {}", self.day, self.name)
     }
 
+    /// Runs the solvers and returns the results
+    pub fn run<'a>(
+        &self,
+        solvers: impl Iterator<Item = &'a SolverFunc>,
+        input: &str,
+    ) -> anyhow::Result<Vec<Answer>> {
+        // Run the solvers, pasing data from one to the next if applicable
+        let mut results = Vec::new();
+        let mut data = SolverData::Input(input);
+        for solver in solvers {
+            let ret = solver(data).with_context(|| "Problem when running the solution")?;
+            data = if let Some(d) = ret.data {
+                d
+            } else {
+                SolverData::Input(input)
+            };
+            results.push(ret.answer);
+        }
+
+        Ok(results)
+    }
+
     /// Reads the input, runs the solvers, and outputs the answer(s).
-    pub fn run(&self, year: u32) -> anyhow::Result<Vec<Answer>> {
+    pub fn run_and_print(&self, year: u32) -> anyhow::Result<Vec<Answer>> {
         // Read input for the problem
         let input_path = format!("input/{}/day_{:02}.txt", year, self.day);
         let input = fs::read_to_string(&input_path)
             .with_context(|| format!("Could not read input file {}", input_path))?;
 
-        let results = self
-            .solvers
-            .iter()
-            .map(|s| s(&input).with_context(|| "Problem when running the solution"))
-            .collect::<anyhow::Result<Vec<Answer>>>()?;
+        // Run solvers
+        let results = self.run(self.solvers.iter(), &input)?;
 
         println!("Year {} {}", year, self.title());
         for (pc, result) in ('a'..'z').zip(results.iter()) {
@@ -196,10 +282,19 @@ macro_rules! solution_results {
         let input = $input;
         let vans: Vec<Option<Answer>> = $exp;
 
-        for (solver, ans) in SOLUTION.solvers.iter().zip(vans) {
-            if let Some(v) = ans {
-                assert_eq!(solver(&input).unwrap(), v);
-            }
+        let results = SOLUTION
+            .run(
+                SOLUTION
+                    .solvers
+                    .iter()
+                    .zip(vans.iter())
+                    .filter_map(|(s, ans)| if ans.is_some() { Some(s) } else { None }),
+                &input,
+            )
+            .unwrap();
+
+        for (solver_ans, ans) in results.into_iter().zip(vans.into_iter().filter_map(|a| a)) {
+            assert_eq!(solver_ans, ans);
         }
     };
 }
@@ -213,7 +308,7 @@ macro_rules! solution_test {
         #[ignore]
         fn actual() {
             assert_eq!(
-                SOLUTION.run(super::super::YEAR_SOLUTIONS.year).unwrap(),
+                SOLUTION.run_and_print(super::super::YEAR_SOLUTIONS.year).unwrap(),
                 $actual
             );
         }
@@ -248,7 +343,7 @@ macro_rules! expensive_test {
 macro_rules! year_solutions {
     (year = $year: expr, days =  {$($day: ident,)* }) => {
 	$(
-	    mod $day;
+	    pub mod $day;
 	)*
 
 	use super::aoc::YearSolutions;

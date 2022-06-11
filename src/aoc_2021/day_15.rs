@@ -116,7 +116,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let risk_levels = RiskLevels::from_str(input)?;
+            let risk_levels = RiskLevels::from_str(input.expect_input()?)?;
 
             // Process
             Ok(risk_levels.min_risk().into())
@@ -124,7 +124,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let risk_levels = RiskLevels::from_str(input)?;
+            let risk_levels = RiskLevels::from_str(input.expect_input()?)?;
 
             // Process
             Ok(risk_levels.full_map(5).min_risk().into())

@@ -1,4 +1,4 @@
-use crate::aoc::prelude::*;
+use crate::aoc::{prelude::*, SolverReturn};
 use cgmath::{Vector2, Zero};
 use itertools::iproduct;
 use std::{collections::HashSet, fmt::Display, hash::Hash, rc::Rc, str::FromStr};
@@ -219,7 +219,7 @@ impl Area {
     }
 }
 
-fn check_simulation(status: SimulationStatus<Rc<Area>>) -> AocResult<Answer> {
+fn check_simulation(status: SimulationStatus<Rc<Area>>) -> AocResult<SolverReturn<'static>> {
     match status {
         SimulationStatus::Stable(a) => Ok(a.occupied().into()),
         SimulationStatus::Infinite(_) => Err(AocError::Process(
@@ -235,7 +235,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let area = Area::from_str(input)?;
+            let area = Area::from_str(input.expect_input()?)?;
 
             // Process
             check_simulation(area.simulate())
@@ -243,7 +243,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let mut area = Area::from_str(input)?;
+            let mut area = Area::from_str(input.expect_input()?)?;
             area.set_part(Part::PartB);
 
             // Process

@@ -130,7 +130,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let course = Course::from_str(input)?;
+            let course = Course::from_str(input.expect_input()?)?;
             let end_position = course.end_position::<PartA>();
 
             // Process
@@ -139,7 +139,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let course = Course::from_str(input)?;
+            let course = Course::from_str(input.expect_input()?)?;
             let end_position = course.end_position::<PartB>();
 
             // Process

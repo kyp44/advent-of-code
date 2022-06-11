@@ -94,7 +94,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let data = parse_json(input)?;
+            let data = parse_json(input.expect_input()?)?;
 
             // Process
             Ok(data.sum_numbers::<PartA>().into())
@@ -102,7 +102,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let data = parse_json(input)?;
+            let data = parse_json(input.expect_input()?)?;
 
             // Process
             Ok(data.sum_numbers::<PartB>().into())

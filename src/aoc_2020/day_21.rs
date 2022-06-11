@@ -187,7 +187,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let problem = Problem::from_str(input)?;
+            let problem = Problem::from_str(input.expect_input()?)?;
 
             // Process
             let partial_solution = problem.partial_solve();
@@ -206,12 +206,13 @@ pub const SOLUTION: Solution = Solution {
                     .sum::<usize>()
                     .try_into()
                     .unwrap(),
-            ))
+            )
+            .into())
         },
         // Part b)
         |input| {
             // Generation
-            let problem = Problem::from_str(input)?;
+            let problem = Problem::from_str(input.expect_input()?)?;
 
             // Process
             let solution = problem

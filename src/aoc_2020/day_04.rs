@@ -215,22 +215,24 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let passports = parse_passports(input)?;
+            let passports = parse_passports(input.expect_input()?)?;
 
             // Processing
-            Ok(Answer::Unsigned(
-                passports.iter().filter_count(|p| passport_valid_part_a(p)),
-            ))
+            Ok(
+                Answer::Unsigned(passports.iter().filter_count(|p| passport_valid_part_a(p)))
+                    .into(),
+            )
         },
         // Part b)
         |input| {
             // Generation
-            let passports = parse_passports(input)?;
+            let passports = parse_passports(input.expect_input()?)?;
 
             // Processing
-            Ok(Answer::Unsigned(
-                passports.iter().filter_count(|p| passport_valid_part_b(p)),
-            ))
+            Ok(
+                Answer::Unsigned(passports.iter().filter_count(|p| passport_valid_part_b(p)))
+                    .into(),
+            )
         },
     ],
 };

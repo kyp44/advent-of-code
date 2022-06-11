@@ -51,8 +51,8 @@ pub const SOLUTION: Solution = Solution {
     name: "The Ideal Stocking Stuffer",
     solvers: &[
         // Part a)
-        |input| Ok(solve::<PartA>(input).into()),
+        |input| Ok(solve::<PartA>(input.expect_input()?).into()),
         // Part b)
-        |input| Ok(solve::<PartB>(input).into()),
+        |input| Ok(solve::<PartB>(input.expect_input()?).into()),
     ],
 };

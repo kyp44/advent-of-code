@@ -174,7 +174,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let program: Program = input.parse()?;
+            let program: Program = input.expect_input()?.parse()?;
 
             // Processing
             Ok(Answer::Unsigned(
@@ -187,12 +187,13 @@ pub const SOLUTION: Solution = Solution {
                     }
                 }
                 .into(),
-            ))
+            )
+            .into())
         },
         // Part b)
         |input| {
             // Generation
-            let program: Program = input.parse()?;
+            let program: Program = input.expect_input()?.parse()?;
 
             // Processing
             let mut terminated_acc = None;
@@ -206,7 +207,8 @@ pub const SOLUTION: Solution = Solution {
                 terminated_acc
                     .ok_or_else(|| AocError::Process("No modified programs terminated!".into()))?
                     .into(),
-            ))
+            )
+            .into())
         },
     ],
 };

@@ -227,7 +227,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let vents = Vents::from_str(input)?;
+            let vents = Vents::from_str(input.expect_input()?)?;
 
             // Process
             Ok(u64::try_from(vents.num_overlap_points::<PartA>()?)
@@ -237,7 +237,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let vents = Vents::from_str(input)?;
+            let vents = Vents::from_str(input.expect_input()?)?;
 
             // Process
             Ok(u64::try_from(vents.num_overlap_points::<PartB>()?)

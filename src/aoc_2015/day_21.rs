@@ -212,7 +212,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let problem = Problem::new(Character::from_str(input)?);
+            let problem = Problem::new(Character::from_str(input.expect_input()?)?);
 
             // Just a test for the example battle
             /*let player = Character::new(8, Stats::new(5, 5));
@@ -225,7 +225,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let problem = Problem::new(Character::from_str(input)?);
+            let problem = Problem::new(Character::from_str(input.expect_input()?)?);
 
             // Process
             Ok(problem.solve(&PartB)?.into())

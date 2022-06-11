@@ -43,7 +43,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let depths = u64::gather(input.lines())?;
+            let depths = u64::gather(input.expect_input()?.lines())?;
 
             // Process
             Ok(depths.into_iter().count_increases().into())
@@ -51,7 +51,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let depths = u64::gather(input.lines())?;
+            let depths = u64::gather(input.expect_input()?.lines())?;
 
             // Process
             Ok(depths

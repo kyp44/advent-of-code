@@ -98,7 +98,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let presents: Presents = input.parse()?;
+            let presents: Presents = input.expect_input()?.parse()?;
 
             // Process
             Ok(presents.needed_paper().into())
@@ -106,7 +106,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let presents: Presents = input.parse()?;
+            let presents: Presents = input.expect_input()?.parse()?;
 
             // Process
             Ok(presents.needed_ribbon().into())

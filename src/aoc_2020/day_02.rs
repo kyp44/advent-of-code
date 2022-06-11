@@ -106,22 +106,18 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let passwords = Password::gather(input.lines())?;
+            let passwords = Password::gather(input.expect_input()?.lines())?;
 
             // Processing
-            Ok(Answer::Unsigned(
-                passwords.iter().filter_count(|p| p.valid_part_a()),
-            ))
+            Ok(Answer::Unsigned(passwords.iter().filter_count(|p| p.valid_part_a())).into())
         },
         // Part b)
         |input| {
             // Generation
-            let passwords = Password::gather(input.lines())?;
+            let passwords = Password::gather(input.expect_input()?.lines())?;
 
             // Processing
-            Ok(Answer::Unsigned(
-                passwords.iter().filter_count(|p| p.valid_part_b()),
-            ))
+            Ok(Answer::Unsigned(passwords.iter().filter_count(|p| p.valid_part_b())).into())
         },
     ],
 };

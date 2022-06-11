@@ -230,7 +230,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let builder = PolymerBuilder::from_str(input)?;
+            let builder = PolymerBuilder::from_str(input.expect_input()?)?;
             let range = builder.occurances(10).range();
 
             // Process
@@ -239,7 +239,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let builder = PolymerBuilder::from_str(input)?;
+            let builder = PolymerBuilder::from_str(input.expect_input()?)?;
             let range = builder.occurances(40).range();
 
             // Process

@@ -71,7 +71,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let delivery = Delivery::new(usize::from_str(input)?, 10, None);
+            let delivery = Delivery::new(usize::from_str(input.expect_input()?)?, 10, None);
 
             // Process
             /*for h in 1..10 {
@@ -83,7 +83,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let delivery = Delivery::new(usize::from_str(input)?, 11, Some(50));
+            let delivery = Delivery::new(usize::from_str(input.expect_input()?)?, 11, Some(50));
 
             // Process
             /*for h in 1..30 {

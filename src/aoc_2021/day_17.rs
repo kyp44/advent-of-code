@@ -119,22 +119,18 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let target_area = TargetArea::from_str(input)?;
+            let target_area = TargetArea::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(
-                target_area.peaks().max().unwrap().try_into().unwrap(),
-            ))
+            Ok(Answer::Unsigned(target_area.peaks().max().unwrap().try_into().unwrap()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let target_area = TargetArea::from_str(input)?;
+            let target_area = TargetArea::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(
-                target_area.peaks().count().try_into().unwrap(),
-            ))
+            Ok(Answer::Unsigned(target_area.peaks().count().try_into().unwrap()).into())
         },
     ],
 };

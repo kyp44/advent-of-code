@@ -60,12 +60,18 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation and process
-            Ok(Simulation::from_str(input)?.nth(80).unwrap().into())
+            Ok(Simulation::from_str(input.expect_input()?)?
+                .nth(80)
+                .unwrap()
+                .into())
         },
         // Part b)
         |input| {
             // Generation and process
-            Ok(Simulation::from_str(input)?.nth(256).unwrap().into())
+            Ok(Simulation::from_str(input.expect_input()?)?
+                .nth(256)
+                .unwrap()
+                .into())
         },
     ],
 };

@@ -1,5 +1,5 @@
-use crate::aoc::parse::trim;
 use crate::aoc::prelude::*;
+use crate::aoc::{parse::trim, SolverReturn};
 use itertools::Itertools;
 use nom::{
     branch::alt,
@@ -258,7 +258,7 @@ impl<'a> Problem<'a> {
         })
     }
 
-    fn solve(&self) -> AocResult<Answer> {
+    fn solve(&self) -> AocResult<SolverReturn<'static>> {
         let mut sum: u64 = 0;
 
         //println!("Valid strings:");
@@ -282,7 +282,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let problem = Problem::from_str(input, &PartA)?;
+            let problem = Problem::from_str(input.expect_input()?, &PartA)?;
 
             // Process
             problem.solve()
@@ -290,7 +290,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let problem = Problem::from_str(input, &PartB)?;
+            let problem = Problem::from_str(input.expect_input()?, &PartB)?;
 
             // Process
             problem.solve()

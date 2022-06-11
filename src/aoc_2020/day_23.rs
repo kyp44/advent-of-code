@@ -260,7 +260,7 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let part = &PartA;
-            let mut cups = Cups::from_str(input, part)?;
+            let mut cups = Cups::from_str(input.expect_input()?, part)?;
             cups.run(100);
 
             // Process
@@ -270,7 +270,7 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let part = &PartB;
-            let mut cups = Cups::from_str(input, part)?;
+            let mut cups = Cups::from_str(input.expect_input()?, part)?;
             cups.run(10000000);
 
             // Process

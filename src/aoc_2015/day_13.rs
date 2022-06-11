@@ -160,7 +160,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let problem = Problem::from_str(input)?;
+            let problem = Problem::from_str(input.expect_input()?)?;
 
             // Process
             Ok(problem.best_arrangement()?.into())
@@ -168,7 +168,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let mut problem = Problem::from_str(input)?;
+            let mut problem = Problem::from_str(input.expect_input()?)?;
 
             // Process
             problem.add_attendee("Self");

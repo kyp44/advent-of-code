@@ -234,22 +234,22 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let mut circuit = Circuit::from_str(input)?;
+            let mut circuit = Circuit::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()))
+            Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let mut circuit = Circuit::from_str(input)?;
+            let mut circuit = Circuit::from_str(input.expect_input()?)?;
 
             // Find part a) solution an override
             let a = circuit.determine_signal("a")?;
             circuit.override_wire("b", a)?;
 
             // Process
-            Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()))
+            Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()).into())
         },
     ],
 };

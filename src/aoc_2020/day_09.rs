@@ -119,7 +119,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let packet: XmasPacket = input.parse()?;
+            let packet: XmasPacket = input.expect_input()?.parse()?;
 
             // Processing
             verify_invalid(&packet).map(|n| n.into())
@@ -127,7 +127,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let packet: XmasPacket = input.parse()?;
+            let packet: XmasPacket = input.expect_input()?.parse()?;
 
             // Processing
             let invalid_n = verify_invalid(&packet)?;

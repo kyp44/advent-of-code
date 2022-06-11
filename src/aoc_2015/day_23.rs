@@ -180,7 +180,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let program: Program = input.parse()?;
+            let program: Program = input.expect_input()?.parse()?;
 
             /*for inst in program.instructions {
                 println!("{:?}", inst);
@@ -193,7 +193,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let program: Program = input.parse()?;
+            let program: Program = input.expect_input()?.parse()?;
 
             // Process
             let end_state = program.execute(State::new(1, 0));

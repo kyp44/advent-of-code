@@ -114,7 +114,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let octopi = Octopi::from_str(input)?;
+            let octopi = Octopi::from_str(input.expect_input()?)?;
 
             /*let mut evolver = octopi.clone().evolve();
             for _ in 0..5 {
@@ -128,7 +128,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let octopi = Octopi::from_str(input)?;
+            let octopi = Octopi::from_str(input.expect_input()?)?;
             let size = octopi.grid.size();
             let total_octopi = u64::try_from(size.x * size.y).unwrap();
 

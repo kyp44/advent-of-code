@@ -85,7 +85,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let directions = Directions::from_str(input)?;
+            let directions = Directions::from_str(input.expect_input()?)?;
 
             // Process
             Ok(directions.floors().last().unwrap().into())
@@ -93,14 +93,14 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let directions = Directions::from_str(input)?;
+            let directions = Directions::from_str(input.expect_input()?)?;
 
             // Process
             let pos =
                 directions.floors().position(|f| f < 0).ok_or_else(|| {
                     AocError::Process("Santa never goes into the basement".into())
                 })? + 1;
-            Ok(Answer::Signed(pos.try_into().unwrap()))
+            Ok(Answer::Signed(pos.try_into().unwrap()).into())
         },
     ],
 };

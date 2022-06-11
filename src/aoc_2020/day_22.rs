@@ -229,7 +229,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let mut game: Game = input.parse()?;
+            let mut game: Game = input.expect_input()?.parse()?;
 
             // Process
             Ok(GamePart::<PartA>::play(&mut game).score().into())
@@ -237,7 +237,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let mut game: Game = input.parse()?;
+            let mut game: Game = input.expect_input()?.parse()?;
 
             // Process
             Ok(GamePart::<PartB>::play(&mut game).score().into())

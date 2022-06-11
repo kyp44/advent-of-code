@@ -76,7 +76,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let joltages = parse_joltages(input)?;
+            let joltages = parse_joltages(input.expect_input()?)?;
 
             // Processing
             let diffs: Vec<u32> = joltages.windows(2).map(|w| w[1] - w[0]).collect();
@@ -93,7 +93,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let joltages = parse_joltages(input)?;
+            let joltages = parse_joltages(input.expect_input()?)?;
 
             // Processing
             // For each adapter we store the number of variations ahead if we were to just start with that

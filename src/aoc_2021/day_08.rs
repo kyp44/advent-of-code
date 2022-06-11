@@ -217,7 +217,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let lines = Line::gather(input.lines())?;
+            let lines = Line::gather(input.expect_input()?.lines())?;
             let count_digits = vec![1, 4, 7, 8];
             let num_digits = lines
                 .into_iter()
@@ -230,14 +230,12 @@ pub const SOLUTION: Solution = Solution {
                 .collect::<AocResult<Vec<usize>>>()?;
 
             // Process
-            Ok(Answer::Unsigned(
-                num_digits.into_iter().sum::<usize>().try_into().unwrap(),
-            ))
+            Ok(Answer::Unsigned(num_digits.into_iter().sum::<usize>().try_into().unwrap()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let lines = Line::gather(input.lines())?;
+            let lines = Line::gather(input.expect_input()?.lines())?;
             let num_digits = lines
                 .into_iter()
                 .map(|line| {

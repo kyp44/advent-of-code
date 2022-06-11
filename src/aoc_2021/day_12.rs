@@ -267,7 +267,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let cave_system = CaveSystem::from_str(input)?;
+            let cave_system = CaveSystem::from_str(input.expect_input()?)?;
             let paths = cave_system.paths(SpecialCave::None)?;
 
             /*for path in paths.iter() {
@@ -276,16 +276,16 @@ pub const SOLUTION: Solution = Solution {
             println!();*/
 
             // Process
-            Ok(Answer::Unsigned(paths.len().try_into().unwrap()))
+            Ok(Answer::Unsigned(paths.len().try_into().unwrap()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let cave_system = CaveSystem::from_str(input)?;
+            let cave_system = CaveSystem::from_str(input.expect_input()?)?;
             let paths = cave_system.paths_special()?;
 
             // Process
-            Ok(Answer::Unsigned(paths.len().try_into().unwrap()))
+            Ok(Answer::Unsigned(paths.len().try_into().unwrap()).into())
         },
     ],
 };

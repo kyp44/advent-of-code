@@ -136,22 +136,21 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let instructions = Instruction::gather(input.lines())?;
+            let instructions = Instruction::gather(input.expect_input()?.lines())?;
 
             // Process
-            Ok(Answer::Unsigned(
-                Ship::follow_ship_instructions(&instructions).manhatten(),
-            ))
+            Ok(Answer::Unsigned(Ship::follow_ship_instructions(&instructions).manhatten()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let instructions = Instruction::gather(input.lines())?;
+            let instructions = Instruction::gather(input.expect_input()?.lines())?;
 
             // Process
             Ok(Answer::Unsigned(
                 Ship::follow_waypoint_instructions(&instructions, &Vector2::new(10, 1)).manhatten(),
-            ))
+            )
+            .into())
         },
     ],
 };

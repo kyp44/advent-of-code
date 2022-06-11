@@ -119,7 +119,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let problem = Problem::from_str(3, input)?;
+            let problem = Problem::from_str(3, input.expect_input()?)?;
 
             // Process
             Ok(problem.solve()?.into())
@@ -127,7 +127,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let problem = Problem::from_str(4, input)?;
+            let problem = Problem::from_str(4, input.expect_input()?)?;
 
             // Process
             Ok(problem.solve()?.into())

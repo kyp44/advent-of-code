@@ -224,7 +224,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let program: Program = input.parse()?;
+            let program: Program = input.expect_input()?.parse()?;
 
             // Process
             Ok(program.execute::<MaskV1>().into())
@@ -232,7 +232,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let program: Program = input.parse()?;
+            let program: Program = input.expect_input()?.parse()?;
 
             // Process
             Ok(program.execute::<MaskV2>().into())

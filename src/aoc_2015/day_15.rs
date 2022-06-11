@@ -208,7 +208,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let problem: Problem = input.parse()?;
+            let problem: Problem = input.expect_input()?.parse()?;
 
             // Process
             Ok(problem.best_recipe::<PartA>().into())
@@ -216,7 +216,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let problem: Problem = input.parse()?;
+            let problem: Problem = input.expect_input()?.parse()?;
 
             // Process
             Ok(problem.best_recipe::<PartB>().into())

@@ -205,21 +205,19 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let mut light_grid = LightGrid::<bool>::new(1000);
-            light_grid.execute_instruction(&Instruction::gather(input.lines())?);
+            light_grid.execute_instruction(&Instruction::gather(input.expect_input()?.lines())?);
 
             // Print the grid just to see what it is
             //println!("{:?}", light_grid);
 
             // Process
-            Ok(Answer::Unsigned(
-                light_grid.number_lit().try_into().unwrap(),
-            ))
+            Ok(Answer::Unsigned(light_grid.number_lit().try_into().unwrap()).into())
         },
         // Part b)
         |input| {
             // Generation
             let mut light_grid = LightGrid::<u8>::new(1000);
-            light_grid.execute_instruction(&Instruction::gather(input.lines())?);
+            light_grid.execute_instruction(&Instruction::gather(input.expect_input()?.lines())?);
 
             // Process
             Ok(light_grid.total_brightness().into())

@@ -83,14 +83,14 @@ pub const SOLUTION: Solution = Solution {
     solvers: &[
         // Part a)
         |input| {
-            let new_pw = valid_iter(input.trim()).next().unwrap();
+            let new_pw = valid_iter(input.expect_input()?.trim()).next().unwrap();
             //println!("{}", new_pw);
-            Ok(Answer::String(new_pw))
+            Ok(new_pw.into())
         },
         // Part b)
         |input| {
-            let new_pw = valid_iter(input.trim()).nth(1).unwrap();
-            Ok(Answer::String(new_pw))
+            let new_pw = valid_iter(input.expect_input()?.trim()).nth(1).unwrap();
+            Ok(new_pw.into())
         },
     ],
 };

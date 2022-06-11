@@ -254,17 +254,15 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let problem = Problem::from_str(input)?;
+            let problem = Problem::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(
-                problem.all_invalid_fields().sum::<u32>().into(),
-            ))
+            Ok(Answer::Unsigned(problem.all_invalid_fields().sum::<u32>().into()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let problem = Problem::from_str(input)?;
+            let problem = Problem::from_str(input.expect_input()?)?;
 
             // Process
             let fields = problem.solve()?;

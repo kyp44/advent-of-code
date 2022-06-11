@@ -365,7 +365,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let boss = Character::from_str(input)?;
+            let boss = Character::from_str(input.expect_input()?)?;
             let player = Character::new(50, 0, 500, 0);
 
             // Test for example battle
@@ -390,7 +390,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let boss = Character::from_str(input)?;
+            let boss = Character::from_str(input.expect_input()?)?;
             let player = Character::new(50, 0, 500, 0);
 
             // Process

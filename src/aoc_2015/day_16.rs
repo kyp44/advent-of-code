@@ -8,7 +8,7 @@ use nom::{
     sequence::{preceded, separated_pair},
 };
 
-use crate::aoc::prelude::*;
+use crate::aoc::{prelude::*, SolverData, SolverReturn};
 
 #[cfg(test)]
 mod tests {
@@ -108,9 +108,9 @@ impl<'a> Problem<'a> {
     }
 }
 
-fn solve<P: Part>(input: &str) -> AocResult<Answer> {
+fn solve<P: Part>(input: SolverData<'_>) -> AocResult<SolverReturn<'_>> {
     // Generation
-    let problem = Problem::from_str(input)?;
+    let problem = Problem::from_str(input.expect_input()?)?;
 
     // Show matches
     /*for sue in problem.matches::<PartA>() {
@@ -119,7 +119,7 @@ fn solve<P: Part>(input: &str) -> AocResult<Answer> {
 
     // Process
     let sue = problem.matches::<P>().next().unwrap();
-    Ok(Answer::Unsigned(sue.number.into()))
+    Ok(Answer::Unsigned(sue.number.into()).into())
 }
 
 pub const SOLUTION: Solution = Solution {

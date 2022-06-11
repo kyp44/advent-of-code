@@ -222,7 +222,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let numbers = Number::gather(input.lines())?;
+            let numbers = Number::gather(input.expect_input()?.lines())?;
 
             // Process
             Ok(numbers.into_iter().sum::<Number>().magnitude().into())
@@ -230,7 +230,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let numbers = Number::gather(input.lines())?;
+            let numbers = Number::gather(input.expect_input()?.lines())?;
 
             // Process
             Ok(numbers

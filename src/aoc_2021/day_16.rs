@@ -284,7 +284,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let packet = Packet::from_str(input)?;
+            let packet = Packet::from_str(input.expect_input()?)?;
 
             //println!("Packet: {:?}", packet);
 
@@ -294,7 +294,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let packet = Packet::from_str(input)?;
+            let packet = Packet::from_str(input.expect_input()?)?;
 
             //println!("Packet: {:?}", packet);
 

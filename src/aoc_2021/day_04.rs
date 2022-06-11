@@ -177,7 +177,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let game = BingoGame::from_str(input)?;
+            let game = BingoGame::from_str(input.expect_input()?)?;
 
             // Process
             Ok(game.play()?.into())
@@ -185,7 +185,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let game = BingoGame::from_str(input)?;
+            let game = BingoGame::from_str(input.expect_input()?)?;
 
             // Process
             Ok(game.play_to_last()?.into())

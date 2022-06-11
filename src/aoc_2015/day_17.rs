@@ -53,20 +53,18 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let problem: Problem = input.parse()?;
+            let problem: Problem = input.expect_input()?.parse()?;
 
             // Process
             /*for c in problem.combinations(25) {
                 println!("{:?}", c);
             }*/
-            Ok(Answer::Unsigned(
-                problem.combinations(150).count().try_into().unwrap(),
-            ))
+            Ok(Answer::Unsigned(problem.combinations(150).count().try_into().unwrap()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let problem: Problem = input.parse()?;
+            let problem: Problem = input.expect_input()?.parse()?;
 
             // Process
             let combs: Vec<Vec<u16>> = problem.combinations(150).collect();

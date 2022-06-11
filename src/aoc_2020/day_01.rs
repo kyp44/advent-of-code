@@ -29,7 +29,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let values = Expense::gather(input.lines())?;
+            let values = Expense::gather(input.expect_input()?.lines())?;
 
             // Processing
             let mut i = values.iter().combinations(2);
@@ -37,7 +37,7 @@ pub const SOLUTION: Solution = Solution {
                 match i.next() {
                     Some(v) => {
                         if v[0] + v[1] == 2020 {
-                            break Ok(Answer::Unsigned((v[0] * v[1]).into()));
+                            break Ok(Answer::Unsigned((v[0] * v[1]).into()).into());
                         }
                     }
                     None => break Err(AocError::Process("No two values add to 2020".into())),
@@ -47,13 +47,13 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let values = Expense::gather(input.lines())?;
+            let values = Expense::gather(input.expect_input()?.lines())?;
 
             let mut i = values.iter().combinations(3);
             loop {
                 match i.next() {
                     Some(v) if v[0] + v[1] + v[2] == 2020 => {
-                        break Ok(Answer::Unsigned((v[0] * v[1] * v[2]).into()));
+                        break Ok(Answer::Unsigned((v[0] * v[1] * v[2]).into()).into());
                     }
                     None => {
                         break Err(AocError::Process("No three values add to 2020".into()));

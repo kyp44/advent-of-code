@@ -53,27 +53,29 @@ pub const SOLUTION: Solution = Solution {
     solvers: &[
         // Part a)
         |input| {
-            //println!("{}", Sequence::from_str(input)?.nth(40).unwrap().len());
+            //println!("{}", Sequence::from_str(input.expect_input()?)?.nth(40).unwrap().len());
             Ok(Answer::Unsigned(
-                Sequence::from_str(input)?
+                Sequence::from_str(input.expect_input()?)?
                     .nth(40)
                     .unwrap()
                     .len()
                     .try_into()
                     .unwrap(),
-            ))
+            )
+            .into())
         },
         // Part b)
         |input| {
-            //println!("{}", Sequence::from_str(input)?.nth(50).unwrap().len());
+            //println!("{}", Sequence::from_str(input.expect_input()?)?.nth(50).unwrap().len());
             Ok(Answer::Unsigned(
-                Sequence::from_str(input)?
+                Sequence::from_str(input.expect_input()?)?
                     .nth(50)
                     .unwrap()
                     .len()
                     .try_into()
                     .unwrap(),
-            ))
+            )
+            .into())
         },
     ],
 };

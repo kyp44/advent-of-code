@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::ops::Add;
+use std::rc::Rc;
 use std::{collections::HashSet, str::FromStr};
 
 use cgmath::{Quaternion, Vector3, Zero};
@@ -17,6 +18,7 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::aoc::{parse::trim, prelude::*};
+use crate::expect_data;
 
 #[cfg(test)]
 mod tests {
@@ -381,10 +383,10 @@ impl Scanner {
     }
 }
 
-type Correlations<'a> = HashMap<&'a Scanner, Transposer>;
+type Correlations = HashMap<Rc<Scanner>, Transposer>;
 
 struct ScannerNetwork {
-    scanners: Box<[Scanner]>,
+    scanners: Box<[Rc<Scanner>]>,
 }
 impl FromStr for ScannerNetwork {
     type Err = AocError;
@@ -393,37 +395,37 @@ impl FromStr for ScannerNetwork {
         Ok(Self {
             scanners: s
                 .split("\n\n")
-                .map(|ss| Scanner::from_str(ss))
-                .collect::<AocResult<Box<[Scanner]>>>()?,
+                .map(|ss| Ok(Rc::new(Scanner::from_str(ss)?)))
+                .collect::<AocResult<Box<[Rc<Scanner>]>>>()?,
         })
     }
 }
 impl ScannerNetwork {
     fn correlate(&self) -> Correlations {
         // Recursively correlate all scanners
-        fn correlate_rec<'a>(
-            from: &'a Scanner,
-            scanners: &'a [Scanner],
-            correlated: HashSet<&Scanner>,
-        ) -> Correlations<'a> {
+        fn correlate_rec(
+            from: Rc<Scanner>,
+            scanners: &[Rc<Scanner>],
+            correlated: HashSet<Rc<Scanner>>,
+        ) -> Correlations {
             // Try every scanner that is not already correlated
             let mut correlations = Correlations::new();
             for to in scanners.iter().filter(|s| !correlated.contains(*s)) {
                 if let Some(transposer) = from.try_to_correlate(to) {
                     // Add this to the list of correlated scanners
                     let mut new_correlated = correlated.clone();
-                    new_correlated.insert(to);
+                    new_correlated.insert(to.clone());
 
                     // Now recurse to get with which uncorrelated scanners this is also correlated
                     // and map these additional sub-correlations back to the original scanner.
                     correlations.extend(
-                        correlate_rec(to, scanners, new_correlated)
+                        correlate_rec(to.clone(), scanners, new_correlated)
                             .into_iter()
                             .map(|(s, t)| (s, transposer.clone().compose(t))),
                     );
 
                     // Add this correlation
-                    correlations.insert(to, transposer);
+                    correlations.insert(to.clone(), transposer);
                 }
             }
             correlations
@@ -431,18 +433,18 @@ impl ScannerNetwork {
 
         // Get all scanners relative to scanner 0
         correlate_rec(
-            &self.scanners[0],
+            self.scanners[0].clone(),
             &self.scanners,
-            hashset![&self.scanners[0]],
+            hashset![self.scanners[0].clone()],
         )
     }
 }
 
-// TODO: Maybe this can be done with an enum type with None and variants for each
-// problem that needs data sharing.
-// NOTE: Tried to share state between part a) and part b) for time saving reason
-// but could not come up with a good solution to this. A general approach would
-// be great but, not sure how it can be done.
+// Expensive data to pass between parts
+pub struct BeaconScannerData {
+    network: ScannerNetwork,
+    correlations: Correlations,
+}
 
 pub const SOLUTION: Solution = Solution {
     day: 19,
@@ -451,7 +453,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let network = ScannerNetwork::from_str(input)?;
+            let network = ScannerNetwork::from_str(input.expect_input()?)?;
 
             // Correlate
             let correlations = network.correlate();
@@ -467,17 +469,22 @@ pub const SOLUTION: Solution = Solution {
                 );
             }
 
-            Ok(Answer::Unsigned(points.len().try_into().unwrap()))
+            let data = BeaconScannerData {
+                network,
+                correlations,
+            };
+
+            Ok(SolverReturn::with_data(
+                Answer::Unsigned(points.len().try_into().unwrap()),
+                SolverData::Year2021Day19(data),
+            ))
         },
         // Part b)
-        /*|input| {
+        |input| {
             // Generation
-            let network = ScannerNetwork::from_str(input)?;
-
-            // Correlate
-            let correlations = network.correlate();
+            let data = expect_data!(Year2021Day19, input)?;
 
             Ok(0u64.into())
-        },*/
+        },
     ],
 };

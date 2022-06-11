@@ -98,7 +98,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let game = Game::from_str(input.trim())?;
+            let game = Game::from_str(input.expect_input()?.trim())?;
 
             // Process
             Ok(game.play(2020).into())
@@ -106,7 +106,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let game = Game::from_str(input.trim())?;
+            let game = Game::from_str(input.expect_input()?.trim())?;
 
             // Process
             Ok(game.play(30000000).into())

@@ -80,17 +80,15 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let floor_map = FloorMap::from_str(input)?;
+            let floor_map = FloorMap::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(
-                floor_map.low_heights().map(|h| u64::from(h) + 1).sum(),
-            ))
+            Ok(Answer::Unsigned(floor_map.low_heights().map(|h| u64::from(h) + 1).sum()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let floor_map = FloorMap::from_str(input)?;
+            let floor_map = FloorMap::from_str(input.expect_input()?)?;
 
             // Process
             Ok(floor_map

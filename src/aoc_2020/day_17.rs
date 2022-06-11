@@ -60,15 +60,12 @@ impl Debug for Dimension {
                 .map(|i| ranges[i].clone())
                 .multi_cartesian_product()
             {
-                let slice = Slice::new(
-                    Grid::<bool>::from_coordinates(
-                        self
-                            .active_cubes
-                            .iter()
-                            .filter(|pt| pt[2..] == coords)
-                            .map(|v| Vector2::new(v[0], v[1])),
-                    ),
-                );
+                let slice = Slice::new(Grid::<bool>::from_coordinates(
+                    self.active_cubes
+                        .iter()
+                        .filter(|pt| pt[2..] == coords)
+                        .map(|v| Vector2::new(v[0], v[1])),
+                ));
 
                 writeln!(
                     f,
@@ -82,14 +79,9 @@ impl Debug for Dimension {
                 slice.out_fmt(f)?;
             }
         } else {
-            let slice = Slice::new(
-                Grid::<bool>::from_coordinates(
-                    self
-                        .active_cubes
-                        .iter()
-                        .map(|v| Vector2::new(v[0], v[1])),
-                                        ),
-            );
+            let slice = Slice::new(Grid::<bool>::from_coordinates(
+                self.active_cubes.iter().map(|v| Vector2::new(v[0], v[1])),
+            ));
             slice.out_fmt(f)?;
         }
 
@@ -196,7 +188,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let dimension = Dimension::from_str(3, input)?;
+            let dimension = Dimension::from_str(3, input.expect_input()?)?;
 
             /*println!("{:?}", dimension);
             for dim in dimension.evolutions().take(5) {
@@ -209,7 +201,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let dimension = Dimension::from_str(4, input)?;
+            let dimension = Dimension::from_str(4, input.expect_input()?)?;
 
             /*println!("{:?}", dimension);
             for dim in dimension.evolutions().take(5) {

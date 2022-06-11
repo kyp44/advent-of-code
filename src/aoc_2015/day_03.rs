@@ -115,22 +115,18 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let houses = Houses::from_str(input)?;
+            let houses = Houses::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(
-                houses.visited_houses::<PartA>().len().try_into().unwrap(),
-            ))
+            Ok(Answer::Unsigned(houses.visited_houses::<PartA>().len().try_into().unwrap()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let houses = Houses::from_str(input)?;
+            let houses = Houses::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(
-                houses.visited_houses::<PartB>().len().try_into().unwrap(),
-            ))
+            Ok(Answer::Unsigned(houses.visited_houses::<PartB>().len().try_into().unwrap()).into())
         },
     ],
 };

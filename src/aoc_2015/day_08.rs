@@ -11,7 +11,7 @@ use nom::{
     Finish,
 };
 
-use crate::aoc::prelude::*;
+use crate::aoc::{prelude::*, SolverReturn};
 
 #[cfg(test)]
 mod tests {
@@ -75,7 +75,10 @@ impl<'a> List<'a> {
     }
 }
 
-fn solution(list: &List, f: impl Fn(&ListString) -> AocResult<usize>) -> AocResult<Answer> {
+fn solution(
+    list: &List,
+    f: impl Fn(&ListString) -> AocResult<usize>,
+) -> AocResult<SolverReturn<'static>> {
     /*for ls in list.list_strings.iter() {
         println!("<{}>' <{}> <{}>", ls.literal, ls.escaped()?, ls.encoded());
     }*/
@@ -87,7 +90,8 @@ fn solution(list: &List, f: impl Fn(&ListString) -> AocResult<usize>) -> AocResu
         )?
         .try_into()
         .unwrap(),
-    ))
+    )
+    .into())
 }
 
 pub const SOLUTION: Solution = Solution {
@@ -97,7 +101,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let list = List::from_str(input);
+            let list = List::from_str(input.expect_input()?);
 
             // Process
             solution(&list, |ls| Ok(ls.literal.len() - ls.escaped()?.len()))
@@ -105,7 +109,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let list = List::from_str(input);
+            let list = List::from_str(input.expect_input()?);
 
             // Process
             solution(&list, |ls| Ok(ls.encoded().len() - ls.literal.len()))

@@ -84,16 +84,14 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let ids = get_ids(input)?;
+            let ids = get_ids(input.expect_input()?)?;
 
-            Ok(Answer::Unsigned(
-                ids.iter().fold(0, |o, n| o.max(*n)).into(),
-            ))
+            Ok(Answer::Unsigned(ids.iter().fold(0, |o, n| o.max(*n)).into()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let ids = get_ids(input)?;
+            let ids = get_ids(input.expect_input()?)?;
 
             let missing_id = match ids
                 .iter()
@@ -102,7 +100,7 @@ pub const SOLUTION: Solution = Solution {
                 Some(id) => *id + 1,
                 None => 0,
             };
-            Ok(Answer::Unsigned(missing_id.into()))
+            Ok(Answer::Unsigned(missing_id.into()).into())
         },
     ],
 };

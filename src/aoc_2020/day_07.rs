@@ -142,7 +142,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let mut bag_rules = BagRules::from_str(input)?;
+            let mut bag_rules = BagRules::from_str(input.expect_input()?)?;
 
             // Processing
             let id = bag_rules.bags.get_or_add_bag("shiny gold");
@@ -165,12 +165,13 @@ pub const SOLUTION: Solution = Solution {
                         break (last_count - 1).try_into().unwrap();
                     }
                 }
-            }))
+            })
+            .into())
         },
         // Part b)
         |input| {
             // Generation
-            let mut bag_rules = BagRules::from_str(input)?;
+            let mut bag_rules = BagRules::from_str(input.expect_input()?)?;
 
             // Processing
             let id = bag_rules.bags.get_or_add_bag("shiny gold");
@@ -185,9 +186,7 @@ pub const SOLUTION: Solution = Solution {
                         .sum(),
                 }
             }
-            Ok(Answer::Unsigned(
-                count_containing_bags(&bag_rules.rules, id).into(),
-            ))
+            Ok(Answer::Unsigned(count_containing_bags(&bag_rules.rules, id).into()).into())
         },
     ],
 };

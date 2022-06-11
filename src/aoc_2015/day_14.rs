@@ -117,7 +117,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let race = Race::from_str(input)?;
+            let race = Race::from_str(input.expect_input()?)?;
 
             // Process
             let ans = race.winners_at(END_TIME)[0].distance_at(END_TIME);
@@ -127,7 +127,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let race = Race::from_str(input)?;
+            let race = Race::from_str(input.expect_input()?)?;
 
             // Process
             let ans = race.run_new_race(END_TIME);

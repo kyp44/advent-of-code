@@ -67,15 +67,23 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Process
             Ok(Answer::Unsigned(
-                input.lines().filter_count(|s| Nice::<PartA>::is_nice(s)),
-            ))
+                input
+                    .expect_input()?
+                    .lines()
+                    .filter_count(|s| Nice::<PartA>::is_nice(s)),
+            )
+            .into())
         },
         // Part b)
         |input| {
             // Process
             Ok(Answer::Unsigned(
-                input.lines().filter_count(|s| Nice::<PartB>::is_nice(s)),
-            ))
+                input
+                    .expect_input()?
+                    .lines()
+                    .filter_count(|s| Nice::<PartB>::is_nice(s)),
+            )
+            .into())
         },
     ],
 };

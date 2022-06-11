@@ -186,19 +186,19 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let problem = Problem::from_str(input)?;
+            let problem = Problem::from_str(input.expect_input()?)?;
             let first_fold = problem.apply_folds().next().unwrap();
 
             //println!("{:?}\n", problem.page);
             //println!("{:?}\n", first_fold);
 
             // Process
-            Ok(Answer::Unsigned(first_fold.len().try_into().unwrap()))
+            Ok(Answer::Unsigned(first_fold.len().try_into().unwrap()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let problem = Problem::from_str(input)?;
+            let problem = Problem::from_str(input.expect_input()?)?;
 
             // This is a little annoying because it requires looking at letters in the folded image,
             // which cannot reallly be done in automated way easily.
@@ -208,7 +208,7 @@ pub const SOLUTION: Solution = Solution {
             println!("Part b) actual answer: JGAJEFKU\n");
 
             // Process
-            Ok(Answer::Unsigned(last_page.len().try_into().unwrap()))
+            Ok(Answer::Unsigned(last_page.len().try_into().unwrap()).into())
         },
     ],
 };

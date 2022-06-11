@@ -100,7 +100,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let schedule = Schedule::from_str(input)?;
+            let schedule = Schedule::from_str(input.expect_input()?)?;
 
             // Process
             let time_until = |id: &u64| neg_modulo(&schedule.earliest_time, id);
@@ -113,7 +113,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let schedule = Schedule::from_str(input)?;
+            let schedule = Schedule::from_str(input.expect_input()?)?;
 
             // Process
             // This problem is effectively the Chinese Remainder Theorem to solve a system

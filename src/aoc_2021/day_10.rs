@@ -154,7 +154,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let lines = Line::gather(input.lines())?;
+            let lines = Line::gather(input.expect_input()?.lines())?;
 
             // Process
             Ok(lines
@@ -172,7 +172,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let lines = Line::gather(input.lines())?;
+            let lines = Line::gather(input.expect_input()?.lines())?;
 
             let scores: Vec<u64> = lines
                 .into_iter()

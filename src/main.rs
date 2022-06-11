@@ -78,7 +78,7 @@ fn main() -> anyhow::Result<()> {
         let solution = year_solutions.get_day(day).ok_or(AocError::NoDay(day))?;
 
         // Run the solution
-        solution.run(year_solutions.year)?;
+        solution.run_and_print(year_solutions.year)?;
     }
 
     Ok(())

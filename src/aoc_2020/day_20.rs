@@ -635,7 +635,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let solver: Solver = input.parse()?;
+            let solver: Solver = input.expect_input()?.parse()?;
 
             // Process
             let map = solver.solve()?;
@@ -650,7 +650,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let solver: Solver = input.parse()?;
+            let solver: Solver = input.expect_input()?.parse()?;
 
             // Process
             let image = solver.solve()?.stitched_image()?;
@@ -670,9 +670,9 @@ pub const SOLUTION: Solution = Solution {
                     }
 
                     // Count the rough spots (i.e. points not part of a sea monster)
-                    return Ok(Answer::Unsigned(
-                        image.pixels.all_values().filter_count(|v| **v),
-                    ));
+                    return Ok(
+                        Answer::Unsigned(image.pixels.all_values().filter_count(|v| **v)).into(),
+                    );
                 }
             }
 

@@ -194,7 +194,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let machine = Machine::from_str(input)?;
+            let machine = Machine::from_str(input.expect_input()?)?;
 
             //println!("{:?}", machine);
             /*for s in machine.replace_iter(&machine.medicine) {
@@ -203,12 +203,12 @@ pub const SOLUTION: Solution = Solution {
 
             // Process
             let set: HashSet<String> = machine.replace_iter(&machine.medicine).collect();
-            Ok(Answer::Unsigned(set.len().try_into().unwrap()))
+            Ok(Answer::Unsigned(set.len().try_into().unwrap()).into())
         },
         // Part b)
         |input| {
             // Generation
-            let machine = Machine::from_str(input)?;
+            let machine = Machine::from_str(input.expect_input()?)?;
             //println!("{:?}", machine);
 
             // Process

@@ -107,7 +107,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let map = Map::from_str(input)?;
+            let map = Map::from_str(input.expect_input()?)?;
 
             // Process
             Ok(count_slope(&map, GridPoint::new(3, 1)).into())
@@ -115,7 +115,7 @@ pub const SOLUTION: Solution = Solution {
         // Part b)
         |input| {
             // Generation
-            let map = Map::from_str(input)?;
+            let map = Map::from_str(input.expect_input()?)?;
 
             // Process
             let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];

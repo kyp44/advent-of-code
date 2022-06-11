@@ -70,7 +70,7 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let problem: Problem = input.parse()?;
+            let problem: Problem = input.expect_input()?.parse()?;
 
             // Process
             Ok(problem.solve()?.into())
