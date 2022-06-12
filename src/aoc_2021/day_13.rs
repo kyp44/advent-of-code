@@ -182,6 +182,7 @@ impl Iterator for FoldedPages<'_> {
 pub const SOLUTION: Solution = Solution {
     day: 13,
     name: "Transparent Origami",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -193,7 +194,7 @@ pub const SOLUTION: Solution = Solution {
             //println!("{:?}\n", first_fold);
 
             // Process
-            Ok(Answer::Unsigned(first_fold.len().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(first_fold.len().try_into().unwrap()))
         },
         // Part b)
         |input| {
@@ -208,7 +209,7 @@ pub const SOLUTION: Solution = Solution {
             println!("Part b) actual answer: JGAJEFKU\n");
 
             // Process
-            Ok(Answer::Unsigned(last_page.len().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(last_page.len().try_into().unwrap()))
         },
     ],
 };

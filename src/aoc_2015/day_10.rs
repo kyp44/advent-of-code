@@ -50,6 +50,7 @@ impl Iterator for Sequence {
 pub const SOLUTION: Solution = Solution {
     day: 10,
     name: "Elves Look, Elves Say",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -61,8 +62,7 @@ pub const SOLUTION: Solution = Solution {
                     .len()
                     .try_into()
                     .unwrap(),
-            )
-            .into())
+            ))
         },
         // Part b)
         |input| {
@@ -74,8 +74,7 @@ pub const SOLUTION: Solution = Solution {
                     .len()
                     .try_into()
                     .unwrap(),
-            )
-            .into())
+            ))
         },
     ],
 };

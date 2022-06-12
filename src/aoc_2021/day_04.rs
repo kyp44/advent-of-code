@@ -173,6 +173,7 @@ impl BingoGame {
 pub const SOLUTION: Solution = Solution {
     day: 4,
     name: "Giant Squid",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

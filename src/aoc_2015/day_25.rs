@@ -66,6 +66,7 @@ impl Problem {
 pub const SOLUTION: Solution = Solution {
     day: 25,
     name: "Let It Snow",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

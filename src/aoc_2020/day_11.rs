@@ -1,4 +1,4 @@
-use crate::aoc::{prelude::*, SolverReturn};
+use crate::aoc::prelude::*;
 use cgmath::{Vector2, Zero};
 use itertools::iproduct;
 use std::{collections::HashSet, fmt::Display, hash::Hash, rc::Rc, str::FromStr};
@@ -219,7 +219,7 @@ impl Area {
     }
 }
 
-fn check_simulation(status: SimulationStatus<Rc<Area>>) -> AocResult<SolverReturn<'static>> {
+fn check_simulation(status: SimulationStatus<Rc<Area>>) -> AocResult<Answer> {
     match status {
         SimulationStatus::Stable(a) => Ok(a.occupied().into()),
         SimulationStatus::Infinite(_) => Err(AocError::Process(
@@ -231,6 +231,7 @@ fn check_simulation(status: SimulationStatus<Rc<Area>>) -> AocResult<SolverRetur
 pub const SOLUTION: Solution = Solution {
     day: 11,
     name: "Seating System",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

@@ -173,7 +173,7 @@ impl GamePart<PartB> for Game {
     fn play(&mut self) -> &Deck {
         let mut history = HashSet::new();
 
-        let winning_deck = loop {
+        loop {
             //println!("Game: {:?}", self);
 
             if history.contains(self) {
@@ -212,19 +212,14 @@ impl GamePart<PartB> for Game {
                 self.player1.place_bottom(c1);
                 self.player1.place_bottom(c2);
             }
-        };
-        /*println!(
-            "Game finished\nThe winner is player {}",
-            winning_deck.player
-        );*/
-
-        winning_deck
+        }
     }
 }
 
 pub const SOLUTION: Solution = Solution {
     day: 22,
     name: "Crab Combat",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

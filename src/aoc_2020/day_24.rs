@@ -222,6 +222,7 @@ impl fmt::Debug for Floor {
 pub const SOLUTION: Solution = Solution {
     day: 24,
     name: "Lobby Layout",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

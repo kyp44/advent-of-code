@@ -255,6 +255,7 @@ impl Cups {
 pub const SOLUTION: Solution = Solution {
     day: 23,
     name: "Crab Cups",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

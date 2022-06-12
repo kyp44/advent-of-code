@@ -230,6 +230,7 @@ impl<'a> Circuit<'a> {
 pub const SOLUTION: Solution = Solution {
     day: 7,
     name: "Some Assembly Required",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -237,7 +238,7 @@ pub const SOLUTION: Solution = Solution {
             let mut circuit = Circuit::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()).into())
+            Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()))
         },
         // Part b)
         |input| {
@@ -249,7 +250,7 @@ pub const SOLUTION: Solution = Solution {
             circuit.override_wire("b", a)?;
 
             // Process
-            Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()).into())
+            Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()))
         },
     ],
 };

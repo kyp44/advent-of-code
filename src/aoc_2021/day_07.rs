@@ -66,6 +66,7 @@ impl CrabSubs {
 pub const SOLUTION: Solution = Solution {
     day: 7,
     name: "The Treachery of Whales",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

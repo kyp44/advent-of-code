@@ -102,6 +102,7 @@ impl Password {
 pub const SOLUTION: Solution = Solution {
     day: 2,
     name: "Password Philosophy",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -109,7 +110,7 @@ pub const SOLUTION: Solution = Solution {
             let passwords = Password::gather(input.expect_input()?.lines())?;
 
             // Processing
-            Ok(Answer::Unsigned(passwords.iter().filter_count(|p| p.valid_part_a())).into())
+            Ok(Answer::Unsigned(passwords.iter().filter_count(|p| p.valid_part_a())))
         },
         // Part b)
         |input| {
@@ -117,7 +118,7 @@ pub const SOLUTION: Solution = Solution {
             let passwords = Password::gather(input.expect_input()?.lines())?;
 
             // Processing
-            Ok(Answer::Unsigned(passwords.iter().filter_count(|p| p.valid_part_b())).into())
+            Ok(Answer::Unsigned(passwords.iter().filter_count(|p| p.valid_part_b())))
         },
     ],
 };

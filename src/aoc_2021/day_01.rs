@@ -39,6 +39,7 @@ where
 pub const SOLUTION: Solution = Solution {
     day: 1,
     name: "Sonar Sweep",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

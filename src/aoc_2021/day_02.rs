@@ -126,6 +126,7 @@ impl Course {
 pub const SOLUTION: Solution = Solution {
     day: 2,
     name: "Dive!",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

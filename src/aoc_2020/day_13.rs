@@ -96,6 +96,7 @@ impl Iterator for ModuloValues {
 pub const SOLUTION: Solution = Solution {
     day: 13,
     name: "Shuttle Search",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

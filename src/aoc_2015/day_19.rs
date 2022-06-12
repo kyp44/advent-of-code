@@ -190,6 +190,7 @@ impl Machine {
 pub const SOLUTION: Solution = Solution {
     day: 19,
     name: "Medicine for Rudolph",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -203,7 +204,7 @@ pub const SOLUTION: Solution = Solution {
 
             // Process
             let set: HashSet<String> = machine.replace_iter(&machine.medicine).collect();
-            Ok(Answer::Unsigned(set.len().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(set.len().try_into().unwrap()))
         },
         // Part b)
         |input| {

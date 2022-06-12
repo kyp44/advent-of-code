@@ -2,7 +2,7 @@ use std::{collections::HashSet, marker::PhantomData, str::FromStr};
 
 use maplit::hashset;
 
-use crate::aoc::{prelude::*, SolverReturn};
+use crate::aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
@@ -129,13 +129,14 @@ impl<P: Part> LightGrid<P> {
     }
 }
 
-fn solve<P: Part + Clone>(grid: &LightGrid<P>) -> AocResult<SolverReturn<'static>> {
+fn solve<P: Part + Clone>(grid: &LightGrid<P>) -> AocResult<Answer> {
     Ok(grid.evolutions().nth(100 - 1).unwrap().lights_on().into())
 }
 
 pub const SOLUTION: Solution = Solution {
     day: 18,
     name: "Like a GIF For Your Yard",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

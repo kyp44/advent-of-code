@@ -49,6 +49,7 @@ fn solve<P: Part>(input: &str) -> u64 {
 pub const SOLUTION: Solution = Solution {
     day: 4,
     name: "The Ideal Stocking Stuffer",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| Ok(solve::<PartA>(input.expect_input()?).into()),

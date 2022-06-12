@@ -67,6 +67,7 @@ impl Delivery {
 pub const SOLUTION: Solution = Solution {
     day: 20,
     name: "Infinite Elves and Infinite Houses",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

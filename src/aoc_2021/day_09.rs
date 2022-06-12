@@ -76,6 +76,7 @@ impl FloorMap {
 pub const SOLUTION: Solution = Solution {
     day: 9,
     name: "Smoke Basin",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -83,7 +84,9 @@ pub const SOLUTION: Solution = Solution {
             let floor_map = FloorMap::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(floor_map.low_heights().map(|h| u64::from(h) + 1).sum()).into())
+            Ok(Answer::Unsigned(
+                floor_map.low_heights().map(|h| u64::from(h) + 1).sum(),
+            ))
         },
         // Part b)
         |input| {

@@ -1,5 +1,5 @@
+use crate::aoc::parse::trim;
 use crate::aoc::prelude::*;
-use crate::aoc::{parse::trim, SolverReturn};
 use nom::{
     branch::alt,
     bytes::complete::tag,
@@ -208,7 +208,7 @@ impl Expression<'_> {
     }
 }
 
-fn solve<'a>(expressions: &[Expression], part: &dyn Part) -> AocResult<SolverReturn<'a>> {
+fn solve(expressions: &[Expression], part: &dyn Part) -> AocResult<Answer> {
     // We have to manually calculate the sum due to the error handling
     let mut s: u64 = 0;
     for e in expressions {
@@ -220,6 +220,7 @@ fn solve<'a>(expressions: &[Expression], part: &dyn Part) -> AocResult<SolverRet
 pub const SOLUTION: Solution = Solution {
     day: 18,
     name: "Operation Order",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

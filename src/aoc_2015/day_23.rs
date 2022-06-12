@@ -176,6 +176,7 @@ impl Program {
 pub const SOLUTION: Solution = Solution {
     day: 23,
     name: "Opening the Turing Lock",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

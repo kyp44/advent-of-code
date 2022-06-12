@@ -90,6 +90,7 @@ impl SumNumbers for Value {
 pub const SOLUTION: Solution = Solution {
     day: 12,
     name: "JSAbacusFramework.io",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

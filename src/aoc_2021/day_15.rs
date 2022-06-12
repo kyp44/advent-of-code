@@ -112,6 +112,7 @@ impl RiskLevels {
 pub const SOLUTION: Solution = Solution {
     day: 15,
     name: "Chiton",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

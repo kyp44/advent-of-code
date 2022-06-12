@@ -94,6 +94,7 @@ impl Presents {
 pub const SOLUTION: Solution = Solution {
     day: 2,
     name: "I Was Told There Would Be No Math",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

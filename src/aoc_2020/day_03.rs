@@ -103,6 +103,7 @@ fn count_slope(map: &Map, slope: GridPoint) -> u64 {
 pub const SOLUTION: Solution = Solution {
     day: 3,
     name: "Toboggan Trajectory",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

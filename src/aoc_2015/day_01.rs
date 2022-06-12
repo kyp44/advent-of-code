@@ -81,6 +81,7 @@ impl Directions {
 pub const SOLUTION: Solution = Solution {
     day: 1,
     name: "Not Quite Lisp",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -100,7 +101,7 @@ pub const SOLUTION: Solution = Solution {
                 directions.floors().position(|f| f < 0).ok_or_else(|| {
                     AocError::Process("Santa never goes into the basement".into())
                 })? + 1;
-            Ok(Answer::Signed(pos.try_into().unwrap()).into())
+            Ok(Answer::Signed(pos.try_into().unwrap()))
         },
     ],
 };

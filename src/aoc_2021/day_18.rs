@@ -218,6 +218,7 @@ impl Sum for Number {
 pub const SOLUTION: Solution = Solution {
     day: 18,
     name: "Snailfish",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

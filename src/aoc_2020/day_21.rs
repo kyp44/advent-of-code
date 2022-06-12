@@ -183,6 +183,7 @@ impl Problem {
 pub const SOLUTION: Solution = Solution {
     day: 21,
     name: "Allergen Assessment",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -206,8 +207,7 @@ pub const SOLUTION: Solution = Solution {
                     .sum::<usize>()
                     .try_into()
                     .unwrap(),
-            )
-            .into())
+            ))
         },
         // Part b)
         |input| {

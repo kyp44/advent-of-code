@@ -211,6 +211,7 @@ fn passport_valid_part_b(passport: &Passport) -> bool {
 pub const SOLUTION: Solution = Solution {
     day: 4,
     name: "Passport Processing",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -218,10 +219,9 @@ pub const SOLUTION: Solution = Solution {
             let passports = parse_passports(input.expect_input()?)?;
 
             // Processing
-            Ok(
-                Answer::Unsigned(passports.iter().filter_count(|p| passport_valid_part_a(p)))
-                    .into(),
-            )
+            Ok(Answer::Unsigned(
+                passports.iter().filter_count(|p| passport_valid_part_a(p)),
+            ))
         },
         // Part b)
         |input| {
@@ -229,10 +229,9 @@ pub const SOLUTION: Solution = Solution {
             let passports = parse_passports(input.expect_input()?)?;
 
             // Processing
-            Ok(
-                Answer::Unsigned(passports.iter().filter_count(|p| passport_valid_part_b(p)))
-                    .into(),
-            )
+            Ok(Answer::Unsigned(
+                passports.iter().filter_count(|p| passport_valid_part_b(p)),
+            ))
         },
     ],
 };

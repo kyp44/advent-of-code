@@ -62,6 +62,7 @@ impl Nice<PartB> for &str {
 pub const SOLUTION: Solution = Solution {
     day: 5,
     name: "Doesn't He Have Intern-Elves For This?",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -71,8 +72,7 @@ pub const SOLUTION: Solution = Solution {
                     .expect_input()?
                     .lines()
                     .filter_count(|s| Nice::<PartA>::is_nice(s)),
-            )
-            .into())
+            ))
         },
         // Part b)
         |input| {
@@ -82,8 +82,7 @@ pub const SOLUTION: Solution = Solution {
                     .expect_input()?
                     .lines()
                     .filter_count(|s| Nice::<PartB>::is_nice(s)),
-            )
-            .into())
+            ))
         },
     ],
 };

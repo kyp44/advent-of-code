@@ -250,6 +250,7 @@ impl Problem {
 pub const SOLUTION: Solution = Solution {
     day: 16,
     name: "Ticket Translation",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -257,7 +258,9 @@ pub const SOLUTION: Solution = Solution {
             let problem = Problem::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(problem.all_invalid_fields().sum::<u32>().into()).into())
+            Ok(Answer::Unsigned(
+                problem.all_invalid_fields().sum::<u32>().into(),
+            ))
         },
         // Part b)
         |input| {

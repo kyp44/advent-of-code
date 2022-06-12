@@ -11,7 +11,7 @@ use nom::{
     Finish,
 };
 
-use crate::aoc::{prelude::*, SolverReturn};
+use crate::aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
@@ -75,10 +75,7 @@ impl<'a> List<'a> {
     }
 }
 
-fn solution(
-    list: &List,
-    f: impl Fn(&ListString) -> AocResult<usize>,
-) -> AocResult<SolverReturn<'static>> {
+fn solution(list: &List, f: impl Fn(&ListString) -> AocResult<usize>) -> AocResult<Answer> {
     /*for ls in list.list_strings.iter() {
         println!("<{}>' <{}> <{}>", ls.literal, ls.escaped()?, ls.encoded());
     }*/
@@ -90,13 +87,13 @@ fn solution(
         )?
         .try_into()
         .unwrap(),
-    )
-    .into())
+    ))
 }
 
 pub const SOLUTION: Solution = Solution {
     day: 8,
     name: "Matchsticks",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

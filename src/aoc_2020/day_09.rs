@@ -115,6 +115,7 @@ fn verify_invalid(packet: &XmasPacket) -> AocResult<u64> {
 pub const SOLUTION: Solution = Solution {
     day: 9,
     name: "Encoding Error",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

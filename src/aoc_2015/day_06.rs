@@ -200,6 +200,7 @@ impl LightGrid<u8> {
 pub const SOLUTION: Solution = Solution {
     day: 6,
     name: "Probably a Fire Hazard",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -211,7 +212,9 @@ pub const SOLUTION: Solution = Solution {
             //println!("{:?}", light_grid);
 
             // Process
-            Ok(Answer::Unsigned(light_grid.number_lit().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(
+                light_grid.number_lit().try_into().unwrap(),
+            ))
         },
         // Part b)
         |input| {

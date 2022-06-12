@@ -138,6 +138,7 @@ impl<'a> BagRules<'a> {
 pub const SOLUTION: Solution = Solution {
     day: 7,
     name: "Handy Haversacks",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -165,8 +166,7 @@ pub const SOLUTION: Solution = Solution {
                         break (last_count - 1).try_into().unwrap();
                     }
                 }
-            })
-            .into())
+            }))
         },
         // Part b)
         |input| {
@@ -186,7 +186,9 @@ pub const SOLUTION: Solution = Solution {
                         .sum(),
                 }
             }
-            Ok(Answer::Unsigned(count_containing_bags(&bag_rules.rules, id).into()).into())
+            Ok(Answer::Unsigned(
+                count_containing_bags(&bag_rules.rules, id).into(),
+            ))
         },
     ],
 };

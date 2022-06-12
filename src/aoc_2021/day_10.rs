@@ -150,6 +150,7 @@ impl Line {
 pub const SOLUTION: Solution = Solution {
     day: 10,
     name: "Syntax Scoring",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

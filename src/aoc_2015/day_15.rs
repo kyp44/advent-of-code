@@ -204,6 +204,7 @@ impl Problem {
 pub const SOLUTION: Solution = Solution {
     day: 15,
     name: "Science for Hungry People",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

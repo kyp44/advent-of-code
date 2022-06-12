@@ -280,6 +280,7 @@ impl FromStr for Packet {
 pub const SOLUTION: Solution = Solution {
     day: 16,
     name: "Packet Decoder",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

@@ -27,7 +27,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(438), Unsigned(123)],
+    vec![Unsigned(438), Unsigned(11985)],
     "--- scanner 0 ---
 404,-588,-901
 528,-643,409
@@ -196,14 +196,20 @@ impl Parseable<'_> for Point {
         )(input)
     }
 }
-impl Into<Quaternion<i32>> for Point {
-    fn into(self) -> Quaternion<i32> {
-        Quaternion::from_sv(0, self.vect)
+impl From<Point> for Quaternion<i32> {
+    fn from(p: Point) -> Self {
+        Self::from_sv(0, p.vect)
     }
 }
 impl From<Quaternion<i32>> for Point {
     fn from(q: Quaternion<i32>) -> Self {
         Point { vect: q.v }
+    }
+}
+impl Point {
+    fn manhatten_distance(&self, other: &Self) -> i32 {
+        let d = self.vect - other.vect;
+        d.x.abs() + d.y.abs() + d.z.abs()
     }
 }
 
@@ -258,6 +264,12 @@ struct RotationQuaternion {
     quat: Quaternion<i32>,
 }
 impl RotationQuaternion {
+    /// Identity rotation that leaves points unchanged.
+    fn identity() -> Self {
+        Self::new(1, Quaternion::from_sv(1, Vector::zero()))
+    }
+
+    /// Rotates a point.
     fn rotate_point(&self, point: Point) -> Point {
         self.quat
             .mul(point.into())
@@ -301,6 +313,14 @@ struct Transposer {
     rotation: RotationQuaternion,
 }
 impl Transposer {
+    /// Identity tranposer that leaves points unchanged.
+    fn identity() -> Self {
+        Transposer {
+            location: Vector::zero().into(),
+            rotation: RotationQuaternion::identity(),
+        }
+    }
+
     /// Transposes a point relative to scanner B to be relative
     /// to scanner A.
     fn transpose_point(&self, point: Point) -> Point {
@@ -374,7 +394,7 @@ impl Scanner {
                     // We have a sufficient number of correlated points!
                     return Some(Transposer {
                         location: delta.into(),
-                        rotation: rotation,
+                        rotation,
                     });
                 }
             }
@@ -440,27 +460,35 @@ impl ScannerNetwork {
     }
 }
 
-// Expensive data to pass between parts
+// Expensive data to preprocess for both parts
 pub struct BeaconScannerData {
-    network: ScannerNetwork,
     correlations: Correlations,
 }
 
 pub const SOLUTION: Solution = Solution {
     day: 19,
     name: "Beacon Scanner",
+    preprocessor: Some(|input| {
+        // Generation
+        let network = ScannerNetwork::from_str(input)?;
+
+        // Correlate
+        let mut correlations = network.correlate();
+        // Add an identity correlation
+        correlations.insert(network.scanners[0].clone(), Transposer::identity());
+
+        Ok(SolverData::Year2021Day19(BeaconScannerData {
+            correlations,
+        }))
+    }),
     solvers: &[
         // Part a)
         |input| {
-            // Generation
-            let network = ScannerNetwork::from_str(input.expect_input()?)?;
-
-            // Correlate
-            let correlations = network.correlate();
-
             // Now build a set of all points (beacons) relative to scanner 0
-            let mut points: HashSet<Point> = network.scanners[0].points.iter().copied().collect();
-            for (scanner, transposer) in correlations.iter() {
+            let data = expect_data!(Year2021Day19, input)?;
+
+            let mut points: HashSet<Point> = HashSet::new();
+            for (scanner, transposer) in data.correlations.iter() {
                 points.extend(
                     scanner
                         .points
@@ -469,22 +497,22 @@ pub const SOLUTION: Solution = Solution {
                 );
             }
 
-            let data = BeaconScannerData {
-                network,
-                correlations,
-            };
-
-            Ok(SolverReturn::with_data(
-                Answer::Unsigned(points.len().try_into().unwrap()),
-                SolverData::Year2021Day19(data),
-            ))
+            Ok(Answer::Unsigned(points.len().try_into().unwrap()))
         },
         // Part b)
         |input| {
             // Generation
             let data = expect_data!(Year2021Day19, input)?;
 
-            Ok(0u64.into())
+            // Processing
+            Ok(Answer::Unsigned(
+                iproduct!(data.correlations.values(), data.correlations.values())
+                    .map(|(ta, tb)| ta.location.manhatten_distance(&tb.location))
+                    .max()
+                    .unwrap()
+                    .try_into()
+                    .unwrap(),
+            ))
         },
     ],
 };

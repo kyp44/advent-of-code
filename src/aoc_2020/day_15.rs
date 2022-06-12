@@ -94,6 +94,7 @@ impl Game {
 pub const SOLUTION: Solution = Solution {
     day: 15,
     name: "Rambunctious Recitation",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

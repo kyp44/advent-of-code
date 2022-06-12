@@ -21,7 +21,7 @@ pub mod prelude {
         iter::FilterCount, iter::HasNoneIter, iter::HasRange, iter::IndividualReplacements,
         iter::SplitRuns, parse::BitInput, parse::DiscardInput, parse::NomParseError,
         parse::NomParseResult, parse::Parseable, parse::Sections, Answer, AnswerVec, AocError,
-        AocResult, HasLen, Solution, SolverData, SolverReturn, YearSolutions,
+        AocResult, HasLen, Solution, SolverData, YearSolutions,
     };
     pub use aoc_derive::CharGridDebug;
 }
@@ -136,44 +136,12 @@ macro_rules! expect_data {
     };
 }
 
-pub struct SolverReturn<'a> {
-    answer: Answer,
-    data: Option<SolverData<'a>>,
-}
-impl<'a> SolverReturn<'a> {
-    pub fn with_data(answer: Answer, data: SolverData<'a>) -> Self {
-        Self {
-            answer,
-            data: Some(data),
-        }
-    }
-}
-impl From<Answer> for SolverReturn<'_> {
-    fn from(answer: Answer) -> Self {
-        SolverReturn { answer, data: None }
-    }
-}
-impl From<u64> for SolverReturn<'_> {
-    fn from(n: u64) -> Self {
-        Answer::from(n).into()
-    }
-}
-impl From<i64> for SolverReturn<'_> {
-    fn from(n: i64) -> Self {
-        Answer::from(n).into()
-    }
-}
-impl From<String> for SolverReturn<'_> {
-    fn from(s: String) -> Self {
-        Answer::from(s).into()
-    }
-}
-
 /// Represents the solver for a day's puzzle.
-type SolverFunc = fn(SolverData) -> AocResult<SolverReturn>;
+type SolverFunc = fn(&SolverData) -> AocResult<Answer>;
 pub struct Solution {
     pub day: u32,
     pub name: &'static str,
+    pub preprocessor: Option<fn(&str) -> AocResult<SolverData>>,
     pub solvers: &'static [SolverFunc],
 }
 impl Solution {
@@ -182,26 +150,13 @@ impl Solution {
         format!("Day {}: {}", self.day, self.name)
     }
 
-    /// Runs the solvers and returns the results
-    pub fn run<'a>(
-        &self,
-        solvers: impl Iterator<Item = &'a SolverFunc>,
-        input: &str,
-    ) -> anyhow::Result<Vec<Answer>> {
-        // Run the solvers, pasing data from one to the next if applicable
-        let mut results = Vec::new();
-        let mut data = SolverData::Input(input);
-        for solver in solvers {
-            let ret = solver(data).with_context(|| "Problem when running the solution")?;
-            data = if let Some(d) = ret.data {
-                d
-            } else {
-                SolverData::Input(input)
-            };
-            results.push(ret.answer);
+    /// Run preprocessor if applicable
+    pub fn preprocess<'a>(&self, input: &'a str) -> AocResult<SolverData<'a>> {
+        if let Some(pf) = self.preprocessor {
+            pf(input)
+        } else {
+            Ok(SolverData::Input(input))
         }
-
-        Ok(results)
     }
 
     /// Reads the input, runs the solvers, and outputs the answer(s).
@@ -212,10 +167,15 @@ impl Solution {
             .with_context(|| format!("Could not read input file {}", input_path))?;
 
         // Run solvers
-        let results = self.run(self.solvers.iter(), &input)?;
+        let data = self.preprocess(&input)?;
+        let results = self
+            .solvers
+            .iter()
+            .map(|s| s(&data))
+            .collect::<AocResult<Vec<Answer>>>()?;
 
         println!("Year {} {}", year, self.title());
-        for (pc, result) in ('a'..'z').zip(results.iter()) {
+        for (pc, result) in ('a'..='z').zip(results.iter()) {
             if results.len() > 1 {
                 println!("Part {})", pc);
             }
@@ -282,19 +242,12 @@ macro_rules! solution_results {
         let input = $input;
         let vans: Vec<Option<Answer>> = $exp;
 
-        let results = SOLUTION
-            .run(
-                SOLUTION
-                    .solvers
-                    .iter()
-                    .zip(vans.iter())
-                    .filter_map(|(s, ans)| if ans.is_some() { Some(s) } else { None }),
-                &input,
-            )
-            .unwrap();
+        let data = SOLUTION.preprocess(input).unwrap();
 
-        for (solver_ans, ans) in results.into_iter().zip(vans.into_iter().filter_map(|a| a)) {
-            assert_eq!(solver_ans, ans);
+        for (solver, ans) in SOLUTION.solvers.iter().zip(vans.into_iter()) {
+            if let Some(a) = ans {
+                assert_eq!(solver(&data).unwrap(), a);
+            }
         }
     };
 }

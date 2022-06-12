@@ -87,6 +87,7 @@ impl Problem {
 pub const SOLUTION: Solution = Solution {
     day: 25,
     name: "Combo Breaker",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

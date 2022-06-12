@@ -113,6 +113,7 @@ const END_TIME: u64 = 2503;
 pub const SOLUTION: Solution = Solution {
     day: 14,
     name: "Reindeer Olympics",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

@@ -49,6 +49,7 @@ impl Problem {
 pub const SOLUTION: Solution = Solution {
     day: 17,
     name: "No Such Thing as Too Much",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -59,7 +60,9 @@ pub const SOLUTION: Solution = Solution {
             /*for c in problem.combinations(25) {
                 println!("{:?}", c);
             }*/
-            Ok(Answer::Unsigned(problem.combinations(150).count().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(
+                problem.combinations(150).count().try_into().unwrap(),
+            ))
         },
         // Part b)
         |input| {

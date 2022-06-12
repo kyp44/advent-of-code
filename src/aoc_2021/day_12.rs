@@ -263,6 +263,7 @@ impl<'a> CaveSystem<'a> {
 pub const SOLUTION: Solution = Solution {
     day: 12,
     name: "Passage Pathing",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -276,7 +277,7 @@ pub const SOLUTION: Solution = Solution {
             println!();*/
 
             // Process
-            Ok(Answer::Unsigned(paths.len().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(paths.len().try_into().unwrap()))
         },
         // Part b)
         |input| {
@@ -285,7 +286,7 @@ pub const SOLUTION: Solution = Solution {
             let paths = cave_system.paths_special()?;
 
             // Process
-            Ok(Answer::Unsigned(paths.len().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(paths.len().try_into().unwrap()))
         },
     ],
 };

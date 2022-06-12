@@ -110,6 +110,7 @@ impl Iterator for OctopiEvolver {
 pub const SOLUTION: Solution = Solution {
     day: 11,
     name: "Dumbo Octopus",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

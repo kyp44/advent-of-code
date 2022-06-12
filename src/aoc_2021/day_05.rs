@@ -223,6 +223,7 @@ impl Vents {
 pub const SOLUTION: Solution = Solution {
     day: 5,
     name: "Hydrothermal Venture",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

@@ -56,6 +56,7 @@ impl Iterator for Simulation {
 pub const SOLUTION: Solution = Solution {
     day: 6,
     name: "Lanternfish",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

@@ -213,6 +213,7 @@ impl Line {
 pub const SOLUTION: Solution = Solution {
     day: 8,
     name: "Seven Segment Search",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -230,7 +231,9 @@ pub const SOLUTION: Solution = Solution {
                 .collect::<AocResult<Vec<usize>>>()?;
 
             // Process
-            Ok(Answer::Unsigned(num_digits.into_iter().sum::<usize>().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(
+                num_digits.into_iter().sum::<usize>().try_into().unwrap(),
+            ))
         },
         // Part b)
         |input| {

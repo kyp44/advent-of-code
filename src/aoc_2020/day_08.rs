@@ -170,6 +170,7 @@ fn check_acc(acc: i32) -> AocResult<u32> {
 pub const SOLUTION: Solution = Solution {
     day: 8,
     name: "Handheld Halting",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -187,8 +188,7 @@ pub const SOLUTION: Solution = Solution {
                     }
                 }
                 .into(),
-            )
-            .into())
+            ))
         },
         // Part b)
         |input| {
@@ -207,8 +207,7 @@ pub const SOLUTION: Solution = Solution {
                 terminated_acc
                     .ok_or_else(|| AocError::Process("No modified programs terminated!".into()))?
                     .into(),
-            )
-            .into())
+            ))
         },
     ],
 };

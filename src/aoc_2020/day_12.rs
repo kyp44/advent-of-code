@@ -132,6 +132,7 @@ impl Ship {
 pub const SOLUTION: Solution = Solution {
     day: 12,
     name: "Rain Risk",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -139,7 +140,9 @@ pub const SOLUTION: Solution = Solution {
             let instructions = Instruction::gather(input.expect_input()?.lines())?;
 
             // Process
-            Ok(Answer::Unsigned(Ship::follow_ship_instructions(&instructions).manhatten()).into())
+            Ok(Answer::Unsigned(
+                Ship::follow_ship_instructions(&instructions).manhatten(),
+            ))
         },
         // Part b)
         |input| {
@@ -149,8 +152,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(Answer::Unsigned(
                 Ship::follow_waypoint_instructions(&instructions, &Vector2::new(10, 1)).manhatten(),
-            )
-            .into())
+            ))
         },
     ],
 };

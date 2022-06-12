@@ -156,6 +156,7 @@ impl<'a> Problem<'a> {
 pub const SOLUTION: Solution = Solution {
     day: 13,
     name: "Knights of the Dinner Table",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

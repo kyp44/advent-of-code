@@ -80,6 +80,7 @@ fn valid_iter(s: &str) -> impl Iterator<Item = String> {
 pub const SOLUTION: Solution = Solution {
     day: 11,
     name: "Corporate Policy",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

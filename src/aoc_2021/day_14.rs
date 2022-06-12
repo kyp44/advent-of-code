@@ -226,6 +226,7 @@ impl PolymerBuilder {
 pub const SOLUTION: Solution = Solution {
     day: 14,
     name: "Extended Polymerization",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

@@ -72,6 +72,7 @@ fn parse_joltages(input: &str) -> AocResult<Vec<u32>> {
 pub const SOLUTION: Solution = Solution {
     day: 10,
     name: "Adapter Array",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

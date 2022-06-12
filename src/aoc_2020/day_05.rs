@@ -80,13 +80,16 @@ fn get_ids(input: &str) -> AocResult<Vec<u32>> {
 pub const SOLUTION: Solution = Solution {
     day: 5,
     name: "Binary Boarding",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
             // Generation
             let ids = get_ids(input.expect_input()?)?;
 
-            Ok(Answer::Unsigned(ids.iter().fold(0, |o, n| o.max(*n)).into()).into())
+            Ok(Answer::Unsigned(
+                ids.iter().fold(0, |o, n| o.max(*n)).into(),
+            ))
         },
         // Part b)
         |input| {
@@ -100,7 +103,7 @@ pub const SOLUTION: Solution = Solution {
                 Some(id) => *id + 1,
                 None => 0,
             };
-            Ok(Answer::Unsigned(missing_id.into()).into())
+            Ok(Answer::Unsigned(missing_id.into()))
         },
     ],
 };

@@ -220,6 +220,7 @@ impl Program {
 pub const SOLUTION: Solution = Solution {
     day: 14,
     name: "Docking Data",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

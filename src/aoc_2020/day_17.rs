@@ -184,6 +184,7 @@ impl Evolver<bool> for Dimension {
 pub const SOLUTION: Solution = Solution {
     day: 17,
     name: "Conway Cubes",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

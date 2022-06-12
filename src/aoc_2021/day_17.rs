@@ -115,6 +115,7 @@ impl Iterator for Trajectory {
 pub const SOLUTION: Solution = Solution {
     day: 17,
     name: "Trick Shot",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -122,7 +123,9 @@ pub const SOLUTION: Solution = Solution {
             let target_area = TargetArea::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(target_area.peaks().max().unwrap().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(
+                target_area.peaks().max().unwrap().try_into().unwrap(),
+            ))
         },
         // Part b)
         |input| {
@@ -130,7 +133,9 @@ pub const SOLUTION: Solution = Solution {
             let target_area = TargetArea::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(target_area.peaks().count().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(
+                target_area.peaks().count().try_into().unwrap(),
+            ))
         },
     ],
 };

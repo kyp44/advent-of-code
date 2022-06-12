@@ -1,5 +1,5 @@
+use crate::aoc::parse::trim;
 use crate::aoc::prelude::*;
-use crate::aoc::{parse::trim, SolverReturn};
 use itertools::Itertools;
 use nom::{
     branch::alt,
@@ -258,7 +258,7 @@ impl<'a> Problem<'a> {
         })
     }
 
-    fn solve(&self) -> AocResult<SolverReturn<'static>> {
+    fn solve(&self) -> AocResult<Answer> {
         let mut sum: u64 = 0;
 
         //println!("Valid strings:");
@@ -278,6 +278,7 @@ impl<'a> Problem<'a> {
 pub const SOLUTION: Solution = Solution {
     day: 19,
     name: "Monster Messages",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

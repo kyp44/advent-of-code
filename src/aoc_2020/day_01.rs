@@ -25,6 +25,7 @@ type Expense = u32;
 pub const SOLUTION: Solution = Solution {
     day: 1,
     name: "Report Repair",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -37,7 +38,7 @@ pub const SOLUTION: Solution = Solution {
                 match i.next() {
                     Some(v) => {
                         if v[0] + v[1] == 2020 {
-                            break Ok(Answer::Unsigned((v[0] * v[1]).into()).into());
+                            break Ok(Answer::Unsigned((v[0] * v[1]).into()));
                         }
                     }
                     None => break Err(AocError::Process("No two values add to 2020".into())),
@@ -53,7 +54,7 @@ pub const SOLUTION: Solution = Solution {
             loop {
                 match i.next() {
                     Some(v) if v[0] + v[1] + v[2] == 2020 => {
-                        break Ok(Answer::Unsigned((v[0] * v[1] * v[2]).into()).into());
+                        break Ok(Answer::Unsigned((v[0] * v[1] * v[2]).into()));
                     }
                     None => {
                         break Err(AocError::Process("No three values add to 2020".into()));

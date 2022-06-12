@@ -361,6 +361,7 @@ fn solve(player: Character, boss: Character, hard_mode: bool) -> AocResult<u64> 
 pub const SOLUTION: Solution = Solution {
     day: 22,
     name: "Wizard Simulator 20XX",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

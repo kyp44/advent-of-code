@@ -143,6 +143,7 @@ impl Report {
 pub const SOLUTION: Solution = Solution {
     day: 3,
     name: "Binary Diagnostic",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

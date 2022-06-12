@@ -111,6 +111,7 @@ impl Houses {
 pub const SOLUTION: Solution = Solution {
     day: 3,
     name: "Perfectly Spherical Houses in a Vacuum",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -118,7 +119,9 @@ pub const SOLUTION: Solution = Solution {
             let houses = Houses::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(houses.visited_houses::<PartA>().len().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(
+                houses.visited_houses::<PartA>().len().try_into().unwrap(),
+            ))
         },
         // Part b)
         |input| {
@@ -126,7 +129,9 @@ pub const SOLUTION: Solution = Solution {
             let houses = Houses::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(houses.visited_houses::<PartB>().len().try_into().unwrap()).into())
+            Ok(Answer::Unsigned(
+                houses.visited_houses::<PartB>().len().try_into().unwrap(),
+            ))
         },
     ],
 };

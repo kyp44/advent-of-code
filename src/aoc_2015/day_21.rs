@@ -208,6 +208,7 @@ impl Problem {
 pub const SOLUTION: Solution = Solution {
     day: 21,
     name: "RPG Simulator 20XX",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

@@ -118,6 +118,7 @@ impl<'a> Problem<'a> {
 pub const SOLUTION: Solution = Solution {
     day: 9,
     name: "All in a Single Night",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

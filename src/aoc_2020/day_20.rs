@@ -631,6 +631,7 @@ impl Solver {
 pub const SOLUTION: Solution = Solution {
     day: 20,
     name: "Jurassic Jigsaw",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
@@ -670,9 +671,9 @@ pub const SOLUTION: Solution = Solution {
                     }
 
                     // Count the rough spots (i.e. points not part of a sea monster)
-                    return Ok(
-                        Answer::Unsigned(image.pixels.all_values().filter_count(|v| **v)).into(),
-                    );
+                    return Ok(Answer::Unsigned(
+                        image.pixels.all_values().filter_count(|v| **v),
+                    ));
                 }
             }
 

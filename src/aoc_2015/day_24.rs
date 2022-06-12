@@ -115,6 +115,7 @@ impl Problem {
 pub const SOLUTION: Solution = Solution {
     day: 24,
     name: "It Hangs in the Balance",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {

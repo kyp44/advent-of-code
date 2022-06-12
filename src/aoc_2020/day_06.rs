@@ -1,4 +1,4 @@
-use crate::aoc::{prelude::*, SolverReturn};
+use crate::aoc::prelude::*;
 use nom::{
     branch::alt,
     bytes::complete::is_not,
@@ -68,7 +68,7 @@ fn make_questions_parser(
     }
 }
 
-fn solve(input: &str, reducer: fn(Questions, Questions) -> Questions) -> AocResult<SolverReturn> {
+fn solve(input: &str, reducer: fn(Questions, Questions) -> Questions) -> AocResult<Answer> {
     let questions = all_consuming(separated_list1(
         tuple((space0, line_ending, space0, line_ending)),
         make_questions_parser(reducer),
@@ -83,13 +83,13 @@ fn solve(input: &str, reducer: fn(Questions, Questions) -> Questions) -> AocResu
             .sum::<usize>()
             .try_into()
             .unwrap(),
-    )
-    .into())
+    ))
 }
 
 pub const SOLUTION: Solution = Solution {
     day: 6,
     name: "Custom Customs",
+    preprocessor: None,
     solvers: &[
         // Part a)
         |input| {
