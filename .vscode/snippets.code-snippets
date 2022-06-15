@@ -21,6 +21,7 @@
 			"pub const SOLUTION: Solution = Solution {",
 			"day: $1,",
 			"name: \"$2\",",
+			"preprocessor: None,",
 			"solvers: &[",
 			"// Part a)",
 			"|input| {",
