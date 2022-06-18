@@ -136,7 +136,7 @@ impl Dimension {
 impl Evolver<bool> for Dimension {
     type Point = Vec<isize>;
 
-    fn new(other: &Self) -> Self {
+    fn next_default(other: &Self) -> Self {
         Dimension {
             dimensions: other.dimensions,
             active_cubes: HashSet::new(),

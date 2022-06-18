@@ -1,12 +1,12 @@
 use std::{marker::PhantomData, rc::Rc};
 
-/// Something that evolves, typically a Conway's-Game-of-Life-type cell array.
+/// Something that evolves and has cells. For example, a Conway's Game of Life simulation.
 pub trait Evolver<T> {
     /// Point to address elements
     type Point;
 
     /// Create a new cell array for the next iteration in the default state.
-    fn new(other: &Self) -> Self;
+    fn next_default(other: &Self) -> Self;
 
     /// Get the value at the specified coordinates.
     fn get_element(&self, point: &Self::Point) -> T;
@@ -20,7 +20,8 @@ pub trait Evolver<T> {
     /// Get an iterator over the cells to be set in the next step.
     fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>>;
 
-    /// Iterator over the steps in the evolution of the cell array.
+    /// Iterate over the steps in the evolution of the cell array.
+    /// The first element will be the next evolution, not the current array.
     fn evolutions(&self) -> EvolverIter<Self, T>
     where
         Self: Sized + Clone,
@@ -44,7 +45,7 @@ where
     type Item = Rc<E>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut next = E::new(&self.current);
+        let mut next = E::next_default(&self.current);
         for point in self.current.next_iter() {
             next.set_element(&point, self.current.next_cell(&point));
         }

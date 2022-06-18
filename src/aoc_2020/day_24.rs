@@ -139,7 +139,7 @@ impl FromStr for Floor {
 impl Evolver<bool> for Floor {
     type Point = Point;
 
-    fn new(_other: &Self) -> Self {
+    fn next_default(_other: &Self) -> Self {
         Floor {
             black_tiles: HashSet::new(),
         }

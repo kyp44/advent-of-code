@@ -89,7 +89,7 @@ impl<P: Part> FromStr for LightGrid<P> {
 impl<P: Part> Evolver<bool> for LightGrid<P> {
     type Point = GridPoint;
 
-    fn new(other: &Self) -> Self {
+    fn next_default(other: &Self) -> Self {
         Self {
             grid: Grid::default(*other.grid.size()),
             phant: PhantomData {},

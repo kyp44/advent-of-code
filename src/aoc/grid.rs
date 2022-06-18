@@ -1,5 +1,5 @@
 use core::slice::SlicePattern;
-use std::{cmp::Eq, collections::HashSet, hash::Hash, num::TryFromIntError};
+use std::{cmp::Eq, collections::HashSet, hash::Hash};
 
 use super::prelude::*;
 use cgmath::Vector2;
@@ -24,6 +24,17 @@ where
 
     fn try_point_into(self) -> Result<Vector2<B>, Self::Error> {
         Ok(Vector2::new(self.x.try_into()?, self.y.try_into()?))
+    }
+}
+
+/// Extensions for GridSize
+pub trait GridSizeExt {
+    fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>>;
+}
+impl GridSizeExt for GridSize {
+    /// Iterator over all grid points in row major order.
+    fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>> {
+        Box::new(iproduct!(0..self.y, 0..self.x).map(|(y, x)| GridPoint::new(x, y)))
     }
 }
 
@@ -95,11 +106,10 @@ impl<T> Grid<T> {
     /// Validate and convert signed point to unsigned
     pub fn valid_point(&self, point: &Vector2<isize>) -> Option<GridPoint> {
         if point.x >= 0 && point.y >= 0 {
-            let x = point.x.try_into().unwrap();
-            let y = point.y.try_into().unwrap();
+            let point: GridPoint = point.try_point_into().unwrap();
             let size = self.size();
-            if x < size.x && y < size.y {
-                Some(GridPoint::new(x, y))
+            if point.x < size.x && point.y < size.y {
+                Some(point)
             } else {
                 None
             }
@@ -108,10 +118,9 @@ impl<T> Grid<T> {
         }
     }
 
-    /// Iterate over all points
+    /// Iterator over all points
     pub fn all_points(&self) -> impl Iterator<Item = GridPoint> {
-        let size = self.size();
-        Box::new(iproduct!(0..size.y, 0..size.x).map(|(y, x)| GridPoint::new(x, y)))
+        self.size().all_points()
     }
 
     /// Iterate over all values
@@ -134,30 +143,42 @@ impl<T> Grid<T> {
         self.data.iter().map(|row| row.as_slice())
     }
 
-    /// Iterator over neighbors point
-    pub fn neighbor_points<'a>(
-        &'a self,
-        point: &'a GridPoint,
+    /// Iterate over all neighboring points in row major order, even points not in the grid.
+    pub fn all_neighbor_points(
+        &self,
+        point: Vector2<isize>,
         include_diagonals: bool,
         include_self: bool,
-    ) -> impl Iterator<Item = GridPoint> + 'a {
+    ) -> impl Iterator<Item = Vector2<isize>> {
         iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
-            let npoint = self.valid_point(&Vector2::new(
-                isize::try_from(point.x).unwrap() + dx,
-                isize::try_from(point.y).unwrap() + dy,
-            ));
+            let point = point + Vector2::new(dx, dy);
             if dx == 0 && dy == 0 {
                 if include_self {
-                    npoint
+                    Some(point)
                 } else {
                     None
                 }
             } else if !include_diagonals && (dx + dy).abs() != 1 {
                 None
             } else {
-                npoint
+                Some(point)
             }
         })
+    }
+
+    /// Iterate over neighboring points in row major order.
+    pub fn neighbor_points<'a>(
+        &'a self,
+        point: &GridPoint,
+        include_diagonals: bool,
+        include_self: bool,
+    ) -> impl Iterator<Item = GridPoint> + 'a {
+        self.all_neighbor_points(
+            point.try_point_into().unwrap(),
+            include_diagonals,
+            include_self,
+        )
+        .filter_map(|p| self.valid_point(&p))
     }
 
     pub fn sub_grid(&self, point: &GridPoint, size: GridSize) -> Self

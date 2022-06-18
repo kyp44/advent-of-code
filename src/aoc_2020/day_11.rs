@@ -100,10 +100,7 @@ impl Part {
                 .filter_count(|dp| {
                     let mut i = 1;
                     loop {
-                        let point = Vector2::<isize>::new(
-                            point.x.try_into().unwrap(),
-                            point.y.try_into().unwrap(),
-                        );
+                        let point = point.try_point_into().unwrap();
 
                         match grid.valid_point(&(point + i * dp)) {
                             Some(p) => match grid.get(&p) {
@@ -153,7 +150,7 @@ impl FromStr for Area {
 impl Evolver<Seat> for Area {
     type Point = GridPoint;
 
-    fn new(other: &Self) -> Self {
+    fn next_default(other: &Self) -> Self {
         Area::new(other.part, Grid::default(*other.grid.size()))
     }
 
