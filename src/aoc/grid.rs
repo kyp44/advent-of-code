@@ -1,5 +1,5 @@
 use core::slice::SlicePattern;
-use std::{cmp::Eq, collections::HashSet, hash::Hash};
+use std::{cmp::Eq, collections::HashSet, hash::Hash, num::TryFromIntError};
 
 use super::prelude::*;
 use cgmath::Vector2;
@@ -9,6 +9,23 @@ use itertools::{iproduct, Itertools};
 pub type GridPoint = Vector2<usize>;
 /// Specifies sizes of a Grid
 pub type GridSize = Vector2<usize>;
+
+/// Useful trait to convert between point types since we cannot implement the std trait
+pub trait PointTryInto<T> {
+    type Error;
+
+    fn try_point_into(self) -> Result<T, Self::Error>;
+}
+impl<A, B> PointTryInto<Vector2<B>> for Vector2<A>
+where
+    B: TryFrom<A>,
+{
+    type Error = B::Error;
+
+    fn try_point_into(self) -> Result<Vector2<B>, Self::Error> {
+        Ok(Vector2::new(self.x.try_into()?, self.y.try_into()?))
+    }
+}
 
 /// A grid of arbitrary data
 #[derive(Clone, PartialEq, Eq, Hash)]

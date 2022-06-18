@@ -18,10 +18,10 @@ pub mod parse;
 pub mod prelude {
     pub use super::{
         char_add, evolver::Evolver, grid::CharGrid, grid::Grid, grid::GridPoint, grid::GridSize,
-        iter::FilterCount, iter::HasNoneIter, iter::HasRange, iter::IndividualReplacements,
-        iter::SplitRuns, parse::BitInput, parse::DiscardInput, parse::NomParseError,
-        parse::NomParseResult, parse::Parseable, parse::Sections, Answer, AnswerVec, AocError,
-        AocResult, HasLen, Solution, SolverData, YearSolutions,
+        grid::PointTryInto, iter::FilterCount, iter::HasNoneIter, iter::HasRange,
+        iter::IndividualReplacements, iter::SplitRuns, parse::BitInput, parse::DiscardInput,
+        parse::NomParseError, parse::NomParseResult, parse::Parseable, parse::Sections, Answer,
+        AnswerVec, AocError, AocResult, HasLen, Solution, SolverData, YearSolutions,
     };
     pub use aoc_derive::CharGridDebug;
 }

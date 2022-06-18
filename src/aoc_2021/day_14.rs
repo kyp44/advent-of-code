@@ -83,7 +83,7 @@ impl Parseable<'_> for PairInsertion {
         map(
             separated_pair(
                 pair(single_alphanumeric, single_alphanumeric),
-                trim(tag("->")),
+                trim(false, tag("->")),
                 single_alphanumeric,
             ),
             |(lr, insert)| Self {

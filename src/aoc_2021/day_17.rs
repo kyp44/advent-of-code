@@ -48,7 +48,11 @@ impl Parseable<'_> for TargetArea {
         map(
             field_line_parser(
                 "target area:",
-                separated_pair(range_parser("x="), trim(tag(",")), range_parser("y=")),
+                separated_pair(
+                    range_parser("x="),
+                    trim(false, tag(",")),
+                    range_parser("y="),
+                ),
             ),
             |(range_x, range_y)| Self { range_x, range_y },
         )(input)

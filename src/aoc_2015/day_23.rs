@@ -59,26 +59,26 @@ impl Parseable<'_> for Instruction {
         Self: Sized,
     {
         alt((
-            map(preceded(tag("hlf "), trim(Register::parser)), |r| {
+            map(preceded(tag("hlf "), trim(false, Register::parser)), |r| {
                 Instruction::Half(r)
             }),
-            map(preceded(tag("tpl "), trim(Register::parser)), |r| {
+            map(preceded(tag("tpl "), trim(false, Register::parser)), |r| {
                 Instruction::Triple(r)
             }),
-            map(preceded(tag("inc "), trim(Register::parser)), |r| {
+            map(preceded(tag("inc "), trim(false, Register::parser)), |r| {
                 Instruction::Increment(r)
             }),
             map(
-                preceded(tag("jmp "), trim(nom::character::complete::i32)),
+                preceded(tag("jmp "), trim(false, nom::character::complete::i32)),
                 Instruction::Jump,
             ),
             map(
                 preceded(
                     tag("jie "),
                     separated_pair(
-                        trim(Register::parser),
+                        trim(false, Register::parser),
                         tag(","),
-                        trim(nom::character::complete::i32),
+                        trim(false, nom::character::complete::i32),
                     ),
                 ),
                 |(r, o)| Instruction::JumpIfEven(r, o),
@@ -87,9 +87,9 @@ impl Parseable<'_> for Instruction {
                 preceded(
                     tag("jio "),
                     separated_pair(
-                        trim(Register::parser),
+                        trim(false, Register::parser),
                         tag(","),
-                        trim(nom::character::complete::i32),
+                        trim(false, nom::character::complete::i32),
                     ),
                 ),
                 |(r, o)| Instruction::JumpIfOne(r, o),

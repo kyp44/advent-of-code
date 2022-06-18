@@ -30,14 +30,14 @@ impl FromStr for Problem {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let row = preceded::<_, _, _, NomParseError, _, _>(
             take_until("row"),
-            preceded(tag("row"), trim(nom::character::complete::u64)),
+            preceded(tag("row"), trim(false, nom::character::complete::u64)),
         )(s)
         .finish()
         .discard_input()?;
 
         let col = preceded::<_, _, _, NomParseError, _, _>(
             take_until("column"),
-            preceded(tag("column"), trim(nom::character::complete::u64)),
+            preceded(tag("column"), trim(false, nom::character::complete::u64)),
         )(s)
         .finish()
         .discard_input()?;

@@ -5,7 +5,7 @@ pub trait Evolver<T> {
     /// Point to address elements
     type Point;
 
-    /// Create a new cell array in the default state.
+    /// Create a new cell array for the next iteration in the default state.
     fn new(other: &Self) -> Self;
 
     /// Get the value at the specified coordinates.

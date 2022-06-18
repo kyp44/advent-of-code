@@ -101,8 +101,10 @@ struct Line {
 }
 impl Parseable<'_> for Line {
     fn parser(input: &str) -> NomParseResult<&str, Self> {
-        map(all_consuming(trim(many1(Chunk::parser))), |chunks| Self {
-            chunks: chunks.into_boxed_slice(),
+        map(all_consuming(trim(false, many1(Chunk::parser))), |chunks| {
+            Self {
+                chunks: chunks.into_boxed_slice(),
+            }
         })(input)
     }
 }

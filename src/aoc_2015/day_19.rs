@@ -63,7 +63,7 @@ impl Parseable<'_> for Replacement {
         Self: Sized,
     {
         map(
-            separated_pair(alpha1, trim(tag("=>")), alpha1),
+            separated_pair(alpha1, trim(false, tag("=>")), alpha1),
             |(f, t): (&str, &str)| Replacement {
                 from: f.to_string(),
                 to: t.to_string(),

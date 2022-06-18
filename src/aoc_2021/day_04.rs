@@ -61,7 +61,7 @@ impl Parseable<'_> for BingoBoard {
     fn parser(input: &str) -> NomParseResult<&str, Self> {
         let (input, rows) = separated_list1(
             line_ending,
-            trim(separated_list1(space1, BoardCell::parser)),
+            trim(false, separated_list1(space1, BoardCell::parser)),
         )(input)?;
 
         Ok((

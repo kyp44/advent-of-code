@@ -93,11 +93,11 @@ impl<'a> Parseable<'a> for Expression<'a> {
     fn parser(input: &'a str) -> NomParseResult<&str, Self> {
         all_consuming(map(
             many1(alt((
-                map(trim(nom::character::complete::u64), Element::Number),
-                map(trim(tag("+")), |_| Element::Operator(Operator::Add)),
-                map(trim(tag("*")), |_| Element::Operator(Operator::Mul)),
-                map(trim(tag("(")), |_| Element::Paren(Paren::Start)),
-                map(trim(tag(")")), |_| Element::Paren(Paren::End)),
+                map(trim(false, nom::character::complete::u64), Element::Number),
+                map(trim(false, tag("+")), |_| Element::Operator(Operator::Add)),
+                map(trim(false, tag("*")), |_| Element::Operator(Operator::Mul)),
+                map(trim(false, tag("(")), |_| Element::Paren(Paren::Start)),
+                map(trim(false, tag(")")), |_| Element::Paren(Paren::End)),
             ))),
             |elements| Expression {
                 original: input,

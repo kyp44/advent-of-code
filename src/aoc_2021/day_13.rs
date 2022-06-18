@@ -52,7 +52,7 @@ impl Parseable<'_> for Point {
         map(
             separated_pair(
                 nom::character::complete::i32,
-                trim(tag(",")),
+                trim(false, tag(",")),
                 nom::character::complete::i32,
             ),
             |(x, y)| Self {

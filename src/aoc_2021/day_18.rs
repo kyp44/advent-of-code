@@ -51,7 +51,7 @@ impl Parseable<'_> for Number {
             map(
                 delimited(
                     tag("["),
-                    separated_pair(Self::parser, trim(tag(",")), Self::parser),
+                    separated_pair(Self::parser, trim(false, tag(",")), Self::parser),
                     tag("]"),
                 ),
                 |(left, right)| {

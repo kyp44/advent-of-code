@@ -91,7 +91,7 @@ impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
 /// Trait for types to be parsable with Nom.
 /// Note that we cannot simply implement FromStr for types that implement this trait
 /// because this breaks the potential foreign trait on a foreign type rules.
-/// See here: https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299
+/// See here: <https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299>
 pub trait Parseable<'a> {
     /// Parser function for nom.
     fn parser(input: &'a str) -> NomParseResult<&str, Self>
@@ -134,15 +134,21 @@ impl<T: Unsigned + FromStr> Parseable<'_> for T {
     }
 }
 
-/// A nom combinator that trims whitespace surrounding a parser.
-pub fn trim<I, F, O, E>(inner: F) -> impl FnMut(I) -> IResult<I, O, E>
+/// A nom combinator that trims whitespace surrounding a parser, with or without including newline characters.
+pub fn trim<I, F, O, E>(include_newlines: bool, inner: F) -> impl FnMut(I) -> IResult<I, O, E>
 where
     I: InputTakeAtPosition,
     <I as InputTakeAtPosition>::Item: AsChar + Clone,
     F: FnMut(I) -> IResult<I, O, E>,
     E: nom::error::ParseError<I>,
 {
-    delimited(space0, inner, space0)
+    let space_parser = if include_newlines {
+        multispace0
+    } else {
+        space0
+    };
+
+    delimited(space_parser, inner, space_parser)
 }
 
 /// A nom parser that takes a single alphanumberic character, which
@@ -203,7 +209,7 @@ where
     E: nom::error::ParseError<&'a str>,
     F: FnMut(&'a str) -> IResult<&'a str, O, E>,
 {
-    delimited(tag(label), trim(inner), multispace0)
+    delimited(tag(label), trim(false, inner), multispace0)
 }
 
 pub trait Sections {

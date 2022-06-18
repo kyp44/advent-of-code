@@ -95,7 +95,7 @@ impl<'a> Parseable<'a> for Rule<'a> {
         let quote = "\"";
         alt((
             map(
-                trim(delimited(tag(quote), is_not(quote), tag(quote))),
+                trim(false, delimited(tag(quote), is_not(quote), tag(quote))),
                 Rule::Match,
             ),
             map(

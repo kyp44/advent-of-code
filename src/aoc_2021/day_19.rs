@@ -189,7 +189,7 @@ impl Add for Point {
 impl Parseable<'_> for Point {
     fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(
-            separated_list1(tag(","), trim(nom::character::complete::i32)),
+            separated_list1(tag(","), trim(false, nom::character::complete::i32)),
             |vec| Self {
                 vect: Vector::new(vec[0], vec[1], vec[2]),
             },
@@ -350,7 +350,10 @@ impl FromStr for Scanner {
         let sep = "---";
         let (s, number) = delimited::<_, _, _, _, NomParseError, _, _, _>(
             tag(sep),
-            trim(preceded(tag("scanner "), nom::character::complete::u8)),
+            trim(
+                false,
+                preceded(tag("scanner "), nom::character::complete::u8),
+            ),
             tag(sep),
         )(s)
         .finish()?;

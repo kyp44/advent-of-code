@@ -45,10 +45,10 @@ impl<'a> Parseable<'a> for HappinessChange<'a> {
         map(
             tuple((
                 take_until(" "),
-                trim(tag("would")),
+                trim(false, tag("would")),
                 alt((tag("gain"), tag("lose"))),
-                trim(nom::character::complete::i64),
-                trim(tag("happiness units by sitting next to")),
+                trim(false, nom::character::complete::i64),
+                trim(false, tag("happiness units by sitting next to")),
                 take_until("."),
                 tag("."),
             )),

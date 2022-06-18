@@ -33,13 +33,13 @@ impl<'a> Parseable<'a> for Reindeer<'a> {
         map(
             tuple((
                 take_until(" "),
-                trim(tag("can fly")),
-                trim(nom::character::complete::u64),
-                trim(tag("km/s for")),
-                trim(nom::character::complete::u64),
-                trim(tag("seconds, but then must rest for")),
-                trim(nom::character::complete::u64),
-                trim(tag("seconds.")),
+                trim(false, tag("can fly")),
+                trim(false, nom::character::complete::u64),
+                trim(false, tag("km/s for")),
+                trim(false, nom::character::complete::u64),
+                trim(false, tag("seconds, but then must rest for")),
+                trim(false, nom::character::complete::u64),
+                trim(false, tag("seconds.")),
             )),
             |(name, _, fly_speed, _, fly_time, _, rest_time, _)| Reindeer {
                 name,
