@@ -14,14 +14,21 @@ use crate::aoc::{parse::trim, prelude::*};
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use crate::{expensive_test, solution_test};
     use Answer::Unsigned;
 
+    const INPUT: &str = "Player 1 starting position: 4
+    Player 2 starting position: 8";
+
     solution_test! {
-    vec![Unsigned(864900)],
-    "Player 1 starting position: 4
-    Player 2 starting position: 8",
-    vec![739785u64, 444356092776315].answer_vec()
+    vec![Unsigned(864900), Unsigned(575111835924670)],
+    INPUT,
+    vec![739785u64].answer_vec()
+    }
+
+    expensive_test! {
+    INPUT,
+    vec![None, Some(Unsigned(444356092776315))]
     }
 }
 
@@ -133,20 +140,21 @@ impl Game {
     fn play_dirac(&self) -> u64 {
         let rolls = dirac_roll(NUM_ROLLS_PER_TURN);
 
-        /// Recursive version that takes the current game and the number of universes in which each
+        /// Recursive version that takes the current game and returns the number of universes in which each
         /// player wins the game.
         fn play_dirac_rec(game: &Game, rolls: &HashMultiSet<u32>, turn: usize) -> Vector2<u64> {
             let mut universes = Vector2::zero();
             for r in rolls.distinct_elements() {
+                let num_universes = u64::try_from(rolls.count_of(r)).unwrap();
                 let mut game = game.clone();
                 let player = &mut game.players[turn];
                 player.move_player(*r);
                 if player.score >= 21 {
-                    // This player has won
-                    universes[turn] += u64::try_from(rolls.count_of(r)).unwrap();
+                    // This player has won in these universes
+                    universes[turn] += num_universes;
                 } else {
                     // Need to recurse
-                    universes += play_dirac_rec(&game, rolls, 1 - turn);
+                    universes += num_universes * play_dirac_rec(&game, rolls, 1 - turn);
                 }
             }
             universes

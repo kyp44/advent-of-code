@@ -239,11 +239,10 @@ impl AnswerVec for Vec<&str> {
 /// Compares solution results with a vector.
 #[macro_export]
 macro_rules! solution_results {
-    ($input:literal, $exp: expr) => {
-        let input = $input;
+    ($input:expr, $exp: expr) => {
         let vans: Vec<Option<Answer>> = $exp;
 
-        let data = SOLUTION.preprocess(input).unwrap();
+        let data = SOLUTION.preprocess($input).unwrap();
 
         for (solver, ans) in SOLUTION.solvers.iter().zip(vans.into_iter()) {
             if let Some(a) = ans {
@@ -257,7 +256,7 @@ macro_rules! solution_results {
 /// Also creates an ignored test to test the main problem solutions.
 #[macro_export]
 macro_rules! solution_test {
-    ($actual: expr, $($input:literal, $exp: expr), +) => {
+    ($actual: expr, $($input:expr, $exp: expr), +) => {
         #[test]
         #[ignore]
         fn actual() {
@@ -280,7 +279,7 @@ macro_rules! solution_test {
 /// Builds expensive tests that take a while to run.
 #[macro_export]
 macro_rules! expensive_test {
-    ($($input:literal, $exp: expr), +) => {
+    ($($input:expr, $exp: expr), +) => {
         #[test]
 	#[cfg(feature = "expensive")]
         fn expensive() {
