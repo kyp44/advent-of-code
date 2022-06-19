@@ -1,5 +1,8 @@
 use std::str::FromStr;
 
+use cgmath::{Vector2, Zero};
+use itertools::Itertools;
+use multiset::HashMultiSet;
 use nom::{
     bytes::complete::tag,
     combinator::map,
@@ -18,18 +21,18 @@ mod tests {
     vec![Unsigned(864900)],
     "Player 1 starting position: 4
     Player 2 starting position: 8",
-    vec![739785u64].answer_vec()
+    vec![739785u64, 444356092776315].answer_vec()
     }
 }
 
 #[derive(new)]
-struct Die {
+struct DeterministicDie {
     #[new(value = "0")]
     next: u32,
     #[new(value = "0")]
     times_rolled: u32,
 }
-impl Die {
+impl DeterministicDie {
     fn roll(&mut self) -> u32 {
         let ret = self.next + 1;
         self.next = (self.next + 1) % 100;
@@ -38,10 +41,18 @@ impl Die {
     }
 }
 
+fn dirac_roll(num_rolls: usize) -> HashMultiSet<u32> {
+    (0..num_rolls)
+        .map(|_| 1..=3)
+        .multi_cartesian_product()
+        .map(|v| v.into_iter().sum::<u32>())
+        .collect()
+}
+
 const NUM_SPACES: u32 = 10;
 
 /// Represents a player's position on the board
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Player {
     position: u32,
     score: u32,
@@ -78,9 +89,9 @@ impl Parseable<'_> for Player {
     }
 }
 
-const NUM_ROLLS_PER_TURN: u32 = 3;
+const NUM_ROLLS_PER_TURN: usize = 3;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Game {
     players: [Player; 2],
 }
@@ -95,9 +106,9 @@ impl FromStr for Game {
     }
 }
 impl Game {
-    /// Play the game and return the losers score times the number of rolls
-    fn play(&mut self) -> u32 {
-        let mut die = Die::new();
+    /// Play the game with the deterministic die and return the loser's score times the number of rolls
+    fn play_deterministic(&mut self) -> u32 {
+        let mut die = DeterministicDie::new();
 
         loop {
             for (i, player) in self.players.iter_mut().enumerate() {
@@ -117,6 +128,33 @@ impl Game {
             }
         }
     }
+
+    /// Play the game with Dirac die and return the number of universes in which the winning player wins.
+    fn play_dirac(&self) -> u64 {
+        let rolls = dirac_roll(NUM_ROLLS_PER_TURN);
+
+        /// Recursive version that takes the current game and the number of universes in which each
+        /// player wins the game.
+        fn play_dirac_rec(game: &Game, rolls: &HashMultiSet<u32>, turn: usize) -> Vector2<u64> {
+            let mut universes = Vector2::zero();
+            for r in rolls.distinct_elements() {
+                let mut game = game.clone();
+                let player = &mut game.players[turn];
+                player.move_player(*r);
+                if player.score >= 21 {
+                    // This player has won
+                    universes[turn] += u64::try_from(rolls.count_of(r)).unwrap();
+                } else {
+                    // Need to recurse
+                    universes += play_dirac_rec(&game, rolls, 1 - turn);
+                }
+            }
+            universes
+        }
+
+        let universes = play_dirac_rec(self, &rolls, 0);
+        universes[0].max(universes[1])
+    }
 }
 
 pub const SOLUTION: Solution = Solution {
@@ -130,7 +168,15 @@ pub const SOLUTION: Solution = Solution {
             let mut game = Game::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(Answer::Unsigned(game.play().into()))
+            Ok(Answer::Unsigned(game.play_deterministic().into()))
+        },
+        // Part b)
+        |input| {
+            // Generation
+            let game = Game::from_str(input.expect_input()?)?;
+
+            // Process
+            Ok(game.play_dirac().into())
         },
     ],
 };

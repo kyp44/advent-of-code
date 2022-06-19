@@ -1,8 +1,8 @@
 [package]
-name = "advent-of-code"
-version = "0.1.0"
 authors = ["dwhitman"]
 edition = "2021"
+name = "advent-of-code"
+version = "0.1.0"
 
 # This enables flamegraph to work on release builds
 [profile.release]
@@ -11,32 +11,33 @@ debug = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-structopt = "0.3"
 anyhow = "1.0"
 nom = "7.1"
+structopt = "0.3"
 # Would like to use this to get better nom parsing errors but it doesn't
 # implement Clone on its ErrorTree so I can't (and I can't implement
 # a foreign trait on a foreign struct).
 #nom-supreme = "0.4.4"
-itertools = "0.10.1"
-strum = "0.21"
-strum_macros = "0.21"
+aoc_derive = {path = "aoc_derive"}
 bimap = "0.6.1"
-num = "0.4"
+bitbuffer = "0.10"
 cgmath = "0.18"
-rayon = "1.5.1"
+derive-new = "0.5"
 enum-map = "1.1.1"
 enum-map-derive = "0.6"
-md5 = "0.7"
-serde_json = "1.0"
-maplit = "1.0.2"
-aoc_derive = { path = "aoc_derive" }
-derive-new = "0.5"
-partitions = "0.2"
-lazy_static = "1.4"
-priority-queue = "1.2"
 hex = "0.4"
-bitbuffer = "0.10"
+itertools = "0.10.1"
+lazy_static = "1.4"
+maplit = "1.0.2"
+md5 = "0.7"
+multiset = "0.0.5"
+num = "0.4"
+partitions = "0.2"
+priority-queue = "1.2"
+rayon = "1.5.1"
+serde_json = "1.0"
+strum = "0.21"
+strum_macros = "0.21"
 
 [features]
 expensive = []
