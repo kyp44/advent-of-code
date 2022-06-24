@@ -27,7 +27,7 @@ on x=10..10,y=10..10,z=10..10",
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Cuboid {
     ranges: Vector3<RangeInclusive<i32>>,
 }
@@ -56,6 +56,28 @@ impl Parseable<'_> for Cuboid {
         )(input)
     }
 }
+impl Cuboid {
+    fn intersection(&self, other: &Cuboid) -> Option<Cuboid> {
+        let rx = self.ranges.x.intersection(&other.ranges.x);
+        let ry = self.ranges.y.intersection(&other.ranges.y);
+        let rz = self.ranges.z.intersection(&other.ranges.z);
+
+        match (rx, ry, rz) {
+            (Some(x), Some(y), Some(z)) => Some(Cuboid {
+                ranges: Vector3::new(x, y, z),
+            }),
+            _ => None,
+        }
+    }
+
+    fn num_points(&self) -> u64 {
+        let ranges = &self.ranges;
+        [&ranges.x, &ranges.y, &ranges.z]
+            .into_iter()
+            .map(|r| u64::try_from(r.len()).unwrap())
+            .product::<u64>()
+    }
+}
 
 #[derive(Debug)]
 enum RebootStep {
@@ -82,6 +104,51 @@ impl RebootStep {
     }
 }
 
+#[derive(Debug)]
+enum Set {
+    Empty,
+    Basic(Cuboid),
+    Difference(Box<Set>, Box<Set>),
+    Union(Box<Set>, Box<Set>),
+}
+impl Set {
+    fn intersection(&self, other: &Self) -> Self {
+        match self {
+            Set::Empty => Self::Empty,
+            Set::Basic(cs) => match other {
+                Set::Empty => Self::Empty,
+                Set::Basic(co) => match cs.intersection(&co) {
+                    Some(cf) => Self::Basic(cf),
+                    None => Self::Empty,
+                },
+                Set::Difference(_, _) => todo!(),
+                Set::Union(_, _) => todo!(),
+            },
+            Set::Difference(_, _) => todo!(),
+            Set::Union(_, _) => todo!(),
+        }
+    }
+
+    fn num_points(&self) -> u64 {
+        match self {
+            Set::Empty => 0,
+            Set::Basic(c) => c.num_points(),
+            Set::Difference(_, _) => todo!(),
+            Set::Union(_, _) => todo!(),
+        }
+    }
+}
+impl From<Cuboid> for Set {
+    fn from(c: Cuboid) -> Self {
+        Self::Basic(c)
+    }
+}
+impl FromIterator<RebootStep> for Set {
+    fn from_iter<T: IntoIterator<Item = RebootStep>>(iter: T) -> Self {
+        todo!()
+    }
+}
+
 pub const SOLUTION: Solution = Solution {
     day: 22,
     name: "Reactor Reboot",
@@ -91,9 +158,6 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let steps = RebootStep::gather(input.expect_input()?.lines())?;
-
-            // TODO test
-            println!("TODO: {:?}", (-2..=1009).intersection(&(-20..=90)));
 
             // Process
             Ok(0u64.into())

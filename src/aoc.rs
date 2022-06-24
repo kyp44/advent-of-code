@@ -78,20 +78,10 @@ where
 
     fn intersection(&self, other: &Self) -> Option<Self> {
         let range = *self.start().max(other.start())..=*self.end().min(other.end());
-        if self.is_empty() || other.is_empty() {
+        if self.is_empty() || other.is_empty() || range.is_empty() {
             None
-        } else if self.start() <= other.start() {
-            if self.end() < other.start() {
-                None
-            } else {
-                Some(range)
-            }
         } else {
-            if other.end() < other.start() {
-                None
-            } else {
-                Some(range)
-            }
+            Some(range)
         }
     }
 }
