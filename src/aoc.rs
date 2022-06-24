@@ -21,7 +21,7 @@ pub mod prelude {
         grid::GridSizeExt, grid::PointTryInto, iter::FilterCount, iter::HasNoneIter,
         iter::HasRange, iter::IndividualReplacements, iter::SplitRuns, parse::BitInput,
         parse::DiscardInput, parse::NomParseError, parse::NomParseResult, parse::Parseable,
-        parse::Sections, Answer, AnswerVec, AocError, AocResult, HasLen, Solution, SolverData,
+        parse::Sections, Answer, AnswerVec, AocError, AocResult, RangeExt, Solution, SolverData,
         YearSolutions,
     };
     pub use aoc_derive::CharGridDebug;
@@ -63,16 +63,36 @@ impl From<NomParseError> for AocError {
 }
 pub type AocResult<T> = Result<T, AocError>;
 
-/// Convenience trait to determine the length of a range without iterating.
-pub trait HasLen<T> {
+/// Extension trait for ranges.
+pub trait RangeExt<T>: Sized {
     fn len(&self) -> T;
+    fn intersection(&self, other: &Self) -> Option<Self>;
 }
-impl<T> HasLen<T> for RangeInclusive<T>
+impl<T> RangeExt<T> for RangeInclusive<T>
 where
     T: Integer + Copy,
 {
     fn len(&self) -> T {
         *self.end() - *self.start() + T::one()
+    }
+
+    fn intersection(&self, other: &Self) -> Option<Self> {
+        let range = *self.start().max(other.start())..=*self.end().min(other.end());
+        if self.is_empty() || other.is_empty() {
+            None
+        } else if self.start() <= other.start() {
+            if self.end() < other.start() {
+                None
+            } else {
+                Some(range)
+            }
+        } else {
+            if other.end() < other.start() {
+                None
+            } else {
+                Some(range)
+            }
+        }
     }
 }
 

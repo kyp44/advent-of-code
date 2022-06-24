@@ -92,24 +92,8 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let steps = RebootStep::gather(input.expect_input()?.lines())?;
 
-            let iter = steps.iter().filter(|s| matches!(s, RebootStep::On(_)));
-            let mut sizes: Vec<u64> = Vec::new();
-            for i in 0..3 {
-                let a = iter
-                    .clone()
-                    .map(|s| s.cuboid().ranges[i].start())
-                    .min()
-                    .unwrap();
-                let b = iter
-                    .clone()
-                    .map(|s| s.cuboid().ranges[i].end())
-                    .max()
-                    .unwrap();
-                let s = b - a + 1;
-                println!("TODO: {} {} {}", a, b, s);
-                sizes.push(s.try_into().unwrap());
-            }
-            println!("Elements: {}", sizes.into_iter().product::<u64>());
+            // TODO test
+            println!("TODO: {:?}", (-2..=1009).intersection(&(-20..=90)));
 
             // Process
             Ok(0u64.into())
