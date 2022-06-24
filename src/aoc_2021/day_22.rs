@@ -92,15 +92,16 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let steps = RebootStep::gather(input.expect_input()?.lines())?;
 
+            let iter = steps.iter().filter(|s| matches!(s, RebootStep::On(_)));
             let mut sizes: Vec<u64> = Vec::new();
             for i in 0..3 {
-                let a = steps
-                    .iter()
+                let a = iter
+                    .clone()
                     .map(|s| s.cuboid().ranges[i].start())
                     .min()
                     .unwrap();
-                let b = steps
-                    .iter()
+                let b = iter
+                    .clone()
                     .map(|s| s.cuboid().ranges[i].end())
                     .max()
                     .unwrap();
