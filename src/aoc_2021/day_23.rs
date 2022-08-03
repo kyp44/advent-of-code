@@ -1,9 +1,6 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fmt,
-    iter::repeat_with,
-};
+use std::{collections::HashSet, fmt, iter::repeat_with};
 
+use enum_map::{enum_map, Enum, EnumMap};
 use nom::{
     bytes::complete::tag,
     character::complete::{line_ending, one_of},
@@ -34,7 +31,7 @@ mod tests {
     }
 }
 
-#[derive(Debug, Clone, Copy, EnumIter, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, Enum, EnumIter)]
 enum Amphipod {
     Amber,
     Bronze,
@@ -51,6 +48,30 @@ impl From<char> for Amphipod {
         }
     }
 }
+impl fmt::Display for Amphipod {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Amphipod::Amber => 'A',
+                Amphipod::Bronze => 'B',
+                Amphipod::Copper => 'C',
+                Amphipod::Desert => 'D',
+            }
+        )
+    }
+}
+impl Amphipod {
+    fn required_energy(&self) -> u32 {
+        match self {
+            Amphipod::Amber => 1,
+            Amphipod::Bronze => 10,
+            Amphipod::Copper => 100,
+            Amphipod::Desert => 1000,
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 enum SpaceType {
@@ -58,11 +79,17 @@ enum SpaceType {
     Side(Amphipod),
 }
 
+#[derive(Debug, Clone, Copy, Enum)]
+enum RoomSpaceType {
+    Adjacent,
+    Deep,
+}
+
 #[derive(Clone)]
 struct Board {
     graph: UnGraph<SpaceType, u8>,
     hall_spaces: Vec<NodeIndex>,
-    room_spaces: HashMap<Amphipod, Vec<NodeIndex>>,
+    room_spaces: EnumMap<Amphipod, EnumMap<RoomSpaceType, NodeIndex>>,
 }
 impl Board {
     fn new() -> Self {
@@ -81,15 +108,16 @@ impl Board {
         let room_spaces = Amphipod::iter()
             .enumerate()
             .map(|(i, amph)| {
-                let rooms = vec![
-                    graph.add_node(SpaceType::Side(amph)),
-                    graph.add_node(SpaceType::Side(amph)),
-                ];
+                use RoomSpaceType::*;
+                let rooms = enum_map! {
+                    Adjacent => graph.add_node(SpaceType::Side(amph)),
+                    Deep => graph.add_node(SpaceType::Side(amph)),
+                };
 
-                graph.add_edge(rooms[0], rooms[1], 1);
+                graph.add_edge(rooms[Adjacent], rooms[Deep], 1);
                 graph.add_edge(hall_spaces[i + 1], hall_spaces[i + 2], 2);
-                graph.add_edge(hall_spaces[i + 1], rooms[1], 2);
-                graph.add_edge(hall_spaces[i + 2], rooms[1], 2);
+                graph.add_edge(hall_spaces[i + 1], rooms[Adjacent], 2);
+                graph.add_edge(hall_spaces[i + 2], rooms[Adjacent], 2);
 
                 (amph, rooms)
             })
@@ -108,8 +136,8 @@ impl fmt::Debug for Board {
             writeln!(f, "Hall space: {:?} {:?}", space, self.graph[*space])?;
         }
         for amph in Amphipod::iter() {
-            for space in self.room_spaces[&amph].iter() {
-                writeln!(f, "Room space: {:?} {:?}", space, self.graph[*space])?;
+            for (rst, space) in self.room_spaces[amph].iter() {
+                writeln!(f, "Room space: {:?} {:?}", rst, self.graph[*space])?;
             }
         }
         for edge in self.graph.raw_edges() {
@@ -128,23 +156,23 @@ impl fmt::Debug for Board {
 lazy_static! {
     static ref BOARD: Board = Board::new();
 }
+static BORDER_DISP: &str = "#";
+static EMPTY_DISP: &str = ".";
 
-#[derive(new)]
+#[derive(new, PartialEq, Eq)]
 struct Position {
-    positions: HashMap<Amphipod, HashSet<NodeIndex>>,
+    positions: EnumMap<Amphipod, HashSet<NodeIndex>>,
 }
 impl Parseable<'_> for Position {
     fn parser(input: &str) -> NomParseResult<&str, Self> {
-        let border = "#";
-
         let amphipod_line = move |input| -> NomParseResult<&str, Vec<Amphipod>> {
             terminated(
                 trim(
                     false,
                     delimited(
-                        many1(tag(border)),
-                        separated_list1(tag(border), map(one_of("ABCD"), Amphipod::from)),
-                        many1(tag(border)),
+                        many1(tag(BORDER_DISP)),
+                        separated_list1(tag(BORDER_DISP), map(one_of("ABCD"), Amphipod::from)),
+                        many1(tag(BORDER_DISP)),
                     ),
                 ),
                 line_ending,
@@ -154,19 +182,83 @@ impl Parseable<'_> for Position {
         map(
             delimited(
                 tuple((
-                    terminated(count(tag(border), 13), line_ending),
+                    terminated(count(tag(BORDER_DISP), 13), line_ending),
                     terminated(
-                        delimited(tag(border), count(tag("."), 11), tag(border)),
+                        delimited(tag(BORDER_DISP), count(tag("."), 11), tag(BORDER_DISP)),
                         line_ending,
                     ),
                 )),
                 count(amphipod_line, 2),
-                trim(false, count(tag(border), 9)),
+                trim(false, count(tag(BORDER_DISP), 9)),
             ),
-            |_v| Position {
-                positions: HashMap::new(),
+            |rows| {
+                let mut positions: EnumMap<Amphipod, _> = Amphipod::iter()
+                    .map(|amph| (amph, HashSet::new()))
+                    .collect();
+
+                for (room_amph, (adj_amph, deep_amph)) in
+                    Amphipod::iter().zip(rows[0].iter().zip(rows[1].iter()))
+                {
+                    positions[*adj_amph]
+                        .insert(BOARD.room_spaces[room_amph][RoomSpaceType::Adjacent]);
+                    positions[*deep_amph].insert(BOARD.room_spaces[room_amph][RoomSpaceType::Deep]);
+                }
+
+                Position { positions }
             },
         )(input)
+    }
+}
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let fmt_spaces =
+            |f: &mut fmt::Formatter<'_>, spaces: &[NodeIndex], sep: &str| -> fmt::Result {
+                for space in spaces {
+                    match self.occupant(space) {
+                        Some(a) => write!(f, "{a}")?,
+                        None => write!(f, "{EMPTY_DISP}")?,
+                    }
+                    write!(f, "{sep}")?;
+                }
+                Ok(())
+            };
+
+        // Hall spaces
+        writeln!(f, "{}", BORDER_DISP.repeat(13))?;
+        write!(f, "{BORDER_DISP}")?;
+        fmt_spaces(f, &BOARD.hall_spaces[0..2], "")?;
+        write!(f, "{EMPTY_DISP}")?;
+        for i in 2..5 {
+            fmt_spaces(f, &BOARD.hall_spaces[i..=i], EMPTY_DISP)?;
+        }
+        fmt_spaces(f, &BOARD.hall_spaces[5..7], "")?;
+        writeln!(f, "{BORDER_DISP}")?;
+
+        // Room spaces
+        let room_spaces = |space_type| -> Vec<NodeIndex> {
+            Amphipod::iter()
+                .map(|amph| BOARD.room_spaces[amph][space_type])
+                .collect()
+        };
+        write!(f, "{}", BORDER_DISP.repeat(3))?;
+        fmt_spaces(f, &room_spaces(RoomSpaceType::Adjacent), BORDER_DISP)?;
+        writeln!(f, "{}", BORDER_DISP.repeat(2))?;
+        write!(f, "  {BORDER_DISP}")?;
+        fmt_spaces(f, &room_spaces(RoomSpaceType::Deep), BORDER_DISP)?;
+        writeln!(f, "  ")?;
+        writeln!(f, "  {}  ", BORDER_DISP.repeat(9))?;
+
+        Ok(())
+    }
+}
+impl Position {
+    fn occupant(&self, space: &NodeIndex) -> Option<Amphipod> {
+        for (amph, idxs) in self.positions.iter() {
+            if idxs.contains(space) {
+                return Some(amph);
+            }
+        }
+        return None;
     }
 }
 
@@ -178,7 +270,9 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let _pos = Position::from_str(input.expect_input()?)?;
+            let pos = Position::from_str(input.expect_input()?)?;
+
+            println!("{pos}");
 
             //println!("{:?}", *BOARD);
 
