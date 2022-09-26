@@ -8,7 +8,7 @@ use nom::{
     multi::{count, many1, separated_list1},
     sequence::{delimited, terminated, tuple},
 };
-use petgraph::{graph::NodeIndex, prelude::UnGraph};
+use petgraph::{graph::NodeIndex, prelude::StableUnGraph};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -76,7 +76,7 @@ impl Amphipod {
 #[derive(Debug, Clone)]
 enum SpaceType {
     Hall,
-    Side(Amphipod),
+    Room(Amphipod),
 }
 
 #[derive(Debug, Clone, Copy, Enum)]
@@ -85,15 +85,17 @@ enum RoomSpaceType {
     Deep,
 }
 
+type Graph = StableUnGraph<SpaceType, u8>;
+
 #[derive(Clone)]
 struct Board {
-    graph: UnGraph<SpaceType, u8>,
+    graph: Graph,
     hall_spaces: Vec<NodeIndex>,
     room_spaces: EnumMap<Amphipod, EnumMap<RoomSpaceType, NodeIndex>>,
 }
 impl Board {
     fn new() -> Self {
-        let mut graph = UnGraph::new_undirected();
+        let mut graph = Graph::with_capacity(15, 18);
 
         // All the hall spaces
         let hall_spaces: Vec<_> = repeat_with(|| graph.add_node(SpaceType::Hall))
@@ -110,8 +112,8 @@ impl Board {
             .map(|(i, amph)| {
                 use RoomSpaceType::*;
                 let rooms = enum_map! {
-                    Adjacent => graph.add_node(SpaceType::Side(amph)),
-                    Deep => graph.add_node(SpaceType::Side(amph)),
+                    Adjacent => graph.add_node(SpaceType::Room(amph)),
+                    Deep => graph.add_node(SpaceType::Room(amph)),
                 };
 
                 graph.add_edge(rooms[Adjacent], rooms[Deep], 1);
@@ -137,16 +139,21 @@ impl fmt::Debug for Board {
         }
         for amph in Amphipod::iter() {
             for (rst, space) in self.room_spaces[amph].iter() {
-                writeln!(f, "Room space: {:?} {:?}", rst, self.graph[*space])?;
+                writeln!(
+                    f,
+                    "Room space: {:?} {:?} {:?}",
+                    space, rst, self.graph[*space]
+                )?;
             }
         }
-        for edge in self.graph.raw_edges() {
+        for edge in self.graph.edge_indices() {
+            let end_points = self.graph.edge_endpoints(edge).unwrap();
             writeln!(
                 f,
                 "Edge: from {:?} to {:?}: {:?}",
-                edge.source(),
-                edge.target(),
-                edge.weight
+                end_points.0,
+                end_points.1,
+                self.graph.edge_weight(edge)
             )?;
         }
         Ok(())
@@ -156,8 +163,8 @@ impl fmt::Debug for Board {
 lazy_static! {
     static ref BOARD: Board = Board::new();
 }
-static BORDER_DISP: &str = "#";
-static EMPTY_DISP: &str = ".";
+const BORDER_DISP: &str = "#";
+const EMPTY_DISP: &str = ".";
 
 #[derive(new, PartialEq, Eq)]
 struct Position {
@@ -260,6 +267,28 @@ impl Position {
         }
         return None;
     }
+
+    fn occupied_spaces(&self) -> impl Iterator<Item = NodeIndex> + '_ {
+        self.positions.values().flat_map(|ns| ns).copied()
+    }
+
+    fn moves(&self) {
+        // Go through all amphipods of every type
+        for amphipod in Amphipod::iter() {
+            for space in self.positions[amphipod].iter() {
+                // Remove all occupied nodes except this one
+                let mut graph = BOARD.clone().graph;
+                self.occupied_spaces().for_each(|n| {
+                    if n != *space {
+                        graph.remove_node(n);
+                    }
+                });
+
+                println!("Spaces for {} at {:?}:", amphipod, space);
+                println!("{:?}", graph);
+            }
+        }
+    }
 }
 
 pub const SOLUTION: Solution = Solution {
@@ -274,7 +303,9 @@ pub const SOLUTION: Solution = Solution {
 
             println!("{pos}");
 
-            //println!("{:?}", *BOARD);
+            println!("{:?}", *BOARD);
+
+            pos.moves();
 
             // Process
             Ok(0u64.into())
