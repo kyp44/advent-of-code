@@ -208,27 +208,15 @@ impl PacketType {
                         .ok_or_else(|| min_one_err(operation))?,
                     Operation::GreaterThan => {
                         let vals = exactly_two(operation)?;
-                        if vals.0 > vals.1 {
-                            1
-                        } else {
-                            0
-                        }
+                        u64::from(vals.0 > vals.1)
                     }
                     Operation::LessThan => {
                         let vals = exactly_two(operation)?;
-                        if vals.0 < vals.1 {
-                            1
-                        } else {
-                            0
-                        }
+                        u64::from(vals.0 < vals.1)
                     }
                     Operation::EqualTo => {
                         let vals = exactly_two(operation)?;
-                        if vals.0 == vals.1 {
-                            1
-                        } else {
-                            0
-                        }
+                        u64::from(vals.0 == vals.1)
                     }
                 }
             }

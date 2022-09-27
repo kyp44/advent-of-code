@@ -213,7 +213,7 @@ impl Program {
                 }
             }
         }
-        memory.iter().map(|(_, v)| v).sum()
+        memory.values().sum()
     }
 }
 

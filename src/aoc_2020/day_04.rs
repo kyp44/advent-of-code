@@ -149,7 +149,7 @@ type Passport<'a> = HashMap<PassportField, &'a str>;
 // beause of annoying lifetime issues that apparently have no solution in Rust.
 // It also could not be implemented as a normal method on Passport since
 // this is a foreign type.
-fn parse_passport<'a>(input: &'a str) -> NomParseResult<&str, Passport<'a>> {
+fn parse_passport(input: &str) -> NomParseResult<&str, Passport<'_>> {
     context(
         "passport data",
         map(
