@@ -20,9 +20,11 @@ mod tests {
 mod solution {
     use super::*;
     use crate::aoc::parse::trim;
-    use std::{cmp::Ordering, collections::HashMap, fmt, iter::repeat_with, ops::Add};
+    use std::{
+        cmp::Ordering, collections::HashMap, fmt, iter::repeat_with, marker::PhantomData, ops::Add,
+    };
 
-    use enum_map::{enum_map, Enum, EnumMap};
+    use enum_map::{Enum, EnumMap};
     use nom::{
         bytes::complete::tag,
         character::complete::{line_ending, one_of},
@@ -37,6 +39,15 @@ mod solution {
     };
     use strum::IntoEnumIterator;
     use strum_macros::EnumIter;
+
+    pub trait Part: Clone + Eq + std::hash::Hash {
+        const DEPTH: usize;
+    }
+    #[derive(Clone, PartialEq, Eq, Hash)]
+    pub struct PartA {}
+    impl Part for PartA {
+        const DEPTH: usize = 2;
+    }
 
     #[derive(Debug, Clone, Copy, Enum, EnumIter, PartialEq, Eq)]
     enum Amphipod {
@@ -80,16 +91,10 @@ mod solution {
         }
     }
 
-    #[derive(Debug, Clone, Copy, Enum, PartialEq, Eq)]
-    enum RoomSpaceType {
-        Adjacent,
-        Deep,
-    }
-
     #[derive(Debug, Clone)]
     enum SpaceType {
         Hall,
-        Room(Amphipod, RoomSpaceType),
+        Room(Amphipod, usize),
     }
 
     /// Integer measure for graph distances
@@ -148,12 +153,13 @@ mod solution {
     type Graph = StableUnGraph<SpaceType, Distance>;
 
     #[derive(Clone)]
-    struct Board {
+    struct Board<P> {
         graph: Graph,
         hall_spaces: Vec<NodeIndex>,
-        room_spaces: EnumMap<Amphipod, EnumMap<RoomSpaceType, NodeIndex>>,
+        room_spaces: EnumMap<Amphipod, Vec<NodeIndex>>,
+        _phantom: PhantomData<P>,
     }
-    impl Board {
+    impl<P: Part> Board<P> {
         fn new() -> Self {
             let mut graph = Graph::with_capacity(15, 18);
 
@@ -169,17 +175,21 @@ mod solution {
             // Build and connect the side rooms
             let room_spaces = Amphipod::iter()
                 .enumerate()
-                .map(|(i, amph)| {
-                    use RoomSpaceType::*;
-                    let rooms = enum_map! {
-                        Adjacent => graph.add_node(SpaceType::Room(amph, Adjacent)),
-                        Deep => graph.add_node(SpaceType::Room(amph, Deep)),
-                    };
+                .map(|(ai, amph)| {
+                    // Add the room nodes
+                    let mut rooms = Vec::with_capacity(P::DEPTH);
+                    for ri in 0..P::DEPTH {
+                        rooms.push(graph.add_node(SpaceType::Room(amph, ri)));
+                        if ri == 0 {
+                            graph.add_edge(hall_spaces[ai + 1], rooms[0], 2.into());
+                            graph.add_edge(hall_spaces[ai + 2], rooms[0], 2.into());
+                        } else {
+                            graph.add_edge(rooms[ri - 1], rooms[ri], 1.into());
+                        }
+                    }
 
-                    graph.add_edge(rooms[Adjacent], rooms[Deep], 1.into());
-                    graph.add_edge(hall_spaces[i + 1], hall_spaces[i + 2], 2.into());
-                    graph.add_edge(hall_spaces[i + 1], rooms[Adjacent], 2.into());
-                    graph.add_edge(hall_spaces[i + 2], rooms[Adjacent], 2.into());
+                    // Connect the hall nodes
+                    graph.add_edge(hall_spaces[ai + 1], hall_spaces[ai + 2], 2.into());
 
                     (amph, rooms)
                 })
@@ -189,20 +199,21 @@ mod solution {
                 graph,
                 hall_spaces,
                 room_spaces,
+                _phantom: Default::default(),
             }
         }
     }
-    impl fmt::Debug for Board {
+    impl<P: Part> fmt::Debug for Board<P> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             for space in self.hall_spaces.iter() {
                 writeln!(f, "Hall space: {:?} {:?}", space, self.graph[*space])?;
             }
             for amph in Amphipod::iter() {
-                for (rst, space) in self.room_spaces[amph].iter() {
+                for (ri, space) in self.room_spaces[amph].iter().enumerate() {
                     writeln!(
                         f,
                         "Room space: {:?} {:?} {:?}",
-                        space, rst, self.graph[*space]
+                        space, ri, self.graph[*space]
                     )?;
                 }
             }
@@ -221,22 +232,23 @@ mod solution {
     }
 
     lazy_static! {
-        static ref BOARD: Board = Board::new();
+        static ref BOARD: Board<PartA> = Board::new();
     }
     const BORDER_DISP: &str = "#";
     const EMPTY_DISP: &str = ".";
 
     #[derive(Debug)]
-    struct Move {
+    struct Move<P: Part> {
         energy: u64,
-        new_position: Position,
+        new_position: Position<P>,
     }
 
     #[derive(PartialEq, Eq, Clone, Hash)]
-    pub struct Position {
+    pub struct Position<P> {
         positions: EnumMap<Amphipod, Vec<NodeIndex>>,
+        _phantom: PhantomData<P>,
     }
-    impl Parseable<'_> for Position {
+    impl<P: Part> Parseable<'_> for Position<P> {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             let amphipod_line = move |input| -> NomParseResult<&str, Vec<Amphipod>> {
                 terminated(
@@ -268,26 +280,30 @@ mod solution {
                     let mut positions: EnumMap<Amphipod, _> =
                         Amphipod::iter().map(|amph| (amph, Vec::new())).collect();
 
+                    // Set the first and last rows
                     for (room_amph, (adj_amph, deep_amph)) in
                         Amphipod::iter().zip(rows[0].iter().zip(rows[1].iter()))
                     {
-                        positions[*adj_amph]
-                            .push(BOARD.room_spaces[room_amph][RoomSpaceType::Adjacent]);
-                        positions[*deep_amph]
-                            .push(BOARD.room_spaces[room_amph][RoomSpaceType::Deep]);
+                        positions[*adj_amph].push(BOARD.room_spaces[room_amph][0]);
+                        positions[*deep_amph].push(BOARD.room_spaces[room_amph][P::DEPTH - 1]);
                     }
 
-                    Position { positions }
+                    // TODO: Need to fill middle rows if Part B
+
+                    Position {
+                        positions,
+                        _phantom: Default::default(),
+                    }
                 },
             )(input)
         }
     }
-    impl fmt::Debug for Position {
+    impl<P: Part> fmt::Debug for Position<P> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             fmt::Display::fmt(self, f)
         }
     }
-    impl fmt::Display for Position {
+    impl<P: Part> fmt::Display for Position<P> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let fmt_spaces =
                 |f: &mut fmt::Formatter<'_>, spaces: &[NodeIndex], sep: &str| -> fmt::Result {
@@ -319,17 +335,17 @@ mod solution {
                     .collect()
             };
             write!(f, "{}", BORDER_DISP.repeat(3))?;
-            fmt_spaces(f, &room_spaces(RoomSpaceType::Adjacent), BORDER_DISP)?;
+            fmt_spaces(f, &room_spaces(0), BORDER_DISP)?;
             writeln!(f, "{}", BORDER_DISP.repeat(2))?;
             write!(f, "  {BORDER_DISP}")?;
-            fmt_spaces(f, &room_spaces(RoomSpaceType::Deep), BORDER_DISP)?;
+            fmt_spaces(f, &room_spaces(1), BORDER_DISP)?;
             writeln!(f, "  ")?;
             writeln!(f, "  {}  ", BORDER_DISP.repeat(9))?;
 
             Ok(())
         }
     }
-    impl Position {
+    impl<P: Part> Position<P> {
         fn occupant(&self, space: &NodeIndex) -> Option<Amphipod> {
             for (amph, idxs) in self.positions.iter() {
                 if idxs.contains(space) {
@@ -346,7 +362,7 @@ mod solution {
         fn solved(&self) -> bool {
             Amphipod::iter().all(|a| {
                 BOARD.room_spaces[a]
-                    .values()
+                    .iter()
                     .all(|n| self.positions[a].contains(n))
             })
         }
@@ -359,13 +375,14 @@ mod solution {
             self.positions[amphipod][idx] = new;
         }
 
-        fn moves(&self) -> Vec<Move> {
+        fn moves(&self) -> Vec<Move<P>> {
             let mut moves = Vec::new();
 
             // Go through all amphipods at all spaces
             for amphipod in Amphipod::iter() {
-                let home_adjacent = &BOARD.room_spaces[amphipod][RoomSpaceType::Adjacent];
-                let home_deep = &BOARD.room_spaces[amphipod][RoomSpaceType::Deep];
+                // TODO: Need to rework this to be more general for Part B
+                let home_adjacent = &BOARD.room_spaces[amphipod][0];
+                let home_deep = &BOARD.room_spaces[amphipod][1];
                 let home_deep_occupant = self.occupant(home_deep);
 
                 for space in self.positions[amphipod].iter() {
@@ -387,6 +404,7 @@ mod solution {
                         }
                     });
 
+                    // TODO: Need to rework this to be more general for Part B
                     // Also remove all rooms that we do not want to enter
                     for amph in Amphipod::iter() {
                         if match space_type {
@@ -396,7 +414,7 @@ mod solution {
                                     if amph == amphipod {
                                         false
                                     } else {
-                                        *rst == RoomSpaceType::Adjacent
+                                        *rst == 0
                                     }
                                 } else {
                                     amph != amphipod
@@ -404,7 +422,7 @@ mod solution {
                             }
                         } {
                             // Remove this entire room (unless we are in it)
-                            BOARD.room_spaces[amph].values().for_each(|n| {
+                            BOARD.room_spaces[amph].iter().for_each(|n| {
                                 if n != space {
                                     graph.remove_node(*n);
                                 }
@@ -414,7 +432,7 @@ mod solution {
 
                     //println!("Amph {} at {}", amphipod, space.index());
 
-                    // Determine shortest paths to all possible destination
+                    // Determine shortest paths to all possible destination nodes
                     let paths = bellman_ford(&graph, *space).unwrap();
                     for (distance, node) in graph.node_indices().filter_map(|n| {
                     // Is the node ourself or unreachable?
@@ -433,6 +451,7 @@ mod solution {
                         return None;
                     }
 
+                    // TODO: Need to rework this to be more general for Part B
                     // We don't want to move into the home adjacent space unless the deep space has our own kind in it
                     if n == *home_adjacent {
                         match home_deep_occupant {
@@ -445,8 +464,9 @@ mod solution {
                         }
                     }
 
+                    // TODO: Need to rework this to be more general for Part B
                     // If we're in a non-home deep space, we don't want to move into the adjacent space
-                    if let SpaceType::Room(a, rst) = space_type && *rst == RoomSpaceType::Deep && let SpaceType::Room(na, nrst) = graph.node_weight(n).unwrap() && na == a && *nrst == RoomSpaceType::Adjacent {
+                    if let SpaceType::Room(a, rst) = space_type && *rst == 1 && let SpaceType::Room(na, nrst) = graph.node_weight(n).unwrap() && na == a && *nrst == 0 {
                             return None;
                     }
 
@@ -481,9 +501,9 @@ mod solution {
             }
 
             // Recursive function
-            fn rec(
-                position: Position,
-                seen: &mut HashMap<Position, Option<u64>>,
+            fn rec<P: Part>(
+                position: Position<P>,
+                seen: &mut HashMap<Position<P>, Option<u64>>,
                 mut global_min_energy: Option<u64>,
                 current_energy: u64,
                 _level: u8,
@@ -533,6 +553,8 @@ mod solution {
     }
 }
 
+use solution::*;
+
 pub const SOLUTION: Solution = Solution {
     day: 23,
     name: "Amphipod",
@@ -541,7 +563,8 @@ pub const SOLUTION: Solution = Solution {
         // Part a)
         |input| {
             // Generation
-            let pos = solution::Position::from_str(input.expect_input()?)?;
+            let pos: solution::Position<PartA> =
+                solution::Position::from_str(input.expect_input()?)?;
 
             // Process
             Ok(pos.minimal_energy()?.into())
