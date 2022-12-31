@@ -13,7 +13,7 @@ mod tests {
 ###B#C#B#D###
 #A#D#C#A#
 #########",
-    vec![12521u64].answer_vec()
+    vec![12521u64, 44169].answer_vec()
     }
 }
 
@@ -42,15 +42,49 @@ mod solution {
 
     pub trait Part: Clone + Eq + std::hash::Hash {
         const DEPTH: usize;
+
+        fn board() -> &'static Board<Self>;
+        fn add_folded(position_map: &mut PositionMap);
     }
     #[derive(Clone, PartialEq, Eq, Hash)]
-    pub struct PartA {}
+    pub struct PartA;
     impl Part for PartA {
         const DEPTH: usize = 2;
+
+        fn board() -> &'static Board<Self> {
+            &BOARD_A
+        }
+
+        fn add_folded(_position_map: &mut PositionMap) {
+            // No folded positions for this part
+        }
+    }
+    #[derive(Clone, PartialEq, Eq, Hash)]
+    pub struct PartB;
+    impl Part for PartB {
+        const DEPTH: usize = 4;
+
+        fn board() -> &'static Board<Self> {
+            &BOARD_B
+        }
+
+        fn add_folded(position_map: &mut PositionMap) {
+            // First folded row (DCBA)
+            position_map[Amphipod::Desert].push(Self::board().room_spaces[Amphipod::Amber][1]);
+            position_map[Amphipod::Copper].push(Self::board().room_spaces[Amphipod::Bronze][1]);
+            position_map[Amphipod::Bronze].push(Self::board().room_spaces[Amphipod::Copper][1]);
+            position_map[Amphipod::Amber].push(Self::board().room_spaces[Amphipod::Desert][1]);
+
+            // Second folded row (DBAC)
+            position_map[Amphipod::Desert].push(Self::board().room_spaces[Amphipod::Amber][2]);
+            position_map[Amphipod::Bronze].push(Self::board().room_spaces[Amphipod::Bronze][2]);
+            position_map[Amphipod::Amber].push(Self::board().room_spaces[Amphipod::Copper][2]);
+            position_map[Amphipod::Copper].push(Self::board().room_spaces[Amphipod::Desert][2]);
+        }
     }
 
     #[derive(Debug, Clone, Copy, Enum, EnumIter, PartialEq, Eq)]
-    enum Amphipod {
+    pub enum Amphipod {
         Amber,
         Bronze,
         Copper,
@@ -153,7 +187,7 @@ mod solution {
     type Graph = StableUnGraph<SpaceType, Distance>;
 
     #[derive(Clone)]
-    struct Board<P> {
+    pub struct Board<P> {
         graph: Graph,
         hall_spaces: Vec<NodeIndex>,
         room_spaces: EnumMap<Amphipod, Vec<NodeIndex>>,
@@ -232,23 +266,26 @@ mod solution {
     }
 
     lazy_static! {
-        static ref BOARD: Board<PartA> = Board::new();
+        static ref BOARD_A: Board<PartA> = Board::new();
+        static ref BOARD_B: Board<PartB> = Board::new();
     }
     const BORDER_DISP: &str = "#";
     const EMPTY_DISP: &str = ".";
 
     #[derive(Debug)]
-    struct Move<P: Part> {
+    struct Move<P: Part + 'static> {
         energy: u64,
         new_position: Position<P>,
     }
 
+    type PositionMap = EnumMap<Amphipod, Vec<NodeIndex>>;
+
     #[derive(PartialEq, Eq, Clone, Hash)]
     pub struct Position<P> {
-        positions: EnumMap<Amphipod, Vec<NodeIndex>>,
+        positions: PositionMap,
         _phantom: PhantomData<P>,
     }
-    impl<P: Part> Parseable<'_> for Position<P> {
+    impl<P: Part + 'static> Parseable<'_> for Position<P> {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             let amphipod_line = move |input| -> NomParseResult<&str, Vec<Amphipod>> {
                 terminated(
@@ -277,33 +314,35 @@ mod solution {
                     trim(false, count(tag(BORDER_DISP), 9)),
                 ),
                 |rows| {
-                    let mut positions: EnumMap<Amphipod, _> =
+                    let mut position_map: PositionMap =
                         Amphipod::iter().map(|amph| (amph, Vec::new())).collect();
 
                     // Set the first and last rows
                     for (room_amph, (adj_amph, deep_amph)) in
                         Amphipod::iter().zip(rows[0].iter().zip(rows[1].iter()))
                     {
-                        positions[*adj_amph].push(BOARD.room_spaces[room_amph][0]);
-                        positions[*deep_amph].push(BOARD.room_spaces[room_amph][P::DEPTH - 1]);
+                        position_map[*adj_amph].push(P::board().room_spaces[room_amph][0]);
+                        position_map[*deep_amph]
+                            .push(P::board().room_spaces[room_amph][P::DEPTH - 1]);
                     }
 
-                    // TODO: Need to fill middle rows if Part B
+                    // Add folded rows if any
+                    P::add_folded(&mut position_map);
 
                     Position {
-                        positions,
+                        positions: position_map,
                         _phantom: Default::default(),
                     }
                 },
             )(input)
         }
     }
-    impl<P: Part> fmt::Debug for Position<P> {
+    impl<P: Part + 'static> fmt::Debug for Position<P> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             fmt::Display::fmt(self, f)
         }
     }
-    impl<P: Part> fmt::Display for Position<P> {
+    impl<P: Part + 'static> fmt::Display for Position<P> {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let fmt_spaces =
                 |f: &mut fmt::Formatter<'_>, spaces: &[NodeIndex], sep: &str| -> fmt::Result {
@@ -320,32 +359,34 @@ mod solution {
             // Hall spaces
             writeln!(f, "{}", BORDER_DISP.repeat(13))?;
             write!(f, "{BORDER_DISP}")?;
-            fmt_spaces(f, &BOARD.hall_spaces[0..2], "")?;
+            fmt_spaces(f, &P::board().hall_spaces[0..2], "")?;
             write!(f, "{EMPTY_DISP}")?;
             for i in 2..5 {
-                fmt_spaces(f, &BOARD.hall_spaces[i..=i], EMPTY_DISP)?;
+                fmt_spaces(f, &P::board().hall_spaces[i..=i], EMPTY_DISP)?;
             }
-            fmt_spaces(f, &BOARD.hall_spaces[5..7], "")?;
+            fmt_spaces(f, &P::board().hall_spaces[5..7], "")?;
             writeln!(f, "{BORDER_DISP}")?;
 
             // Room spaces
             let room_spaces = |space_type| -> Vec<NodeIndex> {
                 Amphipod::iter()
-                    .map(|amph| BOARD.room_spaces[amph][space_type])
+                    .map(|amph| P::board().room_spaces[amph][space_type])
                     .collect()
             };
             write!(f, "{}", BORDER_DISP.repeat(3))?;
             fmt_spaces(f, &room_spaces(0), BORDER_DISP)?;
             writeln!(f, "{}", BORDER_DISP.repeat(2))?;
-            write!(f, "  {BORDER_DISP}")?;
-            fmt_spaces(f, &room_spaces(1), BORDER_DISP)?;
-            writeln!(f, "  ")?;
+            for depth in 1..P::DEPTH {
+                write!(f, "  {BORDER_DISP}")?;
+                fmt_spaces(f, &room_spaces(depth), BORDER_DISP)?;
+                writeln!(f, "  ")?;
+            }
             writeln!(f, "  {}  ", BORDER_DISP.repeat(9))?;
 
             Ok(())
         }
     }
-    impl<P: Part> Position<P> {
+    impl<P: Part + 'static> Position<P> {
         fn occupant(&self, space: &NodeIndex) -> Option<Amphipod> {
             for (amph, idxs) in self.positions.iter() {
                 if idxs.contains(space) {
@@ -361,7 +402,7 @@ mod solution {
 
         fn solved(&self) -> bool {
             Amphipod::iter().all(|a| {
-                BOARD.room_spaces[a]
+                P::board().room_spaces[a]
                     .iter()
                     .all(|n| self.positions[a].contains(n))
             })
@@ -376,111 +417,94 @@ mod solution {
         }
 
         fn moves(&self) -> Vec<Move<P>> {
+            // NOTE: One principle we follow that is not a rule we never move an amphipod only partially into
+            // a room, we always go as deep as possible. Likewise we never move an amphipod to a different space
+            // in the same room.
             let mut moves = Vec::new();
 
-            // Go through all amphipods at all spaces
-            for amphipod in Amphipod::iter() {
-                // TODO: Need to rework this to be more general for Part B
-                let home_adjacent = &BOARD.room_spaces[amphipod][0];
-                let home_deep = &BOARD.room_spaces[amphipod][1];
-                let home_deep_occupant = self.occupant(home_deep);
+            // Go through all amphipods at all (occupied) spaces
+            for own_amph in Amphipod::iter() {
+                // The nodes of our home room
+                let home_spaces = &P::board().room_spaces[own_amph];
 
-                for space in self.positions[amphipod].iter() {
-                    let space_type = BOARD.graph.node_weight(*space).unwrap();
+                // Whether our home room is filled only with our own kind
+                let home_good = home_spaces.iter().all(|n| match self.occupant(n) {
+                    Some(a) => a == own_amph,
+                    None => true,
+                });
 
-                    // If we are already home then we do not want to move
-                    if space == home_deep {
+                for own_space_node in self.positions[own_amph].iter() {
+                    let own_space_type = P::board().graph.node_weight(*own_space_node).unwrap();
+
+                    // If we are already home (and it's filled with like amphipods) then we do not want to move
+                    if let SpaceType::Room(own_space_amph, own_depth) = own_space_type && *own_space_amph == own_amph && home_good {
                         continue;
                     }
-                    if let Some(a) = home_deep_occupant && a == amphipod && space == home_adjacent {
-                        continue;
-                    }
 
-                    // Remove all occupied nodes except this one
-                    let mut graph = BOARD.clone().graph;
+                    // Remove all occupied graph nodes except this one
+                    let mut graph = P::board().clone().graph;
                     self.occupied_spaces().for_each(|n| {
-                        if n != *space {
+                        if n != *own_space_node {
                             graph.remove_node(n);
                         }
                     });
 
-                    // TODO: Need to rework this to be more general for Part B
-                    // Also remove all rooms that we do not want to enter
-                    for amph in Amphipod::iter() {
-                        if match space_type {
-                            SpaceType::Hall => amph != amphipod,
-                            SpaceType::Room(a, rst) => {
-                                if amph == *a {
-                                    if amph == amphipod {
-                                        false
-                                    } else {
-                                        *rst == 0
-                                    }
-                                } else {
-                                    amph != amphipod
-                                }
+                    // Also remove all rooms that we don't want to move into
+                    for room_amph in Amphipod::iter() {
+                        // Do we want to remove or keep this room?
+                        if !match own_space_type {
+                            // If in the hall, we only want to keep our own room
+                            SpaceType::Hall => room_amph == own_amph,
+                            // Need to keep only our home room and the room we are in
+                            SpaceType::Room(own_space_amph, depth) => {
+                                room_amph == *own_space_amph || room_amph == own_amph
                             }
                         } {
-                            // Remove this entire room (unless we are in it)
-                            BOARD.room_spaces[amph].iter().for_each(|n| {
-                                if n != space {
-                                    graph.remove_node(*n);
-                                }
+                            // Remove this entire room
+                            P::board().room_spaces[room_amph].iter().for_each(|n| {
+                                graph.remove_node(*n);
                             })
                         }
                     }
 
                     //println!("Amph {} at {}", amphipod, space.index());
 
-                    // Determine shortest paths to all possible destination nodes
-                    let paths = bellman_ford(&graph, *space).unwrap();
+                    // Determine shortest paths to all possible destination nodes and filter by those we actually might want to move to
+                    let paths = bellman_ford(&graph, *own_space_node).unwrap();
                     for (distance, node) in graph.node_indices().filter_map(|n| {
-                    // Is the node ourself or unreachable?
-                    let d = match paths.distances[n.index()] {
-                        Distance::Finite(d) => d,
-                        Distance::Infinite => return None,
-                    };
-                    if d == 0 {
-                        return None;
-                    }
+                        let new_space_type = graph.node_weight(n).unwrap();
 
-                    // Is this a hall node and we are in the hall?
-                    if matches!(graph.node_weight(*space).unwrap(), SpaceType::Hall)
-                        && matches!(graph.node_weight(n).unwrap(), SpaceType::Hall)
-                    {
-                        return None;
-                    }
-
-                    // TODO: Need to rework this to be more general for Part B
-                    // We don't want to move into the home adjacent space unless the deep space has our own kind in it
-                    if n == *home_adjacent {
-                        match home_deep_occupant {
-                            Some(a) => {
-                                if a != amphipod {
-                                    return None;
-                                }
-                            }
-                            None => return None,
-                        }
-                    }
-
-                    // TODO: Need to rework this to be more general for Part B
-                    // If we're in a non-home deep space, we don't want to move into the adjacent space
-                    if let SpaceType::Room(a, rst) = space_type && *rst == 1 && let SpaceType::Room(na, nrst) = graph.node_weight(n).unwrap() && na == a && *nrst == 0 {
+                        // Is the node ourself or unreachable?
+                        let d = match paths.distances[n.index()] {
+                            Distance::Finite(d) => d,
+                            // Node is unreachable
+                            Distance::Infinite => return None,
+                        };
+                        if d == 0 {
+                            // Do not want to move to our own space
                             return None;
+                        }
+
+                        // We cannot move to another hall node if we are in the hall
+                        if let SpaceType::Hall = own_space_type
+                            && matches!(new_space_type, SpaceType::Hall)
+                        {
+                            return None;
+                        }
+
+                        // TODO need to only move to hall or never to shallow room space or new space within the same room.
+
+                        Some((d, n))
+                    }) {
+                        // Copy current position and make the move
+                        let mut new_position = self.clone();
+                        new_position.move_amphipod(own_amph, own_space_node, node);
+
+                        moves.push(Move {
+                            energy: own_amph.required_energy() * u64::from(distance),
+                            new_position,
+                        })
                     }
-
-                    Some((d, n))
-                }) {
-                    // Copy current position and make the move
-                    let mut new_position = self.clone();
-                    new_position.move_amphipod(amphipod, space, node);
-
-                    moves.push(Move {
-                        energy: amphipod.required_energy() * u64::from(distance),
-                        new_position,
-                    })
-                }
                 }
             }
 
@@ -501,7 +525,7 @@ mod solution {
             }
 
             // Recursive function
-            fn rec<P: Part>(
+            fn rec<P: Part + 'static>(
                 position: Position<P>,
                 seen: &mut HashMap<Position<P>, Option<u64>>,
                 mut global_min_energy: Option<u64>,
@@ -525,6 +549,11 @@ mod solution {
                 }
 
                 //println!("Level {_level}:\n{}", position);
+
+                // TODO: Test code
+                if _level > 4 {
+                    return None;
+                }
 
                 // Recurse for each possible move
                 let mut min_energy: Option<u64> = None;
@@ -568,6 +597,17 @@ pub const SOLUTION: Solution = Solution {
 
             // Process
             Ok(pos.minimal_energy()?.into())
+            // TODO
+            //Ok(Answer::Unsigned(12521))
         },
+        // Part b)
+        /* |input| {
+            // Generation
+            let pos: solution::Position<PartB> =
+                solution::Position::from_str(input.expect_input()?)?;
+
+            // Process
+            Ok(pos.minimal_energy()?.into())
+        }, */
     ],
 };
