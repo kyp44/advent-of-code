@@ -2,6 +2,7 @@
 #![feature(type_alias_impl_trait)]
 #![feature(slice_pattern)]
 #![feature(let_chains)]
+#![feature(is_some_and)]
 
 #[macro_use]
 extern crate derive_new;

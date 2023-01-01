@@ -21,7 +21,12 @@ mod solution {
     use super::*;
     use crate::aoc::parse::trim;
     use std::{
-        cmp::Ordering, collections::HashMap, fmt, iter::repeat_with, marker::PhantomData, ops::Add,
+        cmp::Ordering,
+        collections::{BTreeSet, HashMap},
+        fmt,
+        iter::repeat_with,
+        marker::PhantomData,
+        ops::Add,
     };
 
     use enum_map::{Enum, EnumMap};
@@ -70,16 +75,16 @@ mod solution {
 
         fn add_folded(position_map: &mut PositionMap) {
             // First folded row (DCBA)
-            position_map[Amphipod::Desert].push(Self::board().room_spaces[Amphipod::Amber][1]);
-            position_map[Amphipod::Copper].push(Self::board().room_spaces[Amphipod::Bronze][1]);
-            position_map[Amphipod::Bronze].push(Self::board().room_spaces[Amphipod::Copper][1]);
-            position_map[Amphipod::Amber].push(Self::board().room_spaces[Amphipod::Desert][1]);
+            position_map[Amphipod::Desert].insert(Self::board().room_spaces[Amphipod::Amber][1]);
+            position_map[Amphipod::Copper].insert(Self::board().room_spaces[Amphipod::Bronze][1]);
+            position_map[Amphipod::Bronze].insert(Self::board().room_spaces[Amphipod::Copper][1]);
+            position_map[Amphipod::Amber].insert(Self::board().room_spaces[Amphipod::Desert][1]);
 
             // Second folded row (DBAC)
-            position_map[Amphipod::Desert].push(Self::board().room_spaces[Amphipod::Amber][2]);
-            position_map[Amphipod::Bronze].push(Self::board().room_spaces[Amphipod::Bronze][2]);
-            position_map[Amphipod::Amber].push(Self::board().room_spaces[Amphipod::Copper][2]);
-            position_map[Amphipod::Copper].push(Self::board().room_spaces[Amphipod::Desert][2]);
+            position_map[Amphipod::Desert].insert(Self::board().room_spaces[Amphipod::Amber][2]);
+            position_map[Amphipod::Bronze].insert(Self::board().room_spaces[Amphipod::Bronze][2]);
+            position_map[Amphipod::Amber].insert(Self::board().room_spaces[Amphipod::Copper][2]);
+            position_map[Amphipod::Copper].insert(Self::board().room_spaces[Amphipod::Desert][2]);
         }
     }
 
@@ -278,7 +283,7 @@ mod solution {
         new_position: Position<P>,
     }
 
-    type PositionMap = EnumMap<Amphipod, Vec<NodeIndex>>;
+    type PositionMap = EnumMap<Amphipod, BTreeSet<NodeIndex>>;
 
     #[derive(PartialEq, Eq, Clone, Hash)]
     pub struct Position<P> {
@@ -314,16 +319,17 @@ mod solution {
                     trim(false, count(tag(BORDER_DISP), 9)),
                 ),
                 |rows| {
-                    let mut position_map: PositionMap =
-                        Amphipod::iter().map(|amph| (amph, Vec::new())).collect();
+                    let mut position_map: PositionMap = Amphipod::iter()
+                        .map(|amph| (amph, BTreeSet::new()))
+                        .collect();
 
                     // Set the first and last rows
                     for (room_amph, (adj_amph, deep_amph)) in
                         Amphipod::iter().zip(rows[0].iter().zip(rows[1].iter()))
                     {
-                        position_map[*adj_amph].push(P::board().room_spaces[room_amph][0]);
+                        position_map[*adj_amph].insert(P::board().room_spaces[room_amph][0]);
                         position_map[*deep_amph]
-                            .push(P::board().room_spaces[room_amph][P::DEPTH - 1]);
+                            .insert(P::board().room_spaces[room_amph][P::DEPTH - 1]);
                     }
 
                     // Add folded rows if any
@@ -387,6 +393,7 @@ mod solution {
         }
     }
     impl<P: Part + 'static> Position<P> {
+        /// Returns the occupant of a given space, if any.
         fn occupant(&self, space: &NodeIndex) -> Option<Amphipod> {
             for (amph, idxs) in self.positions.iter() {
                 if idxs.contains(space) {
@@ -396,10 +403,24 @@ mod solution {
             None
         }
 
+        /// Returns an iterator of all occupied spaces.
         fn occupied_spaces(&self) -> impl Iterator<Item = NodeIndex> + '_ {
             self.positions.values().flatten().copied()
         }
 
+        /// Returns the deepest space in a given room that is unoccupied.
+        /// None is returns if every room space is occupied.
+        fn deepest_free_space(&self, room: Amphipod) -> Option<NodeIndex> {
+            (0..P::DEPTH).rev().find_map(|depth| {
+                let node = P::board().room_spaces[room][depth];
+                match self.occupant(&node) {
+                    Some(_) => None,
+                    None => Some(node),
+                }
+            })
+        }
+
+        /// Tests whether or not the position is the solved position with every amphipod in their home room.
         fn solved(&self) -> bool {
             Amphipod::iter().all(|a| {
                 P::board().room_spaces[a]
@@ -408,14 +429,15 @@ mod solution {
             })
         }
 
+        /// Moves an amphipod from one space to another.
         fn move_amphipod(&mut self, amphipod: Amphipod, old: &NodeIndex, new: NodeIndex) {
-            let idx = self.positions[amphipod]
-                .iter()
-                .position(|n| n == old)
-                .unwrap();
-            self.positions[amphipod][idx] = new;
+            let nodes = &mut self.positions[amphipod];
+
+            nodes.remove(old);
+            nodes.insert(new);
         }
 
+        /// Returns a vector of possible moves for all amphipods.
         fn moves(&self) -> Vec<Move<P>> {
             // NOTE: One principle we follow that is not a rule we never move an amphipod only partially into
             // a room, we always go as deep as possible. Likewise we never move an amphipod to a different space
@@ -437,7 +459,7 @@ mod solution {
                     let own_space_type = P::board().graph.node_weight(*own_space_node).unwrap();
 
                     // If we are already home (and it's filled with like amphipods) then we do not want to move
-                    if let SpaceType::Room(own_space_amph, own_depth) = own_space_type && *own_space_amph == own_amph && home_good {
+                    if let SpaceType::Room(own_space_amph, _) = own_space_type && *own_space_amph == own_amph && home_good {
                         continue;
                     }
 
@@ -453,11 +475,11 @@ mod solution {
                     for room_amph in Amphipod::iter() {
                         // Do we want to remove or keep this room?
                         if !match own_space_type {
-                            // If in the hall, we only want to keep our own room
-                            SpaceType::Hall => room_amph == own_amph,
-                            // Need to keep only our home room and the room we are in
-                            SpaceType::Room(own_space_amph, depth) => {
-                                room_amph == *own_space_amph || room_amph == own_amph
+                            // If in the hall, we only want to keep our own room but only if it's filled with our kind
+                            SpaceType::Hall => room_amph == own_amph && home_good,
+                            // Need to keep only the room we are in or our home room if it's filled with our kind
+                            SpaceType::Room(own_space_amph, _) => {
+                                room_amph == *own_space_amph || (room_amph == own_amph && home_good)
                             }
                         } {
                             // Remove this entire room
@@ -471,30 +493,34 @@ mod solution {
 
                     // Determine shortest paths to all possible destination nodes and filter by those we actually might want to move to
                     let paths = bellman_ford(&graph, *own_space_node).unwrap();
-                    for (distance, node) in graph.node_indices().filter_map(|n| {
-                        let new_space_type = graph.node_weight(n).unwrap();
+                    for (distance, node) in graph.node_indices().filter_map(|node| {
+                        let new_space_type = graph.node_weight(node).unwrap();
 
-                        // Is the node ourself or unreachable?
-                        let d = match paths.distances[n.index()] {
+                        // Do not want to move to unreachable nodes
+                        let d = match paths.distances[node.index()] {
                             Distance::Finite(d) => d,
                             // Node is unreachable
                             Distance::Infinite => return None,
                         };
+                        // Do not want to move to our own space
                         if d == 0 {
-                            // Do not want to move to our own space
                             return None;
                         }
 
-                        // We cannot move to another hall node if we are in the hall
-                        if let SpaceType::Hall = own_space_type
-                            && matches!(new_space_type, SpaceType::Hall)
-                        {
+                        // Do we want to remove this space?
+                        if match own_space_type {
+                            // We cannot move to another hall node if we are in the hall
+                            SpaceType::Hall => matches!(new_space_type, SpaceType::Hall),
+                            // We only want to move into the deepest free space in a room.
+                            // Note that we have already removed entire rooms that we do not want to enter
+                            SpaceType::Room(room, _) => {
+                                self.deepest_free_space(*room).is_some_and(|n| n == node)
+                            }
+                        } {
                             return None;
                         }
 
-                        // TODO need to only move to hall or never to shallow room space or new space within the same room.
-
-                        Some((d, n))
+                        Some((d, node))
                     }) {
                         // Copy current position and make the move
                         let mut new_position = self.clone();
@@ -511,6 +537,8 @@ mod solution {
             moves
         }
 
+        /// Runs a reursive algorithm to determine the minimum energy needed
+        /// to solve from this position.
         pub fn minimal_energy(self) -> AocResult<u64> {
             trait Min<T> {
                 fn update_min(&mut self, v: T);
@@ -530,7 +558,7 @@ mod solution {
                 seen: &mut HashMap<Position<P>, Option<u64>>,
                 mut global_min_energy: Option<u64>,
                 current_energy: u64,
-                _level: u8,
+                _level: u16,
             ) -> Option<u64> {
                 // Are we in a solved position?
                 if position.solved() {
@@ -548,10 +576,10 @@ mod solution {
                     return None;
                 }
 
-                //println!("Level {_level}:\n{}", position);
+                println!("Level {_level}:\n{}", position);
 
                 // TODO: Test code
-                if _level > 4 {
+                if _level > 20 {
                     return None;
                 }
 
@@ -571,6 +599,8 @@ mod solution {
                         }
                     }
                 }
+
+                // Mark this position as seen
                 seen.insert(position, min_energy);
 
                 min_energy
@@ -591,23 +621,23 @@ pub const SOLUTION: Solution = Solution {
     solvers: &[
         // Part a)
         |input| {
-            // Generation
+            /* // Generation
             let pos: solution::Position<PartA> =
                 solution::Position::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(pos.minimal_energy()?.into())
+            Ok(pos.minimal_energy()?.into()) */
             // TODO
-            //Ok(Answer::Unsigned(12521))
+            Ok(Answer::Unsigned(12521))
         },
         // Part b)
-        /* |input| {
+        |input| {
             // Generation
             let pos: solution::Position<PartB> =
                 solution::Position::from_str(input.expect_input()?)?;
 
             // Process
             Ok(pos.minimal_energy()?.into())
-        }, */
+        },
     ],
 };
