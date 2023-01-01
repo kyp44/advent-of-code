@@ -130,7 +130,7 @@ impl FromStr for Game {
             match found {
                 x if x == exp => Ok(()),
                 _ => Err(AocError::InvalidInput(
-                    format!("Expected player {} deck, found player {}", exp, found).into(),
+                    format!("Expected player {exp} deck, found player {found}").into(),
                 )),
             }
         }

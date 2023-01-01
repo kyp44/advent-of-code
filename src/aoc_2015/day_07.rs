@@ -155,7 +155,7 @@ impl<'a> Circuit<'a> {
             let wire = element.output();
             if FilterCount::<_, usize>::filter_count(elements.iter(), |e| e.output() == wire) > 1 {
                 return Err(AocError::InvalidInput(
-                    format!("The wire '{}' is connected to multiple outputs", wire).into(),
+                    format!("The wire '{wire}' is connected to multiple outputs").into(),
                 ));
             }
         }
@@ -208,7 +208,7 @@ impl<'a> Circuit<'a> {
     }
 
     fn wire_error(wire: &str) -> AocError {
-        AocError::Process(format!("Wire '{}' not connected to an output", wire).into())
+        AocError::Process(format!("Wire '{wire}' not connected to an output").into())
     }
 
     fn override_wire<'b>(&'b mut self, wire: &'a str, value: u16) -> AocResult<()> {

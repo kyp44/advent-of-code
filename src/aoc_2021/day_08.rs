@@ -129,7 +129,7 @@ impl Line {
             self.digits
                 .iter()
                 .find(|d| d.segments.len() == len)
-                .ok_or_else(|| AocError::Process(format!("No sets of length {} found", len).into()))
+                .ok_or_else(|| AocError::Process(format!("No sets of length {len} found").into()))
         };
         let d1 = get_len(2)?;
         let d4 = get_len(4)?;
@@ -138,7 +138,7 @@ impl Line {
 
         let mut map_add = |c: char, set: Vec<&char>| -> AocResult<char> {
             fn err(c: char, msg: &str) -> AocError {
-                AocError::Process(format!("Problem deducing '{}': {}!", c, msg).into())
+                AocError::Process(format!("Problem deducing '{c}': {msg}!").into())
             }
             if set.len() != 1 {
                 return Err(err(c, "set does not have exactly one element"));

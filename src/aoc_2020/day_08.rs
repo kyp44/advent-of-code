@@ -157,11 +157,7 @@ impl Program {
 fn check_acc(acc: i32) -> AocResult<u32> {
     if acc < 0 {
         return Err(AocError::Process(
-            format!(
-                "Accumulator ended up negative as {}, which is a problem",
-                acc
-            )
-            .into(),
+            format!("Accumulator ended up negative as {acc}, which is a problem").into(),
         ));
     }
     Ok(acc.try_into().unwrap())

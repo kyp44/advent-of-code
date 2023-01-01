@@ -85,7 +85,7 @@ impl FromStr for Page {
 impl Debug for Page {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let grid = Grid::from_coordinates(self.dots.iter().map(|p| p.point));
-        writeln!(f, "{:?}", grid)
+        writeln!(f, "{grid:?}")
     }
 }
 impl Page {
@@ -205,7 +205,7 @@ pub const SOLUTION: Solution = Solution {
             // which cannot reallly be done in automated way easily.
             let last_page = problem.apply_folds().last().unwrap();
             println!("Part b) folded image:\n");
-            println!("{:?}", last_page);
+            println!("{last_page:?}");
             println!("Part b) actual answer: JGAJEFKU\n");
 
             // Process

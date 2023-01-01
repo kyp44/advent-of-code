@@ -347,7 +347,7 @@ impl FromStr for Tile {
         let size = full_image.pixels.size().x;
         if full_image.pixels.size().y != size || size < 3 {
             return Err(AocError::InvalidInput(
-                format!("Tile {} must be square with at least a size of 3x3", id).into(),
+                format!("Tile {id} must be square with at least a size of 3x3").into(),
             ));
         }
 

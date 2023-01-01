@@ -7,7 +7,7 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-    vec![Unsigned(11120)],
+    vec![Unsigned(11120), Unsigned(49232)],
     "#############
 #...........#
 ###B#C#B#D###
@@ -508,13 +508,15 @@ mod solution {
                         }
 
                         // Do we want to remove this space?
-                        if match own_space_type {
-                            // We cannot move to another hall node if we are in the hall
-                            SpaceType::Hall => matches!(new_space_type, SpaceType::Hall),
-                            // We only want to move into the deepest free space in a room.
-                            // Note that we have already removed entire rooms that we do not want to enter
+                        if match new_space_type {
+                            // We cannot move to another hall node if we are in the hall but want
+                            // to keep hall spaces if we are in a room.
+                            SpaceType::Hall => matches!(own_space_type, SpaceType::Hall),
+                            // We only want to move into the deepest free space in our home room.
                             SpaceType::Room(room, _) => {
-                                self.deepest_free_space(*room).is_some_and(|n| n == node)
+                                !(home_good
+                                    && *room == own_amph
+                                    && self.deepest_free_space(own_amph).is_some_and(|n| n == node))
                             }
                         } {
                             return None;
@@ -576,12 +578,7 @@ mod solution {
                     return None;
                 }
 
-                println!("Level {_level}:\n{}", position);
-
-                // TODO: Test code
-                if _level > 20 {
-                    return None;
-                }
+                //println!("Level {_level}:\n{}", position);
 
                 // Recurse for each possible move
                 let mut min_energy: Option<u64> = None;
@@ -621,14 +618,12 @@ pub const SOLUTION: Solution = Solution {
     solvers: &[
         // Part a)
         |input| {
-            /* // Generation
+            // Generation
             let pos: solution::Position<PartA> =
                 solution::Position::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(pos.minimal_energy()?.into()) */
-            // TODO
-            Ok(Answer::Unsigned(12521))
+            Ok(pos.minimal_energy()?.into())
         },
         // Part b)
         |input| {

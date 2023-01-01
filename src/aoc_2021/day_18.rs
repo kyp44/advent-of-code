@@ -76,7 +76,7 @@ impl std::fmt::Debug for Number {
                     match e {
                         Element::Open => "[".to_string(),
                         Element::Close => "]".to_string(),
-                        Element::Num(n) => format!("{}", n),
+                        Element::Num(n) => format!("{n}"),
                     }
                 })
                 .join(" ")

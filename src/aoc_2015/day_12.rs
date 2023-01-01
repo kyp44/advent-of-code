@@ -36,8 +36,7 @@ mod tests {
 }
 
 fn parse_json(s: &str) -> AocResult<Value> {
-    serde_json::from_str(s)
-        .map_err(|e| AocError::InvalidInput(format!("Invalid JSON: {}", e).into()))
+    serde_json::from_str(s).map_err(|e| AocError::InvalidInput(format!("Invalid JSON: {e}").into()))
 }
 
 trait Part {

@@ -36,7 +36,7 @@ fn solve<P: Part>(input: &str) -> u64 {
 
     let mut ans: u64 = 0;
     loop {
-        let hash = md5::compute(format!("{}{}", input, ans));
+        let hash = md5::compute(format!("{input}{ans}"));
 
         // Check that the first hex digits are zero
         if hash[0] == 0 && hash[1] == 0 && P::check_third_byte(hash[2]) {

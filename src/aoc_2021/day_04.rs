@@ -133,7 +133,7 @@ impl FromStr for BingoGame {
         for (board_num, board) in boards.iter().enumerate() {
             if *board.grid.size() != GridSize::new(5, 5) {
                 return Err(AocError::InvalidInput(
-                    format!("Board {} is not 5 x 5", board_num).into(),
+                    format!("Board {board_num} is not 5 x 5").into(),
                 ));
             }
         }
@@ -156,7 +156,7 @@ impl BingoGame {
             }
         }
         Err(AocError::Process(
-            format!("Called numbers ran out before {} board(s) won", num_boards).into(),
+            format!("Called numbers ran out before {num_boards} board(s) won").into(),
         ))
     }
 

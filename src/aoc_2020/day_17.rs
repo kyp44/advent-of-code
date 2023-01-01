@@ -92,7 +92,7 @@ impl Dimension {
     fn from_str(dimensions: usize, s: &str) -> AocResult<Self> {
         if dimensions < 2 {
             return Err(AocError::InvalidInput(
-                format!("Dimension must be at least 2, got {}", dimensions).into(),
+                format!("Dimension must be at least 2, got {dimensions}").into(),
             ));
         }
         Ok(Dimension {
@@ -175,7 +175,6 @@ impl Evolver<bool> for Dimension {
             self.ranges()
                 .iter()
                 .map(|r| (r.start() - 1)..=(r.end() + 1))
-                .into_iter()
                 .multi_cartesian_product(),
         )
     }

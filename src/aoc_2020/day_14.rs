@@ -45,7 +45,7 @@ impl From<char> for MaskBit {
             '0' => MaskBit::Zero,
             '1' => MaskBit::One,
             'X' => MaskBit::X,
-            _ => panic!("Unkown mask bit type {}", c),
+            _ => panic!("Unkown mask bit type {c}"),
         }
     }
 }
@@ -59,7 +59,7 @@ struct Memory {
 impl Memory {
     fn new(address: u64, value: u64) -> Memory {
         fn check(val: u64) -> u64 {
-            assert!(val < (1 << BITS), "Value of {} exceeds {} bits", val, BITS);
+            assert!(val < (1 << BITS), "Value of {val} exceeds {BITS} bits");
             val
         }
         Memory {

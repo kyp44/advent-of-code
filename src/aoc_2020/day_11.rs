@@ -69,7 +69,7 @@ impl<T: Display> Display for SimulationStatus<T> {
             SimulationStatus::Stable(a) => ("Stable", a),
             SimulationStatus::Infinite(a) => ("Infinite", a),
         };
-        write!(f, "{}:\n{}", s, a)
+        write!(f, "{s}:\n{a}")
     }
 }
 

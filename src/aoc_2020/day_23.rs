@@ -153,7 +153,7 @@ impl fmt::Debug for Cups {
         write!(
             f,
             "{}",
-            (self.current.iter().map(|cr| format!("{:?}", cr)).join(", "))
+            (self.current.iter().map(|cr| format!("{cr:?}")).join(", "))
         )
     }
 }

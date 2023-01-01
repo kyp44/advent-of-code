@@ -40,8 +40,8 @@ pub enum AocError {
 impl Display for AocError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            AocError::NoYear(y) => write!(f, "Year {} is not yet solved", y),
-            AocError::NoDay(d) => write!(f, "Day {} is not yet solved", d),
+            AocError::NoYear(y) => write!(f, "Year {y} is not yet solved"),
+            AocError::NoDay(d) => write!(f, "Day {d} is not yet solved"),
             AocError::DayRange(d, r) => write!(
                 f,
                 "Day {} is not in the range of {}-{}",
@@ -49,9 +49,9 @@ impl Display for AocError {
                 r.start(),
                 r.end()
             ),
-            AocError::NomParse(e) => write!(f, "{}", e),
-            AocError::InvalidInput(s) => write!(f, "Invalid input: {}", s),
-            AocError::Process(s) => write!(f, "Error while processing: {}", s),
+            AocError::NomParse(e) => write!(f, "{e}"),
+            AocError::InvalidInput(s) => write!(f, "Invalid input: {s}"),
+            AocError::Process(s) => write!(f, "Error while processing: {s}"),
         }
     }
 }
@@ -173,9 +173,9 @@ impl Solution {
     /// Reads the input, runs the solvers, and outputs the answer(s).
     pub fn run_and_print(&self, year: u32) -> anyhow::Result<Vec<Answer>> {
         // Read input for the problem
-        let input_path = format!("input/{}/day_{:02}.txt", year, self.day);
+        let input_path = format!("input/{year}/day_{:02}.txt", self.day);
         let input = fs::read_to_string(&input_path)
-            .with_context(|| format!("Could not read input file {}", input_path))?;
+            .with_context(|| format!("Could not read input file {input_path}"))?;
 
         // Run solvers
         let data = self.preprocess(&input)?;
@@ -188,7 +188,7 @@ impl Solution {
         println!("Year {} {}", year, self.title());
         for (pc, result) in ('a'..='z').zip(results.iter()) {
             if results.len() > 1 {
-                println!("Part {})", pc);
+                println!("Part {pc})");
             }
             println!(
                 "Answer: {}",

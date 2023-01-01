@@ -38,7 +38,7 @@ impl Problem {
         // Verify that the packages can be split into three compartments
         let sum: u32 = weights.iter().sum();
         if sum < 1 || usize::try_from(sum).unwrap() % groups != 0 {
-            return Err(AocError::Process(format!("The weights have a sum of {}, and so cannot be split evenly into {} even compartments", sum, groups).into()));
+            return Err(AocError::Process(format!("The weights have a sum of {sum}, and so cannot be split evenly into {groups} even compartments").into()));
         }
 
         Ok(Problem {

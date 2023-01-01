@@ -29,7 +29,7 @@ impl FromStr for Simulation {
         for timer in usize::from_csv(s)? {
             if timer > MAX_TIME {
                 return Err(AocError::InvalidInput(
-                    format!("A timer of {} is not allowed!", timer).into(),
+                    format!("A timer of {timer} is not allowed!").into(),
                 ));
             }
             fish[timer] += 1;

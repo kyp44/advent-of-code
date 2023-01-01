@@ -103,8 +103,7 @@ impl<'a> Problem<'a> {
                 .ok_or_else(|| {
                     AocError::Process(
                         format!(
-                            "Could not find happiness change for {} sitting next to {}",
-                            person, other
+                            "Could not find happiness change for {person} sitting next to {other}"
                         )
                         .into(),
                     )

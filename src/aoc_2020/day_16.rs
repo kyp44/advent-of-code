@@ -185,7 +185,6 @@ impl Problem {
         // i.e. those Fields for which every non-completely-invalid field is valid.
         type PositionFields<'a> = Vec<HashSet<&'a Field>>;
         let mut possible_fields: PositionFields = (0..self.fields.len())
-            .into_iter()
             .map(|i| {
                 self.fields
                     .iter()

@@ -178,13 +178,13 @@ impl PacketType {
             PacketType::Operator(operation, packets) => {
                 fn min_one_err(operation: &Operation) -> AocError {
                     AocError::Process(
-                        format!("Operation {:?} must have at least one operand", operation).into(),
+                        format!("Operation {operation:?} must have at least one operand").into(),
                     )
                 }
                 let exactly_two = |operation: &Operation| -> AocResult<(u64, u64)> {
                     if packets.len() != 2 {
                         Err(AocError::Process(
-                            format!("Operation {:?} must have exactly two operands", operation)
+                            format!("Operation {operation:?} must have exactly two operands")
                                 .into(),
                         ))
                     } else {

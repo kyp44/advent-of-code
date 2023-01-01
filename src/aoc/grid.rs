@@ -227,9 +227,7 @@ pub trait CharGrid<T> {
                 line.chars()
                     .map(|c| {
                         Self::from_char(c).ok_or_else(|| {
-                            AocError::InvalidInput(
-                                format!("Invalid character found: '{}'", c).into(),
-                            )
+                            AocError::InvalidInput(format!("Invalid character found: '{c}'").into())
                         })
                     })
                     .collect()
