@@ -278,10 +278,10 @@ macro_rules! solution_test {
 
         #[test]
         fn example() {
-	    use $crate::solution_results;
-	    $(
-		solution_results!($input, $exp);
-	    )+
+            use $crate::solution_results;
+            $(
+            solution_results!($input, $exp);
+            )+
         }
     };
 }
@@ -291,12 +291,12 @@ macro_rules! solution_test {
 macro_rules! expensive_test {
     ($($input:expr, $exp: expr), +) => {
         #[test]
-	#[cfg(feature = "expensive")]
+	    #[cfg(feature = "expensive")]
         fn expensive() {
-	    use $crate::solution_results;
-            $(
-		solution_results!($input, $exp);
-            )+
+            use $crate::solution_results;
+                $(
+            solution_results!($input, $exp);
+                )+
         }
     };
 }
