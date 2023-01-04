@@ -277,7 +277,7 @@ pub const SOLUTION: Solution = Solution {
             }
 
             //for n in (1u64..99999999999999).rev() {
-            /* for n in 11111111111111u64..=99999999999999 {
+            for n in (11111111111111u64..=99999999999999).rev() {
                 let digits = split_digits(n);
 
                 if n % 1000000 == 0 {
@@ -287,10 +287,29 @@ pub const SOLUTION: Solution = Solution {
                 if !digits.contains(&0) {
                     if program.execute(&digits)?.value(Register::Z) == 0 {
                         println!("Giggles: {n}");
+                        break;
                     }
                 }
+            }
+
+            /* for n in (99999999999999 - 1000..=99999999999999).rev() {
+                let digits = split_digits(n);
+
+                if n % 1000000 == 0 {
+                    println!("On {n}");
+                }
+
+                if !digits.contains(&0) {
+                    let z = program.execute(&digits)?.value(Register::Z);
+
+                    println!("{n}: {z}");
+                }
             } */
-            println!("Result: {:?}", program.execute(&[5, 7])?);
+
+            /* println!(
+                "Result: {:?}",
+                program.execute(&[3, 5, 6, 8, 9, 4, 6, 2, 1, 8, 7, 5, 3, 6])?
+            ); */
 
             Ok(Answer::Unsigned(0))
         },
