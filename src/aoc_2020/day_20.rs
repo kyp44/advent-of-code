@@ -624,7 +624,7 @@ impl Solver {
             None
         }
 
-        solve_slot(0, 0, map).ok_or_else(|| AocError::Process("Could not find a solution".into()))
+        solve_slot(0, 0, map).ok_or(AocError::NoSolution)
     }
 }
 

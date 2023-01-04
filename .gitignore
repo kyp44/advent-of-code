@@ -1,4 +1,12 @@
 /target
 perf.data*
 /aoc_derive/target
+
+# Python stuff
 /src/aoc_2021/__pycache__/
+
+# LaTeX stuff
+/notes/*.aux
+/notes/*.log
+/notes/*.out
+/notes/*.pdf

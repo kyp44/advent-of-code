@@ -108,7 +108,7 @@ impl Problem {
         partitions(self.weights.clone(), self.groups, self.group_weight)
             .map(|parts| parts[0].iter().map(|x| u64::from(*x)).product())
             .min()
-            .ok_or_else(|| AocError::Process("No solution found!".into()))
+            .ok_or(AocError::NoSolution)
     }
 }
 

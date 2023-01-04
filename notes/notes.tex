@@ -1,0 +1,142 @@
+\documentclass{article}
+
+% For math environments
+\usepackage{amsmath, amsfonts}
+% For links
+\usepackage[colorlinks=true,
+    linkcolor = blue,
+    urlcolor  = blue,
+    citecolor = blue,
+    anchorcolor = blue]{hyperref}
+% So spaces are put between paragraphs
+\usepackage{parskip}
+% For figures
+\usepackage{tikz}
+% Set the margins to not be ridiculous
+\usepackage[margin=0.75in]{geometry}
+% For code blocks
+\usepackage{listings}
+
+% Make listings look better
+\lstset{
+  basicstyle=\ttfamily,
+  columns=fullflexible,
+  keepspaces=true,
+}
+
+\input{macros}
+
+\begin{document}
+
+\title{Advent of Code Solution Notes}
+\author{Dan Whitman}
+\date{}
+
+\maketitle
+
+\notes{2021}{24}{https://adventofcode.com/2021/day/24}{
+    This problem involved quite a bit of analytical work to reverse engineer the MONAD program (i.e. the puzzle input).
+    This was necessary to determine the properties of valid model numbers since the search space of the $14$-digit model numbers is too large to exhaustively search.
+    First, MONAD can be divided into $14$ sections that deal with each digit of the model number, and the sections are largely identical to each other except for some key parameters.
+    The code for each section has the form:
+
+    \codebox{3in}{2021-24-monad-template.txt}
+
+    Each MONAD section has the three parameters $a_n$, $b_n$, and $c_n$, where we note that always $a_n \in \braces{1, 26}$.
+    The actual parameters of each section are
+    \begin{center}
+        \begin{tabular}{c|ccc|c}
+            $n$ & $a_n$ & $b_n$ & $c_n$ & Kind       \\
+            \hline
+            1   & 1     & 11    & 3     & Increasing \\
+            2   & 1     & 14    & 7     & Increasing \\
+            3   & 1     & 13    & 1     & Increasing \\
+            4   & 26    & -4    & 6                  \\
+            5   & 1     & 11    & 14    & Increasing \\
+            6   & 1     & 10    & 7     & Increasing \\
+            7   & 26    & -4    & 9                  \\
+            8   & 26    & -12   & 9                  \\
+            9   & 1     & 10    & 6     & Increasing \\
+            10  & 26    & -11   & 4                  \\
+            11  & 1     & 12    & 0     & Increasing \\
+            12  & 26    & -1    & 7                  \\
+            13  & 26    & 0     & 12                 \\
+            14  & 26    & -11   & 1                  \\
+        \end{tabular}
+    \end{center}
+
+
+    After the $n$th section let $z_n$ be the value in the \code{z} register at the end of each section, where of course initially $z_0 = 0$.
+    Also let $d_n$ be the $n$th digit so that $1 \leq d_n \leq 9$.
+    Then the above code for each section results in the following:
+    \gath{
+        z_n = \begin{cases}
+            \floor{\frac{z_{n-1}}{a_n}}                & d_n = (z_{n-1} \mod 26) + b_n    \\
+            26 \floor{\frac{z_{n-1}}{a_n}} + d_n + c_n & d_n \neq (z_{n-1} \mod 26) + b_n \\
+        \end{cases} \label{eqn:2021:24:f}
+    }
+    First, note that, for all the sections for which $a_n = 1$, we have that $b_n > 9$ so that clearly $(z_{n-1} \mod 26) + b_n > 9$, and hence $d_n \neq (z_{n-1} \mod 26) + b_n$.
+    From this it follows that
+    \gath{
+        z_n = 26 \floor{\frac{z_{n-1}}{a_n}} + d_n + c_n = 26 z_{n-1} + d_n + c_n
+    }
+    since $a_n = 1$.
+    It will obviously be the case here that $z_n > z_{n-1}$ and, for this reason, these sections are marked as ``Increasing'' in the table above.
+
+    Since a valid model number must result in $z_{14} = 0$ and half of the sections will increase $z$, let us assume that the other seven sections must \emph{decrease} $z$.
+    In particular, we suppose that all of these sections (viz. for $n \in \braces{4, 7, 8, 10, 12, 13, 14}$) apply the first case of \eqref{eqn:2021:24:f}, which imposes restrictions on these digits.
+    Now, the first three sections result in the following:
+    \ali{
+        z_1 &= 26 z_0 + d_1 + c_1 \non
+        &= d_1 + 3 \\
+        z_2 &= 26 z_1 + d_2 + c_2 = 26(d_1 + 3) + d_2 + c_2 \non
+        &= 26 d_1 + d_2 + 85 \\
+        z_3 &= 26 z_2 + d_3 + c_3 = 26(26 d_1 + d_2 + 85) + d_3 + 1 \non
+        &= 676d_1 + 26d_2 + d_3 + 2211.
+    }
+    Regarding $d_4$ and $z_4$, define functions
+    \ali{
+        f(z, b) &= (z \mod 26) + b \\
+        g(z) &= \floor{\frac{z}{26}}
+    }
+    for brevity.
+    Then, since we assume that $z_4$ is determined from the first case of \eqref{eqn:2021:24:f}, it must be that
+    \ali{
+        d_4 = f(z_3, -4) \\
+        z_4 = g(z_3).
+    }
+    Since the $n \in \braces{5, 6}$ sections again increase $z$, we have
+    \ali{
+        z_5 &= 26 z_4 + d_5 + c_5 \non
+        &= 26 z_4 + d_5 + 14 \\
+        z_6 &= 26 z_5 + d_6 + c_6 = 26(26 z_4 + d_5 + 14) + d_6 + 7 \non
+        &= 676 z_4 + 26 d_5 + d_6 + 371.
+    }
+    Continuing in this way for both the increasing and decreasing sections gives
+    \ali{
+        d_7 &= f(z_6, -4) & z_{11} &= 26 z_{10} + d_{11} + c_{11} \\
+        z_7 &= g(z_6) & &= 26 z_{10} + d_{11} \\
+        d_8 &= f(z_7, -12) & d_{12} &= f(z_{11}, -1) \\
+        z_8 &= g(z_7) & z_{12} &= g(z_{11}) \\
+        z_9 &= 26 z_8 + d_9 + c_9 & d_{13} &= f(z_{12}, 0) \\
+        &= 26 z_8 + d_9 + 6 & z_{13} &= g(z_{12})  \\
+        d_{10} &= f(z_9, -11) & d_{14} &= f(z_{13}, -11) \\
+        z_{10} &= g(z_9) & z_{14} &= g(z_{13})
+    }
+
+    Thus, we are free to choose the digits $d_n$ for $n \in \braces{1, 2, 3, 5, 6, 9, 11}$ whereas those for $n \in \braces{4, 7, 8, 10, 12, 13, 14}$ are all determined based on those we choose.
+    This massively reduces our required search space from $9^{14}$ possible model numbers to only $9^7$ model numbers, which is much more feasible to run in a reasonable amount of time.
+    So, in our program, we search every possible combination of the appropriate digits, that is
+    \gath{
+        (d_1, d_2, d_3, d_5, d_6, d_9, d_{11}) \in D \times D \times D \times D \times D \times D \times D,
+    }
+    where $D = \braces{1, 2, 3, 4, 5, 6, 7, 8, 9}$ is the set of valid digits.
+    For the first part we start each digit at $9$ then move backwards to $1$ since we are looking for the \emph{largest} valid model number, for the second part we do the opposite since we are looking for the \emph{smallest} model number.
+
+    For each model number digits, we calculate $z_n$ and/or $d_n$ in sequence for increasing $n$ using the equations above.
+    If any of the digits $d_n$ are not in the set $D$ we discard the model number, and similarly if we finally calculate $z_{14}$, and it is nonzero.
+    Given our search order, the first model number that meets all of these conditions is our answer in either part.
+    Finally, the first valid model digits are passed as input to the interpreted MONAD program to verify its validity.
+}
+
+\end{document}

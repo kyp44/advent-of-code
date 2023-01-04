@@ -14,7 +14,7 @@ mod tests {
             SOLUTION
                 .run_and_print(super::super::YEAR_SOLUTIONS.year)
                 .unwrap(),
-            vec![Unsigned(11120)],
+            vec![Unsigned(92967699949891), Unsigned(91411143612181)],
         );
     }
 
@@ -101,8 +101,8 @@ mod solution {
             Self: Sized,
         {
             alt((
-                map(Register::parser, |r| Self::Register(r)),
-                map(nom::character::complete::i64, |n| Self::Number(n)),
+                map(Register::parser, Self::Register),
+                map(nom::character::complete::i64, Self::Number),
             ))(input)
         }
     }
@@ -218,7 +218,7 @@ mod solution {
                 let trimmed = line.trim();
 
                 // Filter out blank and comment lines
-                if trimmed.starts_with("#") || trimmed.is_empty() {
+                if trimmed.starts_with('#') || trimmed.is_empty() {
                     None
                 } else {
                     Some(trimmed)
@@ -248,8 +248,113 @@ mod solution {
             }
         }
     }
+
+    pub fn find_solution(
+        program: &Program,
+        digit_iter: impl Iterator<Item = Number> + Clone,
+    ) -> AocResult<Number> {
+        fn set_digit(d: Number, b: Number) -> Number {
+            (d % 26) + b
+        }
+
+        fn set_z(z: Number) -> Number {
+            z / 26
+        }
+
+        fn valid_digit(d: Number) -> bool {
+            (1..=9).contains(&d)
+        }
+
+        fn digits_to_number(digits: &[Number]) -> Number {
+            digits
+                .iter()
+                .rev()
+                .enumerate()
+                .map(|(n, d)| d * (10 as Number).pow(u32::try_from(n).unwrap()))
+                .sum()
+        }
+
+        // Look for all potentially valid model numbers from the analysis (see the notes)
+        for digs in (0..7).map(|_| digit_iter.clone()).multi_cartesian_product() {
+            // Extract the digits
+            let d1 = digs[0];
+            let d2 = digs[1];
+            let d3 = digs[2];
+            let d5 = digs[3];
+            let d6 = digs[4];
+            let d9 = digs[5];
+            let d11 = digs[6];
+
+            // Digit 4
+            let z3 = 676 * d1 + 26 * d2 + d3 + 2211;
+            let d4 = set_digit(z3, -4);
+            if !valid_digit(d4) {
+                continue;
+            }
+            let z4 = set_z(z3);
+
+            // Digit 7
+            let z6 = 676 * z4 + 26 * d5 + d6 + 371;
+            let d7 = set_digit(z6, -4);
+            if !valid_digit(d7) {
+                continue;
+            }
+
+            // Digit 8
+            let z7 = set_z(z6);
+            let d8 = set_digit(z7, -12);
+            if !valid_digit(d8) {
+                continue;
+            }
+
+            // Digit 10
+            let z8 = set_z(z7);
+            let z9 = 26 * z8 + d9 + 6;
+            let d10 = set_digit(z9, -11);
+            if !valid_digit(d10) {
+                continue;
+            }
+            let z10 = set_z(z9);
+
+            // Digit 12
+            let z11 = 26 * z10 + d11;
+            let d12 = set_digit(z11, -1);
+            if !valid_digit(d12) {
+                continue;
+            }
+
+            // Digit 13
+            let z12 = set_z(z11);
+            let d13 = set_digit(z12, 0);
+            if !valid_digit(d13) {
+                continue;
+            }
+
+            // Digit 14
+            let z13 = set_z(z12);
+            let d14 = set_digit(z13, -11);
+            if !valid_digit(d14) {
+                continue;
+            }
+            let z14 = set_z(z13);
+            if z14 != 0 {
+                continue;
+            }
+
+            // We should have a valid one!
+            let digits = [d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14];
+
+            // Verify that it is in fact valid
+            assert_eq!(program.execute(&digits)?.value(Register::Z), 0);
+
+            return Ok(digits_to_number(&digits));
+        }
+
+        Err(AocError::NoSolution)
+    }
 }
 
+use itertools::Itertools;
 use solution::*;
 
 pub const SOLUTION: Solution = Solution {
@@ -263,55 +368,15 @@ pub const SOLUTION: Solution = Solution {
             let program = Program::from_str(input.expect_input()?)?;
 
             // Process
-            fn split_digits(n: u64) -> Vec<Number> {
-                let mut digits = Vec::new();
-                let mut n = n;
+            find_solution(&program, (1..=9).rev()).map(|n| Answer::Unsigned(n.try_into().unwrap()))
+        },
+        // Part a)
+        |input| {
+            // Generation
+            let program = Program::from_str(input.expect_input()?)?;
 
-                while n > 0 {
-                    digits.push((n % 10).try_into().unwrap());
-                    n /= 10;
-                }
-
-                digits.reverse();
-                digits
-            }
-
-            //for n in (1u64..99999999999999).rev() {
-            for n in (11111111111111u64..=99999999999999).rev() {
-                let digits = split_digits(n);
-
-                if n % 1000000 == 0 {
-                    println!("On {n}");
-                }
-
-                if !digits.contains(&0) {
-                    if program.execute(&digits)?.value(Register::Z) == 0 {
-                        println!("Giggles: {n}");
-                        break;
-                    }
-                }
-            }
-
-            /* for n in (99999999999999 - 1000..=99999999999999).rev() {
-                let digits = split_digits(n);
-
-                if n % 1000000 == 0 {
-                    println!("On {n}");
-                }
-
-                if !digits.contains(&0) {
-                    let z = program.execute(&digits)?.value(Register::Z);
-
-                    println!("{n}: {z}");
-                }
-            } */
-
-            /* println!(
-                "Result: {:?}",
-                program.execute(&[3, 5, 6, 8, 9, 4, 6, 2, 1, 8, 7, 5, 3, 6])?
-            ); */
-
-            Ok(Answer::Unsigned(0))
+            // Process
+            find_solution(&program, 1..=9).map(|n| Answer::Unsigned(n.try_into().unwrap()))
         },
     ],
 };

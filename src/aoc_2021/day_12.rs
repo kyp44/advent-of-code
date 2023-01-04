@@ -247,8 +247,7 @@ impl<'a> CaveSystem<'a> {
             Some(paths)
         }
 
-        paths_rec(self, &self.start, &HashSet::new(), special_cave)
-            .ok_or_else(|| AocError::Process("No valid paths were found".into()))
+        paths_rec(self, &self.start, &HashSet::new(), special_cave).ok_or(AocError::NoSolution)
     }
 
     fn paths_special(&self) -> Result<HashSet<Vec<&Cave<'a>>>, AocError> {

@@ -217,7 +217,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             let solution = problem
                 .finish_solve(problem.partial_solve())
-                .ok_or_else(|| AocError::Process("No solution found!".into()))?;
+                .ok_or(AocError::NoSolution)?;
 
             Ok(solution
                 .iter()

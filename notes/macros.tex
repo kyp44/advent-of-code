@@ -1,0 +1,33 @@
+% Useful commands
+\newcommand\codebox[2]{
+    \begin{center}
+        \framebox[#1][l]{
+            \lstinputlisting{#2}
+        }
+    \end{center}
+}
+
+% Monospace inline code
+\def\code#1{\texttt{#1}}
+
+% Commands that make life easier
+\newcommand\gath[1]{\begin{gather} #1 \end{gather}}
+\newcommand\gaths[1]{\begin{gather*} #1 \end{gather*}}
+\newcommand\ali[1]{\begin{align} #1 \end{align}}
+\newcommand\parens[1]{\left( #1 \right)}
+\newcommand\squares[1]{\left[ #1 \right]}
+\newcommand\braces[1]{\left\{ #1 \right\}}
+\newcommand\angles[1]{\left\langle #1 \right\rangle}
+\newcommand\deriv[2]{\frac{d #1}{d #2}}
+\newcommand\abs[1]{\left| #1 \right|}
+\newcommand\floor[1]{\left\lfloor #1 \right\rfloor}
+\DeclareMathOperator{\lcm}{lcm}
+\def\non{\nonumber \\}
+
+% Commands for problems
+\newcommand\notes[4]{
+    \section*{#1 Day #2}
+    \textbf{Puzzle:} \href{#3}{#3}
+
+    #4
+}

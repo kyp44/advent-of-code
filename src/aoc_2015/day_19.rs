@@ -215,7 +215,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(machine
                 .find_steps("e", &machine.medicine)
-                .ok_or_else(|| AocError::Process("Solution not found!".into()))?
+                .ok_or(AocError::NoSolution)?
                 .into())
         },
     ],

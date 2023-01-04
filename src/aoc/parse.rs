@@ -58,14 +58,6 @@ impl fmt::Display for NomParseError {
     }
 }
 impl NomParseError {
-    /*pub fn nom_err_for_str(i: &str, msg: &'static str) -> nom::Err<Self> {
-        nom::Err::Failure(NomParseError {
-            verbose_error: VerboseError {
-                errors: vec![(i.to_string(), VerboseErrorKind::Context(msg))],
-            },
-        })
-    }*/
-
     pub fn nom_err_for_bits(msg: &'static str) -> nom::Err<Self> {
         nom::Err::Failure(NomParseError {
             verbose_error: VerboseError {
@@ -74,6 +66,7 @@ impl NomParseError {
         })
     }
 }
+impl std::error::Error for NomParseError {}
 
 /// Type containing the result of a nom parsing.
 pub type NomParseResult<I, U> = IResult<I, U, NomParseError>;

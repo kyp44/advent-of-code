@@ -2,10 +2,10 @@ use anyhow::Context;
 use itertools::Itertools;
 use num::Integer;
 use std::borrow::Cow;
-use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
+use std::fmt::Debug;
+use std::fs;
 use std::ops::RangeInclusive;
-use std::{fmt, fs};
+use thiserror::Error;
 
 use self::parse::NomParseError;
 
@@ -28,38 +28,26 @@ pub mod prelude {
 }
 
 /// Custom error type for AoC problem functions.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Error)]
 pub enum AocError {
+    #[error("Year {0} is not yet solved")]
     NoYear(u32),
+    #[error("Day {0} is not yet solved")]
     NoDay(u32),
+    #[error("Day {0} is not in the range of {} to {}", .1.start(), .1.end())]
     DayRange(u32, RangeInclusive<u32>),
-    NomParse(NomParseError),
+    #[error("Could not parse input")]
+    NomParse(
+        #[source]
+        #[from]
+        NomParseError,
+    ),
+    #[error("Invalid input: {0}")]
     InvalidInput(Cow<'static, str>),
+    #[error("Error while processing: {0}")]
     Process(Cow<'static, str>),
-}
-impl Display for AocError {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            AocError::NoYear(y) => write!(f, "Year {y} is not yet solved"),
-            AocError::NoDay(d) => write!(f, "Day {d} is not yet solved"),
-            AocError::DayRange(d, r) => write!(
-                f,
-                "Day {} is not in the range of {}-{}",
-                d,
-                r.start(),
-                r.end()
-            ),
-            AocError::NomParse(e) => write!(f, "{e}"),
-            AocError::InvalidInput(s) => write!(f, "Invalid input: {s}"),
-            AocError::Process(s) => write!(f, "Error while processing: {s}"),
-        }
-    }
-}
-impl Error for AocError {}
-impl From<NomParseError> for AocError {
-    fn from(e: NomParseError) -> Self {
-        AocError::NomParse(e)
-    }
+    #[error("No solution found!")]
+    NoSolution,
 }
 pub type AocResult<T> = Result<T, AocError>;
 

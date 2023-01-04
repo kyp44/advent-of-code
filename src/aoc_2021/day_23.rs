@@ -603,8 +603,7 @@ mod solution {
                 min_energy
             }
 
-            rec(self, &mut HashMap::new(), None, 0, 0)
-                .ok_or_else(|| AocError::Process("No solution found!".into()))
+            rec(self, &mut HashMap::new(), None, 0, 0).ok_or(AocError::NoSolution)
         }
     }
 }
