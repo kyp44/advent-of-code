@@ -52,6 +52,7 @@ mod w 2";
     }
 }
 
+/// Contains solution implementation items.
 mod solution {
     use std::str::FromStr;
 
@@ -66,13 +67,19 @@ mod solution {
 
     use super::*;
 
+    /// Type to use for ALU numbers.
     pub type Number = i64;
 
+    /// Represents one of the ALU registers.
     #[derive(Debug, Enum, Clone, Copy)]
     pub enum Register {
+        /// The `w` register.
         W,
+        /// The `x` register.
         X,
+        /// The `y` register.
         Y,
+        /// The `z` register.
         Z,
     }
     impl<'a> Parseable<'a> for Register {
@@ -90,9 +97,12 @@ mod solution {
         }
     }
 
+    /// Represents an operand.
     #[derive(Debug)]
     enum Operand {
+        /// A [Register].
         Register(Register),
+        /// A [Number] literal.
         Number(Number),
     }
     impl<'a> Parseable<'a> for Operand {
@@ -107,13 +117,20 @@ mod solution {
         }
     }
 
+    /// Represents a single ALU instruction.
     #[derive(Debug)]
     enum Instruction {
+        /// `inp` read input instruction.
         ReadInput(Register),
+        /// `add` addition instruction.
         Add(Register, Operand),
+        /// `mul` multiplication instruction
         Multiply(Register, Operand),
+        /// `div` truncated division instruction.
         Divide(Register, Operand),
+        /// `mod` modulo instruction.
         Modulo(Register, Operand),
+        /// `equ` equality test instruction.
         Equal(Register, Operand),
     }
     impl<'a> Parseable<'a> for Instruction {
@@ -121,6 +138,7 @@ mod solution {
         where
             Self: Sized,
         {
+            /// [nom] parser to parse a pair of operands, or rather a [Register] then an [Operand]
             fn operands_parser(input: &str) -> NomParseResult<&str, (Register, Option<Operand>)> {
                 preceded(
                     space1,
@@ -151,11 +169,14 @@ mod solution {
         }
     }
 
+    /// A set of registers on which instructions can operate.
     #[derive(Debug, PartialEq, Eq)]
     pub struct Registers {
+        /// Values stored in each register.
         values: EnumMap<Register, Number>,
     }
     impl Registers {
+        /// Creates a new set of registers with the specified values.
         pub fn new(w: Number, x: Number, y: Number, z: Number) -> Self {
             Self {
                 values: enum_map! {
@@ -167,10 +188,12 @@ mod solution {
             }
         }
 
+        /// Gets the value in a register.
         pub fn value(&self, reg: Register) -> Number {
             self.values[reg]
         }
 
+        /// Gets the value of an operand.
         fn operand_value(&self, operand: &Operand) -> Number {
             match operand {
                 Operand::Register(reg) => self.values[*reg],
@@ -178,6 +201,7 @@ mod solution {
             }
         }
 
+        /// Execute a single instruction, affecting the appropriate registers.
         fn execute(
             &mut self,
             instruction: &Instruction,
@@ -207,7 +231,9 @@ mod solution {
         }
     }
 
+    ///
     pub struct Program {
+        /// All the instructions in execution order.
         instructions: Vec<Instruction>,
     }
     impl FromStr for Program {
@@ -229,6 +255,7 @@ mod solution {
         }
     }
     impl Program {
+        /// Executes the ALU program given a number of inputs.
         pub fn execute(&self, inputs: &[Number]) -> AocResult<Registers> {
             let mut registers = Registers::default();
             let mut inputs = inputs.iter().copied();
@@ -249,22 +276,29 @@ mod solution {
         }
     }
 
+    /// Searches for a solution based on a digit iterator to determine order.
+    ///
+    /// Described further in the notes.
     pub fn find_solution(
         program: &Program,
         digit_iter: impl Iterator<Item = Number> + Clone,
     ) -> AocResult<Number> {
-        fn set_digit(d: Number, b: Number) -> Number {
-            (d % 26) + b
+        /// Determines a digit from the previous z and the b parameter.
+        fn set_digit(z: Number, b: Number) -> Number {
+            (z % 26) + b
         }
 
+        /// Determines the next z value based on the previous one.
         fn set_z(z: Number) -> Number {
             z / 26
         }
 
+        /// Tests whether a digit is valid (i.e. 1-9).
         fn valid_digit(d: Number) -> bool {
             (1..=9).contains(&d)
         }
 
+        /// Converts an array it digits into a [Number].
         fn digits_to_number(digits: &[Number]) -> Number {
             digits
                 .iter()
@@ -357,6 +391,7 @@ mod solution {
 use itertools::Itertools;
 use solution::*;
 
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 24,
     name: "Arithmetic Logic Unit",
