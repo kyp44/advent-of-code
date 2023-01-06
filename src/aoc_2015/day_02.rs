@@ -111,7 +111,7 @@ pub const SOLUTION: Solution = Solution {
     name: "I Was Told There Would Be No Math",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let presents: Presents = input.expect_input()?.parse()?;
@@ -119,7 +119,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(presents.needed_paper().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let presents: Presents = input.expect_input()?.parse()?;

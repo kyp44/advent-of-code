@@ -220,7 +220,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Snailfish",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let numbers = Number::gather(input.expect_input()?.lines())?;
@@ -228,7 +228,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(numbers.into_iter().sum::<Number>().magnitude().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let numbers = Number::gather(input.expect_input()?.lines())?;

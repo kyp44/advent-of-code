@@ -270,7 +270,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Reactor Reboot",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let steps = RebootStep::gather(input.expect_input()?.lines())?;
@@ -282,7 +282,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(set.num_points().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let steps = RebootStep::gather(input.expect_input()?.lines())?;

@@ -168,7 +168,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Handheld Halting",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let program: Program = input.expect_input()?.parse()?;
@@ -186,7 +186,7 @@ pub const SOLUTION: Solution = Solution {
                 .into(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let program: Program = input.expect_input()?.parse()?;

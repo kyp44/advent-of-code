@@ -89,7 +89,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Combo Breaker",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let problem: Problem = input.expect_input()?.parse()?;

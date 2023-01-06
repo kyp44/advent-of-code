@@ -78,7 +78,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Smoke Basin",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let floor_map = FloorMap::from_str(input.expect_input()?)?;
@@ -88,7 +88,7 @@ pub const SOLUTION: Solution = Solution {
                 floor_map.low_heights().map(|h| u64::from(h) + 1).sum(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let floor_map = FloorMap::from_str(input.expect_input()?)?;

@@ -140,7 +140,7 @@ pub const SOLUTION: Solution = Solution {
     name: "All in a Single Night",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let problem = Problem::from_str(input.expect_input()?)?;
@@ -148,7 +148,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(problem.shortest_distance().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let problem = Problem::from_str(input.expect_input()?)?;

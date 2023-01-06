@@ -76,14 +76,14 @@ impl<T: Display> Display for SimulationStatus<T> {
 /// Had to end up using an enum for this, which is not ideal
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 enum Part {
-    PartA,
-    PartB,
+    PartOne,
+    PartTwo,
 }
 impl Part {
     fn min_needed_to_vacate(&self) -> u8 {
         match self {
-            Part::PartA => 4,
-            Part::PartB => 5,
+            Part::PartOne => 4,
+            Part::PartTwo => 5,
         }
     }
 
@@ -91,10 +91,10 @@ impl Part {
     fn point_occupied(&self, area: &Area, point: &GridPoint) -> u8 {
         let grid = &area.grid;
         match self {
-            Part::PartA => grid
+            Part::PartOne => grid
                 .neighbor_points(point, true, false)
                 .filter_count(|point| *grid.get(point) == Seat::Occupied),
-            Part::PartB => iproduct!(-1isize..=1, -1isize..=1)
+            Part::PartTwo => iproduct!(-1isize..=1, -1isize..=1)
                 .map(|(dx, dy)| Vector2::new(dx, dy))
                 .filter(|dp| *dp != Vector2::zero())
                 .filter_count(|dp| {
@@ -141,7 +141,7 @@ impl FromStr for Area {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Area {
-            part: Part::PartA,
+            part: Part::PartOne,
             grid: Self::grid_from_str(s)?,
         })
     }
@@ -230,7 +230,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Seating System",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let area = Area::from_str(input.expect_input()?)?;
@@ -238,11 +238,11 @@ pub const SOLUTION: Solution = Solution {
             // Process
             check_simulation(area.simulate())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let mut area = Area::from_str(input.expect_input()?)?;
-            area.set_part(Part::PartB);
+            area.set_part(Part::PartTwo);
 
             // Process
             check_simulation(area.simulate())

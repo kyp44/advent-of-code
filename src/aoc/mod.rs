@@ -1,4 +1,5 @@
 use anyhow::Context;
+use colored::Colorize;
 use itertools::Itertools;
 use num::Integer;
 use std::borrow::Cow;
@@ -135,7 +136,7 @@ macro_rules! expect_data {
     };
 }
 
-/// Represents the solver for a day's puzzle.
+/// Represents the solver for both pars of a day's puzzle.
 type SolverFunc = fn(&SolverData) -> AocResult<Answer>;
 pub struct Solution {
     pub day: u32,
@@ -173,10 +174,10 @@ impl Solution {
             .map(|s| s(&data))
             .collect::<AocResult<Vec<Answer>>>()?;
 
-        println!("Year {} {}", year, self.title());
-        for (pc, result) in ('a'..='z').zip(results.iter()) {
+        println!("{}", format!("Year {} {}", year, self.title()).yellow());
+        for (part, result) in ["one", "two"].into_iter().zip(results.iter()) {
             if results.len() > 1 {
-                println!("Part {pc})");
+                println!("{}", format!("Part {part}:").bold().underline());
             }
             println!(
                 "Answer: {}",

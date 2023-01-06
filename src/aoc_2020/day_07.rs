@@ -140,7 +140,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Handy Haversacks",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let mut bag_rules = BagRules::from_str(input.expect_input()?)?;
@@ -168,7 +168,7 @@ pub const SOLUTION: Solution = Solution {
                 }
             }))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let mut bag_rules = BagRules::from_str(input.expect_input()?)?;

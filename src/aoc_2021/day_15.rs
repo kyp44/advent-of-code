@@ -114,7 +114,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Chiton",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let risk_levels = RiskLevels::from_str(input.expect_input()?)?;
@@ -122,7 +122,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(risk_levels.min_risk().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let risk_levels = RiskLevels::from_str(input.expect_input()?)?;

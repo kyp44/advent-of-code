@@ -51,7 +51,7 @@ pub const SOLUTION: Solution = Solution {
     name: "No Such Thing as Too Much",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let problem: Problem = input.expect_input()?.parse()?;
@@ -64,7 +64,7 @@ pub const SOLUTION: Solution = Solution {
                 problem.combinations(150).count().try_into().unwrap(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let problem: Problem = input.expect_input()?.parse()?;

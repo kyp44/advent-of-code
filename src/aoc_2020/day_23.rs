@@ -113,8 +113,8 @@ trait Part {
     fn add_cups(&self, _cups: &mut Vec<Label>) {}
     fn score(&self, one: &CupRef) -> u64;
 }
-struct PartA;
-impl Part for PartA {
+struct PartOne;
+impl Part for PartOne {
     fn score(&self, one: &CupRef) -> u64 {
         one.iter()
             .skip(1)
@@ -124,8 +124,8 @@ impl Part for PartA {
             .unwrap()
     }
 }
-struct PartB;
-impl Part for PartB {
+struct PartTwo;
+impl Part for PartTwo {
     fn add_cups(&self, cups: &mut Vec<Label>) {
         for i in (cups.len() + 1)..=1000000 {
             cups.push(i.try_into().unwrap());
@@ -144,7 +144,7 @@ impl Part for PartB {
 struct Cups {
     // NOTE: We need RefCell here to complete the circle
     cups: Box<[Rc<RefCell<Cup>>]>,
-    // NOTE: This is needed to speed things up for part b)
+    // NOTE: This is needed to speed things up for Part two
     lookup: HashMap<Label, CupRef>,
     current: CupRef,
 }
@@ -257,20 +257,20 @@ pub const SOLUTION: Solution = Solution {
     name: "Crab Cups",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
-            let part = &PartA;
+            let part = &PartOne;
             let mut cups = Cups::from_str(input.expect_input()?, part)?;
             cups.run(100);
 
             // Process
             Ok(cups.score(part).into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
-            let part = &PartB;
+            let part = &PartTwo;
             let mut cups = Cups::from_str(input.expect_input()?, part)?;
             cups.run(10000000);
 

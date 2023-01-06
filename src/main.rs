@@ -28,6 +28,7 @@ mod aoc_2020;
 mod aoc_2021;
 
 use aoc::AocError;
+use colored::Colorize;
 use itertools::Itertools;
 use structopt::StructOpt;
 
@@ -70,9 +71,8 @@ fn main() -> anyhow::Result<()> {
                 .map(|year_solutions| {
                     let year = year_solutions.year;
                     format!(
-                        "{}\n{}\n{}",
-                        year,
-                        year.to_string().chars().map(|_| '=').collect::<String>(),
+                        "{}\n{}",
+                        format!("{year}").bold().underline(),
                         year_solutions.solution_list(),
                     )
                 })

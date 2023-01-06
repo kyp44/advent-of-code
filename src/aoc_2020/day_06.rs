@@ -91,13 +91,13 @@ pub const SOLUTION: Solution = Solution {
     name: "Custom Customs",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             solve(input.expect_input()?, |a: Questions, b: Questions| {
                 a.union(&b).copied().collect()
             })
         },
-        // Part b)
+        // Part two
         |input| {
             solve(input.expect_input()?, |a: Questions, b: Questions| {
                 a.intersection(&b).copied().collect()

@@ -51,18 +51,18 @@ trait Part {
     fn new() -> Self;
 }
 
-struct PartA {
+struct PartOne {
     horizontal: i64,
     depth: i64,
 }
 
-struct PartB {
+struct PartTwo {
     horizontal: i64,
     depth: i64,
     aim: i64,
 }
 
-impl Part for PartA {
+impl Part for PartOne {
     fn new() -> Self {
         Self {
             horizontal: 0,
@@ -79,7 +79,7 @@ impl Part for PartA {
     }
 }
 
-impl Part for PartB {
+impl Part for PartTwo {
     fn new() -> Self {
         Self {
             horizontal: 0,
@@ -128,20 +128,20 @@ pub const SOLUTION: Solution = Solution {
     name: "Dive!",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let course = Course::from_str(input.expect_input()?)?;
-            let end_position = course.end_position::<PartA>();
+            let end_position = course.end_position::<PartOne>();
 
             // Process
             Ok((end_position.horizontal * end_position.depth).into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let course = Course::from_str(input.expect_input()?)?;
-            let end_position = course.end_position::<PartB>();
+            let end_position = course.end_position::<PartTwo>();
 
             // Process
             Ok((end_position.horizontal * end_position.depth).into())

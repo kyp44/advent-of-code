@@ -98,7 +98,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Shuttle Search",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let schedule = Schedule::from_str(input.expect_input()?)?;
@@ -111,7 +111,7 @@ pub const SOLUTION: Solution = Solution {
                 .unwrap();
             Ok((bus_id * time_until(&bus_id)).into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let schedule = Schedule::from_str(input.expect_input()?)?;
@@ -125,7 +125,7 @@ pub const SOLUTION: Solution = Solution {
                 if gcd(v[0], v[1]) > 1 {
                     return Err(AocError::Process(
                         format!(
-                            "Part b) may not be solveable because {} and {} are not co-prime",
+                            "Part two may not be solveable because {} and {} are not co-prime",
                             v[0], v[1]
                         )
                         .into(),

@@ -233,7 +233,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Probably a Fire Hazard",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let mut light_grid = LightGrid::<bool>::new(1000);
@@ -247,7 +247,7 @@ pub const SOLUTION: Solution = Solution {
                 light_grid.number_lit().try_into().unwrap(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let mut light_grid = LightGrid::<u8>::new(1000);

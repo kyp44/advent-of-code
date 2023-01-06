@@ -175,7 +175,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Giant Squid",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let game = BingoGame::from_str(input.expect_input()?)?;
@@ -183,7 +183,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(game.play()?.into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let game = BingoGame::from_str(input.expect_input()?)?;

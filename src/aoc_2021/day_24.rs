@@ -396,7 +396,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Arithmetic Logic Unit",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let program = Program::from_str(input.expect_input()?)?;
@@ -404,7 +404,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             find_solution(&program, (1..=9).rev()).map(|n| Answer::Unsigned(n.try_into().unwrap()))
         },
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let program = Program::from_str(input.expect_input()?)?;

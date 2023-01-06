@@ -160,7 +160,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Trench Map",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let image = Image::from_str(input.expect_input()?)?;
@@ -176,7 +176,7 @@ pub const SOLUTION: Solution = Solution {
                     .unwrap(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let image = Image::from_str(input.expect_input()?)?;

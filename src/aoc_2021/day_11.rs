@@ -112,7 +112,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Dumbo Octopus",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let octopi = Octopi::from_str(input.expect_input()?)?;
@@ -126,7 +126,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(octopi.evolve().take(100).sum::<u64>().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let octopi = Octopi::from_str(input.expect_input()?)?;

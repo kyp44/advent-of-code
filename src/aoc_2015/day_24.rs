@@ -117,7 +117,7 @@ pub const SOLUTION: Solution = Solution {
     name: "It Hangs in the Balance",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let problem = Problem::from_str(3, input.expect_input()?)?;
@@ -125,7 +125,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(problem.solve()?.into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let problem = Problem::from_str(4, input.expect_input()?)?;

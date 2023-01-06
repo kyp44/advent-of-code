@@ -51,8 +51,8 @@ impl<'a> Parseable<'a> for Sue<'a> {
 trait Part {
     fn matches(a: &Sue, b: &Sue) -> bool;
 }
-struct PartA;
-impl Part for PartA {
+struct PartOne;
+impl Part for PartOne {
     fn matches(a: &Sue, b: &Sue) -> bool {
         a.compounds
             .keys()
@@ -60,8 +60,8 @@ impl Part for PartA {
             .all(|k| a.compounds.get(k).unwrap() == b.compounds.get(k).unwrap())
     }
 }
-struct PartB;
-impl Part for PartB {
+struct PartTwo;
+impl Part for PartTwo {
     fn matches(a: &Sue, b: &Sue) -> bool {
         a.compounds
             .keys()
@@ -113,7 +113,7 @@ fn solve<P: Part>(input: &SolverData) -> AocResult<Answer> {
     let problem = Problem::from_str(input.expect_input()?)?;
 
     // Show matches
-    /*for sue in problem.matches::<PartA>() {
+    /*for sue in problem.matches::<PartOne>() {
         println!("{:?}", sue);
     }*/
 
@@ -126,5 +126,5 @@ pub const SOLUTION: Solution = Solution {
     day: 16,
     name: "Aunt Sue",
     preprocessor: None,
-    solvers: &[solve::<PartA>, solve::<PartB>],
+    solvers: &[solve::<PartOne>, solve::<PartTwo>],
 };

@@ -105,7 +105,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Toboggan Trajectory",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let map = Map::from_str(input.expect_input()?)?;
@@ -113,7 +113,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(count_slope(&map, GridPoint::new(3, 1)).into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let map = Map::from_str(input.expect_input()?)?;

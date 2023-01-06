@@ -185,7 +185,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Allergen Assessment",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let problem = Problem::from_str(input.expect_input()?)?;
@@ -209,7 +209,7 @@ pub const SOLUTION: Solution = Solution {
                     .unwrap(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let problem = Problem::from_str(input.expect_input()?)?;

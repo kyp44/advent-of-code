@@ -224,7 +224,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Lobby Layout",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let floor: Floor = input.expect_input()?.parse()?;
@@ -234,7 +234,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(floor.num_black_tiles().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let floor: Floor = input.expect_input()?.parse()?;

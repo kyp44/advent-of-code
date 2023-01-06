@@ -1,5 +1,3 @@
-use serde_json::Value;
-
 use crate::aoc::prelude::*;
 
 #[cfg(test)]
@@ -35,77 +33,97 @@ mod tests {
     }
 }
 
-fn parse_json(s: &str) -> AocResult<Value> {
-    serde_json::from_str(s).map_err(|e| AocError::InvalidInput(format!("Invalid JSON: {e}").into()))
-}
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use serde_json::Value;
 
-trait Part {
-    fn valid_value(_value: &Value) -> bool {
-        true
+    /// Parses JSON from text input and returns the root JSON value.
+    pub fn parse_json(s: &str) -> AocResult<Value> {
+        serde_json::from_str(s)
+            .map_err(|e| AocError::InvalidInput(format!("Invalid JSON: {e}").into()))
     }
 
-    fn value_sums<'a>(values: impl Iterator<Item = &'a Value>) -> i64
-    where
-        Self: Sized,
-    {
-        values
-            .filter(|v| Self::valid_value(v))
-            .map(|v| v.sum_numbers::<Self>())
-            .sum()
-    }
-}
-struct PartA;
-impl Part for PartA {}
-struct PartB;
-impl Part for PartB {
-    fn valid_value(value: &Value) -> bool {
-        match value {
-            Value::Object(m) => !m
-                .values()
-                .any(|v| matches!(v, Value::String(s) if s == "red")),
-            _ => true,
+    /// Behavior specific to a particular part of the problem.
+    pub trait Part {
+        /// Determines whether a JSON value is valid and should be included in the sum.
+        fn valid_value(_value: &Value) -> bool {
+            true
+        }
+
+        /// Adds up all the numbers appearing in an iterator of JSON values, counting only those that valid.
+        fn value_sums<'a>(values: impl Iterator<Item = &'a Value>) -> i64
+        where
+            Self: Sized,
+        {
+            values
+                .filter(|v| Self::valid_value(v))
+                .map(|v| v.sum_numbers::<Self>())
+                .sum()
         }
     }
-}
 
-trait SumNumbers {
-    fn sum_numbers<P: Part>(&self) -> i64;
-}
-impl SumNumbers for Value {
-    fn sum_numbers<P: Part>(&self) -> i64 {
-        if P::valid_value(self) {
-            match self {
-                Value::Number(n) => n.as_i64().unwrap_or(0),
-                Value::Array(v) => P::value_sums(v.iter()),
-                Value::Object(m) => P::value_sums(m.values()),
-                _ => 0,
+    /// Behavior for part one.
+    pub struct PartOne;
+    impl Part for PartOne {}
+
+    /// Behavior for part two.
+    pub struct PartTwo;
+    impl Part for PartTwo {
+        fn valid_value(value: &Value) -> bool {
+            match value {
+                Value::Object(m) => !m
+                    .values()
+                    .any(|v| matches!(v, Value::String(s) if s == "red")),
+                _ => true,
             }
-        } else {
-            0
+        }
+    }
+
+    /// Capability to determine the sum of numbers contained in a particular JSON value.
+    pub trait SumNumbers {
+        /// Recursively calculates the number sum of the JSON value.
+        fn sum_numbers<P: Part>(&self) -> i64;
+    }
+    impl SumNumbers for Value {
+        fn sum_numbers<P: Part>(&self) -> i64 {
+            if P::valid_value(self) {
+                match self {
+                    Value::Number(n) => n.as_i64().unwrap_or(0),
+                    Value::Array(v) => P::value_sums(v.iter()),
+                    Value::Object(m) => P::value_sums(m.values()),
+                    _ => 0,
+                }
+            } else {
+                0
+            }
         }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 12,
     name: "JSAbacusFramework.io",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let data = parse_json(input.expect_input()?)?;
 
             // Process
-            Ok(data.sum_numbers::<PartA>().into())
+            Ok(data.sum_numbers::<PartOne>().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let data = parse_json(input.expect_input()?)?;
 
             // Process
-            Ok(data.sum_numbers::<PartB>().into())
+            Ok(data.sum_numbers::<PartTwo>().into())
         },
     ],
 };

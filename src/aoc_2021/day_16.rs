@@ -270,7 +270,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Packet Decoder",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let packet = Packet::from_str(input.expect_input()?)?;
@@ -280,7 +280,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(packet.version_sum().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let packet = Packet::from_str(input.expect_input()?)?;

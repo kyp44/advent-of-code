@@ -52,8 +52,8 @@ mod solution {
         fn add_folded(position_map: &mut PositionMap);
     }
     #[derive(Clone, PartialEq, Eq, Hash)]
-    pub struct PartA;
-    impl Part for PartA {
+    pub struct PartOne;
+    impl Part for PartOne {
         const DEPTH: usize = 2;
 
         fn board() -> &'static Board<Self> {
@@ -65,8 +65,8 @@ mod solution {
         }
     }
     #[derive(Clone, PartialEq, Eq, Hash)]
-    pub struct PartB;
-    impl Part for PartB {
+    pub struct PartTwo;
+    impl Part for PartTwo {
         const DEPTH: usize = 4;
 
         fn board() -> &'static Board<Self> {
@@ -271,8 +271,8 @@ mod solution {
     }
 
     lazy_static! {
-        static ref BOARD_A: Board<PartA> = Board::new();
-        static ref BOARD_B: Board<PartB> = Board::new();
+        static ref BOARD_A: Board<PartOne> = Board::new();
+        static ref BOARD_B: Board<PartTwo> = Board::new();
     }
     const BORDER_DISP: &str = "#";
     const EMPTY_DISP: &str = ".";
@@ -616,19 +616,19 @@ pub const SOLUTION: Solution = Solution {
     name: "Amphipod",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
-            let pos: solution::Position<PartA> =
+            let pos: solution::Position<PartOne> =
                 solution::Position::from_str(input.expect_input()?)?;
 
             // Process
             Ok(pos.minimal_energy()?.into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
-            let pos: solution::Position<PartB> =
+            let pos: solution::Position<PartTwo> =
                 solution::Position::from_str(input.expect_input()?)?;
 
             // Process

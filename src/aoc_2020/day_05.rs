@@ -82,7 +82,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Binary Boarding",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let ids = get_ids(input.expect_input()?)?;
@@ -91,7 +91,7 @@ pub const SOLUTION: Solution = Solution {
                 ids.iter().fold(0, |o, n| o.max(*n)).into(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let ids = get_ids(input.expect_input()?)?;

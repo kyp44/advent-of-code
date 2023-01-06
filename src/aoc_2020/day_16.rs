@@ -251,7 +251,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Ticket Translation",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let problem = Problem::from_str(input.expect_input()?)?;
@@ -261,7 +261,7 @@ pub const SOLUTION: Solution = Solution {
                 problem.all_invalid_fields().sum::<u32>().into(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let problem = Problem::from_str(input.expect_input()?)?;

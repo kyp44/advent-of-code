@@ -20,14 +20,14 @@ mod tests {
 trait Part {
     fn fuel_used(dist: u64) -> u64;
 }
-struct PartA {}
-impl Part for PartA {
+struct PartOne {}
+impl Part for PartOne {
     fn fuel_used(dist: u64) -> u64 {
         dist
     }
 }
-struct PartB {}
-impl Part for PartB {
+struct PartTwo {}
+impl Part for PartTwo {
     fn fuel_used(dist: u64) -> u64 {
         dist * (dist + 1) / 2
     }
@@ -68,21 +68,21 @@ pub const SOLUTION: Solution = Solution {
     name: "The Treachery of Whales",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let subs = CrabSubs::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(subs.align::<PartA>()?.into())
+            Ok(subs.align::<PartOne>()?.into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let subs = CrabSubs::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(subs.align::<PartB>()?.into())
+            Ok(subs.align::<PartTwo>()?.into())
         },
     ],
 };

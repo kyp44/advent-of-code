@@ -185,7 +185,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Conway Cubes",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let dimension = Dimension::from_str(3, input.expect_input()?)?;
@@ -198,7 +198,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(dimension.evolutions().nth(5).unwrap().count_active().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let dimension = Dimension::from_str(4, input.expect_input()?)?;

@@ -53,6 +53,7 @@ mod solution {
         }
     }
 }
+
 use solution::*;
 
 /// Solution struct.
@@ -61,7 +62,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Elves Look, Elves Say",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             //println!("{}", Sequence::from_str(input.expect_input()?)?.nth(40).unwrap().len());
             Ok(Answer::Unsigned(
@@ -73,7 +74,7 @@ pub const SOLUTION: Solution = Solution {
                     .unwrap(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             //println!("{}", Sequence::from_str(input.expect_input()?)?.nth(50).unwrap().len());
             Ok(Answer::Unsigned(

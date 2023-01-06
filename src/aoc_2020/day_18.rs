@@ -52,8 +52,8 @@ impl Operator {
 trait Part {
     fn precedence(&self, op: &Operator) -> u8;
 }
-struct PartA;
-impl Part for PartA {
+struct PartOne;
+impl Part for PartOne {
     fn precedence(&self, op: &Operator) -> u8 {
         match op {
             Operator::Add => 1,
@@ -61,8 +61,8 @@ impl Part for PartA {
         }
     }
 }
-struct PartB;
-impl Part for PartB {
+struct PartTwo;
+impl Part for PartTwo {
     fn precedence(&self, op: &Operator) -> u8 {
         match op {
             Operator::Add => 2,
@@ -222,21 +222,21 @@ pub const SOLUTION: Solution = Solution {
     name: "Operation Order",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let expressions = Expression::gather(input.expect_input()?.lines())?;
 
             // Process
-            solve(&expressions, &PartA)
+            solve(&expressions, &PartOne)
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let expressions = Expression::gather(input.expect_input()?.lines())?;
 
             // Process
-            solve(&expressions, &PartB)
+            solve(&expressions, &PartTwo)
         },
     ],
 };

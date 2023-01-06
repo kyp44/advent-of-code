@@ -101,10 +101,10 @@ impl Deck {
 }
 
 trait Part {}
-struct PartA;
-impl Part for PartA {}
-struct PartB;
-impl Part for PartB {}
+struct PartOne;
+impl Part for PartOne {}
+struct PartTwo;
+impl Part for PartTwo {}
 
 trait GamePart<P: Part> {
     fn play(&mut self) -> &Deck;
@@ -148,7 +148,7 @@ impl Game {
         }
     }
 }
-impl GamePart<PartA> for Game {
+impl GamePart<PartOne> for Game {
     fn play(&mut self) -> &Deck {
         loop {
             if self.player1.done() {
@@ -169,7 +169,7 @@ impl GamePart<PartA> for Game {
         }
     }
 }
-impl GamePart<PartB> for Game {
+impl GamePart<PartTwo> for Game {
     fn play(&mut self) -> &Deck {
         let mut history = HashSet::new();
 
@@ -197,7 +197,7 @@ impl GamePart<PartB> for Game {
                     &self.player1.cards[(s1 - Into::<usize>::into(c1))..],
                     &self.player2.cards[(s2 - Into::<usize>::into(c2))..],
                 );
-                if GamePart::<PartB>::play(&mut sub_game).player == 1 {
+                if GamePart::<PartTwo>::play(&mut sub_game).player == 1 {
                     self.player1.place_bottom(c1);
                     self.player1.place_bottom(c2);
                 } else {
@@ -221,21 +221,21 @@ pub const SOLUTION: Solution = Solution {
     name: "Crab Combat",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let mut game: Game = input.expect_input()?.parse()?;
 
             // Process
-            Ok(GamePart::<PartA>::play(&mut game).score().into())
+            Ok(GamePart::<PartOne>::play(&mut game).score().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let mut game: Game = input.expect_input()?.parse()?;
 
             // Process
-            Ok(GamePart::<PartB>::play(&mut game).score().into())
+            Ok(GamePart::<PartTwo>::play(&mut game).score().into())
         },
     ],
 };

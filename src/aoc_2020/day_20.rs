@@ -633,7 +633,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Jurassic Jigsaw",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let solver: Solver = input.expect_input()?.parse()?;
@@ -648,7 +648,7 @@ pub const SOLUTION: Solution = Solution {
                 .product::<u64>()
                 .into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let solver: Solver = input.expect_input()?.parse()?;

@@ -363,7 +363,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Wizard Simulator 20XX",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let boss = Character::from_str(input.expect_input()?)?;
@@ -388,7 +388,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(solve(player, boss, false)?.into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let boss = Character::from_str(input.expect_input()?)?;

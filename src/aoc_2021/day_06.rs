@@ -58,7 +58,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Lanternfish",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation and process
             Ok(Simulation::from_str(input.expect_input()?)?
@@ -66,7 +66,7 @@ pub const SOLUTION: Solution = Solution {
                 .unwrap()
                 .into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation and process
             Ok(Simulation::from_str(input.expect_input()?)?

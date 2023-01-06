@@ -145,7 +145,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Binary Diagnostic",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let report = Report::from_str(input.expect_input()?)?;
@@ -153,7 +153,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(report.power_consumption()?.into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let report = Report::from_str(input.expect_input()?)?;

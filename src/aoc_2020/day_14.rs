@@ -105,7 +105,7 @@ trait Mask: for<'a> From<&'a [MaskBit]> + Default {
     }
 }
 
-// Mask for decoder chip v1 (Part a)
+// Mask for decoder chip v1 (Part one
 struct MaskV1 {
     reset_mask: u64,
     set_mask: u64,
@@ -136,7 +136,7 @@ impl Mask for MaskV1 {
     }
 }
 
-// Mask for decoder chip v2 (Part b)
+// Mask for decoder chip v2 (Part two
 struct MaskV2 {
     reset_mask: u64,
     set_masks: Vec<u64>,
@@ -222,7 +222,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Docking Data",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let program: Program = input.expect_input()?.parse()?;
@@ -230,7 +230,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(program.execute::<MaskV1>().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let program: Program = input.expect_input()?.parse()?;

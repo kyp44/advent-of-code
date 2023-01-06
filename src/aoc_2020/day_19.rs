@@ -120,10 +120,10 @@ trait Part {
         rule
     }
 }
-struct PartA;
-impl Part for PartA {}
-struct PartB;
-impl Part for PartB {
+struct PartOne;
+impl Part for PartOne {}
+struct PartTwo;
+impl Part for PartTwo {
     fn fix_rule<'a>(&self, num: usize, rule: Rule<'a>) -> Rule<'a> {
         match num {
             8 => Rule::Seq(vec![vec![42], vec![42, 8]]),
@@ -280,18 +280,18 @@ pub const SOLUTION: Solution = Solution {
     name: "Monster Messages",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
-            let problem = Problem::from_str(input.expect_input()?, &PartA)?;
+            let problem = Problem::from_str(input.expect_input()?, &PartOne)?;
 
             // Process
             problem.solve()
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
-            let problem = Problem::from_str(input.expect_input()?, &PartB)?;
+            let problem = Problem::from_str(input.expect_input()?, &PartTwo)?;
 
             // Process
             problem.solve()

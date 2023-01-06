@@ -192,7 +192,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Medicine for Rudolph",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let machine = Machine::from_str(input.expect_input()?)?;
@@ -206,7 +206,7 @@ pub const SOLUTION: Solution = Solution {
             let set: HashSet<String> = machine.replace_iter(&machine.medicine).collect();
             Ok(Answer::Unsigned(set.len().try_into().unwrap()))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let machine = Machine::from_str(input.expect_input()?)?;

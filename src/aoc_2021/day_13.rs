@@ -184,7 +184,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Transparent Origami",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let problem = Problem::from_str(input.expect_input()?)?;
@@ -196,7 +196,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(Answer::Unsigned(first_fold.len().try_into().unwrap()))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let problem = Problem::from_str(input.expect_input()?)?;
@@ -204,9 +204,9 @@ pub const SOLUTION: Solution = Solution {
             // This is a little annoying because it requires looking at letters in the folded image,
             // which cannot reallly be done in automated way easily.
             let last_page = problem.apply_folds().last().unwrap();
-            println!("Part b) folded image:\n");
+            println!("Part two folded image:\n");
             println!("{last_page:?}");
-            println!("Part b) actual answer: JGAJEFKU\n");
+            println!("Part two actual answer: JGAJEFKU\n");
 
             // Process
             Ok(Answer::Unsigned(last_page.len().try_into().unwrap()))

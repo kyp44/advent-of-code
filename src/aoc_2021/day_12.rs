@@ -264,7 +264,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Passage Pathing",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let cave_system = CaveSystem::from_str(input.expect_input()?)?;
@@ -278,7 +278,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(Answer::Unsigned(paths.len().try_into().unwrap()))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let cave_system = CaveSystem::from_str(input.expect_input()?)?;

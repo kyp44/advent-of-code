@@ -121,7 +121,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Trick Shot",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let target_area = TargetArea::from_str(input.expect_input()?)?;
@@ -131,7 +131,7 @@ pub const SOLUTION: Solution = Solution {
                 target_area.peaks().max().unwrap().try_into().unwrap(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let target_area = TargetArea::from_str(input.expect_input()?)?;

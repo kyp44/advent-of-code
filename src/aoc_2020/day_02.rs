@@ -104,21 +104,25 @@ pub const SOLUTION: Solution = Solution {
     name: "Password Philosophy",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let passwords = Password::gather(input.expect_input()?.lines())?;
 
             // Processing
-            Ok(Answer::Unsigned(passwords.iter().filter_count(|p| p.valid_part_a())))
+            Ok(Answer::Unsigned(
+                passwords.iter().filter_count(|p| p.valid_part_a()),
+            ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let passwords = Password::gather(input.expect_input()?.lines())?;
 
             // Processing
-            Ok(Answer::Unsigned(passwords.iter().filter_count(|p| p.valid_part_b())))
+            Ok(Answer::Unsigned(
+                passwords.iter().filter_count(|p| p.valid_part_b()),
+            ))
         },
     ],
 };

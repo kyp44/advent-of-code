@@ -143,8 +143,8 @@ trait Part {
     fn select_cost(&self, min_max: &(u32, u32)) -> u32;
     fn win_or_lose(&self, won: bool) -> bool;
 }
-struct PartA;
-impl Part for PartA {
+struct PartOne;
+impl Part for PartOne {
     fn select_cost(&self, min_max: &(u32, u32)) -> u32 {
         min_max.0
     }
@@ -153,8 +153,8 @@ impl Part for PartA {
         won
     }
 }
-struct PartB;
-impl Part for PartB {
+struct PartTwo;
+impl Part for PartTwo {
     fn select_cost(&self, min_max: &(u32, u32)) -> u32 {
         min_max.1
     }
@@ -210,7 +210,7 @@ pub const SOLUTION: Solution = Solution {
     name: "RPG Simulator 20XX",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let problem = Problem::new(Character::from_str(input.expect_input()?)?);
@@ -221,15 +221,15 @@ pub const SOLUTION: Solution = Solution {
             player.battle(&boss);*/
 
             // Process
-            Ok(problem.solve(&PartA)?.into())
+            Ok(problem.solve(&PartOne)?.into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let problem = Problem::new(Character::from_str(input.expect_input()?)?);
 
             // Process
-            Ok(problem.solve(&PartB)?.into())
+            Ok(problem.solve(&PartTwo)?.into())
         },
     ],
 };

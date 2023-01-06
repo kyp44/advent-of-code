@@ -29,19 +29,19 @@ mod solution {
 
     /// Simply denotes which part of the problem we are solving.
     pub trait Part {}
-    /// Denotes part a).
-    pub struct PartA;
-    impl Part for PartA {}
-    /// Denotes part b).
-    pub struct PartB;
-    impl Part for PartB {}
+    /// Denotes part one.
+    pub struct PartOne;
+    impl Part for PartOne {}
+    /// Denotes part two.
+    pub struct PartTwo;
+    impl Part for PartTwo {}
 
     /// Provides a method to identify if something is nice.
     pub trait Nice<P: Part> {
         /// Determines whether the object is nice (`true`) or naughty (`false`).
         fn is_nice(&self) -> bool;
     }
-    impl Nice<PartA> for &str {
+    impl Nice<PartOne> for &str {
         fn is_nice(&self) -> bool {
             /// Array of English vowels, not including y.
             const VOWELS: &[char] = &['a', 'e', 'i', 'o', 'u'];
@@ -59,7 +59,7 @@ mod solution {
                 && BAD_STRS.iter().all(|bs| !self.contains(bs))
         }
     }
-    impl Nice<PartB> for &str {
+    impl Nice<PartTwo> for &str {
         fn is_nice(&self) -> bool {
             // Pair of letters appearing twice but not overlapping
             (0..self.len() - 3).any(|i| self[i + 2..].contains(&self[i..i + 2]))
@@ -78,24 +78,24 @@ pub const SOLUTION: Solution = Solution {
     name: "Doesn't He Have Intern-Elves For This?",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Process
             Ok(Answer::Unsigned(
                 input
                     .expect_input()?
                     .lines()
-                    .filter_count(|s| Nice::<PartA>::is_nice(s)),
+                    .filter_count(|s| Nice::<PartOne>::is_nice(s)),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Process
             Ok(Answer::Unsigned(
                 input
                     .expect_input()?
                     .lines()
-                    .filter_count(|s| Nice::<PartB>::is_nice(s)),
+                    .filter_count(|s| Nice::<PartTwo>::is_nice(s)),
             ))
         },
     ],

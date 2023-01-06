@@ -96,7 +96,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Rambunctious Recitation",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let game = Game::from_str(input.expect_input()?.trim())?;
@@ -104,7 +104,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(game.play(2020).into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let game = Game::from_str(input.expect_input()?.trim())?;

@@ -165,14 +165,14 @@ trait Part {
         true
     }
 }
-struct PartA {}
-impl Part for PartA {
+struct PartOne {}
+impl Part for PartOne {
     fn line_filter(line: &&Line) -> bool {
         line.from.x == line.to.x || line.from.y == line.to.y
     }
 }
-struct PartB {}
-impl Part for PartB {}
+struct PartTwo {}
+impl Part for PartTwo {}
 
 struct Vents {
     lines: Box<[Line]>,
@@ -225,23 +225,23 @@ pub const SOLUTION: Solution = Solution {
     name: "Hydrothermal Venture",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let vents = Vents::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(u64::try_from(vents.num_overlap_points::<PartA>()?)
+            Ok(u64::try_from(vents.num_overlap_points::<PartOne>()?)
                 .unwrap()
                 .into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let vents = Vents::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(u64::try_from(vents.num_overlap_points::<PartB>()?)
+            Ok(u64::try_from(vents.num_overlap_points::<PartTwo>()?)
                 .unwrap()
                 .into())
         },

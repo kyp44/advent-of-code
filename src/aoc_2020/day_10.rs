@@ -74,7 +74,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Adapter Array",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let joltages = parse_joltages(input.expect_input()?)?;
@@ -91,7 +91,7 @@ pub const SOLUTION: Solution = Solution {
             let count_diffs = |n| -> u64 { diffs.iter().filter_count(|d| **d == n) };
             Ok((count_diffs(1) * count_diffs(3)).into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let joltages = parse_joltages(input.expect_input()?)?;

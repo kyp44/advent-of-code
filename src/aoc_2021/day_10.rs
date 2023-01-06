@@ -154,7 +154,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Syntax Scoring",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let lines = Line::gather(input.expect_input()?.lines())?;
@@ -172,7 +172,7 @@ pub const SOLUTION: Solution = Solution {
                 .sum::<u64>()
                 .into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let lines = Line::gather(input.expect_input()?.lines())?;

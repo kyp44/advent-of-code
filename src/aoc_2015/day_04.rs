@@ -23,16 +23,16 @@ mod solution {
         fn check_third_byte(byte: u8) -> bool;
     }
 
-    /// Behavior for part a).
-    pub struct PartA;
-    impl Part for PartA {
+    /// Behavior for part one.
+    pub struct PartOne;
+    impl Part for PartOne {
         fn check_third_byte(byte: u8) -> bool {
             byte & 0xF0 == 0
         }
     }
-    /// Behavior for part b).
-    pub struct PartB;
-    impl Part for PartB {
+    /// Behavior for part two.
+    pub struct PartTwo;
+    impl Part for PartTwo {
         fn check_third_byte(byte: u8) -> bool {
             byte == 0
         }
@@ -66,9 +66,9 @@ pub const SOLUTION: Solution = Solution {
     name: "The Ideal Stocking Stuffer",
     preprocessor: None,
     solvers: &[
-        // Part a)
-        |input| Ok(solve::<PartA>(input.expect_input()?).into()),
-        // Part b)
-        |input| Ok(solve::<PartB>(input.expect_input()?).into()),
+        // Part one
+        |input| Ok(solve::<PartOne>(input.expect_input()?).into()),
+        // Part two
+        |input| Ok(solve::<PartTwo>(input.expect_input()?).into()),
     ],
 };

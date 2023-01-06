@@ -68,7 +68,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Let It Snow",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let problem: Problem = input.expect_input()?.parse()?;

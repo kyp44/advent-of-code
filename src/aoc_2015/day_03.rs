@@ -72,9 +72,9 @@ mod solution {
         fn visited_houses(directions: &[Direction]) -> HashSet<Point>;
     }
 
-    /// Behavior for part a).
-    pub struct PartA;
-    impl Part for PartA {
+    /// Behavior for part one.
+    pub struct PartOne;
+    impl Part for PartOne {
         fn visited_houses(directions: &[Direction]) -> HashSet<Point> {
             let mut vh: HashSet<Point> = directions
                 .iter()
@@ -88,9 +88,9 @@ mod solution {
         }
     }
 
-    /// Behavior for part b).
-    pub struct PartB;
-    impl Part for PartB {
+    /// Behavior for Part two.
+    pub struct PartTwo;
+    impl Part for PartTwo {
         fn visited_houses(directions: &[Direction]) -> HashSet<Point> {
             let mut vh = HashSet::new();
             vh.insert(Vector2::zero());
@@ -139,24 +139,24 @@ pub const SOLUTION: Solution = Solution {
     name: "Perfectly Spherical Houses in a Vacuum",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let houses = Directions::from_str(input.expect_input()?)?;
 
             // Process
             Ok(Answer::Unsigned(
-                houses.visited_houses::<PartA>().len().try_into().unwrap(),
+                houses.visited_houses::<PartOne>().len().try_into().unwrap(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let houses = Directions::from_str(input.expect_input()?)?;
 
             // Process
             Ok(Answer::Unsigned(
-                houses.visited_houses::<PartB>().len().try_into().unwrap(),
+                houses.visited_houses::<PartTwo>().len().try_into().unwrap(),
             ))
         },
     ],

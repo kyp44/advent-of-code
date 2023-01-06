@@ -1,5 +1,3 @@
-use std::convert::TryInto;
-
 use crate::aoc::prelude::*;
 
 #[cfg(test)]
@@ -20,15 +18,23 @@ mod tests {
     }
 }
 
-trait Password {
-    fn is_valid(&self) -> bool;
-}
-impl Password for str {
-    fn is_valid(&self) -> bool {
-        const BAD_CHARS: &[char] = &['i', 'o', 'l'];
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use std::convert::TryInto;
 
-        // Contains a straight of 3 consecutive letters
-        self.chars()
+    /// Capability to determine if a password is valid.
+    trait Password {
+        /// Determines if the password is valid according to the security restrictions.
+        fn is_valid(&self) -> bool;
+    }
+    impl Password for str {
+        fn is_valid(&self) -> bool {
+            /// Disallowed characters according to the security rules.
+            const BAD_CHARS: &[char] = &['i', 'o', 'l'];
+
+            // Contains a straight of 3 consecutive letters
+            self.chars()
             .collect::<Vec<char>>()
             .windows(3)
             .any(|w| (0..3).all(|i: usize| w[i] == char_add(w[0], i.try_into().unwrap())))
@@ -36,62 +42,75 @@ impl Password for str {
         && BAD_CHARS.iter().all(|c| !self.contains(*c))
         // Two different, non-overlapping pairs
         && FilterCount::<_, usize>::filter_count(self.split_runs().map(|s| s.len()), |n| *n > 1) > 1
-    }
-}
-
-struct LexOrder {
-    chars: Vec<char>,
-}
-impl LexOrder {
-    fn new(s: &str) -> Self {
-        LexOrder {
-            chars: s.chars().rev().collect(),
         }
     }
-}
-impl Iterator for LexOrder {
-    type Item = String;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.chars.is_empty() {
-            return None;
-        }
-        let mut i = 0;
-        loop {
-            if self.chars[i] == 'z' {
-                if i == self.chars.len() - 1 {
-                    return None;
-                }
-                self.chars[i] = 'a';
-                i += 1;
-            } else {
-                self.chars[i] = char_add(self.chars[i], 1);
-                break;
+    /// [Iterator] over passwords where each character is incremented by lexical order.
+    pub struct LexOrder {
+        /// Current string.
+        chars: Vec<char>,
+    }
+    impl LexOrder {
+        /// Create a new [Iterator] from a starting string.
+        fn new(s: &str) -> Self {
+            LexOrder {
+                chars: s.chars().rev().collect(),
             }
         }
-        Some(self.chars.iter().rev().collect())
+
+        /// Returns an [Iterator] from a starting string of only valid passwords.
+        pub fn valid(s: &str) -> impl Iterator<Item = String> {
+            Self::new(s).filter(|s| s.is_valid())
+        }
+    }
+    impl Iterator for LexOrder {
+        type Item = String;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            if self.chars.is_empty() {
+                return None;
+            }
+            let mut i = 0;
+            loop {
+                if self.chars[i] == 'z' {
+                    if i == self.chars.len() - 1 {
+                        return None;
+                    }
+                    self.chars[i] = 'a';
+                    i += 1;
+                } else {
+                    self.chars[i] = char_add(self.chars[i], 1);
+                    break;
+                }
+            }
+            Some(self.chars.iter().rev().collect())
+        }
     }
 }
 
-fn valid_iter(s: &str) -> impl Iterator<Item = String> {
-    LexOrder::new(s).filter(|s| s.is_valid())
-}
+use solution::*;
 
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 11,
     name: "Corporate Policy",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
-            let new_pw = valid_iter(input.expect_input()?.trim()).next().unwrap();
-            //println!("{}", new_pw);
-            Ok(new_pw.into())
+            // Generation
+            let mut passwords = LexOrder::valid(input.expect_input()?.trim());
+
+            // Process
+            Ok(passwords.next().unwrap().into())
         },
-        // Part b)
+        // Part two
         |input| {
-            let new_pw = valid_iter(input.expect_input()?.trim()).nth(1).unwrap();
-            Ok(new_pw.into())
+            // Generation
+            let mut passwords = LexOrder::valid(input.expect_input()?.trim());
+
+            // Process
+            Ok(passwords.nth(1).unwrap().into())
         },
     ],
 };

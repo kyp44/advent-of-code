@@ -213,7 +213,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Passport Processing",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let passports = parse_passports(input.expect_input()?)?;
@@ -223,7 +223,7 @@ pub const SOLUTION: Solution = Solution {
                 passports.iter().filter_count(|p| passport_valid_part_a(p)),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let passports = parse_passports(input.expect_input()?)?;

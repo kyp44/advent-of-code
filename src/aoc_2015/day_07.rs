@@ -267,7 +267,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Some Assembly Required",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let mut circuit = Circuit::from_str(input.expect_input()?)?;
@@ -275,12 +275,12 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let mut circuit = Circuit::from_str(input.expect_input()?)?;
 
-            // Find part a) solution an override
+            // Find Part one solution an override
             let a = circuit.determine_signal("a")?;
             circuit.override_wire("b", a)?;
 

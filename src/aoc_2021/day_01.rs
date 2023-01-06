@@ -41,7 +41,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Sonar Sweep",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let depths = u64::gather(input.expect_input()?.lines())?;
@@ -49,7 +49,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(depths.into_iter().count_increases().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let depths = u64::gather(input.expect_input()?.lines())?;

@@ -96,7 +96,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Not Quite Lisp",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let directions = Directions::from_str(input.expect_input()?)?;
@@ -104,7 +104,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(directions.floors().last().unwrap().into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let directions = Directions::from_str(input.expect_input()?)?;

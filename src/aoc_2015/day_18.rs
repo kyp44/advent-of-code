@@ -29,11 +29,11 @@ trait Part {
     }
 }
 #[derive(Clone)]
-struct PartA;
-impl Part for PartA {}
+struct PartOne;
+impl Part for PartOne {}
 #[derive(Clone)]
-struct PartB;
-impl Part for PartB {
+struct PartTwo;
+impl Part for PartTwo {
     fn stuck_points(grid: &Grid<bool>) -> HashSet<GridPoint> {
         let size = grid.size();
         hashset![
@@ -46,7 +46,7 @@ impl Part for PartB {
 }
 
 #[derive(Clone, CharGridDebug)]
-#[generics(PartB)]
+#[generics(PartTwo)]
 struct LightGrid<P> {
     grid: Grid<bool>,
     phant: PhantomData<P>,
@@ -138,18 +138,18 @@ pub const SOLUTION: Solution = Solution {
     name: "Like a GIF For Your Yard",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
-            let grid = LightGrid::<PartA>::from_str(input.expect_input()?)?;
+            let grid = LightGrid::<PartOne>::from_str(input.expect_input()?)?;
 
             // Process
             solve(&grid)
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
-            let grid = LightGrid::<PartB>::from_str(input.expect_input()?)?;
+            let grid = LightGrid::<PartTwo>::from_str(input.expect_input()?)?;
 
             /*for grid in grid.evolutions().take(5) {
                 println!("{:?}", grid);

@@ -485,7 +485,7 @@ pub const SOLUTION: Solution = Solution {
         }))
     }),
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Now build a set of all points (beacons) relative to scanner 0
             let data = expect_data!(Year2021Day19, input)?;
@@ -502,7 +502,7 @@ pub const SOLUTION: Solution = Solution {
 
             Ok(Answer::Unsigned(points.len().try_into().unwrap()))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let data = expect_data!(Year2021Day19, input)?;

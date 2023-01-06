@@ -69,7 +69,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Infinite Elves and Infinite Houses",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let delivery = Delivery::new(usize::from_str(input.expect_input()?)?, 10, None);
@@ -81,7 +81,7 @@ pub const SOLUTION: Solution = Solution {
 
             Ok(delivery.first_house()?.into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let delivery = Delivery::new(usize::from_str(input.expect_input()?)?, 11, Some(50));

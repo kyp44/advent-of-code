@@ -178,7 +178,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Opening the Turing Lock",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let program: Program = input.expect_input()?.parse()?;
@@ -191,7 +191,7 @@ pub const SOLUTION: Solution = Solution {
             let end_state = program.execute(State::new(0, 0));
             Ok(end_state.registers[&Register::B].into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let program: Program = input.expect_input()?.parse()?;

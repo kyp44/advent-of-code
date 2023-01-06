@@ -134,7 +134,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Rain Risk",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let instructions = Instruction::gather(input.expect_input()?.lines())?;
@@ -144,7 +144,7 @@ pub const SOLUTION: Solution = Solution {
                 Ship::follow_ship_instructions(&instructions).manhatten(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let instructions = Instruction::gather(input.expect_input()?.lines())?;

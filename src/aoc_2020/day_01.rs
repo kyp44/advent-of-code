@@ -27,7 +27,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Report Repair",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let values = Expense::gather(input.expect_input()?.lines())?;
@@ -45,7 +45,7 @@ pub const SOLUTION: Solution = Solution {
                 }
             }
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let values = Expense::gather(input.expect_input()?.lines())?;

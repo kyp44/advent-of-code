@@ -117,7 +117,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Encoding Error",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let packet: XmasPacket = input.expect_input()?.parse()?;
@@ -125,7 +125,7 @@ pub const SOLUTION: Solution = Solution {
             // Processing
             verify_invalid(&packet).map(|n| n.into())
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let packet: XmasPacket = input.expect_input()?.parse()?;

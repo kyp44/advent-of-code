@@ -215,7 +215,7 @@ pub const SOLUTION: Solution = Solution {
     name: "Seven Segment Search",
     preprocessor: None,
     solvers: &[
-        // Part a)
+        // Part one
         |input| {
             // Generation
             let lines = Line::gather(input.expect_input()?.lines())?;
@@ -235,7 +235,7 @@ pub const SOLUTION: Solution = Solution {
                 num_digits.into_iter().sum::<usize>().try_into().unwrap(),
             ))
         },
-        // Part b)
+        // Part two
         |input| {
             // Generation
             let lines = Line::gather(input.expect_input()?.lines())?;
