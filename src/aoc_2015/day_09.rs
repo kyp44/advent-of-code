@@ -1,16 +1,4 @@
-use std::{
-    collections::{HashMap, HashSet},
-    hash,
-};
-
-use itertools::Itertools;
-use nom::{
-    bytes::complete::{tag, take_until},
-    combinator::map,
-    sequence::separated_pair,
-};
-
-use crate::aoc::{parse::separated, prelude::*};
+use crate::aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
@@ -27,94 +15,126 @@ Dublin to Belfast = 141",
     }
 }
 
-#[derive(Debug)]
-struct Distance<'a> {
-    source: &'a str,
-    destination: &'a str,
-    distance: u64,
-}
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use crate::aoc::parse::separated;
+    use itertools::Itertools;
+    use nom::{
+        bytes::complete::{tag, take_until},
+        combinator::map,
+        sequence::separated_pair,
+    };
+    use std::{
+        collections::{HashMap, HashSet},
+        hash,
+    };
 
-impl<'a> Parseable<'a> for Distance<'a> {
-    fn parser(input: &'a str) -> NomParseResult<&str, Self> {
-        map(
-            separated_pair(
-                separated_pair(take_until(" "), separated(tag("to")), take_until(" ")),
-                separated(tag("=")),
-                nom::character::complete::u64,
-            ),
-            |((source, destination), distance)| Distance {
-                source,
-                destination,
-                distance,
-            },
-        )(input.trim())
+    /// A distance from one city to another that can be parsed from text input.
+    #[derive(Debug)]
+    struct Distance<'a> {
+        /// Name of the origin city.
+        origin: &'a str,
+        /// Name of the destination city.
+        destination: &'a str,
+        /// Distance between the two cities
+        distance: u64,
     }
-}
+    impl<'a> Parseable<'a> for Distance<'a> {
+        fn parser(input: &'a str) -> NomParseResult<&str, Self> {
+            map(
+                separated_pair(
+                    separated_pair(take_until(" "), separated(tag("to")), take_until(" ")),
+                    separated(tag("=")),
+                    nom::character::complete::u64,
+                ),
+                |((source, destination), distance)| Distance {
+                    origin: source,
+                    destination,
+                    distance,
+                },
+            )(input.trim())
+        }
+    }
 
-#[derive(Eq)]
-struct Transit<'a>(&'a str, &'a str);
-impl<'a> PartialEq for Transit<'a> {
-    /// Equality should not depend on the order.
-    fn eq(&self, other: &Self) -> bool {
-        (self.0 == other.0 && self.1 == other.1) || (self.0 == other.1 && self.1 == other.0)
+    /// Represents an abstract transit from between cities without regard to
+    /// which is the source and which is the destination.
+    #[derive(Eq)]
+    struct Transit<'a>(&'a str, &'a str);
+    impl<'a> PartialEq for Transit<'a> {
+        /// Equality should not depend on the order.
+        fn eq(&self, other: &Self) -> bool {
+            (self.0 == other.0 && self.1 == other.1) || (self.0 == other.1 && self.1 == other.0)
+        }
     }
-}
-impl<'a> hash::Hash for Transit<'a> {
-    /// Need a hash such that it is the same regardless of the order.
-    fn hash<H: hash::Hasher>(&self, state: &mut H) {
-        if self.0 <= self.1 {
-            self.0.hash(state);
-            self.1.hash(state);
-        } else {
-            self.1.hash(state);
-            self.0.hash(state);
+    impl<'a> hash::Hash for Transit<'a> {
+        /// Need a hash such that it is the same regardless of the order.
+        fn hash<H: hash::Hasher>(&self, state: &mut H) {
+            if self.0 <= self.1 {
+                self.0.hash(state);
+                self.1.hash(state);
+            } else {
+                self.1.hash(state);
+                self.0.hash(state);
+            }
+        }
+    }
+
+    /// Problem definition.
+    pub struct Problem<'a> {
+        /// Set of all cities names.
+        cities: HashSet<&'a str>,
+        /// Map of transits to numeric distances.
+        distances: HashMap<Transit<'a>, u64>,
+    }
+    impl<'a> Problem<'a> {
+        /// Parse the problem from text input.
+        pub fn from_str(input: &'a str) -> AocResult<Self> {
+            let mut cities = HashSet::new();
+            let mut distances = HashMap::new();
+            let raw_distances = Distance::gather(input.lines())?;
+
+            for dist in raw_distances {
+                cities.insert(dist.origin);
+                cities.insert(dist.destination);
+                distances.insert(Transit(dist.origin, dist.destination), dist.distance);
+            }
+
+            Ok(Problem { cities, distances })
+        }
+
+        /// Calculates the distance along the route travel through a list of cities.
+        fn route_distance(&self, route: &[&str]) -> u64 {
+            route
+                .windows(2)
+                .map(|ws| self.distances.get(&Transit(ws[0], ws[1])).unwrap())
+                .sum()
+        }
+
+        /// Returns an [Iterator] over the distances for all possible routes.
+        fn routes_distances(&self) -> impl Iterator<Item = u64> + '_ {
+            self.cities
+                .iter()
+                .copied()
+                .permutations(self.cities.len())
+                .map(move |r| self.route_distance(&r))
+        }
+
+        /// Determines the shortest distance among all possible routes.
+        pub fn shortest_distance(&self) -> u64 {
+            self.routes_distances().min().unwrap()
+        }
+
+        /// Determines the longest distance among all possible routes.
+        pub fn longest_distance(&self) -> u64 {
+            self.routes_distances().max().unwrap()
         }
     }
 }
 
-struct Problem<'a> {
-    cities: HashSet<&'a str>,
-    distances: HashMap<Transit<'a>, u64>,
-}
-impl<'a> Problem<'a> {
-    fn from_str(input: &'a str) -> AocResult<Self> {
-        let mut cities = HashSet::new();
-        let mut distances = HashMap::new();
-        let raw_distances = Distance::gather(input.lines())?;
+use solution::*;
 
-        for dist in raw_distances {
-            cities.insert(dist.source);
-            cities.insert(dist.destination);
-            distances.insert(Transit(dist.source, dist.destination), dist.distance);
-        }
-
-        Ok(Problem { cities, distances })
-    }
-
-    fn route_distance(&self, route: &[&str]) -> u64 {
-        route
-            .windows(2)
-            .map(|ws| self.distances.get(&Transit(ws[0], ws[1])).unwrap())
-            .sum()
-    }
-
-    fn routes_distances(&self) -> impl Iterator<Item = u64> + '_ {
-        self.cities
-            .iter()
-            .copied()
-            .permutations(self.cities.len())
-            .map(move |r| self.route_distance(&r))
-    }
-
-    fn shortest_distance(&self) -> u64 {
-        self.routes_distances().min().unwrap()
-    }
-
-    fn longest_distance(&self) -> u64 {
-        self.routes_distances().max().unwrap()
-    }
-}
-
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 9,
     name: "All in a Single Night",

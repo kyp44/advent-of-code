@@ -1,7 +1,3 @@
-use std::convert::TryInto;
-
-use nom::{character::complete::digit1, combinator::map};
-
 use crate::aoc::prelude::*;
 
 #[cfg(test)]
@@ -22,31 +18,44 @@ mod tests {
     }
 }
 
-struct Sequence {
-    current: Option<String>,
-}
-impl Parseable<'_> for Sequence {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        map(digit1, |ds: &str| Sequence {
-            current: Some(ds.to_string()),
-        })(input.trim())
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use nom::{character::complete::digit1, combinator::map};
+    use takeable::Takeable;
+
+    /// Number sequence that can be parsed from text input.
+    ///
+    /// Also an [Iterator] to iterate over the look-and-say sequence of sequences.
+    pub struct Sequence {
+        /// Sequence for the next iteration.
+        current: Takeable<String>,
+    }
+    impl Parseable<'_> for Sequence {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            map(digit1, |ds: &str| Sequence {
+                current: ds.to_string().into(),
+            })(input.trim())
+        }
+    }
+    impl Iterator for Sequence {
+        type Item = String;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            let next = self.current.take();
+
+            self.current = Takeable::new(
+                next.split_runs()
+                    .map(|s| format!("{}{}", s.len(), s.chars().next().unwrap()))
+                    .collect(),
+            );
+            Some(next)
+        }
     }
 }
-impl Iterator for Sequence {
-    type Item = String;
+use solution::*;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        let next = self.current.take().unwrap();
-
-        self.current = Some(
-            next.split_runs()
-                .map(|s| format!("{}{}", s.len(), s.chars().next().unwrap()))
-                .collect(),
-        );
-        Some(next)
-    }
-}
-
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 10,
     name: "Elves Look, Elves Say",

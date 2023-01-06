@@ -15,37 +15,52 @@ mod tests {
     }
 }
 
-trait Part {
-    fn check_third_byte(byte: u8) -> bool;
-}
-struct PartA;
-impl Part for PartA {
-    fn check_third_byte(byte: u8) -> bool {
-        byte & 0xF0 == 0
+/// Contains solution implementation items.
+mod solution {
+    /// Behavior specific to each part of the problem.
+    pub trait Part {
+        /// Whether the third byte of a MD5 hash meets the criteria for this part.
+        fn check_third_byte(byte: u8) -> bool;
     }
-}
-struct PartB;
-impl Part for PartB {
-    fn check_third_byte(byte: u8) -> bool {
-        byte == 0
-    }
-}
 
-fn solve<P: Part>(input: &str) -> u64 {
-    let input = input.trim();
-
-    let mut ans: u64 = 0;
-    loop {
-        let hash = md5::compute(format!("{input}{ans}"));
-
-        // Check that the first hex digits are zero
-        if hash[0] == 0 && hash[1] == 0 && P::check_third_byte(hash[2]) {
-            break ans;
+    /// Behavior for part a).
+    pub struct PartA;
+    impl Part for PartA {
+        fn check_third_byte(byte: u8) -> bool {
+            byte & 0xF0 == 0
         }
-        ans += 1;
+    }
+    /// Behavior for part b).
+    pub struct PartB;
+    impl Part for PartB {
+        fn check_third_byte(byte: u8) -> bool {
+            byte == 0
+        }
+    }
+
+    /// Solves either part for the given text key.
+    ///
+    /// Returns the lowest positive integer such that the MD5 hash begins with the
+    /// appropriate number of zeros when appended to the key.
+    pub fn solve<P: Part>(input: &str) -> u64 {
+        let input = input.trim();
+
+        let mut ans: u64 = 0;
+        loop {
+            let hash = md5::compute(format!("{input}{ans}"));
+
+            // Check that the first hex digits are zero
+            if hash[0] == 0 && hash[1] == 0 && P::check_third_byte(hash[2]) {
+                break ans;
+            }
+            ans += 1;
+        }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 4,
     name: "The Ideal Stocking Stuffer",

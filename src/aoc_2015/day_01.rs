@@ -1,7 +1,3 @@
-use std::convert::TryInto;
-
-use nom::{character::complete::one_of, combinator::map, multi::many1};
-
 use crate::aoc::prelude::*;
 
 #[cfg(test)]
@@ -37,47 +33,64 @@ mod tests {
     }
 }
 
-enum Direction {
-    Up,
-    Down,
-}
-impl Parseable<'_> for Direction {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        map(one_of("()"), |c| match c {
-            '(' => Direction::Up,
-            ')' => Direction::Down,
-            _ => panic!(),
-        })(input)
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use nom::{character::complete::one_of, combinator::map, multi::many1};
+
+    /// A direction in which Santa can go.
+    enum Direction {
+        /// Up a floor.
+        Up,
+        /// Down a floor.
+        Down,
     }
-}
-impl Direction {
-    fn floor_change(&self) -> i64 {
-        match self {
-            Direction::Up => 1,
-            Direction::Down => -1,
+    impl Parseable<'_> for Direction {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            map(one_of("()"), |c| match c {
+                '(' => Direction::Up,
+                ')' => Direction::Down,
+                _ => panic!(),
+            })(input)
+        }
+    }
+    impl Direction {
+        /// Change in floor number if Santa goes in this direction.
+        fn floor_change(&self) -> i64 {
+            match self {
+                Direction::Up => 1,
+                Direction::Down => -1,
+            }
+        }
+    }
+
+    /// A step by step list of directions that can be parsed from text input.
+    pub struct Directions {
+        /// The list of directions.
+        directions: Box<[Direction]>,
+    }
+    impl Parseable<'_> for Directions {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            map(many1(Direction::parser), |v| Directions {
+                directions: v.into_boxed_slice(),
+            })(input)
+        }
+    }
+    impl Directions {
+        /// Returns an [Iterator] of floor numbers when the directions are followed,
+        /// starting at floor 0.
+        pub fn floors(&self) -> impl Iterator<Item = i64> + '_ {
+            self.directions.iter().scan(0i64, |a, d| {
+                *a += d.floor_change();
+                Some(*a)
+            })
         }
     }
 }
 
-struct Directions {
-    directions: Box<[Direction]>,
-}
-impl Parseable<'_> for Directions {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        map(many1(Direction::parser), |v| Directions {
-            directions: v.into_boxed_slice(),
-        })(input)
-    }
-}
-impl Directions {
-    fn floors(&self) -> impl Iterator<Item = i64> + '_ {
-        self.directions.iter().scan(0i64, |a, d| {
-            *a += d.floor_change();
-            Some(*a)
-        })
-    }
-}
+use solution::*;
 
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 1,
     name: "Not Quite Lisp",

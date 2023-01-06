@@ -1,6 +1,5 @@
-use std::str::FromStr;
-
 use crate::aoc::prelude::*;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -231,7 +230,7 @@ mod solution {
         }
     }
 
-    ///
+    /// An ALU program that can be parsed from text input.
     pub struct Program {
         /// All the instructions in execution order.
         instructions: Vec<Instruction>,

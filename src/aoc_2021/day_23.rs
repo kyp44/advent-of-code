@@ -610,6 +610,7 @@ mod solution {
 
 use solution::*;
 
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 23,
     name: "Amphipod",
