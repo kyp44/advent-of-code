@@ -113,64 +113,59 @@ mod solution {
         }
     }
 
-    /// Recursively [Iterator] over all permutations that sum to a particular value
-    #[derive(new)]
+    /// [Iterator] over all permutations of some number of numeric values that sum to a constant.
     struct SumPermutations<T> {
-        /// TODO
+        /// Number to which the permutations must sum.
         sum: T,
-        bins: usize,
-        #[new(value = "None")]
-        i: Option<T>,
-        #[new(value = "None")]
-        sub: Option<Box<SumPermutations<T>>>,
+        /// Number of elements in each permutation.
+        number: usize,
+        /// Current permutation.
+        current: Vec<T>,
+    }
+    impl<T: Clone + num::Zero> SumPermutations<T> {
+        /// Create a new permutation [Iterator].
+        fn new(sum: T, number: usize) -> Self {
+            Self {
+                sum,
+                number,
+                current: vec![T::zero(); number],
+            }
+        }
     }
     impl<T> Iterator for SumPermutations<T>
     where
-        T: Copy + num::Num + PartialOrd,
+        T: num::Num + num::Signed + std::ops::AddAssign + Ord + Copy,
     {
         type Item = Vec<T>;
 
         fn next(&mut self) -> Option<Self::Item> {
-            // Base cases
-            if self.bins == 0 {
-                return None;
-            } else if self.bins == 1 {
-                return match self.i {
-                    Some(_) => None,
-                    None => {
-                        self.i = Some(T::zero());
-                        Some(vec![self.sum])
-                    }
+            let mut idx = self.number - 1;
+
+            self.current[idx] += T::one();
+
+            // Go through each element of the permutation
+            while self.current[idx] > self.sum {
+                self.current[idx] = T::zero();
+
+                idx = if idx == 0 {
+                    return None;
+                } else {
+                    idx - 1
                 };
+
+                self.current[idx] += T::one();
+            }
+            for j in idx + 1..self.number {
+                self.current[j] = self.current[j - 1];
             }
 
-            if self.i.is_none() {
-                self.i = Some(T::zero());
-            }
-            let i = self.i.unwrap();
-            if self.sub.is_none() {
-                if i > self.sum {
-                    return None;
-                }
-                self.sub = Some(Box::new(SumPermutations::new(self.sum - i, self.bins - 1)))
-            }
-            match self.sub.as_mut().unwrap().next() {
-                Some(mut sv) => {
-                    sv.insert(0, i);
-                    Some(sv)
-                }
-                None => {
-                    self.i = Some(i + T::one());
-                    self.sub = None;
-                    self.next()
-                }
-            }
+            Some(self.current.clone())
         }
     }
 
     /// Behavior specific to a particular problem part
     pub trait Part {
-        /// Determines if a cookie with partcuilar total ingredients is valid to consider for the part.
+        /// Determines if a cookie with particular total ingredients is valid to consider for the part.
         fn valid_recipe(_ingredient: &Ingredient) -> bool {
             true
         }
