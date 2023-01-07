@@ -1,6 +1,4 @@
-use std::{collections::HashSet, marker::PhantomData, str::FromStr};
-
-use maplit::hashset;
+use std::str::FromStr;
 
 use crate::aoc::prelude::*;
 
@@ -22,117 +20,138 @@ mod tests {
     }
 }
 
-trait Part {
-    fn stuck_points(_grid: &Grid<bool>) -> HashSet<GridPoint> {
-        // No stuck points by default
-        HashSet::new()
-    }
-}
-#[derive(Clone)]
-struct PartOne;
-impl Part for PartOne {}
-#[derive(Clone)]
-struct PartTwo;
-impl Part for PartTwo {
-    fn stuck_points(grid: &Grid<bool>) -> HashSet<GridPoint> {
-        let size = grid.size();
-        hashset![
-            GridPoint::new(0, 0),
-            GridPoint::new(size.x - 1, 0),
-            GridPoint::new(0, size.y - 1),
-            GridPoint::new(size.x - 1, size.y - 1),
-        ]
-    }
-}
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use maplit::hashset;
+    use std::{collections::HashSet, marker::PhantomData};
 
-#[derive(Clone, CharGridDebug)]
-#[generics(PartTwo)]
-struct LightGrid<P> {
-    grid: Grid<bool>,
-    phant: PhantomData<P>,
-}
-impl<P: Part> CharGrid<bool> for LightGrid<P> {
-    fn from_char(c: char) -> Option<bool> {
-        match c {
-            '#' => Some(true),
-            '.' => Some(false),
-            _ => None,
+    /// Behavior specific to one particular part of the problem.
+    pub trait Part {
+        /// Given a grid, returns the set of lights that are stuck on.
+        fn stuck_points(_grid: &Grid<bool>) -> HashSet<GridPoint> {
+            // No stuck points by default
+            HashSet::new()
+        }
+    }
+    #[derive(Clone)]
+
+    /// Behavior for part one.
+    pub struct PartOne;
+    impl Part for PartOne {}
+    #[derive(Clone)]
+
+    /// Behavior for part two.
+    pub struct PartTwo;
+    impl Part for PartTwo {
+        fn stuck_points(grid: &Grid<bool>) -> HashSet<GridPoint> {
+            let size = grid.size();
+            hashset![
+                GridPoint::new(0, 0),
+                GridPoint::new(size.x - 1, 0),
+                GridPoint::new(0, size.y - 1),
+                GridPoint::new(size.x - 1, size.y - 1),
+            ]
         }
     }
 
-    fn to_char(e: &bool) -> char {
-        if *e {
-            '#'
-        } else {
-            '.'
+    /// The light grid evolver that can be parsed from text input.
+    #[derive(Clone, CharGridDebug)]
+    #[generics(PartTwo)]
+    pub struct LightGrid<P> {
+        /// The [Grid] object.
+        grid: Grid<bool>,
+        /// Phantom data for the part
+        phant: PhantomData<P>,
+    }
+    impl<P: Part> CharGrid<bool> for LightGrid<P> {
+        fn from_char(c: char) -> Option<bool> {
+            match c {
+                '#' => Some(true),
+                '.' => Some(false),
+                _ => None,
+            }
+        }
+
+        fn to_char(e: &bool) -> char {
+            if *e {
+                '#'
+            } else {
+                '.'
+            }
+        }
+
+        fn get_grid(&self) -> &Grid<bool> {
+            &self.grid
+        }
+    }
+    impl<P: Part> FromStr for LightGrid<P> {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let mut grid = Self::grid_from_str(s)?;
+            for point in P::stuck_points(&grid) {
+                grid.set(&point, true);
+            }
+            Ok(Self {
+                grid,
+                phant: PhantomData {},
+            })
+        }
+    }
+    impl<P: Part> Evolver<bool> for LightGrid<P> {
+        type Point = GridPoint;
+
+        fn next_default(other: &Self) -> Self {
+            Self {
+                grid: Grid::default(*other.grid.size()),
+                phant: PhantomData {},
+            }
+        }
+
+        fn get_element(&self, point: &Self::Point) -> bool {
+            *self.grid.get(point)
+        }
+
+        fn set_element(&mut self, point: &Self::Point, value: bool) {
+            self.grid.set(point, value)
+        }
+
+        fn next_cell(&self, point: &Self::Point) -> bool {
+            if P::stuck_points(&self.grid).contains(point) {
+                return true;
+            }
+            let occupied: usize = self
+                .grid
+                .neighbor_points(point, true, false)
+                .filter_count(|p| self.get_element(p));
+            if self.get_element(point) {
+                occupied == 2 || occupied == 3
+            } else {
+                occupied == 3
+            }
+        }
+
+        fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
+            Box::new(self.grid.all_points())
+        }
+    }
+    impl<P: Part> LightGrid<P> {
+        /// Returns the number of lights that are on.
+        fn lights_on(&self) -> u64 {
+            self.next_iter().filter_count(|point| *self.grid.get(point))
         }
     }
 
-    fn get_grid(&self) -> &Grid<bool> {
-        &self.grid
-    }
-}
-impl<P: Part> FromStr for LightGrid<P> {
-    type Err = AocError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut grid = Self::grid_from_str(s)?;
-        for point in P::stuck_points(&grid) {
-            grid.set(&point, true);
-        }
-        Ok(Self {
-            grid,
-            phant: PhantomData {},
-        })
-    }
-}
-impl<P: Part> Evolver<bool> for LightGrid<P> {
-    type Point = GridPoint;
-
-    fn next_default(other: &Self) -> Self {
-        Self {
-            grid: Grid::default(*other.grid.size()),
-            phant: PhantomData {},
-        }
-    }
-
-    fn get_element(&self, point: &Self::Point) -> bool {
-        *self.grid.get(point)
-    }
-
-    fn set_element(&mut self, point: &Self::Point, value: bool) {
-        self.grid.set(point, value)
-    }
-
-    fn next_cell(&self, point: &Self::Point) -> bool {
-        if P::stuck_points(&self.grid).contains(point) {
-            return true;
-        }
-        let occupied: usize = self
-            .grid
-            .neighbor_points(point, true, false)
-            .filter_count(|p| self.get_element(p));
-        if self.get_element(point) {
-            occupied == 2 || occupied == 3
-        } else {
-            occupied == 3
-        }
-    }
-
-    fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
-        Box::new(self.grid.all_points())
-    }
-}
-impl<P: Part> LightGrid<P> {
-    fn lights_on(&self) -> u64 {
-        self.next_iter().filter_count(|point| *self.grid.get(point))
+    /// Solve a part of the problem.
+    pub fn solve<P: Part + Clone>(grid: &LightGrid<P>) -> AocResult<Answer> {
+        Ok(grid.evolutions().nth(100 - 1).unwrap().lights_on().into())
     }
 }
 
-fn solve<P: Part + Clone>(grid: &LightGrid<P>) -> AocResult<Answer> {
-    Ok(grid.evolutions().nth(100 - 1).unwrap().lights_on().into())
-}
+use solution::*;
 
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 18,
     name: "Like a GIF For Your Yard",

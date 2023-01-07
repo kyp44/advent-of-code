@@ -13,57 +13,72 @@ mod tests {
     }
 }
 
-struct Delivery {
-    target: usize,
-    presents: Vec<usize>,
-}
-impl Delivery {
-    fn new(target: usize, present_mult: usize, house_limit: Option<usize>) -> Self {
-        // Maximum house for which we need to compute the number of presents
-        // as this is garanteed to be above the target.
-        // This was derived from the lowest even house number n such that:
-        // target <= 10*(n + n/2)
-        // since n/2 will be a divisor for even n.
-        let mut max = 2 * target / 30;
-        max += if max % 2 == 0 { 2 } else { 1 };
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
 
-        // We implement a seive that calculates all number of presents
-        // (effectively the sum of divisors) for all numbers up to max.
-        let mut presents = vec![0; max];
-        // Each elf
-        for i in 1..=max {
-            let mut count = 0;
-            let mut j = i;
-            loop {
-                presents[j - 1] += present_mult * i;
-                j += i;
-                if j > max {
-                    break;
-                }
-                count += 1;
-                if let Some(l) = house_limit {
-                    if count > l {
+    /// Represents the number of presents delivered to each house below some maximum house number.
+    pub struct Delivery {
+        /// The houses of interest are those that get at least this number of presents.
+        target: usize,
+        /// The number of presents delivered to each house.
+        presents: Vec<usize>,
+    }
+    impl Delivery {
+        /// Create a delivery base on a target number, a present multiplier (i.e. the number of
+        /// presents each elf delivers divided by its elf number), and an optional maximum
+        /// number of houses to which each elf delivers.
+        pub fn new(target: usize, present_mult: usize, house_limit: Option<usize>) -> Self {
+            // Maximum house for which we need to compute the number of presents
+            // as this is guaranteed to be above the target.
+            // This was derived from the lowest even house number n such that:
+            // target <= 10*(n + n/2)
+            // since n/2 will be a divisor for even n.
+            let mut max = 2 * target / 30;
+            max += if max % 2 == 0 { 2 } else { 1 };
+
+            // We implement a seive that calculates all number of presents
+            // (effectively the sum of divisors) for all numbers up to max.
+            let mut presents = vec![0; max];
+            // Each elf
+            for i in 1..=max {
+                let mut count = 0;
+                let mut j = i;
+                loop {
+                    presents[j - 1] += present_mult * i;
+                    j += i;
+                    if j > max {
                         break;
+                    }
+                    count += 1;
+                    if let Some(l) = house_limit {
+                        if count > l {
+                            break;
+                        }
                     }
                 }
             }
+
+            Delivery { target, presents }
         }
 
-        Delivery { target, presents }
-    }
-
-    fn first_house(&self) -> AocResult<u64> {
-        Ok((self
-            .presents
-            .iter()
-            .position(|p| *p >= self.target)
-            .ok_or_else(|| AocError::Process("No solution found!".into()))?
-            + 1)
-        .try_into()
-        .unwrap())
+        /// The first house number who got at least as many presents as the target number.
+        pub fn first_house(&self) -> AocResult<u64> {
+            Ok((self
+                .presents
+                .iter()
+                .position(|p| *p >= self.target)
+                .ok_or_else(|| AocError::Process("No solution found!".into()))?
+                + 1)
+            .try_into()
+            .unwrap())
+        }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 20,
     name: "Infinite Elves and Infinite Houses",

@@ -1,7 +1,3 @@
-use std::{convert::TryInto, str::FromStr};
-
-use itertools::Itertools;
-
 use crate::aoc::prelude::*;
 
 #[cfg(test)]
@@ -21,31 +17,44 @@ mod tests {
     }
 }
 
-struct Problem {
-    containers: Box<[u16]>,
-}
-impl FromStr for Problem {
-    type Err = AocError;
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use itertools::Itertools;
+    use std::str::FromStr;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Problem {
-            containers: u16::gather(s.lines())?.into_boxed_slice(),
-        })
+    /// Definition of the problem that can be parsed from text input.
+    pub struct Problem {
+        /// The containers that we have in liters.
+        containers: Box<[u16]>,
     }
-}
-impl Problem {
-    fn combinations(&self, amount: u16) -> impl Iterator<Item = Vec<u16>> + '_ {
-        (1..=self.containers.len())
-            .flat_map(move |k| {
-                self.containers
-                    .iter()
-                    .combinations(k)
-                    .map(|c| c.into_iter().copied().collect())
+    impl FromStr for Problem {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ok(Problem {
+                containers: u16::gather(s.lines())?.into_boxed_slice(),
             })
-            .filter(move |c: &Vec<u16>| c.iter().sum::<u16>() == amount)
+        }
+    }
+    impl Problem {
+        /// [Iterator] of all combinations of containers that hold a particular amount of eggnog in liters.
+        pub fn combinations(&self, amount: u16) -> impl Iterator<Item = Vec<u16>> + '_ {
+            (1..=self.containers.len())
+                .flat_map(move |k| {
+                    self.containers
+                        .iter()
+                        .combinations(k)
+                        .map(|c| c.into_iter().copied().collect())
+                })
+                .filter(move |c: &Vec<u16>| c.iter().sum::<u16>() == amount)
+        }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 17,
     name: "No Such Thing as Too Much",

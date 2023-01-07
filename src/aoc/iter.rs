@@ -86,13 +86,17 @@ where
     }
 }
 
-/// Iterator to replace occurrances in a string one at a time.
+/// [Iterator] to replace occurrences in a string one at a time.
 #[derive(new)]
 pub struct Replacements<'a, 'b, 'c> {
+    /// Original string.
     original: &'a str,
+    /// Current index in teh string.
     #[new(value = "0")]
     idx: usize,
+    /// Substring to replace.
     from: &'b str,
+    /// String to which to replace substrings.
     to: &'c str,
 }
 impl Iterator for Replacements<'_, '_, '_> {
@@ -110,7 +114,7 @@ impl Iterator for Replacements<'_, '_, '_> {
     }
 }
 
-/// Trait to create a Replacements iterator.
+/// Trait to create a Replacements [Iterator]].
 pub trait IndividualReplacements<'a, 'b, 'c> {
     fn individual_replacements(&'a self, from: &'b str, to: &'c str) -> Replacements<'a, 'b, 'c>;
 }
@@ -120,7 +124,7 @@ impl<'a, 'b, 'c> IndividualReplacements<'a, 'b, 'c> for str {
     }
 }
 
-/// Itearator over runs of the same characters in strings.
+/// [Iterator] over runs of the same characters in strings.
 pub struct Runs<'a> {
     remaining: &'a str,
 }

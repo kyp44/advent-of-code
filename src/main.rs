@@ -13,6 +13,7 @@
 #![feature(slice_pattern)]
 #![feature(let_chains)]
 #![feature(is_some_and)]
+#![feature(step_trait)]
 #![warn(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
 
