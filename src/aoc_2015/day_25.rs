@@ -1,11 +1,4 @@
-use nom::{
-    bytes::complete::{tag, take_until},
-    sequence::preceded,
-    Finish,
-};
-use std::str::FromStr;
-
-use crate::aoc::{parse::trim, prelude::*};
+use crate::aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
@@ -20,49 +13,70 @@ mod tests {
     }
 }
 
-struct Problem {
-    row: u64,
-    col: u64,
-}
-impl FromStr for Problem {
-    type Err = AocError;
+/// Contains solution implementation items.
+mod solution {
+    use crate::aoc::parse::trim;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let row = preceded::<_, _, _, NomParseError, _, _>(
-            take_until("row"),
-            preceded(tag("row"), trim(false, nom::character::complete::u64)),
-        )(s)
-        .finish()
-        .discard_input()?;
+    use super::*;
+    use nom::{
+        bytes::complete::{tag, take_until},
+        sequence::preceded,
+        Finish,
+    };
+    use std::str::FromStr;
 
-        let col = preceded::<_, _, _, NomParseError, _, _>(
-            take_until("column"),
-            preceded(tag("column"), trim(false, nom::character::complete::u64)),
-        )(s)
-        .finish()
-        .discard_input()?;
-
-        Ok(Problem { row, col })
+    /// Defines the problem, which can be parsed from text input.
+    pub struct Problem {
+        /// Row of the manual number we need to calculate (starts at 1).
+        row: u64,
+        /// Column of the manual number we need to calculate (starts at 1).
+        col: u64,
     }
-}
+    impl FromStr for Problem {
+        type Err = AocError;
 
-impl Problem {
-    fn solve(&self) -> AocResult<u64> {
-        // Calculate the number in the sequence of codes.
-        // This formula was derived mathematically for the diagonal table in
-        // the problem description, but starting at 0 at (1,1) instead of 1.
-        let (row, col) = (self.row, self.col);
-        let n = ((col - 1) * (col + 2) + (2 * col + row - 2) * (row - 1)) / 2;
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let row = preceded::<_, _, _, NomParseError, _, _>(
+                take_until("row"),
+                preceded(tag("row"), trim(false, nom::character::complete::u64)),
+            )(s)
+            .finish()
+            .discard_input()?;
 
-        let mut x = 20151125;
-        for _ in 0..n {
-            x = (252533 * x) % 33554393;
+            let col = preceded::<_, _, _, NomParseError, _, _>(
+                take_until("column"),
+                preceded(tag("column"), trim(false, nom::character::complete::u64)),
+            )(s)
+            .finish()
+            .discard_input()?;
+
+            Ok(Problem { row, col })
         }
+    }
 
-        Ok(x)
+    impl Problem {
+        /// Solve a part of the problem by calculating the number at the correct position.
+        pub fn solve(&self) -> AocResult<u64> {
+            let (row, col) = (self.row, self.col);
+
+            // Calculate the number in the sequence of codes from the table coordinates.
+            // See the notes for a derivation of this formula.
+            // TODO: derive this in the notes.
+            let n = ((col - 1) * (col + 2) + (2 * col + row - 2) * (row - 1)) / 2;
+
+            let mut x = 20151125;
+            for _ in 0..n {
+                x = (252533 * x) % 33554393;
+            }
+
+            Ok(x)
+        }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 25,
     name: "Let It Snow",

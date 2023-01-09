@@ -53,9 +53,8 @@ mod w 2";
 
 /// Contains solution implementation items.
 mod solution {
-    use std::str::FromStr;
-
     use enum_map::{enum_map, Enum, EnumMap};
+    use itertools::Itertools;
     use nom::{
         branch::alt,
         bytes::complete::tag,
@@ -63,6 +62,7 @@ mod solution {
         combinator::{map, opt},
         sequence::{pair, preceded},
     };
+    use std::str::FromStr;
 
     use super::*;
 
@@ -387,7 +387,6 @@ mod solution {
     }
 }
 
-use itertools::Itertools;
 use solution::*;
 
 /// Solution struct.
