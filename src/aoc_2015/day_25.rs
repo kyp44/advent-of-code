@@ -61,7 +61,7 @@ mod solution {
 
             // Calculate the number in the sequence of codes from the table coordinates.
             // See the notes for a derivation of this formula.
-            // TODO: derive this in the notes.
+            // TODO: Derive formula in the notes.
             let n = ((col - 1) * (col + 2) + (2 * col + row - 2) * (row - 1)) / 2;
 
             let mut x = 20151125;

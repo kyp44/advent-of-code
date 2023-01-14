@@ -1,17 +1,4 @@
 use crate::aoc::prelude::*;
-use nom::{
-    branch::alt,
-    bytes::complete::{is_not, tag, take_while_m_n},
-    character::complete::{line_ending, space0, space1},
-    combinator::{all_consuming, map},
-    error::context,
-    multi::separated_list1,
-    sequence::{pair, preceded, separated_pair, tuple},
-    Finish,
-};
-use std::collections::HashMap;
-use strum::IntoEnumIterator;
-use strum_macros::{EnumIter, EnumString};
 
 #[cfg(test)]
 mod tests {
@@ -65,149 +52,201 @@ iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719",
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Debug, EnumString, EnumIter)]
-enum PassportField {
-    #[strum(serialize = "byr")]
-    BirthYear,
-    #[strum(serialize = "iyr")]
-    IssueYear,
-    #[strum(serialize = "eyr")]
-    ExpirationYear,
-    #[strum(serialize = "hgt")]
-    Height,
-    #[strum(serialize = "hcl")]
-    HairColor,
-    #[strum(serialize = "ecl")]
-    EyeColor,
-    #[strum(serialize = "pid")]
-    PassportId,
-    #[strum(serialize = "cid")]
-    CountryId,
-}
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use nom::{
+        branch::alt,
+        bytes::complete::{is_not, tag, take_until, take_while_m_n},
+        character::complete::{line_ending, space1},
+        combinator::{all_consuming, map},
+        multi::separated_list1,
+        sequence::{pair, preceded, separated_pair},
+    };
+    use std::collections::HashMap;
+    use strum::IntoEnumIterator;
+    use strum_macros::{EnumIter, EnumString};
 
-impl PassportField {
-    fn valid(&self, value: &str) -> bool {
-        use PassportField::*;
-        match self {
-            BirthYear => match value.parse::<u32>() {
-                Ok(b) => (1920..=2002).contains(&b),
-                Err(_) => false,
-            },
-            IssueYear => match value.parse::<u32>() {
-                Ok(b) => (2010..=2020).contains(&b),
-                Err(_) => false,
-            },
-            ExpirationYear => match value.parse::<u32>() {
-                Ok(b) => (2020..=2030).contains(&b),
-                Err(_) => false,
-            },
-            Height => {
-                let res: NomParseResult<&str, (u32, &str)> = all_consuming(pair(
-                    nom::character::complete::u32,
-                    alt((tag("cm"), tag("in"))),
-                ))(value);
-                match res {
-                    Ok((_, (h, u))) => match u {
-                        "cm" => (150..=193).contains(&h),
-                        _ => (59..=76).contains(&h),
-                    },
+    /// Possible passport fields, which can be parsed from text input.
+    #[derive(PartialEq, Eq, Hash, Debug, EnumString, EnumIter)]
+    pub enum PassportField {
+        /// Birth year.
+        #[strum(serialize = "byr")]
+        BirthYear,
+        /// Issue year.
+        #[strum(serialize = "iyr")]
+        IssueYear,
+        /// Exppiration year.
+        #[strum(serialize = "eyr")]
+        ExpirationYear,
+        /// Person's height.
+        #[strum(serialize = "hgt")]
+        Height,
+        /// Person's hair color.
+        #[strum(serialize = "hcl")]
+        HairColor,
+        /// Person's eye color.
+        #[strum(serialize = "ecl")]
+        EyeColor,
+        /// Passport ID.
+        #[strum(serialize = "pid")]
+        PassportId,
+        /// Country ID of the passport.
+        #[strum(serialize = "cid")]
+        CountryId,
+    }
+    impl PassportField {
+        /// Given the field type, returns whether a field value is valid or not.
+        fn validate(&self, value: &str) -> bool {
+            use PassportField::*;
+            match self {
+                BirthYear => match value.parse::<u32>() {
+                    Ok(b) => (1920..=2002).contains(&b),
                     Err(_) => false,
+                },
+                IssueYear => match value.parse::<u32>() {
+                    Ok(b) => (2010..=2020).contains(&b),
+                    Err(_) => false,
+                },
+                ExpirationYear => match value.parse::<u32>() {
+                    Ok(b) => (2020..=2030).contains(&b),
+                    Err(_) => false,
+                },
+                Height => {
+                    let res: NomParseResult<&str, (u32, &str)> = all_consuming(pair(
+                        nom::character::complete::u32,
+                        alt((tag("cm"), tag("in"))),
+                    ))(value);
+                    match res {
+                        Ok((_, (h, u))) => match u {
+                            "cm" => (150..=193).contains(&h),
+                            _ => (59..=76).contains(&h),
+                        },
+                        Err(_) => false,
+                    }
                 }
+                HairColor => {
+                    let res: NomParseResult<&str, &str> = all_consuming(preceded(
+                        tag("#"),
+                        take_while_m_n(6, 6, |c: char| c.is_ascii_hexdigit()),
+                    ))(value);
+                    res.is_ok()
+                }
+                EyeColor => {
+                    let res: NomParseResult<&str, &str> = all_consuming(alt((
+                        tag("amb"),
+                        tag("blu"),
+                        tag("brn"),
+                        tag("gry"),
+                        tag("grn"),
+                        tag("hzl"),
+                        tag("oth"),
+                    )))(value);
+                    res.is_ok()
+                }
+                PassportId => {
+                    let res: NomParseResult<&str, &str> =
+                        all_consuming(take_while_m_n(9, 9, |c: char| c.is_ascii_digit()))(value);
+                    res.is_ok()
+                }
+                CountryId => true,
             }
-            HairColor => {
-                let res: NomParseResult<&str, &str> = all_consuming(preceded(
-                    tag("#"),
-                    take_while_m_n(6, 6, |c: char| c.is_ascii_hexdigit()),
-                ))(value);
-                res.is_ok()
-            }
-            EyeColor => {
-                let res: NomParseResult<&str, &str> = all_consuming(alt((
-                    tag("amb"),
-                    tag("blu"),
-                    tag("brn"),
-                    tag("gry"),
-                    tag("grn"),
-                    tag("hzl"),
-                    tag("oth"),
-                )))(value);
-                res.is_ok()
-            }
-            PassportId => {
-                let res: NomParseResult<&str, &str> =
-                    all_consuming(take_while_m_n(9, 9, |c: char| c.is_ascii_digit()))(value);
-                res.is_ok()
-            }
-            CountryId => true,
+        }
+    }
+    impl Parseable<'_> for PassportField {
+        fn parser(input: &str) -> NomParseResult<&str, Self>
+        where
+            Self: Sized,
+        {
+            map(take_until(":"), |s: &str| {
+                s.parse()
+                    .unwrap_or_else(|_| panic!("Unknown passport field: {s}"))
+            })(input)
+        }
+    }
+
+    /// Hash map from a passport field to its value.
+    type PassportFieldMap<'a> = HashMap<PassportField, &'a str>;
+
+    /// Behavior for a particular part of the problem.
+    pub trait Part {
+        /// Validates whether a passport is valid.
+        fn validate(field_map: &PassportFieldMap) -> bool;
+    }
+
+    /// Behavior for part one.
+    pub struct PartOne {}
+    impl Part for PartOne {
+        fn validate(field_map: &PassportFieldMap) -> bool {
+            PassportField::iter()
+                .all(|field| field_map.contains_key(&field) || field == PassportField::CountryId)
+        }
+    }
+
+    /// Behavior for part two.
+    pub struct PartTwo {}
+    impl Part for PartTwo {
+        fn validate(field_map: &PassportFieldMap) -> bool {
+            PassportField::iter().all(|field| match field_map.get(&field) {
+                Some(v) => field.validate(v),
+                None => field == PassportField::CountryId,
+            })
+        }
+    }
+
+    /// A passport with its fields, which can be parsed from text input.
+    struct Passport<'a> {
+        /// Map from fields to their values.
+        field_map: PassportFieldMap<'a>,
+    }
+    impl<'a> Parseable<'a> for Passport<'a> {
+        fn parser(input: &'a str) -> NomParseResult<&str, Self>
+        where
+            Self: Sized,
+        {
+            map(
+                separated_list1(
+                    alt((space1, line_ending)),
+                    separated_pair(PassportField::parser, tag(":"), is_not(" \t\n\r")),
+                ),
+                |vec| Self {
+                    field_map: vec.into_iter().collect(),
+                },
+            )(input)
+        }
+    }
+    impl Passport<'_> {
+        /// Validate the passport for a particular part of the problem.
+        pub fn validate<P: Part>(&self) -> bool {
+            P::validate(&self.field_map)
+        }
+    }
+
+    /// List of passports, which can be parsed from text input.
+    pub struct PassportList<'a> {
+        /// List of passports.
+        passports: Vec<Passport<'a>>,
+    }
+    impl<'a> PassportList<'a> {
+        /// Parse the list from text input.
+        pub fn from_str(input: &'a str) -> AocResult<Self> {
+            Ok(Self {
+                passports: Passport::gather(input.split("\n\n"))?,
+            })
+        }
+
+        /// Count the number of passports in the list that are valid for a particular part of the problem.
+        pub fn count_valid<P: Part>(&self) -> u64 {
+            self.passports
+                .iter()
+                .filter_count(|p| p.validate::<PartOne>())
         }
     }
 }
 
-type Passport<'a> = HashMap<PassportField, &'a str>;
+use solution::*;
 
-// Note that this could not be done as an impl of the Parseable trait
-// beause of annoying lifetime issues that apparently have no solution in Rust.
-// It also could not be implemented as a normal method on Passport since
-// this is a foreign type.
-fn parse_passport(input: &str) -> NomParseResult<&str, Passport<'_>> {
-    context(
-        "passport data",
-        map(
-            separated_list1(
-                alt((pair(space0, line_ending), pair(space1, space0))),
-                separated_pair(is_not(": \n\r"), tag(":"), is_not(" \t\n\r")),
-            ),
-            |v: Vec<(&str, &str)>| {
-                v.iter()
-                    .filter_map(|(k, v)| {
-                        let pfr: Result<PassportField, strum::ParseError> = k.parse();
-                        match pfr {
-                            Ok(pf) => Some((pf, *v)),
-                            Err(_) => None,
-                        }
-                    })
-                    .collect()
-            },
-        ),
-    )(input)
-}
-
-fn parse_passports(input: &str) -> Result<Vec<Passport>, NomParseError> {
-    all_consuming(separated_list1(
-        tuple((space0, line_ending, space0, line_ending)),
-        parse_passport,
-    ))(input.trim_end())
-    .finish()
-    .map(|(_, pd)| pd)
-}
-
-// Note that we can't make this a method of Passport because it's
-// A foreign type. We could make a trait but nah.
-fn passport_valid_part_a(passport: &Passport) -> bool {
-    let mut valid = true;
-    for field in PassportField::iter() {
-        if !passport.contains_key(&field) && field != PassportField::CountryId {
-            valid = false;
-            break;
-        }
-    }
-    valid
-}
-
-fn passport_valid_part_b(passport: &Passport) -> bool {
-    let mut valid = true;
-    for field in PassportField::iter() {
-        valid = match passport.get(&field) {
-            Some(v) => field.valid(v),
-            None => field == PassportField::CountryId,
-        };
-        if !valid {
-            break;
-        }
-    }
-    valid
-}
-
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 4,
     name: "Passport Processing",
@@ -215,23 +254,22 @@ pub const SOLUTION: Solution = Solution {
     solvers: &[
         // Part one
         |input| {
+            // TODO: Both parts have common generations, use Any to make this easier
+            // and probably utilize more commonalities in all problems once this is made easier.
+
             // Generation
-            let passports = parse_passports(input.expect_input()?)?;
+            let passports = PassportList::from_str(input.expect_input()?)?;
 
             // Processing
-            Ok(Answer::Unsigned(
-                passports.iter().filter_count(|p| passport_valid_part_a(p)),
-            ))
+            Ok(passports.count_valid::<PartOne>().into())
         },
         // Part two
         |input| {
             // Generation
-            let passports = parse_passports(input.expect_input()?)?;
+            let passports = PassportList::from_str(input.expect_input()?)?;
 
             // Processing
-            Ok(Answer::Unsigned(
-                passports.iter().filter_count(|p| passport_valid_part_b(p)),
-            ))
+            Ok(passports.count_valid::<PartTwo>().into())
         },
     ],
 };

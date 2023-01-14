@@ -1,7 +1,5 @@
-use std::str::FromStr;
-
 use crate::aoc::prelude::*;
-use cgmath::Zero;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -27,79 +25,94 @@ mod tests {
     }
 }
 
-struct Map {
-    grid: Grid<bool>,
-}
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use cgmath::Zero;
 
-impl CharGrid<bool> for Map {
-    fn get_grid(&self) -> &Grid<bool> {
-        &self.grid
+    /// Map denoting open squares and trees, which can be parsed from text input.
+    pub struct Map {
+        /// Boolean grid for the hill denoting where trees are located.
+        grid: Grid<bool>,
     }
+    impl CharGrid<bool> for Map {
+        fn get_grid(&self) -> &Grid<bool> {
+            &self.grid
+        }
 
-    fn from_char(c: char) -> Option<bool> {
-        match c {
-            '#' => Some(true),
-            '.' => Some(false),
-            _ => None,
+        fn from_char(c: char) -> Option<bool> {
+            match c {
+                '#' => Some(true),
+                '.' => Some(false),
+                _ => None,
+            }
+        }
+
+        fn to_char(e: &bool) -> char {
+            if *e {
+                '#'
+            } else {
+                '.'
+            }
+        }
+    }
+    impl FromStr for Map {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ok(Self {
+                grid: Self::grid_from_str(s)?,
+            })
+        }
+    }
+    impl Map {
+        /// Returns whether a certain point on the map is a tree or not.
+        fn is_tree(&self, point: &GridPoint) -> bool {
+            let x = point.x % self.grid.size().x;
+            *self.grid.get(&GridPoint::new(x, point.y))
         }
     }
 
-    fn to_char(e: &bool) -> char {
-        if *e {
-            '#'
-        } else {
-            '.'
+    /// An [Iterator] for over whether the points taken on a downhill route through
+    /// a [Map] with a particular slope have a tree or not.
+    #[derive(new)]
+    struct MapDownhill<'a> {
+        /// Map through which we are traversing.
+        map: &'a Map,
+        /// Slope down the hill.
+        slope: GridPoint,
+        /// Current point on the map.
+        #[new(value = "GridPoint::zero()")]
+        point: GridPoint,
+    }
+    impl Iterator for MapDownhill<'_> {
+        type Item = bool;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            // If past the map vertically then we are done
+            if self.point.y >= self.map.grid.size().y {
+                return None;
+            }
+
+            // Get current position
+            let tree = self.map.is_tree(&self.point);
+
+            // Ready the next position
+            self.point += self.slope;
+
+            Some(tree)
         }
     }
-}
-impl FromStr for Map {
-    type Err = AocError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self {
-            grid: Self::grid_from_str(s)?,
-        })
+    /// For a particular [Map] and slope, counts the number of trees encountered on the way down.
+    pub fn count_slope(map: &Map, slope: GridPoint) -> u64 {
+        MapDownhill::new(map, slope).filter_count(|t| *t)
     }
 }
 
-impl Map {
-    fn is_tree(&self, point: &GridPoint) -> bool {
-        let x = point.x % self.grid.size().x;
-        *self.grid.get(&GridPoint::new(x, point.y))
-    }
-}
+use solution::*;
 
-#[derive(new)]
-struct MapDownhill<'a> {
-    map: &'a Map,
-    slope: GridPoint,
-    #[new(value = "GridPoint::zero()")]
-    point: GridPoint,
-}
-
-impl Iterator for MapDownhill<'_> {
-    type Item = bool;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // If past the map vertically then we are done
-        if self.point.y >= self.map.grid.size().y {
-            return None;
-        }
-
-        // Get current position
-        let tree = self.map.is_tree(&self.point);
-
-        // Ready the next position
-        self.point += self.slope;
-
-        Some(tree)
-    }
-}
-
-fn count_slope(map: &Map, slope: GridPoint) -> u64 {
-    MapDownhill::new(map, slope).filter_count(|t| *t)
-}
-
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 3,
     name: "Toboggan Trajectory",

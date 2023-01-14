@@ -20,8 +20,10 @@ mod tests {
     }
 }
 
+/// Numeric type for expenses
 type Expense = u32;
 
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 1,
     name: "Report Repair",
