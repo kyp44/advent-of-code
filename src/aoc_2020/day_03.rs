@@ -116,26 +116,21 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 3,
     name: "Toboggan Trajectory",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Map::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let map = Map::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(count_slope(&map, GridPoint::new(3, 1)).into())
+            Ok(count_slope(input.expect_data::<Map>()?, GridPoint::new(3, 1)).into())
         },
         // Part two
         |input| {
-            // Generation
-            let map = Map::from_str(input.expect_input()?)?;
-
             // Process
+            let map = input.expect_data::<Map>()?;
             let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
             Ok(slopes
                 .iter()
-                .map(|(x, y)| count_slope(&map, GridPoint::new(*x, *y)))
+                .map(|(x, y)| count_slope(map, GridPoint::new(*x, *y)))
                 .product::<u64>()
                 .into())
         },

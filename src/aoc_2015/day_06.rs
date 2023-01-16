@@ -231,13 +231,13 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 6,
     name: "Probably a Fire Hazard",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Instruction::gather(input.lines())?).into())),
     solvers: &[
         // Part one
         |input| {
             // Generation
             let mut light_grid = LightGrid::<bool>::new(1000);
-            light_grid.execute_instruction(&Instruction::gather(input.expect_input()?.lines())?);
+            light_grid.execute_instruction(input.expect_data::<Vec<Instruction>>()?);
 
             // Print the grid just to see what it is
             //println!("{:?}", light_grid);
@@ -251,7 +251,7 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Generation
             let mut light_grid = LightGrid::<u8>::new(1000);
-            light_grid.execute_instruction(&Instruction::gather(input.expect_input()?.lines())?);
+            light_grid.execute_instruction(input.expect_data::<Vec<Instruction>>()?);
 
             // Process
             Ok(light_grid.total_brightness().into())

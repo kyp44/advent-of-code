@@ -348,26 +348,34 @@ mod solution {
         }
     }
 
+    /// The characters involved in a battle
+    #[derive(Clone, new)]
+    pub struct Characters {
+        /// The player.
+        player: Character,
+        /// The boss.
+        boss: Character,
+    }
+
     /// Solves a part of the problem by playing games and recursively having the player
     /// try every combination of spells as the turns progress.
     /// `hard_mode` causes the player character to take 1 damage at the beginning of
     /// each player turn.
-    pub fn solve(player: Character, boss: Character, hard_mode: bool) -> AocResult<u64> {
+    pub fn solve(characters: &Characters, hard_mode: bool) -> AocResult<u64> {
         /// Recursive sub-function of [solve].
         fn solve_rec(
             level: usize,
             spent: u32,
             min_spent: &mut Option<u32>,
-            player: Character,
-            boss: Character,
+            characters: &Characters,
             hard_mode: bool,
         ) {
             let _indent = " ".repeat(level);
 
             // Create play branch with every spell cast on the player's turn
             for spell_type in SpellType::iter() {
-                let mut player = player.clone();
-                let mut boss = boss.clone();
+                let mut player = characters.player.clone();
+                let mut boss = characters.boss.clone();
                 if hard_mode {
                     player.hurt(1)
                 }
@@ -394,14 +402,20 @@ mod solution {
                     } else if player.dead() {
                         //println!("{}Player was killed!", _indent);
                     } else {
-                        solve_rec(level + 1, spent, min_spent, player, boss, hard_mode);
+                        solve_rec(
+                            level + 1,
+                            spent,
+                            min_spent,
+                            &Characters::new(player, boss),
+                            hard_mode,
+                        );
                     }
                 }
             }
         }
 
         let mut min_spent = None;
-        solve_rec(0, 0, &mut min_spent, player, boss, hard_mode);
+        solve_rec(0, 0, &mut min_spent, characters, hard_mode);
         Ok(min_spent
             .ok_or_else(|| AocError::Process("The boss always wins!".into()))?
             .into())
@@ -414,41 +428,23 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 22,
     name: "Wizard Simulator 20XX",
-    preprocessor: None,
+    preprocessor: Some(|input| {
+        Ok(Box::new(Characters::new(
+            Character::new(50, 0, 500, 0),
+            Character::from_str(input)?,
+        ))
+        .into())
+    }),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let boss = Character::from_str(input.expect_input()?)?;
-            let player = Character::new(50, 0, 500, 0);
-
-            // Test for example battle
-            /*let mut player = Character::new(10, 0, 250, 0);
-            let mut boss = Character::new(14, 8, 0, 0);
-            use SpellType::*;
-            for spell in [Recharge, Shield, Drain, Poison, MagicMissile] {
-                println!("\nPlayer turn:");
-                println!("Player: {:?}", player);
-                println!("Boss: {:?}", boss);
-                player.turn_cast(spell, &mut boss);
-
-                println!("\nBoss turn:");
-                println!("Player: {:?}", player);
-                println!("Boss: {:?}", boss);
-                boss.turn_attack(&mut player);
-            }*/
-
             // Process
-            Ok(solve(player, boss, false)?.into())
+            Ok(solve(input.expect_data::<Characters>()?, false)?.into())
         },
         // Part two
         |input| {
-            // Generation
-            let boss = Character::from_str(input.expect_input()?)?;
-            let player = Character::new(50, 0, 500, 0);
-
             // Process
-            Ok(solve(player, boss, true)?.into())
+            Ok(solve(input.expect_data::<Characters>()?, true)?.into())
         },
     ],
 };

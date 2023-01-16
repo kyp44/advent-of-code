@@ -137,26 +137,30 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 3,
     name: "Perfectly Spherical Houses in a Vacuum",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Directions::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let houses = Directions::from_str(input.expect_input()?)?;
-
             // Process
             Ok(Answer::Unsigned(
-                houses.visited_houses::<PartOne>().len().try_into().unwrap(),
+                input
+                    .expect_data::<Directions>()?
+                    .visited_houses::<PartOne>()
+                    .len()
+                    .try_into()
+                    .unwrap(),
             ))
         },
         // Part two
         |input| {
-            // Generation
-            let houses = Directions::from_str(input.expect_input()?)?;
-
             // Process
             Ok(Answer::Unsigned(
-                houses.visited_houses::<PartTwo>().len().try_into().unwrap(),
+                input
+                    .expect_data::<Directions>()?
+                    .visited_houses::<PartTwo>()
+                    .len()
+                    .try_into()
+                    .unwrap(),
             ))
         },
     ],

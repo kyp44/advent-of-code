@@ -94,26 +94,27 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 1,
     name: "Not Quite Lisp",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Directions::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let directions = Directions::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(directions.floors().last().unwrap().into())
+            Ok(input
+                .expect_data::<Directions>()?
+                .floors()
+                .last()
+                .unwrap()
+                .into())
         },
         // Part two
         |input| {
-            // Generation
-            let directions = Directions::from_str(input.expect_input()?)?;
-
             // Process
-            let pos =
-                directions.floors().position(|f| f < 0).ok_or_else(|| {
-                    AocError::Process("Santa never goes into the basement".into())
-                })? + 1;
+            let pos = input
+                .expect_data::<Directions>()?
+                .floors()
+                .position(|f| f < 0)
+                .ok_or_else(|| AocError::Process("Santa never goes into the basement".into()))?
+                + 1;
             Ok(Answer::Signed(pos.try_into().unwrap()))
         },
     ],

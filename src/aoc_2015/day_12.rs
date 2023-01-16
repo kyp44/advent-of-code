@@ -1,4 +1,5 @@
 use crate::aoc::prelude::*;
+use serde_json::Value;
 
 #[cfg(test)]
 mod tests {
@@ -36,7 +37,6 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use serde_json::Value;
 
     /// Parses JSON from text input and returns the root JSON value.
     pub fn parse_json(s: &str) -> AocResult<Value> {
@@ -107,23 +107,23 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 12,
     name: "JSAbacusFramework.io",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(parse_json(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let data = parse_json(input.expect_input()?)?;
-
             // Process
-            Ok(data.sum_numbers::<PartOne>().into())
+            Ok(input
+                .expect_data::<Value>()?
+                .sum_numbers::<PartOne>()
+                .into())
         },
         // Part two
         |input| {
-            // Generation
-            let data = parse_json(input.expect_input()?)?;
-
             // Process
-            Ok(data.sum_numbers::<PartTwo>().into())
+            Ok(input
+                .expect_data::<Value>()?
+                .sum_numbers::<PartTwo>()
+                .into())
         },
     ],
 };

@@ -124,7 +124,7 @@ mod solution {
     }
 
     /// Solve a part of the problem.
-    pub fn solve<P: Part>(input: &SolverData) -> AocResult<Answer> {
+    pub fn solve<P: Part>(input: &SolverInput) -> AocResult<Answer> {
         // Generation
         let problem = Problem::from_str(input.expect_input()?)?;
 

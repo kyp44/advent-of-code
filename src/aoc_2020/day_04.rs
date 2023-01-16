@@ -166,7 +166,7 @@ mod solution {
     }
 
     /// Hash map from a passport field to its value.
-    type PassportFieldMap<'a> = HashMap<PassportField, &'a str>;
+    type PassportFieldMap = HashMap<PassportField, String>;
 
     /// Behavior for a particular part of the problem.
     pub trait Part {
@@ -195,12 +195,12 @@ mod solution {
     }
 
     /// A passport with its fields, which can be parsed from text input.
-    struct Passport<'a> {
+    struct Passport {
         /// Map from fields to their values.
-        field_map: PassportFieldMap<'a>,
+        field_map: PassportFieldMap,
     }
-    impl<'a> Parseable<'a> for Passport<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self>
+    impl Parseable<'_> for Passport {
+        fn parser(input: &str) -> NomParseResult<&str, Self>
         where
             Self: Sized,
         {
@@ -210,12 +210,12 @@ mod solution {
                     separated_pair(PassportField::parser, tag(":"), is_not(" \t\n\r")),
                 ),
                 |vec| Self {
-                    field_map: vec.into_iter().collect(),
+                    field_map: vec.into_iter().map(|(k, v)| (k, v.to_string())).collect(),
                 },
             )(input)
         }
     }
-    impl Passport<'_> {
+    impl Passport {
         /// Validate the passport for a particular part of the problem.
         pub fn validate<P: Part>(&self) -> bool {
             P::validate(&self.field_map)
@@ -223,13 +223,13 @@ mod solution {
     }
 
     /// List of passports, which can be parsed from text input.
-    pub struct PassportList<'a> {
+    pub struct PassportList {
         /// List of passports.
-        passports: Vec<Passport<'a>>,
+        passports: Vec<Passport>,
     }
-    impl<'a> PassportList<'a> {
+    impl PassportList {
         /// Parse the list from text input.
-        pub fn from_str(input: &'a str) -> AocResult<Self> {
+        pub fn from_str(input: &str) -> AocResult<Self> {
             Ok(Self {
                 passports: Passport::gather(input.split("\n\n"))?,
             })
@@ -237,9 +237,7 @@ mod solution {
 
         /// Count the number of passports in the list that are valid for a particular part of the problem.
         pub fn count_valid<P: Part>(&self) -> u64 {
-            self.passports
-                .iter()
-                .filter_count(|p| p.validate::<PartOne>())
+            self.passports.iter().filter_count(|p| p.validate::<P>())
         }
     }
 }
@@ -250,26 +248,23 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 4,
     name: "Passport Processing",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(PassportList::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // TODO: Both parts have common generations, use Any to make this easier
-            // and probably utilize more commonalities in all problems once this is made easier.
-
-            // Generation
-            let passports = PassportList::from_str(input.expect_input()?)?;
-
             // Processing
-            Ok(passports.count_valid::<PartOne>().into())
+            Ok(input
+                .expect_data::<PassportList>()?
+                .count_valid::<PartOne>()
+                .into())
         },
         // Part two
         |input| {
-            // Generation
-            let passports = PassportList::from_str(input.expect_input()?)?;
-
             // Processing
-            Ok(passports.count_valid::<PartTwo>().into())
+            Ok(input
+                .expect_data::<PassportList>()?
+                .count_valid::<PartTwo>()
+                .into())
         },
     ],
 };

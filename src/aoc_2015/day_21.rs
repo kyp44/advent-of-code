@@ -169,20 +169,20 @@ mod solution {
     pub trait Part {
         /// Given two costs, select the appropriate one, based on whether we are
         /// minimizing or maximizing.
-        fn select_cost(&self, min_max: &(u32, u32)) -> u32;
+        fn select_cost(min_max: &(u32, u32)) -> u32;
         /// Given whether the player won or not, returns whether this is what we
         /// want or not.
-        fn win_or_lose(&self, won: bool) -> bool;
+        fn win_or_lose(won: bool) -> bool;
     }
 
     /// Behavior for part one.
     pub struct PartOne;
     impl Part for PartOne {
-        fn select_cost(&self, min_max: &(u32, u32)) -> u32 {
+        fn select_cost(min_max: &(u32, u32)) -> u32 {
             min_max.0
         }
 
-        fn win_or_lose(&self, won: bool) -> bool {
+        fn win_or_lose(won: bool) -> bool {
             won
         }
     }
@@ -190,11 +190,11 @@ mod solution {
     /// Behavior for part two.
     pub struct PartTwo;
     impl Part for PartTwo {
-        fn select_cost(&self, min_max: &(u32, u32)) -> u32 {
+        fn select_cost(min_max: &(u32, u32)) -> u32 {
             min_max.1
         }
 
-        fn win_or_lose(&self, won: bool) -> bool {
+        fn win_or_lose(won: bool) -> bool {
             !won
         }
     }
@@ -208,7 +208,7 @@ mod solution {
     impl Problem {
         /// Solves a part of the problem by playing out the game for every combination
         /// of the allowed load out bought from the shop.
-        pub fn solve(&self, part: &dyn Part) -> AocResult<u64> {
+        pub fn solve<P: Part>(&self) -> AocResult<u64> {
             // Go through every combination of 1 weapon, 0-1 armor, and 0-2 rings
             match iproduct!(
                 WEAPONS.iter(),
@@ -230,7 +230,7 @@ mod solution {
                 let player =
                     Character::new(100, equipment.into_iter().map(|item| &item.stats).sum());
 
-                if part.win_or_lose(player.battle(&self.boss)) {
+                if P::win_or_lose(player.battle(&self.boss)) {
                     Some(cost)
                 } else {
                     None
@@ -242,7 +242,7 @@ mod solution {
                     Err(AocError::Process("The player can never win!".into()))
                 }
                 MinMaxResult::OneElement(m) => Ok(m.into()),
-                MinMaxResult::MinMax(min, max) => Ok(part.select_cost(&(min, max)).into()),
+                MinMaxResult::MinMax(min, max) => Ok(P::select_cost(&(min, max)).into()),
             }
         }
     }
@@ -254,28 +254,17 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 21,
     name: "RPG Simulator 20XX",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Problem::new(Character::from_str(input)?)).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let problem = Problem::new(Character::from_str(input.expect_input()?)?);
-
-            // Just a test for the example battle
-            /*let player = Character::new(8, Stats::new(5, 5));
-            let boss = Character::new(12, Stats::new(7, 2));
-            player.battle(&boss);*/
-
             // Process
-            Ok(problem.solve(&PartOne)?.into())
+            Ok(input.expect_data::<Problem>()?.solve::<PartOne>()?.into())
         },
         // Part two
         |input| {
-            // Generation
-            let problem = Problem::new(Character::from_str(input.expect_input()?)?);
-
             // Process
-            Ok(problem.solve(&PartTwo)?.into())
+            Ok(input.expect_data::<Problem>()?.solve::<PartTwo>()?.into())
         },
     ],
 };

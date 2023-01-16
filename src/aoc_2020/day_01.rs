@@ -1,5 +1,4 @@
 use crate::aoc::prelude::*;
-use itertools::Itertools;
 
 #[cfg(test)]
 mod tests {
@@ -20,50 +19,51 @@ mod tests {
     }
 }
 
-/// Numeric type for expenses
-type Expense = u32;
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use itertools::Itertools;
+
+    /// Numeric type for expenses
+    pub type Expense = u32;
+
+    /// Solve a part of the problem
+    pub fn solve(expenses: &[Expense], num_values: usize) -> AocResult<Answer> {
+        let mut combinations = expenses.iter().combinations(num_values);
+        loop {
+            match combinations.next() {
+                Some(v) => {
+                    if v.iter().copied().sum::<u32>() == 2020 {
+                        break Ok(Answer::Unsigned(v.iter().copied().product::<u32>().into()));
+                    }
+                }
+                None => {
+                    break Err(AocError::Process(
+                        "No {num_values} values add to 2020".into(),
+                    ))
+                }
+            }
+        }
+    }
+}
+
+use solution::*;
 
 /// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 1,
     name: "Report Repair",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Expense::gather(input.lines())?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let values = Expense::gather(input.expect_input()?.lines())?;
-
             // Processing
-            let mut i = values.iter().combinations(2);
-            loop {
-                match i.next() {
-                    Some(v) => {
-                        if v[0] + v[1] == 2020 {
-                            break Ok(Answer::Unsigned((v[0] * v[1]).into()));
-                        }
-                    }
-                    None => break Err(AocError::Process("No two values add to 2020".into())),
-                }
-            }
+            solve(input.expect_data::<Vec<Expense>>()?, 2)
         },
         // Part two
         |input| {
-            // Generation
-            let values = Expense::gather(input.expect_input()?.lines())?;
-
-            let mut i = values.iter().combinations(3);
-            loop {
-                match i.next() {
-                    Some(v) if v[0] + v[1] + v[2] == 2020 => {
-                        break Ok(Answer::Unsigned((v[0] * v[1] * v[2]).into()));
-                    }
-                    None => {
-                        break Err(AocError::Process("No three values add to 2020".into()));
-                    }
-                    _ => (),
-                }
-            }
+            // Processing
+            solve(input.expect_data::<Vec<Expense>>()?, 3)
         },
     ],
 };

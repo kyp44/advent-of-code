@@ -26,9 +26,9 @@ mod solution {
     use std::{cmp::min, collections::HashMap};
 
     /// One of Santa's reindeer with its racing stats that can be parsed from text input.
-    pub struct Reindeer<'a> {
+    pub struct Reindeer {
         /// Name of the reindeer.
-        name: &'a str,
+        name: String,
         /// Flying speed in km/s.
         fly_speed: u64,
         /// Time the reindeer can fly before resting in seconds.
@@ -36,11 +36,11 @@ mod solution {
         /// Time for which the reindeer must rest after flying before flying again in seconds.
         rest_time: u64,
     }
-    impl<'a> Parseable<'a> for Reindeer<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self> {
+    impl Parseable<'_> for Reindeer {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 tuple((
-                    take_until(" "),
+                    take_until::<_, &str, _>(" "),
                     trim(false, tag("can fly")),
                     trim(false, nom::character::complete::u64),
                     trim(false, tag("km/s for")),
@@ -50,7 +50,7 @@ mod solution {
                     trim(false, tag("seconds.")),
                 )),
                 |(name, _, fly_speed, _, fly_time, _, rest_time, _)| Reindeer {
-                    name,
+                    name: name.to_string(),
                     fly_speed,
                     fly_time,
                     rest_time,
@@ -58,7 +58,7 @@ mod solution {
             )(input.trim())
         }
     }
-    impl Reindeer<'_> {
+    impl Reindeer {
         /// Calculates the distance the reindeer has traveled after some time in seconds.
         pub fn distance_at(&self, time: u64) -> u64 {
             let period: u64 = self.fly_time + self.rest_time;
@@ -69,13 +69,13 @@ mod solution {
     }
 
     /// Overall race that can be parsed from text input.
-    pub struct Race<'a> {
+    pub struct Race {
         /// Reindeer that are in the race.
-        reindeer: Box<[Reindeer<'a>]>,
+        reindeer: Box<[Reindeer]>,
     }
-    impl<'a> Race<'a> {
+    impl Race {
         /// Parse the race from text input.
-        pub fn from_str(s: &'a str) -> AocResult<Self> {
+        pub fn from_str(s: &str) -> AocResult<Self> {
             Ok(Race {
                 reindeer: Reindeer::gather(s.lines())?.into_boxed_slice(),
             })
@@ -83,7 +83,7 @@ mod solution {
 
         /// Determines the potentially multiple winners at a time in seconds.
         /// That is, which reindeer have traveled the furthest distance.
-        pub fn winners_at(&self, time: u64) -> Vec<&Reindeer<'a>> {
+        pub fn winners_at(&self, time: u64) -> Vec<&Reindeer> {
             let dist = self
                 .reindeer
                 .iter()
@@ -99,10 +99,10 @@ mod solution {
         /// Runs a race with the scoring used in part two.
         pub fn run_new_race(&self, time: u64) -> u64 {
             let mut scores: HashMap<&str, u64> =
-                self.reindeer.iter().map(|r| (r.name, 0)).collect();
+                self.reindeer.iter().map(|r| (r.name.as_ref(), 0)).collect();
             for t in 1..=time {
                 for r in self.winners_at(t) {
-                    *scores.get_mut(r.name).unwrap() += 1;
+                    *scores.get_mut(&r.name.as_ref()).unwrap() += 1;
                 }
 
                 /*println!(
@@ -134,25 +134,19 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 14,
     name: "Reindeer Olympics",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Race::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let race = Race::from_str(input.expect_input()?)?;
-
             // Process
-            let ans = race.winners_at(END_TIME)[0].distance_at(END_TIME);
+            let ans = input.expect_data::<Race>()?.winners_at(END_TIME)[0].distance_at(END_TIME);
             //println!("{}", ans);
             Ok(ans.into())
         },
         // Part two
         |input| {
-            // Generation
-            let race = Race::from_str(input.expect_input()?)?;
-
             // Process
-            let ans = race.run_new_race(END_TIME);
+            let ans = input.expect_data::<Race>()?.run_new_race(END_TIME);
             //println!("{}", ans);
             Ok(ans.into())
         },

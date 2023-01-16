@@ -204,28 +204,18 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 23,
     name: "Opening the Turing Lock",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(input.parse::<Program>()?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let program: Program = input.expect_input()?.parse()?;
-
-            /*for inst in program.instructions {
-                println!("{:?}", inst);
-            }*/
-
             // Process
-            let end_state = program.execute(State::new(0, 0));
+            let end_state = input.expect_data::<Program>()?.execute(State::new(0, 0));
             Ok(end_state.registers[&Register::B].into())
         },
         // Part two
         |input| {
-            // Generation
-            let program: Program = input.expect_input()?.parse()?;
-
             // Process
-            let end_state = program.execute(State::new(1, 0));
+            let end_state = input.expect_data::<Program>()?.execute(State::new(1, 0));
             Ok(end_state.registers[&Register::B].into())
         },
     ],

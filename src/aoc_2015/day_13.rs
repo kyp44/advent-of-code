@@ -191,7 +191,7 @@ pub const SOLUTION: Solution = Solution {
 
             // Process
             problem.add_attendee("Self");
-            println!("Solution: {}", problem.best_arrangement()?);
+            //println!("Solution: {}", problem.best_arrangement()?);
             Ok(problem.best_arrangement()?.into())
         },
     ],

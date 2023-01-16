@@ -109,23 +109,17 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 2,
     name: "I Was Told There Would Be No Math",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(input.parse::<Presents>()?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let presents: Presents = input.expect_input()?.parse()?;
-
             // Process
-            Ok(presents.needed_paper().into())
+            Ok(input.expect_data::<Presents>()?.needed_paper().into())
         },
         // Part two
         |input| {
-            // Generation
-            let presents: Presents = input.expect_input()?.parse()?;
-
             // Process
-            Ok(presents.needed_ribbon().into())
+            Ok(input.expect_data::<Presents>()?.needed_ribbon().into())
         },
     ],
 };

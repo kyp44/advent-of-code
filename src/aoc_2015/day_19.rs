@@ -215,29 +215,19 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 19,
     name: "Medicine for Rudolph",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Machine::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let machine = Machine::from_str(input.expect_input()?)?;
-
-            //println!("{:?}", machine);
-            /*for s in machine.replace_iter(&machine.medicine) {
-                println!("{}", s);
-            }*/
-
             // Process
+            let machine = input.expect_data::<Machine>()?;
             let set: HashSet<String> = machine.replace_iter(&machine.medicine).collect();
             Ok(Answer::Unsigned(set.len().try_into().unwrap()))
         },
         // Part two
         |input| {
-            // Generation
-            let machine = Machine::from_str(input.expect_input()?)?;
-            //println!("{:?}", machine);
-
             // Process
+            let machine = input.expect_data::<Machine>()?;
             Ok(machine
                 .number_of_steps("e", &machine.medicine)
                 .ok_or(AocError::NoSolution)?

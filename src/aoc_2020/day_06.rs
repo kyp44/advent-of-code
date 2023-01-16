@@ -1,15 +1,4 @@
 use crate::aoc::prelude::*;
-use nom::{
-    branch::alt,
-    bytes::complete::is_not,
-    character::complete::{line_ending, space0, space1},
-    combinator::{all_consuming, map},
-    error::context,
-    multi::separated_list1,
-    sequence::{pair, tuple},
-    Finish,
-};
-use std::{collections::HashSet, convert::TryInto};
 
 #[cfg(test)]
 mod tests {
@@ -39,69 +28,94 @@ b
     }
 }
 
-type Questions = HashSet<char>;
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use std::collections::HashSet;
 
-// Note this could have been done per the solution to my StackExchange question by adding the Copy trait bound:
-// https://stackoverflow.com/questions/68007717/rust-nested-closure-moves-and-multiple-owners
-// However, this results in a different error about the the closure type when calling this with two different closures.
-// It sounds like this could be fixed by "boxing your closure and/or using it as a trait object", but it's
-// probably just more efficient to accept an fn instead (certainly rather than boxing).
-fn make_questions_parser(
-    reducer: fn(Questions, Questions) -> Questions,
-) -> impl Fn(&str) -> NomParseResult<&str, Questions> {
-    move |input| {
-        context(
-            "questions",
-            map(
-                separated_list1(
-                    alt((pair(space0, line_ending), pair(space1, space0))),
-                    is_not(" \t\n\r"),
-                ),
-                |vec: Vec<&str>| {
-                    vec.iter()
-                        .map(|s| s.chars().collect::<Questions>())
-                        .reduce(reducer)
-                        .unwrap()
-                },
-            ),
-        )(input)
+    /// Set of questions.
+    type Questions = HashSet<char>;
+
+    /// A set of questions with "yes" answers for a single person.
+    /// This can be parsed from text input.
+    struct PersonQuestions {
+        /// List of questions.
+        questions: Questions,
+    }
+    impl From<&str> for PersonQuestions {
+        fn from(value: &str) -> Self {
+            Self {
+                questions: value.trim().chars().collect(),
+            }
+        }
+    }
+
+    /// Group of people who answered questions, which can be parsed from text input.
+    pub struct Group {
+        /// Questions for everyone in the group.
+        people_questions: Vec<PersonQuestions>,
+    }
+    impl From<&str> for Group {
+        fn from(value: &str) -> Self {
+            Self {
+                people_questions: value.lines().map(PersonQuestions::from).collect(),
+            }
+        }
+    }
+    impl Group {
+        /// Returns the set of questions for which anyone in the group answered "yes".
+        pub fn any_questions(&self) -> Questions {
+            self.reduce_questions(|a, b| a.union(&b).copied().collect())
+        }
+
+        /// Returns the set of questions for which everyone in the group answered "yes".
+        pub fn all_questions(&self) -> Questions {
+            self.reduce_questions(|a, b| a.intersection(&b).copied().collect())
+        }
+
+        /// Reduces the people's question sets using a set combinator.
+        fn reduce_questions(&self, reducer: fn(Questions, Questions) -> Questions) -> Questions {
+            self.people_questions
+                .iter()
+                .map(|pq| pq.questions.clone())
+                .reduce(reducer)
+                .unwrap()
+        }
+    }
+
+    /// Solves a problem by summing the number of questions for each group
+    pub fn solve(input: &SolverInput, group_f: fn(&Group) -> Questions) -> AocResult<Answer> {
+        Ok(Answer::Unsigned(
+            input
+                .expect_data::<Vec<Group>>()?
+                .iter()
+                .map(|group| group_f(group).len())
+                .sum::<usize>()
+                .try_into()
+                .unwrap(),
+        ))
     }
 }
 
-fn solve(input: &str, reducer: fn(Questions, Questions) -> Questions) -> AocResult<Answer> {
-    let questions = all_consuming(separated_list1(
-        tuple((space0, line_ending, space0, line_ending)),
-        make_questions_parser(reducer),
-    ))(input.trim_end())
-    .finish()
-    .map(|(_, pd)| pd)?;
+use solution::*;
 
-    Ok(Answer::Unsigned(
-        questions
-            .iter()
-            .map(|q| q.len())
-            .sum::<usize>()
-            .try_into()
-            .unwrap(),
-    ))
-}
-
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 6,
     name: "Custom Customs",
-    preprocessor: None,
+    preprocessor: Some(|input| {
+        Ok(Box::new(input.split("\n\n").map(Group::from).collect::<Vec<Group>>()).into())
+    }),
     solvers: &[
         // Part one
         |input| {
-            solve(input.expect_input()?, |a: Questions, b: Questions| {
-                a.union(&b).copied().collect()
-            })
+            // Process
+            solve(input, Group::any_questions)
         },
         // Part two
         |input| {
-            solve(input.expect_input()?, |a: Questions, b: Questions| {
-                a.intersection(&b).copied().collect()
-            })
+            // Process
+            solve(input, Group::all_questions)
         },
     ],
 };

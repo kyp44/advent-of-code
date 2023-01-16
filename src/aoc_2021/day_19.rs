@@ -18,7 +18,6 @@ use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use crate::aoc::{parse::trim, prelude::*};
-use crate::expect_data;
 
 #[cfg(test)]
 mod tests {
@@ -480,15 +479,13 @@ pub const SOLUTION: Solution = Solution {
         // Add an identity correlation
         correlations.insert(network.scanners[0].clone(), Transposer::identity());
 
-        Ok(SolverData::Year2021Day19(BeaconScannerData {
-            correlations,
-        }))
+        Ok(Box::new(BeaconScannerData { correlations }).into())
     }),
     solvers: &[
         // Part one
         |input| {
             // Now build a set of all points (beacons) relative to scanner 0
-            let data = expect_data!(Year2021Day19, input)?;
+            let data = input.expect_data::<BeaconScannerData>()?;
 
             let mut points: HashSet<Point> = HashSet::new();
             for (scanner, transposer) in data.correlations.iter() {
@@ -505,7 +502,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let data = expect_data!(Year2021Day19, input)?;
+            let data = input.expect_data::<BeaconScannerData>()?;
 
             // Processing
             Ok(Answer::Unsigned(

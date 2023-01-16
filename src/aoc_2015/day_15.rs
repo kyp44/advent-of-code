@@ -290,23 +290,23 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 15,
     name: "Science for Hungry People",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(input.parse::<Problem>()?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let problem: Problem = input.expect_input()?.parse()?;
-
             // Process
-            Ok(problem.best_recipe::<PartOne>().into())
+            Ok(input
+                .expect_data::<Problem>()?
+                .best_recipe::<PartOne>()
+                .into())
         },
         // Part two
         |input| {
-            // Generation
-            let problem: Problem = input.expect_input()?.parse()?;
-
             // Process
-            Ok(problem.best_recipe::<PartTwo>().into())
+            Ok(input
+                .expect_data::<Problem>()?
+                .best_recipe::<PartTwo>()
+                .into())
         },
     ],
 };

@@ -2,6 +2,7 @@ use anyhow::Context;
 use colored::Colorize;
 use itertools::Itertools;
 use num::Integer;
+use std::any::Any;
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::fs;
@@ -22,7 +23,7 @@ pub mod prelude {
         grid::GridSizeExt, grid::PointTryInto, iter::FilterCount, iter::HasNoneIter,
         iter::HasRange, iter::IndividualReplacements, iter::SplitRuns, parse::BitInput,
         parse::DiscardInput, parse::NomParseError, parse::NomParseResult, parse::Parseable,
-        parse::Sections, Answer, AnswerVec, AocError, AocResult, RangeExt, Solution, SolverData,
+        parse::Sections, Answer, AnswerVec, AocError, AocResult, RangeExt, Solution, SolverInput,
         YearSolutions,
     };
     pub use aoc_derive::CharGridDebug;
@@ -103,45 +104,51 @@ impl From<String> for Answer {
     }
 }
 
-use super::aoc_2021::day_19::BeaconScannerData;
-
-//// Represents data that can be passed to or from solver.
-pub enum SolverData<'a> {
-    Input(&'a str),
-    Year2021Day19(BeaconScannerData),
+//// Represents data that can be passed to a solver function.
+pub enum SolverInput<'a> {
+    Text(&'a str),
+    Data(Box<dyn Any>),
 }
-impl<'a> SolverData<'a> {
+impl<'a> SolverInput<'a> {
     pub fn expect_input(&self) -> AocResult<&'a str> {
-        if let Self::Input(s) = self {
+        if let Self::Text(s) = self {
             Ok(s)
         } else {
             Err(AocError::InvalidInput(
-                "Expected string input but got data".into(),
+                "Expected string input but got something else".into(),
+            ))
+        }
+    }
+
+    pub fn expect_data<T: 'static>(&self) -> AocResult<&T> {
+        if let Self::Data(obj) = self {
+            obj.downcast_ref::<T>().ok_or(AocError::InvalidInput(
+                "Expected data of on type but got a different type".into(),
+            ))
+        } else {
+            Err(AocError::InvalidInput(
+                "Expected data input but got something else".into(),
             ))
         }
     }
 }
-
-/// To easily extract data from SolverData and create an error if not there
-#[macro_export]
-macro_rules! expect_data {
-    ($var:ident, $input:expr) => {
-        if let SolverData::$var(it) = $input {
-            Ok(it)
-        } else {
-            Err(AocError::InvalidInput(
-                format!("Expected {} data but did not get it", stringify!($var)).into(),
-            ))
-        }
-    };
+impl<'a> From<&'a str> for SolverInput<'a> {
+    fn from(value: &'a str) -> Self {
+        Self::Text(value)
+    }
+}
+impl<T: Any> From<Box<T>> for SolverInput<'_> {
+    fn from(value: Box<T>) -> Self {
+        Self::Data(value)
+    }
 }
 
 /// Represents the solver for both pars of a day's puzzle.
-type SolverFunc = fn(&SolverData) -> AocResult<Answer>;
+type SolverFunc = fn(&SolverInput) -> AocResult<Answer>;
 pub struct Solution {
     pub day: u32,
     pub name: &'static str,
-    pub preprocessor: Option<fn(&str) -> AocResult<SolverData>>,
+    pub preprocessor: Option<fn(&str) -> AocResult<SolverInput>>,
     pub solvers: &'static [SolverFunc],
 }
 impl Solution {
@@ -151,11 +158,11 @@ impl Solution {
     }
 
     /// Run preprocessor if applicable
-    pub fn preprocess<'a>(&self, input: &'a str) -> AocResult<SolverData<'a>> {
+    pub fn preprocess<'a>(&self, input: &'a str) -> AocResult<SolverInput<'a>> {
         if let Some(pf) = self.preprocessor {
             pf(input)
         } else {
-            Ok(SolverData::Input(input))
+            Ok(input.into())
         }
     }
 

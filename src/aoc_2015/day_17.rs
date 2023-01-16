@@ -58,28 +58,24 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 17,
     name: "No Such Thing as Too Much",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(input.parse::<Problem>()?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let problem: Problem = input.expect_input()?.parse()?;
-
             // Process
-            /*for c in problem.combinations(25) {
-                println!("{:?}", c);
-            }*/
             Ok(Answer::Unsigned(
-                problem.combinations(150).count().try_into().unwrap(),
+                input
+                    .expect_data::<Problem>()?
+                    .combinations(150)
+                    .count()
+                    .try_into()
+                    .unwrap(),
             ))
         },
         // Part two
         |input| {
-            // Generation
-            let problem: Problem = input.expect_input()?.parse()?;
-
             // Process
-            let combs: Vec<Vec<u16>> = problem.combinations(150).collect();
+            let combs: Vec<Vec<u16>> = input.expect_data::<Problem>()?.combinations(150).collect();
             let min = combs.iter().map(|cv| cv.len()).min().unwrap_or(0);
             let ans: u64 = combs.iter().filter_count(|cv| cv.len() == min);
 
