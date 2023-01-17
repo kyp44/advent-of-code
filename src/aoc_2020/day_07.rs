@@ -1,15 +1,4 @@
 use crate::aoc::prelude::*;
-use bimap::hash::BiHashMap;
-use nom::{
-    bytes::complete::{is_not, tag, take_until},
-    character::complete::space1,
-    combinator::map,
-    error::context,
-    multi::separated_list0,
-    sequence::{separated_pair, tuple},
-    Finish,
-};
-use std::{collections::HashSet, convert::TryInto};
 
 #[cfg(test)]
 mod tests {
@@ -40,154 +29,198 @@ dark violet bags contain no other bags.",
     }
 }
 
-/// Associates a string bag color with an ID for more efficient comparisons
-#[derive(Debug, new)]
-struct BagTable<'a> {
-    #[new(value = "0")]
-    next_id: u32,
-    #[new(value = "BiHashMap::new()")]
-    bimap: BiHashMap<u32, &'a str>,
-}
+/// Contains solution implementation items.
+mod solution {
+    use std::collections::HashSet;
 
-impl<'a> BagTable<'a> {
-    fn get_or_add_bag(&mut self, bag_str: &'a str) -> u32 {
-        match self.bimap.get_by_right(bag_str) {
-            Some(id) => *id,
-            None => {
-                let id = self.next_id;
-                self.bimap.insert(id, bag_str);
-                self.next_id += 1;
-                id
+    use super::*;
+    use bimap::hash::BiHashMap;
+    use nom::{
+        bytes::complete::{is_not, tag, take_until},
+        character::complete::space1,
+        combinator::map,
+        error::context,
+        multi::separated_list0,
+        sequence::{separated_pair, tuple},
+        Finish,
+    };
+
+    /// Type to use for bag IDs.
+    pub type BagId = u32;
+
+    /// Associates a string bag color with an ID for more efficient comparisons
+    #[derive(Debug, new)]
+    pub struct BagTable {
+        /// Next ID to issue.
+        #[new(value = "0")]
+        next_id: BagId,
+        /// Map of bag IDs with their color names.
+        #[new(value = "BiHashMap::new()")]
+        bimap: BiHashMap<BagId, String>,
+    }
+    impl BagTable {
+        /// Given a color name, fetches its ID or else creates a new ID for it.
+        pub fn get_or_add_bag(&mut self, bag_str: &str) -> BagId {
+            match self.bimap.get_by_right(bag_str) {
+                Some(id) => *id,
+                None => {
+                    let id = self.next_id;
+                    self.bimap.insert(id, bag_str.to_string());
+                    self.next_id += 1;
+                    id
+                }
+            }
+        }
+    }
+
+    /// Represents a number of bags contained within a parent bag.
+    #[derive(Debug)]
+    pub struct BagContains {
+        /// Number of bags contained in the parent.
+        pub count: usize,
+        /// ID of contained bag.
+        pub bag_id: BagId,
+    }
+
+    /// Rule of a bag, which can be parsed from text input.
+    #[derive(Debug)]
+    pub struct BagRule {
+        /// Bag ID of the parent bag.
+        pub bag_id: BagId,
+        /// All the bags contained in the parent bag.
+        pub contains: Vec<BagContains>,
+    }
+    impl BagRule {
+        /// Parse the rule from text input.
+        fn parse(bag_table: &mut BagTable, input: &str) -> Result<Self, NomParseError> {
+            context(
+                "bag rule",
+                map(
+                    separated_pair(
+                        take_until(" bags"),
+                        tag(" bags contain "),
+                        separated_list0(
+                            tag(", "),
+                            tuple((
+                                nom::character::complete::u8,
+                                space1,
+                                take_until(" bag"),
+                                is_not(",."),
+                            )),
+                        ),
+                    ),
+                    |(bs, vec)| BagRule {
+                        bag_id: bag_table.get_or_add_bag(bs),
+                        contains: vec
+                            .into_iter()
+                            .map(|(count, _, bs, _)| BagContains {
+                                count: count.into(),
+                                bag_id: bag_table.get_or_add_bag(bs),
+                            })
+                            .collect(),
+                    },
+                ),
+            )(input.trim())
+            .finish()
+            .map(|(_, r)| r)
+        }
+    }
+
+    /// Set of bag rules, which can be parsed from text input
+    pub struct BagRules {
+        /// Table that maps bag IDs to the color names.
+        pub bags: BagTable,
+        /// Set of rules.
+        pub rules: Vec<BagRule>,
+    }
+    impl BagRules {
+        /// Parses the rule set from text input.
+        pub fn from_str(s: &str) -> Result<Self, NomParseError> {
+            let mut bags = BagTable::new();
+            let rules: Vec<BagRule> = s
+                .lines()
+                .map(|line| BagRule::parse(&mut bags, line))
+                .collect::<Result<Vec<BagRule>, NomParseError>>()?;
+
+            // Print things out for testing
+            /*
+               println!("{}", input);
+               println!("{:?}", bag_table);
+               for rule in rules.iter() {
+               println!("{:?}", rule);
+            */
+
+            Ok(BagRules { bags, rules })
+        }
+
+        /// Fetches the ID for a bag color name.
+        pub fn get_id(&mut self, bag_str: &str) -> BagId {
+            self.bags.get_or_add_bag(bag_str)
+        }
+
+        /// Counts the number of bags that eventually contain a specific bag.
+        pub fn count_containing(&self, id: BagId) -> usize {
+            let mut containing_bags = HashSet::new();
+            containing_bags.insert(id);
+
+            loop {
+                let last_count = containing_bags.len();
+                for rule in self.rules.iter() {
+                    if rule
+                        .contains
+                        .iter()
+                        .any(|cont| containing_bags.contains(&cont.bag_id))
+                    {
+                        containing_bags.insert(rule.bag_id);
+                    }
+                }
+                if containing_bags.len() == last_count {
+                    break last_count - 1;
+                }
+            }
+        }
+
+        /// Recursively counts all the bags contained in a particular bag.
+        pub fn count_contained(&self, id: BagId) -> usize {
+            match self.rules.iter().find(|r| r.bag_id == id) {
+                None => 0,
+                Some(rule) => rule
+                    .contains
+                    .iter()
+                    .map(|c| c.count * (1 + self.count_contained(c.bag_id)))
+                    .sum(),
             }
         }
     }
 }
 
-#[derive(Debug)]
-struct BagContains {
-    count: u32,
-    bag_id: u32,
-}
+use solution::*;
 
-#[derive(Debug)]
-struct BagRule {
-    bag_id: u32,
-    contains: Vec<BagContains>,
-}
-
-impl BagRule {
-    fn parse<'a>(bag_table: &mut BagTable<'a>, input: &'a str) -> Result<Self, NomParseError> {
-        context(
-            "bag rule",
-            map(
-                separated_pair(
-                    take_until(" bags"),
-                    tag(" bags contain "),
-                    separated_list0(
-                        tag(", "),
-                        tuple((
-                            nom::character::complete::u32,
-                            space1,
-                            take_until(" bag"),
-                            is_not(",."),
-                        )),
-                    ),
-                ),
-                |(bs, vec)| BagRule {
-                    bag_id: bag_table.get_or_add_bag(bs),
-                    contains: vec
-                        .into_iter()
-                        .map(|(count, _, bs, _)| BagContains {
-                            count,
-                            bag_id: bag_table.get_or_add_bag(bs),
-                        })
-                        .collect(),
-                },
-            ),
-        )(input.trim())
-        .finish()
-        .map(|(_, r)| r)
-    }
-}
-
-struct BagRules<'a> {
-    bags: BagTable<'a>,
-    rules: Vec<BagRule>,
-}
-
-impl<'a> BagRules<'a> {
-    fn from_str(s: &'a str) -> Result<Self, NomParseError> {
-        let mut bags = BagTable::new();
-        let rules: Vec<BagRule> = s
-            .lines()
-            .map(|line| BagRule::parse(&mut bags, line))
-            .collect::<Result<Vec<BagRule>, NomParseError>>()?;
-
-        // Print things out for testing
-        /*
-           println!("{}", input);
-           println!("{:?}", bag_table);
-           for rule in rules.iter() {
-           println!("{:?}", rule);
-        */
-
-        Ok(BagRules { bags, rules })
-    }
-}
-
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 7,
     name: "Handy Haversacks",
-    preprocessor: None,
+    preprocessor: Some(|input| {
+        let mut bag_rules = BagRules::from_str(input)?;
+        let id = bag_rules.get_id("shiny gold");
+
+        Ok(Box::new((bag_rules, id)).into())
+    }),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let mut bag_rules = BagRules::from_str(input.expect_input()?)?;
-
             // Processing
-            let id = bag_rules.bags.get_or_add_bag("shiny gold");
-            Ok(Answer::Unsigned({
-                let mut containing_bags = HashSet::new();
-                containing_bags.insert(id);
-
-                loop {
-                    let last_count = containing_bags.len();
-                    for rule in bag_rules.rules.iter() {
-                        if rule
-                            .contains
-                            .iter()
-                            .any(|cont| containing_bags.contains(&cont.bag_id))
-                        {
-                            containing_bags.insert(rule.bag_id);
-                        }
-                    }
-                    if containing_bags.len() == last_count {
-                        break (last_count - 1).try_into().unwrap();
-                    }
-                }
-            }))
+            let (bag_rules, id) = input.expect_data::<(BagRules, BagId)>()?;
+            Ok(Answer::Unsigned(
+                bag_rules.count_containing(*id).try_into().unwrap(),
+            ))
         },
         // Part two
         |input| {
-            // Generation
-            let mut bag_rules = BagRules::from_str(input.expect_input()?)?;
-
             // Processing
-            let id = bag_rules.bags.get_or_add_bag("shiny gold");
-
-            fn count_containing_bags(rules: &[BagRule], id: u32) -> u32 {
-                match rules.iter().find(|r| r.bag_id == id) {
-                    None => 0,
-                    Some(rule) => rule
-                        .contains
-                        .iter()
-                        .map(|c| c.count * (1 + count_containing_bags(rules, c.bag_id)))
-                        .sum(),
-                }
-            }
+            let (bag_rules, id) = input.expect_data::<(BagRules, BagId)>()?;
             Ok(Answer::Unsigned(
-                count_containing_bags(&bag_rules.rules, id).into(),
+                bag_rules.count_contained(*id).try_into().unwrap(),
             ))
         },
     ],

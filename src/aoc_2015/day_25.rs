@@ -8,8 +8,8 @@ mod tests {
 
     solution_test! {
     vec![Unsigned(19980801)],
-    "To continue, please consult the code grid in the manual.  Enter the code at row 15, column 29.",
-    vec![759716u64].answer_vec()
+    "To continue, please consult the code grid in the manual.  Enter the code at row 6, column 6.",
+    vec![27995004u64].answer_vec()
     }
 }
 
@@ -61,15 +61,10 @@ mod solution {
 
             // Calculate the number in the sequence of codes from the table coordinates.
             // See the notes for a derivation of this formula.
-            // TODO: Derive formula in the notes.
-            let n = ((col - 1) * (col + 2) + (2 * col + row - 2) * (row - 1)) / 2;
+            let n = ((col + row).pow(2) - col - 3 * row + 2) / 2;
 
-            let mut x = 20151125;
-            for _ in 0..n {
-                x = (252533 * x) % 33554393;
-            }
-
-            Ok(x)
+            // Now calculate the nth number in the sequence.
+            Ok((1..n).fold(20151125u64, |x, _| (252533 * x) % 33554393))
         }
     }
 }
