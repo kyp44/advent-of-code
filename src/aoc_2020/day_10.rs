@@ -1,5 +1,5 @@
 use crate::aoc::prelude::*;
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 #[cfg(test)]
 mod tests {
@@ -56,61 +56,130 @@ mod tests {
     }
 }
 
-fn parse_joltages(input: &str) -> AocResult<Vec<u32>> {
-    // Get joltages
-    let mut j = u32::gather(input.lines())?;
-    // Add the outlet
-    j.push(0);
-    // Add the device
-    j.push(j.iter().max().unwrap() + 3);
-    // Remove duplicates and sort
-    j.dedup();
-    j.sort_unstable();
-    Ok(j)
-}
+/// Contains solution implementation items.
+mod solution {
+    use std::ops::{Add, Sub};
 
-pub const SOLUTION: Solution = Solution {
-    day: 10,
-    name: "Adapter Array",
-    preprocessor: None,
-    solvers: &[
-        // Part one
-        |input| {
-            // Generation
-            let joltages = parse_joltages(input.expect_input()?)?;
+    use super::*;
 
-            // Processing
-            let diffs: Vec<u32> = joltages.windows(2).map(|w| w[1] - w[0]).collect();
-            // Verify that no differences are above 3
-            if diffs.iter().any(|d| *d > 3) {
-                return Err(AocError::Process(
-                    "Adaptors cannot be chained together due to a gap of over 3 jolts".into(),
+    /// An adapter with a particular output voltage
+    #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Copy)]
+    struct Adapter {
+        /// The output joltage of the adapter.
+        output_joltage: u32,
+    }
+    impl From<u32> for Adapter {
+        fn from(value: u32) -> Self {
+            Self {
+                output_joltage: value,
+            }
+        }
+    }
+    impl Add for Adapter {
+        type Output = Self;
+
+        fn add(self, rhs: Self) -> Self::Output {
+            (self.output_joltage + rhs.output_joltage).into()
+        }
+    }
+
+    /// Difference between two adapters.
+    enum AdapterDifference {
+        /// Output joltage difference between adapters is too large.
+        Incompatible,
+        /// They are compatible with the joltage difference.
+        Compatible(u32),
+    }
+    impl AdapterDifference {
+        /// Compared adapters is compatible or not.
+        fn is_compatible(&self) -> bool {
+            matches!(self, Self::Compatible(_))
+        }
+    }
+    impl Sub for Adapter {
+        type Output = AdapterDifference;
+
+        // Note that this subtraction is commutative.
+        fn sub(self, rhs: Self) -> Self::Output {
+            let diff = self.output_joltage.abs_diff(rhs.output_joltage);
+            if diff > 3 {
+                AdapterDifference::Incompatible
+            } else {
+                AdapterDifference::Compatible(diff)
+            }
+        }
+    }
+
+    /// The complete set of adapters, which can be parsed from text input.
+    pub struct AdapterSet {
+        /// The set of adapters in order of increasing output joltage.
+        /// Also includes the outlet (0 jolts) and the maximum built-in adapter
+        /// input joltage.
+        adapters: Vec<Adapter>,
+    }
+    impl FromStr for AdapterSet {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            // Read in adapters.
+            let mut adapters: Vec<_> = u32::gather(s.lines())?
+                .into_iter()
+                .map(Adapter::from)
+                .collect();
+
+            // Add the outlet and built-in adapter.
+            adapters.push(0.into());
+            adapters.push(*adapters.iter().max().unwrap() + 3.into());
+
+            // Remove duplicates and sort
+            adapters.dedup();
+            adapters.sort_unstable();
+
+            // Check that there are no gaps that are too large
+            let adapters = Self { adapters };
+            if adapters.differences().any(|d| !d.is_compatible()) {
+                return Err(AocError::InvalidInput(
+                    "The device cannot ever be powered because there is a gap of over 3 jolts"
+                        .into(),
                 ));
             }
-            // Now get the required diffs
-            let count_diffs = |n| -> u64 { diffs.iter().filter_count(|d| **d == n) };
-            Ok((count_diffs(1) * count_diffs(3)).into())
-        },
-        // Part two
-        |input| {
-            // Generation
-            let joltages = parse_joltages(input.expect_input()?)?;
 
-            // Processing
-            // For each adapter we store the number of variations ahead if we were to just start with that
-            // joltage.
-            let mut variations: HashMap<u32, u64> = HashMap::new();
+            Ok(adapters)
+        }
+    }
+    impl AdapterSet {
+        /// Returns an [Iterator] over the difference between the ordered adapters/joltages.
+        fn differences(&self) -> impl Iterator<Item = AdapterDifference> + '_ {
+            self.adapters.windows(2).map(|w| w[1] - w[0])
+        }
+
+        /// Count the number of adapter transitions that have a particular joltage difference.
+        pub fn count_joltage_differences(&self, difference: u32) -> usize {
+            // Verify that the sorted adapters are all compatible
+            self.differences().filter_count(|diff| match diff {
+                AdapterDifference::Incompatible => false,
+                AdapterDifference::Compatible(d) => *d == difference,
+            })
+        }
+
+        /// Counts the number of possible arrangements of the adapters.
+        pub fn count_arrangements(&self) -> usize {
+            // For each adapter we store the number of variations between it and the device
+            // if we were to keep the adapter chain between it and the outlet.
+            let mut variations: HashMap<Adapter, usize> = HashMap::new();
+            // The previous recent number of variations
             let mut last_var = 1;
+
             // The algorithm here works work backwards just because it's more natural to take slices
             // forward rather than backward.
-            for (i, v) in joltages.iter().enumerate().rev() {
+            for (i, v) in self.adapters.iter().enumerate().rev() {
                 // Each new number of variations is then the sum of any potential number
-                // of variations if there are adapters with any of the next three consectuive
-                // joltages, or the last variation if the the next gap is 3 jolts.
+                // of variations if there are adapters with any of the next three consecutive
+                // output joltages, or the last variation if the the next gap is 3 jolts.
                 let var = std::cmp::max(
-                    joltages[i + 1..]
+                    self.adapters[i + 1..]
                         .iter()
-                        .take_while(|vp| **vp <= v + 3)
+                        .take_while(|vp| (**vp - *v).is_compatible())
                         .map(|vp| variations[vp])
                         .sum(),
                     last_var,
@@ -119,7 +188,39 @@ pub const SOLUTION: Solution = Solution {
                 last_var = var;
                 //println!("{} {} {}", i, v, var);
             }
-            Ok(last_var.into())
+            last_var
+        }
+    }
+}
+
+use solution::*;
+
+/// Solution struct.
+pub const SOLUTION: Solution = Solution {
+    day: 10,
+    name: "Adapter Array",
+    preprocessor: Some(|input| Ok(Box::new(AdapterSet::from_str(input)?).into())),
+    solvers: &[
+        // Part one
+        |input| {
+            // Processing
+            let adapters = input.expect_data::<AdapterSet>()?;
+            Ok(Answer::Unsigned(
+                (adapters.count_joltage_differences(1) * adapters.count_joltage_differences(3))
+                    .try_into()
+                    .unwrap(),
+            ))
+        },
+        // Part two
+        |input| {
+            // Processing
+            Ok(Answer::Unsigned(
+                input
+                    .expect_data::<AdapterSet>()?
+                    .count_arrangements()
+                    .try_into()
+                    .unwrap(),
+            ))
         },
     ],
 };
