@@ -1,7 +1,7 @@
 //! # Advent of Code
 //!
 //! These are my solutions to the [Advent of Code](https://adventofcode.com/) problems in Rust.
-//! I am working through these to help me learn Rust and because the problems are fun to solve!
+//! I started this to help me learn Rust, but now the problems are just fun to solve and also help keep my Rust skills sharp!
 //!
 //! All the code is documented to some extent, including general utilities in the [aoc] module
 //! that are used in multiple solutions.
@@ -45,10 +45,10 @@ struct Cli {
     /// List the implemented solutions
     #[structopt(short, long)]
     list: bool,
-    /// Year to run
+    /// Year of the problem solution to run
     #[structopt(name = "YEAR", required_unless("list"))]
     year: Option<u32>,
-    /// Day to run (1-25)
+    /// Day of the problem solution to run (1-25)
     #[structopt(name = "DAY", required_unless("list"))]
     day: Option<u32>,
 }

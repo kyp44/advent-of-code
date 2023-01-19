@@ -1,27 +1,27 @@
 use std::{marker::PhantomData, rc::Rc};
 
-/// Something that evolves and has cells. For example, a Conway's Game of Life simulation.
+// Something that evolves and has cells. For example, a Conway's Game of Life simulation.
 pub trait Evolver<T> {
-    /// Point to address elements
+    // Point to address elements
     type Point;
 
-    /// Create a new cell array for the next iteration in the default state.
+    // Create a new cell array for the next iteration in the default state.
     fn next_default(other: &Self) -> Self;
 
-    /// Get the value at the specified coordinates.
+    // Get the value at the specified coordinates.
     fn get_element(&self, point: &Self::Point) -> T;
 
-    /// Set the value at the specified coordinates.
+    // Set the value at the specified coordinates.
     fn set_element(&mut self, point: &Self::Point, value: T);
 
-    /// Given the coordinates of a cell, return the value of the same cell in the next step.
+    // Given the coordinates of a cell, return the value of the same cell in the next step.
     fn next_cell(&self, point: &Self::Point) -> T;
 
-    /// Get an iterator over the cells to be set in the next step.
+    // Get an iterator over the cells to be set in the next step.
     fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>>;
 
-    /// Iterate over the steps in the evolution of the cell array.
-    /// The first element will be the next evolution, not the current array.
+    // Iterate over the steps in the evolution of the cell array.
+    // The first element will be the next evolution, not the current array.
     fn evolutions(&self) -> EvolverIter<Self, T>
     where
         Self: Sized + Clone,
@@ -33,7 +33,7 @@ pub trait Evolver<T> {
     }
 }
 
-/// Iterator to evolve a cell array.
+// Iterator to evolve a cell array.
 pub struct EvolverIter<E, T> {
     current: Rc<E>,
     _phant: PhantomData<T>,

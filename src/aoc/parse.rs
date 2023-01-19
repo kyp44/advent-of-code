@@ -12,13 +12,13 @@ use std::fmt;
 use std::ops::RangeFrom;
 use std::str::FromStr;
 
-/// Type of nom input when parsing bits
+// Type of nom input when parsing bits
 pub type BitInput<'a> = (&'a [u8], usize);
 
-/// This custom parse error type is needed because the desired Nom VerboseError
-/// keeps references to the input string where that could not be parsed.
-/// This does not play well with anyhow, which requires that its errors have
-/// static lifetime since the error chain is passed out of main().
+// This custom parse error type is needed because the desired Nom VerboseError
+// keeps references to the input string where that could not be parsed.
+// This does not play well with anyhow, which requires that its errors have
+// static lifetime since the error chain is passed out of main().
 #[derive(Debug, Clone)]
 pub struct NomParseError {
     verbose_error: VerboseError<String>,
@@ -68,10 +68,10 @@ impl NomParseError {
 }
 impl std::error::Error for NomParseError {}
 
-/// Type containing the result of a nom parsing.
+// Type containing the result of a nom parsing.
 pub type NomParseResult<I, U> = IResult<I, U, NomParseError>;
 
-/// This should be a part of the nom library in my opinion.
+// This should be a part of the nom library in my opinion.
 pub trait DiscardInput<U, E> {
     fn discard_input(self) -> Result<U, E>;
 }
@@ -81,17 +81,17 @@ impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
     }
 }
 
-/// Trait for types to be parsable with Nom.
-/// Note that we cannot simply implement FromStr for types that implement this trait
-/// because this breaks the potential foreign trait on a foreign type rules.
-/// See here: <https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299>
+// Trait for types to be parsable with Nom.
+// Note that we cannot simply implement FromStr for types that implement this trait
+// because this breaks the potential foreign trait on a foreign type rules.
+// See here: <https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299>
 pub trait Parseable<'a> {
-    /// Parser function for nom.
+    // Parser function for nom.
     fn parser(input: &'a str) -> NomParseResult<&str, Self>
     where
         Self: Sized;
 
-    /// Runs the parser and gets the result, stripping out the input from the nom parser.
+    // Runs the parser and gets the result, stripping out the input from the nom parser.
     fn from_str(input: &'a str) -> Result<Self, NomParseError>
     where
         Self: Sized,
@@ -99,7 +99,7 @@ pub trait Parseable<'a> {
         Self::parser(input).finish().discard_input()
     }
 
-    /// Gathers a vector of items from an iterator with each item being a string to parse.
+    // Gathers a vector of items from an iterator with each item being a string to parse.
     fn gather<I>(strs: I) -> Result<Vec<Self>, NomParseError>
     where
         Self: Sized,
@@ -117,7 +117,7 @@ pub trait Parseable<'a> {
     }
 }
 
-/// Parseable for simple numbers.
+// Parseable for simple numbers.
 impl<T: Unsigned + FromStr> Parseable<'_> for T {
     fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(digit1, |ns: &str| match ns.parse() {
@@ -127,7 +127,7 @@ impl<T: Unsigned + FromStr> Parseable<'_> for T {
     }
 }
 
-/// A nom combinator that trims whitespace surrounding a parser, with or without including newline characters.
+// A nom combinator that trims whitespace surrounding a parser, with or without including newline characters.
 pub fn trim<I, F, O, E>(include_newlines: bool, inner: F) -> impl FnMut(I) -> IResult<I, O, E>
 where
     I: InputTakeAtPosition,
@@ -144,8 +144,8 @@ where
     delimited(space_parser, inner, space_parser)
 }
 
-/// A nom parser that takes a single alphanumberic character, which
-/// somehow is not built into nom
+// A nom parser that takes a single alphanumberic character, which
+// somehow is not built into nom
 pub fn single_alphanumeric<I, E>(input: I) -> IResult<I, char, E>
 where
     I: Slice<RangeFrom<usize>> + InputIter,
@@ -161,7 +161,7 @@ where
     })(input)
 }
 
-/// A nom combinator that requires some whitespace around a parser.
+// A nom combinator that requires some whitespace around a parser.
 pub fn separated<I, F, O, E>(inner: F) -> impl FnMut(I) -> IResult<I, O, E>
 where
     I: InputTakeAtPosition,
@@ -172,7 +172,7 @@ where
     delimited(space1, inner, space1)
 }
 
-/// A nom parser that takes a single decimal digit.
+// A nom parser that takes a single decimal digit.
 pub fn single_digit<I, E>(input: I) -> IResult<I, u32, E>
 where
     I: Slice<RangeFrom<usize>> + InputIter,
@@ -192,8 +192,8 @@ where
     }
 }
 
-/// Parses a label followed by another parser with potential whitespace in between
-/// on a single line.
+// Parses a label followed by another parser with potential whitespace in between
+// on a single line.
 pub fn field_line_parser<'a, F, O, E>(
     label: &'static str,
     inner: F,

@@ -1,5 +1,6 @@
+use std::str::FromStr;
+
 use crate::aoc::prelude::*;
-use std::{collections::HashMap, str::FromStr};
 
 #[cfg(test)]
 mod tests {
@@ -58,6 +59,7 @@ mod tests {
 
 /// Contains solution implementation items.
 mod solution {
+    use std::collections::HashMap;
     use std::ops::{Add, Sub};
 
     use super::*;

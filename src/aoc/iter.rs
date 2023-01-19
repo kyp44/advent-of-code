@@ -1,9 +1,9 @@
-/// Collection of Iterator adapter extensions and other extensions that return Iterators.
+// Collection of Iterator adapter extensions and other extensions that return Iterators.
 use std::{fmt::Debug, ops::RangeInclusive};
 
 use num::Integer;
 
-/// Convenience function to count from a filtered Iterator.
+// Convenience function to count from a filtered Iterator.
 pub trait FilterCount<T, O> {
     fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> O;
 }
@@ -17,8 +17,8 @@ where
     }
 }
 
-/// Convenience trait to get the range from an Iterator of integers.
-/// Any empty iterator will just have a range of 0..1.
+// Convenience trait to get the range from an Iterator of integers.
+// Any empty iterator will just have a range of 0..1.
 pub trait HasRange<T> {
     fn range(self) -> Option<RangeInclusive<T>>;
 }
@@ -48,7 +48,7 @@ where
     }
 }
 
-/// Iterator adapter to an Option Iterator that includes None at the beginning.
+// Iterator adapter to an Option Iterator that includes None at the beginning.
 #[derive(new, Clone)]
 pub struct NoneIter<I> {
     #[new(value = "false")]
@@ -71,7 +71,7 @@ where
     }
 }
 
-/// Adapter extension trait
+// Adapter extension trait
 pub trait HasNoneIter {
     fn none_iter(self) -> NoneIter<Self>
     where
@@ -86,17 +86,17 @@ where
     }
 }
 
-/// [Iterator] to replace occurrences in a string one at a time.
+// [Iterator] to replace occurrences in a string one at a time.
 #[derive(new)]
 pub struct Replacements<'a, 'b, 'c> {
-    /// Original string.
+    // Original string.
     original: &'a str,
-    /// Current index in teh string.
+    // Current index in teh string.
     #[new(value = "0")]
     idx: usize,
-    /// Substring to replace.
+    // Substring to replace.
     from: &'b str,
-    /// String to which to replace substrings.
+    // String to which to replace substrings.
     to: &'c str,
 }
 impl Iterator for Replacements<'_, '_, '_> {
@@ -114,7 +114,7 @@ impl Iterator for Replacements<'_, '_, '_> {
     }
 }
 
-/// Trait to create a Replacements [Iterator]].
+// Trait to create a Replacements [Iterator]].
 pub trait IndividualReplacements<'a, 'b, 'c> {
     fn individual_replacements(&'a self, from: &'b str, to: &'c str) -> Replacements<'a, 'b, 'c>;
 }
@@ -124,7 +124,7 @@ impl<'a, 'b, 'c> IndividualReplacements<'a, 'b, 'c> for str {
     }
 }
 
-/// [Iterator] over runs of the same characters in strings.
+// [Iterator] over runs of the same characters in strings.
 pub struct Runs<'a> {
     remaining: &'a str,
 }
@@ -147,7 +147,7 @@ impl<'a> Iterator for Runs<'a> {
     }
 }
 
-/// Trait that allows splitting by runs on the same elements.
+// Trait that allows splitting by runs on the same elements.
 pub trait SplitRuns {
     fn split_runs(&self) -> Runs;
 }

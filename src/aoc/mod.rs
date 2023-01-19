@@ -16,7 +16,7 @@ mod grid;
 mod iter;
 pub mod parse;
 
-/// Prelude
+// Prelude
 pub mod prelude {
     pub use super::{
         char_add, evolver::Evolver, grid::CharGrid, grid::Grid, grid::GridPoint, grid::GridSize,
@@ -29,7 +29,7 @@ pub mod prelude {
     pub use aoc_derive::CharGridDebug;
 }
 
-/// Custom error type for AoC problem functions.
+// Custom error type for AoC problem functions.
 #[derive(Debug, Clone, Error)]
 pub enum AocError {
     #[error("Year {0} is not yet solved")]
@@ -53,7 +53,7 @@ pub enum AocError {
 }
 pub type AocResult<T> = Result<T, AocError>;
 
-/// Extension trait for ranges.
+// Extension trait for ranges.
 pub trait RangeExt<T>: Sized {
     fn len(&self) -> T;
     fn intersection(&self, other: &Self) -> Option<Self>;
@@ -76,12 +76,12 @@ where
     }
 }
 
-/// Increment a character by a certain number.
+// Increment a character by a certain number.
 pub fn char_add(c: char, i: u32) -> char {
     std::char::from_u32((c as u32) + i).unwrap_or(c)
 }
 
-/// Allows for different answer types.
+// Allows for different answer types.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Answer {
     Unsigned(u64),
@@ -104,7 +104,7 @@ impl From<String> for Answer {
     }
 }
 
-//// Represents data that can be passed to a solver function.
+/// Represents data that can be passed to a solver function.
 pub enum SolverInput<'a> {
     Text(&'a str),
     Data(Box<dyn Any>),
@@ -143,7 +143,7 @@ impl<T: Any> From<Box<T>> for SolverInput<'_> {
     }
 }
 
-/// Represents the solver for both pars of a day's puzzle.
+// Represents the solver for both pars of a day's puzzle.
 type SolverFunc = fn(&SolverInput) -> AocResult<Answer>;
 pub struct Solution {
     pub day: u32,
@@ -152,12 +152,12 @@ pub struct Solution {
     pub solvers: &'static [SolverFunc],
 }
 impl Solution {
-    /// Constructs the title.
+    // Constructs the title.
     pub fn title(&self) -> String {
         format!("Day {}: {}", self.day, self.name)
     }
 
-    /// Run preprocessor if applicable
+    // Run preprocessor if applicable
     pub fn preprocess<'a>(&self, input: &'a str) -> AocResult<SolverInput<'a>> {
         if let Some(pf) = self.preprocessor {
             pf(input)
@@ -166,7 +166,7 @@ impl Solution {
         }
     }
 
-    /// Reads the input, runs the solvers, and outputs the answer(s).
+    // Reads the input, runs the solvers, and outputs the answer(s).
     pub fn run_and_print(&self, year: u32) -> anyhow::Result<Vec<Answer>> {
         // Read input for the problem
         let input_path = format!("input/{year}/day_{:02}.txt", self.day);
@@ -200,7 +200,7 @@ impl Solution {
     }
 }
 
-/// Package of solutions of a year's puzzles.
+// Package of solutions of a year's puzzles.
 pub struct YearSolutions {
     pub year: u32,
     pub solutions: &'static [Solution],
@@ -218,7 +218,7 @@ impl YearSolutions {
     }
 }
 
-/// Convenience trait to convert a vector of numbers into numberic answers.
+// Convenience trait to convert a vector of numbers into numberic answers.
 pub trait AnswerVec {
     fn answer_vec(self) -> Vec<Option<Answer>>;
 }
@@ -242,7 +242,7 @@ impl AnswerVec for Vec<&str> {
     }
 }
 
-/// Compares solution results with a vector.
+// Compares solution results with a vector.
 #[macro_export]
 macro_rules! solution_results {
     ($input:expr, $exp: expr) => {
@@ -258,8 +258,8 @@ macro_rules! solution_results {
     };
 }
 
-/// Convenience macro to build the example test for a solution.
-/// Also creates an ignored test to test the main problem solutions.
+// Convenience macro to build the example test for a solution.
+// Also creates an ignored test to test the main problem solutions.
 #[macro_export]
 macro_rules! solution_test {
     ($actual: expr, $($input:expr, $exp: expr), +) => {
@@ -282,7 +282,7 @@ macro_rules! solution_test {
     };
 }
 
-/// Builds expensive tests that take a while to run.
+// Builds expensive tests that take a while to run.
 #[macro_export]
 macro_rules! expensive_test {
     ($($input:expr, $exp: expr), +) => {
@@ -297,7 +297,7 @@ macro_rules! expensive_test {
     };
 }
 
-/// Convenience macro to construct the solutions for a year.
+// Convenience macro to construct the solutions for a year.
 #[macro_export]
 macro_rules! year_solutions {
     (year = $year: expr, days =  {$($day: ident,)* }) => {
@@ -307,7 +307,7 @@ macro_rules! year_solutions {
 
 	use super::aoc::YearSolutions;
 
-	/// All of the solutions.
+	// All of the solutions.
 	pub const YEAR_SOLUTIONS: YearSolutions = YearSolutions {
 	    year: $year,
 	    solutions: &[
