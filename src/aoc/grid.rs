@@ -219,6 +219,12 @@ pub trait CharGrid<T> {
         )
     }
 
+    // TODO: Can we add a from_grid required method and then implement FromStr?
+    // This would be useful at least in the 2020 day 17 problem, but would need
+    // to go look for other use cases.
+    // This might makes sense to implement From<str> when From<Grid> is implemented.
+    // Can we do a default method as well? Can't use trait because a size it required.
+
     // Construct from a character grid.
     fn grid_from_str(s: &str) -> AocResult<Grid<T>> {
         let data = s
@@ -238,6 +244,7 @@ pub trait CharGrid<T> {
 }
 
 impl Grid<bool> {
+    // TODO: Should this be as_coordinates since we're not converting but creating?
     pub fn to_coordinates(&self) -> HashSet<GridPoint> {
         self.all_points().filter(|p| *self.get(p)).collect()
     }

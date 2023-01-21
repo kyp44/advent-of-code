@@ -1,7 +1,5 @@
 use crate::aoc::prelude::*;
-use cgmath::Vector2;
-use itertools::Itertools;
-use std::{collections::HashSet, convert::TryInto, fmt::Debug, ops::RangeInclusive};
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -18,198 +16,233 @@ mod tests {
     }
 }
 
-type DimensionRange = RangeInclusive<isize>;
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use cgmath::Vector2;
+    use itertools::Itertools;
+    use std::{collections::HashSet, convert::TryInto, fmt::Debug, ops::RangeInclusive};
 
-#[derive(new)]
-struct Slice {
-    grid: Grid<bool>,
-}
-impl CharGrid<bool> for Slice {
-    fn get_grid(&self) -> &Grid<bool> {
-        &self.grid
+    /// A range of coordinates containing active cubes for a single dimension.
+    type DimensionRange = RangeInclusive<isize>;
+
+    /// A 2D slice of a higher dimensional grid, which can be parsed from text input.
+    #[derive(new)]
+    pub struct Slice {
+        /// Grid for the 2D slice.
+        grid: Grid<bool>,
     }
+    impl CharGrid<bool> for Slice {
+        fn get_grid(&self) -> &Grid<bool> {
+            &self.grid
+        }
 
-    fn from_char(c: char) -> Option<bool> {
-        match c {
-            '#' => Some(true),
-            '.' => Some(false),
-            _ => None,
+        fn from_char(c: char) -> Option<bool> {
+            match c {
+                '#' => Some(true),
+                '.' => Some(false),
+                _ => None,
+            }
+        }
+
+        fn to_char(e: &bool) -> char {
+            if *e {
+                '#'
+            } else {
+                '.'
+            }
+        }
+    }
+    impl FromStr for Slice {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ok(Self {
+                grid: Self::grid_from_str(s)?,
+            })
+        }
+    }
+    impl Slice {
+        /// Initialize a new pocket dimension with this slice.
+        pub fn initialize_pocket_dimension(&self, dimensions: usize) -> AocResult<PocketDimension> {
+            PocketDimension::new(dimensions, self)
         }
     }
 
-    fn to_char(e: &bool) -> char {
-        if *e {
-            '#'
-        } else {
-            '.'
-        }
+    /// An infinite pocket dimension containing Conway cubes in an arbitrary number of dimensions.
+    #[derive(Clone)]
+    pub struct PocketDimension {
+        /// Number of dimensions, e.g. 3 for 3D.
+        dimensions: usize,
+        /// Set of coordinates of all active Conway cubes.
+        active_cubes: HashSet<Vec<isize>>,
     }
-}
+    impl Debug for PocketDimension {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            let ranges = self.ranges();
 
-#[derive(Clone)]
-struct Dimension {
-    dimensions: usize,
-    active_cubes: HashSet<Vec<isize>>,
-}
-impl Debug for Dimension {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let ranges = self.ranges();
+            if self.dimensions > 2 {
+                for coords in (2..self.dimensions)
+                    .map(|i| ranges[i].clone())
+                    .multi_cartesian_product()
+                {
+                    let slice = Slice::new(Grid::<bool>::from_coordinates(
+                        self.active_cubes
+                            .iter()
+                            .filter(|pt| pt[2..] == coords)
+                            .map(|v| Vector2::new(v[0], v[1])),
+                    ));
 
-        if self.dimensions > 2 {
-            for coords in (2..self.dimensions)
-                .map(|i| ranges[i].clone())
-                .multi_cartesian_product()
-            {
+                    writeln!(
+                        f,
+                        "{}",
+                        coords
+                            .iter()
+                            .enumerate()
+                            .map(|(i, v)| format!("x{} = {}", i + 3, v))
+                            .join(", ")
+                    )?;
+                    slice.out_fmt(f)?;
+                }
+            } else {
                 let slice = Slice::new(Grid::<bool>::from_coordinates(
-                    self.active_cubes
-                        .iter()
-                        .filter(|pt| pt[2..] == coords)
-                        .map(|v| Vector2::new(v[0], v[1])),
+                    self.active_cubes.iter().map(|v| Vector2::new(v[0], v[1])),
                 ));
-
-                writeln!(
-                    f,
-                    "{}",
-                    coords
-                        .iter()
-                        .enumerate()
-                        .map(|(i, v)| format!("x{} = {}", i + 3, v))
-                        .join(", ")
-                )?;
                 slice.out_fmt(f)?;
             }
-        } else {
-            let slice = Slice::new(Grid::<bool>::from_coordinates(
-                self.active_cubes.iter().map(|v| Vector2::new(v[0], v[1])),
-            ));
-            slice.out_fmt(f)?;
+
+            Ok(())
+        }
+    }
+    impl PocketDimension {
+        /// Create a new pocket dimension from an initial 2D slice.
+        fn new(dimensions: usize, initial_slice: &Slice) -> AocResult<Self> {
+            if dimensions < 2 {
+                return Err(AocError::InvalidInput(
+                    format!("Dimension must be at least 2, got {dimensions}").into(),
+                ));
+            }
+            Ok(PocketDimension {
+                dimensions,
+                active_cubes: initial_slice
+                    .grid
+                    .to_coordinates()
+                    .iter()
+                    .map(|p| {
+                        let mut v = vec![p.x.try_into().unwrap(), p.y.try_into().unwrap()];
+                        v.append(&mut vec![0; dimensions - 2]);
+                        v
+                    })
+                    .collect(),
+            })
         }
 
-        Ok(())
-    }
-}
-impl Dimension {
-    fn from_str(dimensions: usize, s: &str) -> AocResult<Self> {
-        if dimensions < 2 {
-            return Err(AocError::InvalidInput(
-                format!("Dimension must be at least 2, got {dimensions}").into(),
-            ));
-        }
-        Ok(Dimension {
-            dimensions,
-            active_cubes: Slice::grid_from_str(s)?
-                .to_coordinates()
-                .iter()
-                .map(|p| {
-                    let mut v = vec![p.x.try_into().unwrap(), p.y.try_into().unwrap()];
-                    v.append(&mut vec![0; dimensions - 2]);
-                    v
-                })
-                .collect(),
-        })
-    }
-
-    fn verify_point(&self, point: &[isize]) {
-        if point.len() != self.dimensions {
-            panic!(
+        /// Verifies that a point has the correct number of dimensions and simply
+        /// panics if not.
+        fn verify_point(&self, point: &[isize]) {
+            if point.len() != self.dimensions {
+                panic!(
                 "Trying to access a {}-dimensional pocket dimension with a {}-dimensional point",
                 self.dimensions,
                 point.len()
             )
+            }
+        }
+
+        /// Returns the inclusive ranges in each dimension that contain active cubes.
+        fn ranges(&self) -> Vec<DimensionRange> {
+            (0..self.dimensions)
+                .map(|i| match self.active_cubes.iter().map(|p| p[i]).range() {
+                    Some(r) => r,
+                    None => 0..=0,
+                })
+                .collect()
+        }
+
+        /// Counts the number of active cubes.
+        pub fn count_active(&self) -> u64 {
+            self.active_cubes.len().try_into().unwrap()
         }
     }
+    impl Evolver<bool> for PocketDimension {
+        type Point = Vec<isize>;
 
-    fn ranges(&self) -> Vec<DimensionRange> {
-        (0..self.dimensions)
-            .map(|i| match self.active_cubes.iter().map(|p| p[i]).range() {
-                Some(r) => r,
-                None => 0..=0,
-            })
-            .collect()
-    }
+        fn next_default(other: &Self) -> Self {
+            PocketDimension {
+                dimensions: other.dimensions,
+                active_cubes: HashSet::new(),
+            }
+        }
 
-    fn count_active(&self) -> u64 {
-        self.active_cubes.len().try_into().unwrap()
+        fn get_element(&self, point: &Self::Point) -> bool {
+            self.verify_point(point);
+            self.active_cubes.contains(point)
+        }
+
+        fn set_element(&mut self, point: &Self::Point, value: bool) {
+            self.verify_point(point);
+            if value {
+                self.active_cubes.insert(point.clone());
+            } else {
+                self.active_cubes.remove(point);
+            }
+        }
+
+        fn next_cell(&self, point: &Self::Point) -> bool {
+            self.verify_point(point);
+            let neighbors: usize = (0..self.dimensions)
+                .map(|i| {
+                    let v = point[i];
+                    (v - 1)..=(v + 1)
+                })
+                .multi_cartesian_product()
+                .filter_count(|pt| pt != point && self.get_element(pt));
+
+            (self.get_element(point) && neighbors == 2) || neighbors == 3
+        }
+
+        fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
+            Box::new(
+                self.ranges()
+                    .iter()
+                    .map(|r| (r.start() - 1)..=(r.end() + 1))
+                    .multi_cartesian_product(),
+            )
+        }
     }
 }
 
-impl Evolver<bool> for Dimension {
-    type Point = Vec<isize>;
+use solution::*;
 
-    fn next_default(other: &Self) -> Self {
-        Dimension {
-            dimensions: other.dimensions,
-            active_cubes: HashSet::new(),
-        }
-    }
-
-    fn get_element(&self, point: &Self::Point) -> bool {
-        self.verify_point(point);
-        self.active_cubes.contains(point)
-    }
-
-    fn set_element(&mut self, point: &Self::Point, value: bool) {
-        self.verify_point(point);
-        if value {
-            self.active_cubes.insert(point.clone());
-        } else {
-            self.active_cubes.remove(point);
-        }
-    }
-
-    fn next_cell(&self, point: &Self::Point) -> bool {
-        self.verify_point(point);
-        let neighbors: usize = (0..self.dimensions)
-            .map(|i| {
-                let v = point[i];
-                (v - 1)..=(v + 1)
-            })
-            .multi_cartesian_product()
-            .filter_count(|pt| pt != point && self.get_element(pt));
-
-        (self.get_element(point) && neighbors == 2) || neighbors == 3
-    }
-
-    fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
-        Box::new(
-            self.ranges()
-                .iter()
-                .map(|r| (r.start() - 1)..=(r.end() + 1))
-                .multi_cartesian_product(),
-        )
-    }
-}
-
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 17,
     name: "Conway Cubes",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Slice::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let dimension = Dimension::from_str(3, input.expect_input()?)?;
-
-            /*println!("{:?}", dimension);
-            for dim in dimension.evolutions().take(5) {
-                println!("{:?}", dim);
-            }*/
-
             // Process
-            Ok(dimension.evolutions().nth(5).unwrap().count_active().into())
+            Ok(input
+                .expect_data::<Slice>()?
+                .initialize_pocket_dimension(3)?
+                .evolutions()
+                .nth(5)
+                .unwrap()
+                .count_active()
+                .into())
         },
         // Part two
         |input| {
-            // Generation
-            let dimension = Dimension::from_str(4, input.expect_input()?)?;
-
-            /*println!("{:?}", dimension);
-            for dim in dimension.evolutions().take(5) {
-                println!("{:?}", dim);
-            }*/
-
             // Process
-            Ok(dimension.evolutions().nth(5).unwrap().count_active().into())
+            Ok(input
+                .expect_data::<Slice>()?
+                .initialize_pocket_dimension(4)?
+                .evolutions()
+                .nth(5)
+                .unwrap()
+                .count_active()
+                .into())
         },
     ],
 };

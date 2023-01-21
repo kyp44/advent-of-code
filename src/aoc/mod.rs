@@ -123,7 +123,7 @@ impl<'a> SolverInput<'a> {
     pub fn expect_data<T: 'static>(&self) -> AocResult<&T> {
         if let Self::Data(obj) = self {
             obj.downcast_ref::<T>().ok_or(AocError::InvalidInput(
-                "Expected data of on type but got a different type".into(),
+                "Expected data of one type but got a different type".into(),
             ))
         } else {
             Err(AocError::InvalidInput(

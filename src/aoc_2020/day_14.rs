@@ -260,7 +260,6 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            // TODO
             let program: Program = input.expect_input()?.parse()?;
 
             // Process
