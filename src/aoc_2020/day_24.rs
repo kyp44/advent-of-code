@@ -1,15 +1,3 @@
-use cgmath::{Vector2, Zero};
-use itertools::{iproduct, Itertools};
-use nom::{
-    branch::alt,
-    bytes::complete::tag,
-    combinator::{all_consuming, map},
-    multi::many1,
-};
-use std::{collections::HashSet, convert::TryInto, fmt, str::FromStr};
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
-
 use crate::aoc::prelude::*;
 
 #[cfg(test)]
@@ -44,203 +32,243 @@ wseweeenwnesenwwwswnew",
     }
 }
 
-type Point = Vector2<i32>;
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use cgmath::{Vector2, Zero};
+    use itertools::{iproduct, Itertools};
+    use nom::{
+        branch::alt,
+        bytes::complete::tag,
+        combinator::{all_consuming, map},
+        multi::many1,
+    };
+    use std::{collections::HashSet, convert::TryInto, fmt, str::FromStr};
+    use strum::IntoEnumIterator;
+    use strum_macros::EnumIter;
 
-#[derive(Debug, Copy, Clone, EnumIter)]
-enum Direction {
-    East,
-    West,
-    SouthEast,
-    SouthWest,
-    NorthEast,
-    NorthWest,
-}
-impl Parseable<'_> for Direction {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        use Direction::*;
-        map(
-            alt((
-                tag("e"),
-                tag("w"),
-                tag("se"),
-                tag("sw"),
-                tag("ne"),
-                tag("nw"),
-            )),
-            |s| match s {
-                "e" => East,
-                "w" => West,
-                "se" => SouthEast,
-                "sw" => SouthWest,
-                "ne" => NorthEast,
-                "nw" => NorthWest,
-                _ => panic!(),
-            },
-        )(input)
+    /// Coordinates of a tile on the floor.
+    ///
+    /// Despite the [hexagonal tiling](https://en.wikipedia.org/wiki/Hexagonal_tiling),
+    /// every tile can be specified with a 2D vector where the tiling is oriented so
+    /// that horizontal lines are formed, along which the `x` coordinate varies.
+    /// For a given tile, increasing the `y` coordinate, on the other hand,
+    /// moves along a diagonal line to upper left so that decreasing the `y`
+    /// coordinates moves to the lower right.
+    type Point = Vector2<i32>;
+
+    /// Direction to go from a tile, which can be parsed from text input.
+    ///
+    /// Bear in mind that the tiling is [hexagonal](https://en.wikipedia.org/wiki/Hexagonal_tiling)
+    /// and oriented such that horizontal lines of tiles are formed.
+    #[derive(Debug, Copy, Clone, EnumIter)]
+    enum Direction {
+        /// The tile directly to the right.
+        East,
+        /// The tile directly to the left.
+        West,
+        /// The tile to the left and above.
+        SouthEast,
+        /// The tile to the left and below.
+        SouthWest,
+        /// The tile to the right and above.
+        NorthEast,
+        /// The tile to the right and below.
+        NorthWest,
     }
-}
-impl From<Direction> for Point {
-    fn from(dir: Direction) -> Self {
-        use Direction::*;
-        match dir {
-            East => Vector2::unit_x(),
-            West => -Vector2::unit_x(),
-            SouthEast => -Vector2::unit_y(),
-            SouthWest => Vector2::new(-1, -1),
-            NorthEast => Vector2::new(1, 1),
-            NorthWest => Vector2::unit_y(),
+    impl Parseable<'_> for Direction {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            use Direction::*;
+            map(
+                alt((
+                    tag("e"),
+                    tag("w"),
+                    tag("se"),
+                    tag("sw"),
+                    tag("ne"),
+                    tag("nw"),
+                )),
+                |s| match s {
+                    "e" => East,
+                    "w" => West,
+                    "se" => SouthEast,
+                    "sw" => SouthWest,
+                    "ne" => NorthEast,
+                    "nw" => NorthWest,
+                    _ => panic!(),
+                },
+            )(input)
         }
     }
-}
-
-#[derive(Debug)]
-struct Route {
-    directions: Box<[Direction]>,
-}
-impl Parseable<'_> for Route {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        map(all_consuming(many1(Direction::parser)), |vec| Route {
-            directions: vec.into_boxed_slice(),
-        })(input)
-    }
-}
-impl Route {
-    fn follow(&self, start: Point) -> Point {
-        self.directions
-            .iter()
-            .fold(start, |a, b| a + Vector2::<i32>::from(*b))
-    }
-}
-
-#[derive(Clone)]
-struct Floor {
-    black_tiles: HashSet<Point>,
-}
-impl FromStr for Floor {
-    type Err = AocError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let routes = Route::gather(s.lines())?;
-
-        // Determine the initial state
-        let mut black_tiles = HashSet::new();
-        for route in routes.iter() {
-            let tile = route.follow(Vector2::zero());
-            if black_tiles.contains(&tile) {
-                black_tiles.remove(&tile);
-            } else {
-                black_tiles.insert(tile);
+    impl From<Direction> for Point {
+        fn from(dir: Direction) -> Self {
+            use Direction::*;
+            match dir {
+                East => Vector2::unit_x(),
+                West => -Vector2::unit_x(),
+                SouthEast => -Vector2::unit_y(),
+                SouthWest => Vector2::new(-1, -1),
+                NorthEast => Vector2::new(1, 1),
+                NorthWest => Vector2::unit_y(),
             }
         }
-
-        Ok(Floor { black_tiles })
     }
-}
-impl Evolver<bool> for Floor {
-    type Point = Point;
 
-    fn next_default(_other: &Self) -> Self {
-        Floor {
-            black_tiles: HashSet::new(),
+    /// A roue to take on the tile floor, which can be parsed from text input.
+    #[derive(Debug)]
+    struct Route {
+        /// Ordered list of directions to take from some starting tile.
+        directions: Box<[Direction]>,
+    }
+    impl Parseable<'_> for Route {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            map(all_consuming(many1(Direction::parser)), |vec| Route {
+                directions: vec.into_boxed_slice(),
+            })(input)
+        }
+    }
+    impl Route {
+        /// Given the starting tile [Point], follow the route and return the
+        /// tile [Point] on which you end up.
+        fn follow(&self, start: Point) -> Point {
+            self.directions
+                .iter()
+                .fold(start, |a, b| a + Vector2::<i32>::from(*b))
         }
     }
 
-    fn get_element(&self, point: &Self::Point) -> bool {
-        self.black_tiles.contains(point)
+    /// A tile floor, which can be parsed from text input.
+    ///
+    /// The series of directions that are parsed are immediately followed to turn
+    /// the requisite tiles black.
+    #[derive(Clone)]
+    pub struct Floor {
+        /// Set of tile [Points](Point) that have been flipped over to be black.
+        black_tiles: HashSet<Point>,
     }
+    impl FromStr for Floor {
+        type Err = AocError;
 
-    fn set_element(&mut self, point: &Self::Point, value: bool) {
-        if value {
-            self.black_tiles.insert(*point);
-        } else {
-            self.black_tiles.remove(point);
-        }
-    }
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let routes = Route::gather(s.lines())?;
 
-    fn next_cell(&self, point: &Self::Point) -> bool {
-        let adj: usize = Direction::iter()
-            .map(|d| d.into())
-            .filter_count(|dp: &Point| self.get_element(&(*dp + point)));
-        if self.get_element(point) {
-            // Tile is black
-            adj > 0 && adj <= 2
-        } else {
-            // Tile is white
-            adj == 2
-        }
-    }
-
-    fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
-        // Determine the range in x and y
-        let range = |f: fn(&Point) -> i32| match self.black_tiles.iter().map(f).range() {
-            Some(r) => (r.start() - 1)..=(r.end() + 1),
-            None => 0..=0,
-        };
-
-        Box::new(iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Vector2::new(x, y)))
-    }
-}
-impl Floor {
-    fn num_black_tiles(&self) -> u64 {
-        self.black_tiles.len().try_into().unwrap()
-    }
-}
-impl fmt::Debug for Floor {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // First convert to Vecs so that they can be reversed
-        let mut rows: Vec<Vec<char>> = Vec::new();
-        let mut row: Vec<char> = Vec::new();
-
-        let mut last_y: Option<i32> = None;
-        for point in self.next_iter() {
-            if let Some(y) = last_y {
-                if y != point.y {
-                    rows.push(row);
-                    row = Vec::new();
+            // Determine the initial state
+            let mut black_tiles = HashSet::new();
+            for route in routes.iter() {
+                let tile = route.follow(Vector2::zero());
+                if black_tiles.contains(&tile) {
+                    black_tiles.remove(&tile);
+                } else {
+                    black_tiles.insert(tile);
                 }
             }
-            last_y = Some(point.y);
 
-            row.push(if self.black_tiles.contains(&point) {
-                '#'
+            Ok(Floor { black_tiles })
+        }
+    }
+    impl Evolver<bool> for Floor {
+        type Point = Point;
+
+        fn next_default(_other: &Self) -> Self {
+            Floor {
+                black_tiles: HashSet::new(),
+            }
+        }
+
+        fn get_element(&self, point: &Self::Point) -> bool {
+            self.black_tiles.contains(point)
+        }
+
+        fn set_element(&mut self, point: &Self::Point, value: bool) {
+            if value {
+                self.black_tiles.insert(*point);
             } else {
-                '.'
-            });
-        }
-        rows.push(row);
-
-        // Now output the Vecs
-        for (i, row) in rows.into_iter().rev().enumerate() {
-            write!(f, "{}", (0..i).map(|_| ' ').collect::<String>())?;
-            writeln!(f, "{}", row.into_iter().join(" "))?;
+                self.black_tiles.remove(point);
+            }
         }
 
-        Ok(())
+        fn next_cell(&self, point: &Self::Point) -> bool {
+            let adj: usize = Direction::iter()
+                .map(|d| d.into())
+                .filter_count(|dp: &Point| self.get_element(&(*dp + point)));
+            if self.get_element(point) {
+                // Tile is black
+                adj > 0 && adj <= 2
+            } else {
+                // Tile is white
+                adj == 2
+            }
+        }
+
+        fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
+            // Determine the range in x and y
+            let range = |f: fn(&Point) -> i32| match self.black_tiles.iter().map(f).range() {
+                Some(r) => (r.start() - 1)..=(r.end() + 1),
+                None => 0..=0,
+            };
+
+            Box::new(iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Vector2::new(x, y)))
+        }
+    }
+    impl Floor {
+        /// Counts the number of black tiles on the floor.
+        pub fn num_black_tiles(&self) -> u64 {
+            self.black_tiles.len().try_into().unwrap()
+        }
+    }
+    impl fmt::Debug for Floor {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            // First convert to Vecs so that they can be reversed
+            let mut rows: Vec<Vec<char>> = Vec::new();
+            let mut row: Vec<char> = Vec::new();
+
+            let mut last_y: Option<i32> = None;
+            for point in self.next_iter() {
+                if let Some(y) = last_y {
+                    if y != point.y {
+                        rows.push(row);
+                        row = Vec::new();
+                    }
+                }
+                last_y = Some(point.y);
+
+                row.push(if self.black_tiles.contains(&point) {
+                    '#'
+                } else {
+                    '.'
+                });
+            }
+            rows.push(row);
+
+            // Now output the Vecs
+            for (i, row) in rows.into_iter().rev().enumerate() {
+                write!(f, "{}", (0..i).map(|_| ' ').collect::<String>())?;
+                writeln!(f, "{}", row.into_iter().join(" "))?;
+            }
+
+            Ok(())
+        }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 24,
     name: "Lobby Layout",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(input.parse::<Floor>()?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let floor: Floor = input.expect_input()?.parse()?;
-
-            //println!("{:?}", floor);
-
             // Process
-            Ok(floor.num_black_tiles().into())
+            Ok(input.expect_data::<Floor>()?.num_black_tiles().into())
         },
         // Part two
         |input| {
-            // Generation
-            let floor: Floor = input.expect_input()?.parse()?;
-
             // Process
-            Ok(floor
+            Ok(input
+                .expect_data::<Floor>()?
                 .evolutions()
                 .nth(100 - 1)
                 .unwrap()
