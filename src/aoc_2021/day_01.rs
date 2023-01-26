@@ -1,5 +1,4 @@
 use crate::aoc::prelude::*;
-
 use itertools::Itertools;
 
 #[cfg(test)]
@@ -24,39 +23,48 @@ mod tests {
     }
 }
 
-trait CountIncreases {
-    fn count_increases(self) -> u64;
-}
-impl<I: Iterator> CountIncreases for I
-where
-    <I as Iterator>::Item: Clone + PartialOrd,
-{
-    fn count_increases(self) -> u64 {
-        self.tuple_windows().filter_count(|(a, b)| a < b)
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+
+    /// Extension for [Iterator]s.
+    pub trait CountIncreases {
+        /// Count the number of times that the values yielded by the [Iterator] increase.
+        fn count_increases(self) -> u64;
+    }
+    impl<I: Iterator> CountIncreases for I
+    where
+        <I as Iterator>::Item: Clone + PartialOrd,
+    {
+        fn count_increases(self) -> u64 {
+            self.tuple_windows().filter_count(|(a, b)| a < b)
+        }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 1,
     name: "Sonar Sweep",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(u64::gather(input.lines())?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let depths = u64::gather(input.expect_input()?.lines())?;
-
             // Process
-            Ok(depths.into_iter().count_increases().into())
+            Ok(input
+                .expect_data::<Vec<u64>>()?
+                .iter()
+                .count_increases()
+                .into())
         },
         // Part two
         |input| {
-            // Generation
-            let depths = u64::gather(input.expect_input()?.lines())?;
-
             // Process
-            Ok(depths
-                .into_iter()
+            Ok(input
+                .expect_data::<Vec<u64>>()?
+                .iter()
                 .tuple_windows()
                 .map(|(a, b, c)| a + b + c)
                 .count_increases()

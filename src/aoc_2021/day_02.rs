@@ -1,8 +1,5 @@
+use crate::aoc::prelude::*;
 use std::str::FromStr;
-
-use nom::{branch::alt, combinator::map};
-
-use crate::aoc::{parse::field_line_parser, prelude::*};
 
 #[cfg(test)]
 mod tests {
@@ -22,129 +19,151 @@ forward 2",
     }
 }
 
-enum Direction {
-    Forward(u8),
-    Down(u8),
-    Up(u8),
-}
-impl Parseable<'_> for Direction {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        alt((
-            map(
-                field_line_parser("forward", nom::character::complete::u8),
-                Direction::Forward,
-            ),
-            map(
-                field_line_parser("down", nom::character::complete::u8),
-                Direction::Down,
-            ),
-            map(
-                field_line_parser("up", nom::character::complete::u8),
-                Direction::Up,
-            ),
-        ))(input)
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use crate::aoc::parse::field_line_parser;
+    use nom::{branch::alt, combinator::map};
+
+    /// A direction the submarine can move, depending on the problem part.
+    /// This can be parsed from text input.
+    pub enum Direction {
+        /// Increase horizontal position (part one) or both this and depth (part two) by some amount.
+        Forward(u8),
+        /// Increase depth (part one) or aim (part two) by some amount.
+        Down(u8),
+        /// Decrease depth (part one) or aim (part two) by some amount.
+        Up(u8),
     }
-}
-
-trait Part {
-    fn apply_direction(&mut self, direction: &Direction);
-    fn new() -> Self;
-}
-
-struct PartOne {
-    horizontal: i64,
-    depth: i64,
-}
-
-struct PartTwo {
-    horizontal: i64,
-    depth: i64,
-    aim: i64,
-}
-
-impl Part for PartOne {
-    fn new() -> Self {
-        Self {
-            horizontal: 0,
-            depth: 0,
+    impl Parseable<'_> for Direction {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            alt((
+                map(
+                    field_line_parser("forward", nom::character::complete::u8),
+                    Direction::Forward,
+                ),
+                map(
+                    field_line_parser("down", nom::character::complete::u8),
+                    Direction::Down,
+                ),
+                map(
+                    field_line_parser("up", nom::character::complete::u8),
+                    Direction::Up,
+                ),
+            ))(input)
         }
     }
 
-    fn apply_direction(&mut self, direction: &Direction) {
-        match direction {
-            Direction::Forward(n) => self.horizontal += i64::from(*n),
-            Direction::Down(n) => self.depth += i64::from(*n),
-            Direction::Up(n) => self.depth -= i64::from(*n),
-        }
-    }
-}
-
-impl Part for PartTwo {
-    fn new() -> Self {
-        Self {
-            horizontal: 0,
-            depth: 0,
-            aim: 0,
-        }
+    /// Behavior specific to one particular part of the problem, which
+    /// holds the state of the submarine for the part.
+    pub trait State: Default {
+        /// Apply a direction to the state.
+        fn apply_direction(&mut self, direction: &Direction);
+        /// Calculate the result based on the current state.
+        fn calculate_result(&self) -> i64;
     }
 
-    fn apply_direction(&mut self, direction: &Direction) {
-        match direction {
-            Direction::Forward(n) => {
-                let n = i64::from(*n);
-                self.horizontal += n;
-                self.depth += self.aim * n;
+    /// Submarine state for part one.
+    #[derive(Default)]
+    pub struct StateOne {
+        /// Submarine horizontal position.
+        pub horizontal: i64,
+        /// Submarine depth.
+        pub depth: i64,
+    }
+    impl State for StateOne {
+        fn apply_direction(&mut self, direction: &Direction) {
+            match direction {
+                Direction::Forward(n) => self.horizontal += i64::from(*n),
+                Direction::Down(n) => self.depth += i64::from(*n),
+                Direction::Up(n) => self.depth -= i64::from(*n),
             }
-            Direction::Down(n) => self.aim += i64::from(*n),
-            Direction::Up(n) => self.aim -= i64::from(*n),
+        }
+
+        fn calculate_result(&self) -> i64 {
+            self.horizontal * self.depth
+        }
+    }
+
+    /// Submarine state for part two.
+    #[derive(Default)]
+    pub struct StateTwo {
+        /// Submarine horizontal position.
+        pub horizontal: i64,
+        /// Submarine depth.
+        pub depth: i64,
+        /// Submarine aim.
+        aim: i64,
+    }
+    impl State for StateTwo {
+        fn apply_direction(&mut self, direction: &Direction) {
+            match direction {
+                Direction::Forward(n) => {
+                    let n = i64::from(*n);
+                    self.horizontal += n;
+                    self.depth += self.aim * n;
+                }
+                Direction::Down(n) => self.aim += i64::from(*n),
+                Direction::Up(n) => self.aim -= i64::from(*n),
+            }
+        }
+
+        fn calculate_result(&self) -> i64 {
+            self.horizontal * self.depth
+        }
+    }
+
+    /// The course that the submarine takes, which can be parsed from text input.
+    pub struct Course {
+        /// Ordered list of directions to follow.
+        directions: Box<[Direction]>,
+    }
+    impl FromStr for Course {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ok(Course {
+                directions: Direction::gather(s.lines())?.into_boxed_slice(),
+            })
+        }
+    }
+    impl Course {
+        /// Return the submarine state after following all of the directions.
+        pub fn end_position<P: State>(&self) -> P {
+            let mut position = P::default();
+            for direction in self.directions.iter() {
+                position.apply_direction(direction)
+            }
+            position
         }
     }
 }
 
-struct Course {
-    directions: Box<[Direction]>,
-}
-impl FromStr for Course {
-    type Err = AocError;
+use solution::*;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Course {
-            directions: Direction::gather(s.lines())?.into_boxed_slice(),
-        })
-    }
-}
-impl Course {
-    fn end_position<P: Part>(&self) -> P {
-        let mut position = P::new();
-        for direction in self.directions.iter() {
-            position.apply_direction(direction)
-        }
-        position
-    }
-}
-
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 2,
     name: "Dive!",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Course::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let course = Course::from_str(input.expect_input()?)?;
-            let end_position = course.end_position::<PartOne>();
-
             // Process
-            Ok((end_position.horizontal * end_position.depth).into())
+            Ok(input
+                .expect_data::<Course>()?
+                .end_position::<StateOne>()
+                .calculate_result()
+                .into())
         },
         // Part two
         |input| {
-            // Generation
-            let course = Course::from_str(input.expect_input()?)?;
-            let end_position = course.end_position::<PartTwo>();
-
             // Process
-            Ok((end_position.horizontal * end_position.depth).into())
+            Ok(input
+                .expect_data::<Course>()?
+                .end_position::<StateTwo>()
+                .calculate_result()
+                .into())
         },
     ],
 };
