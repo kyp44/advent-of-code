@@ -170,7 +170,7 @@ mod solution {
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             Ok(Area {
                 part: Part::PartOne,
-                grid: Self::grid_from_str(s)?,
+                grid: Grid::from_str::<Self>(s)?,
             })
         }
     }

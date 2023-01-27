@@ -1,9 +1,5 @@
-use std::{cmp::Ordering, ops::Not, str::FromStr};
-
-use itertools::Itertools;
-use nom::{character::complete::one_of, combinator::map, multi::many1};
-
 use crate::aoc::prelude::*;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -29,137 +25,171 @@ mod tests {
     }
 }
 
-#[derive(Clone)]
-struct ReportLine {
-    bit_vec: Vec<bool>,
-}
-impl ReportLine {
-    fn value(&self) -> u64 {
-        self.bit_vec.iter().fold(0, |a, b| 2 * a + u64::from(*b))
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use itertools::Itertools;
+    use nom::{character::complete::one_of, combinator::map, multi::many1};
+    use std::{cmp::Ordering, ops::Not};
+
+    /// A single line in the diagnostic report, which can be parsed from
+    /// text input.
+    #[derive(Clone)]
+    struct ReportLine {
+        /// Ordered list of the bit values from most significant to
+        /// least significant.
+        bit_vec: Vec<bool>,
     }
-}
-impl Parseable<'_> for ReportLine {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        map(many1(one_of("01")), |v| Self {
-            bit_vec: v.into_iter().map(|b| b == '1').collect(),
-        })(input)
-    }
-}
-impl FromIterator<bool> for ReportLine {
-    fn from_iter<T: IntoIterator<Item = bool>>(iter: T) -> Self {
-        Self {
-            bit_vec: iter.into_iter().collect(),
+    impl ReportLine {
+        /// The decimal value of the bits.
+        fn value(&self) -> u64 {
+            self.bit_vec.iter().fold(0, |a, b| 2 * a + u64::from(*b))
         }
     }
-}
-impl Not for ReportLine {
-    type Output = ReportLine;
-
-    fn not(mut self) -> Self::Output {
-        self.bit_vec.iter_mut().for_each(|b| *b = !*b);
-        self
-    }
-}
-
-#[derive(Clone)]
-struct Report {
-    lines: Vec<ReportLine>,
-    size: usize,
-}
-enum MostCommon {
-    Ones,
-    Zeros,
-    Equal,
-}
-
-impl FromStr for Report {
-    type Err = AocError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let lines = ReportLine::gather(s.lines())?;
-        let size = lines[0].bit_vec.len();
-
-        if !lines.iter().map(|l| l.bit_vec.len()).all_equal() {
-            return Err(AocError::InvalidInput(
-                "Not all report lines have the same size".into(),
-            ));
+    impl Parseable<'_> for ReportLine {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            map(many1(one_of("01")), |v| Self {
+                bit_vec: v.into_iter().map(|b| b == '1').collect(),
+            })(input)
         }
-
-        Ok(Self { lines, size })
     }
-}
-impl Report {
-    fn most_common(&self, bit_num: usize) -> MostCommon {
-        let n_ones: usize = self.lines.iter().filter_count(|l| l.bit_vec[bit_num]);
-        match (2 * n_ones).cmp(&self.lines.len()) {
-            Ordering::Less => MostCommon::Zeros,
-            Ordering::Equal => MostCommon::Equal,
-            Ordering::Greater => MostCommon::Ones,
+    impl FromIterator<bool> for ReportLine {
+        fn from_iter<T: IntoIterator<Item = bool>>(iter: T) -> Self {
+            Self {
+                bit_vec: iter.into_iter().collect(),
+            }
+        }
+    }
+    impl Not for ReportLine {
+        type Output = ReportLine;
+
+        fn not(mut self) -> Self::Output {
+            self.bit_vec.iter_mut().for_each(|b| *b = !*b);
+            self
         }
     }
 
-    fn filter_bit(&mut self, bit_num: usize, bit_value: bool) {
-        self.lines.retain(|l| l.bit_vec[bit_num] == bit_value)
+    /// The full diagnostic report, which can be parsed from
+    /// text input.
+    #[derive(Clone)]
+    pub struct Report {
+        /// The ordered list of report lines.
+        lines: Vec<ReportLine>,
+        /// The number of bits in each line.
+        bit_depth: usize,
     }
-
-    fn power_consumption(&self) -> AocResult<u64> {
-        let gamma: ReportLine = (0..self.size)
-            .map(|n| matches!(self.most_common(n), MostCommon::Ones))
-            .collect();
-        let gamma_val = gamma.value();
-        let epsilon_val = (!gamma).value();
-
-        Ok(gamma_val * epsilon_val)
+    /// The result from assessing the most common value from
+    /// a collection of bits.
+    enum MostCommon {
+        /// Zero bits are most common.
+        Zeros,
+        /// One bits are most common.
+        Ones,
+        /// There are equal zero and one bits.
+        Equal,
     }
+    impl FromStr for Report {
+        type Err = AocError;
 
-    fn calculate_rating<F: Fn(MostCommon) -> bool>(&self, criteria: F) -> AocResult<u64> {
-        let mut report = self.clone();
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let lines = ReportLine::gather(s.lines())?;
+            let size = lines[0].bit_vec.len();
 
-        for n in 0..self.size {
-            if report.lines.len() == 1 {
-                break;
+            if !lines.iter().map(|l| l.bit_vec.len()).all_equal() {
+                return Err(AocError::InvalidInput(
+                    "Not all report lines have the same size".into(),
+                ));
             }
 
-            report.filter_bit(n, criteria(report.most_common(n)))
-        }
-
-        if report.lines.len() == 1 {
-            Ok(report.lines[0].value())
-        } else {
-            Err(AocError::Process(
-                "Rating did not filter report lines down to only one".into(),
-            ))
+            Ok(Self {
+                lines,
+                bit_depth: size,
+            })
         }
     }
+    impl Report {
+        /// Given a bit number to examine in each report line, determine
+        /// which is the most common bit, if any. Will panic if the
+        /// bit number is invalid.
+        fn most_common(&self, bit_num: usize) -> MostCommon {
+            let n_ones: usize = self.lines.iter().filter_count(|l| l.bit_vec[bit_num]);
+            match (2 * n_ones).cmp(&self.lines.len()) {
+                Ordering::Less => MostCommon::Zeros,
+                Ordering::Equal => MostCommon::Equal,
+                Ordering::Greater => MostCommon::Ones,
+            }
+        }
 
-    fn life_support_rating(&self) -> AocResult<u64> {
-        let oxygen_rating = self.calculate_rating(|com| !matches!(com, MostCommon::Zeros))?;
-        let co2_rating = self.calculate_rating(|com| matches!(com, MostCommon::Zeros))?;
+        /// Keeps only the report lines where the specified `bit_number` matches
+        /// the specified `bit_value`.
+        fn filter_bit(&mut self, bit_num: usize, bit_value: bool) {
+            self.lines.retain(|l| l.bit_vec[bit_num] == bit_value)
+        }
 
-        Ok(oxygen_rating * co2_rating)
+        /// Calculates the power consumption by first determining the gamma
+        /// and epsilon rates.
+        pub fn power_consumption(&self) -> AocResult<u64> {
+            let gamma: ReportLine = (0..self.bit_depth)
+                .map(|n| matches!(self.most_common(n), MostCommon::Ones))
+                .collect();
+            let gamma_val = gamma.value();
+            let epsilon_val = (!gamma).value();
+
+            Ok(gamma_val * epsilon_val)
+        }
+
+        /// Calculates a rating by filtering the report lines according to the most
+        /// or least common value for each bit number. The `criteria` closure should
+        /// take a [MostCommon] value for the bit number and return what the bit value
+        /// should be for that bit number in the lines that are kept.
+        fn calculate_rating(&self, criteria: impl Fn(MostCommon) -> bool) -> AocResult<u64> {
+            let mut report = self.clone();
+
+            for n in 0..self.bit_depth {
+                if report.lines.len() == 1 {
+                    break;
+                }
+
+                report.filter_bit(n, criteria(report.most_common(n)))
+            }
+
+            if report.lines.len() == 1 {
+                Ok(report.lines[0].value())
+            } else {
+                Err(AocError::Process(
+                    "Rating did not filter report lines down to only one".into(),
+                ))
+            }
+        }
+
+        /// Determines the life support rating by first filtering the report lines
+        /// to find the oxygen generator and CO2 scrubber ratings.
+        pub fn life_support_rating(&self) -> AocResult<u64> {
+            let oxygen_rating = self.calculate_rating(|com| !matches!(com, MostCommon::Zeros))?;
+            let co2_rating = self.calculate_rating(|com| matches!(com, MostCommon::Zeros))?;
+
+            Ok(oxygen_rating * co2_rating)
+        }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 3,
     name: "Binary Diagnostic",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Report::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let report = Report::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(report.power_consumption()?.into())
+            Ok(input.expect_data::<Report>()?.power_consumption()?.into())
         },
         // Part two
         |input| {
-            // Generation
-            let report = Report::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(report.life_support_rating()?.into())
+            Ok(input.expect_data::<Report>()?.life_support_rating()?.into())
         },
     ],
 };

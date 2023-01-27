@@ -73,7 +73,7 @@ impl FromStr for Image {
 
         Ok(Self {
             algorithm: Rc::new(algorithm),
-            grid: Grid::grid_from_str(sections[1].trim())?,
+            grid: Grid::from_str::<Grid<bool>>(sections[1].trim())?,
             infinity_pixels: false,
         })
     }

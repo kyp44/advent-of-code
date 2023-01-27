@@ -52,7 +52,6 @@ impl<T: Default + Clone> Grid<T> {
         }
     }
 }
-
 impl<T> Grid<T> {
     // Size of the grid
     pub fn size(&self) -> &GridSize {
@@ -191,6 +190,28 @@ impl<T> Grid<T> {
         }
         out
     }
+
+    pub fn from_str<C: CharGrid<T>>(s: &str) -> AocResult<Self> {
+        let data = s
+            .lines()
+            .map(|line| {
+                line.chars()
+                    .map(|c| {
+                        C::from_char(c).ok_or_else(|| {
+                            AocError::InvalidInput(format!("Invalid character found: '{c}'").into())
+                        })
+                    })
+                    .collect()
+            })
+            .collect::<Result<_, _>>()?;
+        Self::from_data(data)
+    }
+}
+
+pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
+    fn default(size: GridSize) -> Self {
+        Grid::default(size).into()
+    }
 }
 
 // A data structure that can be represented by a 2D grid of characters
@@ -218,34 +239,18 @@ pub trait CharGrid<T> {
                 .join("\n")
         )
     }
-
-    // TODO: Can we add a from_grid required method and then implement FromStr?
-    // This would be useful at least in the 2020 day 17 problem, but would need
-    // to go look for other use cases.
-    // This might makes sense to implement From<str> when From<Grid> is implemented.
-    // Can we do a default method as well? Can't use trait because a size it required.
-
-    // Construct from a character grid.
-    fn grid_from_str(s: &str) -> AocResult<Grid<T>> {
-        let data = s
-            .lines()
-            .map(|line| {
-                line.chars()
-                    .map(|c| {
-                        Self::from_char(c).ok_or_else(|| {
-                            AocError::InvalidInput(format!("Invalid character found: '{c}'").into())
-                        })
-                    })
-                    .collect()
-            })
-            .collect::<Result<_, _>>()?;
-        Grid::from_data(data)
-    }
 }
 
+// TODO: Can we add a from_grid required method and then implement FromStr?
+// This would be useful at least in the 2020 day 17 problem, but would need
+// to go look for other use cases.
+// This might makes sense to implement From<str> when From<Grid> is implemented.
+// This does not compile and we might need to post it somewhere as it's not clear
+// how to accomplish this.
+//impl<T, S: From<Grid<T>> + CharGrid<T>> FromStr for S {}
+
 impl Grid<bool> {
-    // TODO: Should this be as_coordinates since we're not converting but creating?
-    pub fn to_coordinates(&self) -> HashSet<GridPoint> {
+    pub fn as_coordinates(&self) -> HashSet<GridPoint> {
         self.all_points().filter(|p| *self.get(p)).collect()
     }
 

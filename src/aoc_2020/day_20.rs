@@ -203,7 +203,7 @@ mod solution {
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             Ok(Image {
-                pixels: Self::grid_from_str(s)?,
+                pixels: Grid::from_str::<Self>(s)?,
             })
         }
     }

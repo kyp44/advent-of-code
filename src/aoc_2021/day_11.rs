@@ -39,7 +39,7 @@ impl FromStr for Octopi {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self {
-            grid: Grid::grid_from_str(s)?,
+            grid: Grid::from_str::<Grid<u8>>(s)?,
         })
     }
 }

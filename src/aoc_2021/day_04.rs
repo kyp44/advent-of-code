@@ -1,12 +1,5 @@
+use crate::aoc::prelude::*;
 use std::str::FromStr;
-
-use nom::{
-    character::complete::{line_ending, space1},
-    combinator::map,
-    multi::separated_list1,
-};
-
-use crate::aoc::{parse::trim, prelude::*};
 
 #[cfg(test)]
 mod tests {
@@ -39,157 +32,195 @@ mod tests {
     }
 }
 
-struct BoardCell {
-    number: u8,
-    hit: bool,
-}
-impl From<u8> for BoardCell {
-    fn from(number: u8) -> Self {
-        BoardCell { number, hit: false }
-    }
-}
-impl Parseable<'_> for BoardCell {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        map(nom::character::complete::u8, |v| v.into())(input)
-    }
-}
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use crate::aoc::parse::trim;
+    use nom::{
+        character::complete::{line_ending, space1},
+        combinator::map,
+        multi::separated_list1,
+    };
 
-struct BingoBoard {
-    grid: Grid<BoardCell>,
-}
-impl Parseable<'_> for BingoBoard {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        let (input, rows) = separated_list1(
-            line_ending,
-            trim(false, separated_list1(space1, BoardCell::parser)),
-        )(input)?;
+    /// A single cell for a bingo board, which can be parsed from
+    /// text input.
+    #[derive(Clone)]
+    struct BoardCell {
+        /// The number in the cell.
+        number: u8,
+        /// Whether this number was called.
+        hit: bool,
+    }
+    impl From<u8> for BoardCell {
+        fn from(number: u8) -> Self {
+            BoardCell { number, hit: false }
+        }
+    }
+    impl Parseable<'_> for BoardCell {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            map(nom::character::complete::u8, Self::from)(input)
+        }
+    }
 
-        Ok((
-            input,
-            Self {
-                grid: Grid::from_data(rows.into_iter().map(|row| row.into_boxed_slice()).collect())
+    /// A full bingo board, which can be parsed from text input.
+    #[derive(Clone)]
+    struct BingoBoard {
+        /// The grid of board cells.
+        grid: Grid<BoardCell>,
+    }
+    impl Parseable<'_> for BingoBoard {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            let (input, rows) = separated_list1(
+                line_ending,
+                trim(false, separated_list1(space1, BoardCell::parser)),
+            )(input)?;
+
+            Ok((
+                input,
+                Self {
+                    grid: Grid::from_data(
+                        rows.into_iter().map(|row| row.into_boxed_slice()).collect(),
+                    )
                     .unwrap(),
-            },
-        ))
-    }
-}
-impl BingoBoard {
-    fn call(&mut self, number: u8) -> bool {
-        for point in self.grid.all_points() {
-            let cell = self.grid.element_at(&point);
-            if cell.number == number {
-                cell.hit = true;
-            }
+                },
+            ))
         }
-        self.check_win()
     }
-
-    fn check_win(&self) -> bool {
-        // Check rows first
-        for row in self.grid.rows_iter() {
-            if row.iter().all(|c| c.hit) {
-                return true;
-            }
-        }
-
-        // Check columns
-        for col in 0..self.grid.size().x {
-            if self.grid.col_iter(col).all(|cell| cell.hit) {
-                return true;
-            }
-        }
-
-        false
-    }
-
-    fn score(&self, last_number: u8) -> u64 {
-        self.grid
-            .all_values()
-            .filter_map(|c| {
-                if c.hit {
-                    None
-                } else {
-                    Some(u64::from(c.number))
+    impl BingoBoard {
+        /// Call a number, marking the hit cells.
+        fn call(&mut self, number: u8) -> bool {
+            for point in self.grid.all_points() {
+                let cell = self.grid.element_at(&point);
+                if cell.number == number {
+                    cell.hit = true;
                 }
-            })
-            .sum::<u64>()
-            * u64::from(last_number)
-    }
-}
-
-struct BingoGame {
-    calls: Box<[u8]>,
-    boards: Box<[BingoBoard]>,
-}
-impl FromStr for BingoGame {
-    type Err = AocError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut lines = s.split("\n\n");
-        let calls = u8::from_csv(lines.next().unwrap())?.into_boxed_slice();
-        let boards = BingoBoard::gather(lines)?.into_boxed_slice();
-
-        // Verify boards
-        for (board_num, board) in boards.iter().enumerate() {
-            if *board.grid.size() != GridSize::new(5, 5) {
-                return Err(AocError::InvalidInput(
-                    format!("Board {board_num} is not 5 x 5").into(),
-                ));
             }
+            self.check_win()
         }
 
-        Ok(Self { calls, boards })
+        /// Check whether this is a winning board, i.e. whether there are
+        /// hit cells in any complete row or column (diagonals don't count).
+        fn check_win(&self) -> bool {
+            // Check rows first
+            for row in self.grid.rows_iter() {
+                if row.iter().all(|c| c.hit) {
+                    return true;
+                }
+            }
+
+            // Check columns
+            for col in 0..self.grid.size().x {
+                if self.grid.col_iter(col).all(|cell| cell.hit) {
+                    return true;
+                }
+            }
+
+            false
+        }
+
+        /// Calculates the score for this board, i.e. the sum of all cells that
+        /// have not been hit.
+        fn score(&self, last_number: u8) -> u64 {
+            self.grid
+                .all_values()
+                .filter_map(|c| {
+                    if c.hit {
+                        None
+                    } else {
+                        Some(u64::from(c.number))
+                    }
+                })
+                .sum::<u64>()
+                * u64::from(last_number)
+        }
     }
-}
-impl BingoGame {
-    fn play_until(mut self, num_boards: usize) -> AocResult<u64> {
-        let mut boards_won = 0;
-        for number in self.calls.iter() {
-            for board in self.boards.iter_mut() {
-                if !board.check_win() && board.call(*number) {
-                    boards_won += 1;
-                    if boards_won == num_boards {
-                        // We have our final winner!
-                        return Ok(board.score(*number));
+
+    /// Full bingo game with multiple boards, which can be parsed from
+    /// text input.
+    #[derive(Clone)]
+    pub struct BingoGame {
+        /// The called numbers in order.
+        calls: Box<[u8]>,
+        /// The set of boards.
+        boards: Box<[BingoBoard]>,
+    }
+    impl FromStr for BingoGame {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let mut lines = s.split("\n\n");
+            let calls = u8::from_csv(lines.next().unwrap())?.into_boxed_slice();
+            let boards = BingoBoard::gather(lines)?.into_boxed_slice();
+
+            // Verify boards
+            for (board_num, board) in boards.iter().enumerate() {
+                if *board.grid.size() != GridSize::new(5, 5) {
+                    return Err(AocError::InvalidInput(
+                        format!("Board {board_num} is not 5 x 5").into(),
+                    ));
+                }
+            }
+
+            Ok(Self { calls, boards })
+        }
+    }
+    impl BingoGame {
+        /// Play the game until some number of boards wins, returning
+        /// the score of the last board to win.
+        fn play_until(mut self, num_boards: usize) -> AocResult<u64> {
+            let mut boards_won = 0;
+            for number in self.calls.iter() {
+                for board in self.boards.iter_mut() {
+                    if !board.check_win() && board.call(*number) {
+                        boards_won += 1;
+                        if boards_won == num_boards {
+                            // We have our final winner!
+                            return Ok(board.score(*number));
+                        }
                     }
                 }
             }
+            Err(AocError::Process(
+                format!("Called numbers ran out before {num_boards} board(s) won").into(),
+            ))
         }
-        Err(AocError::Process(
-            format!("Called numbers ran out before {num_boards} board(s) won").into(),
-        ))
-    }
 
-    fn play(self) -> AocResult<u64> {
-        self.play_until(1)
-    }
+        /// Play until the first board wins, returning the score of
+        /// the winning board.
+        pub fn play(self) -> AocResult<u64> {
+            self.play_until(1)
+        }
 
-    fn play_to_last(self) -> AocResult<u64> {
-        let last_board = self.boards.len();
-        self.play_until(last_board)
+        /// Play until all the boards win, returning the score of the
+        /// last board to win.
+        pub fn play_to_last(self) -> AocResult<u64> {
+            let last_board = self.boards.len();
+            self.play_until(last_board)
+        }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 4,
     name: "Giant Squid",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(BingoGame::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let game = BingoGame::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(game.play()?.into())
+            Ok(input.expect_data::<BingoGame>()?.clone().play()?.into())
         },
         // Part two
         |input| {
-            // Generation
-            let game = BingoGame::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(game.play_to_last()?.into())
+            Ok(input
+                .expect_data::<BingoGame>()?
+                .clone()
+                .play_to_last()?
+                .into())
         },
     ],
 };

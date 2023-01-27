@@ -19,12 +19,12 @@ pub mod parse;
 // Prelude
 pub mod prelude {
     pub use super::{
-        char_add, evolver::Evolver, grid::CharGrid, grid::Grid, grid::GridPoint, grid::GridSize,
-        grid::GridSizeExt, grid::PointTryInto, iter::FilterCount, iter::HasNoneIter,
-        iter::HasRange, iter::IndividualReplacements, iter::SplitRuns, parse::BitInput,
-        parse::DiscardInput, parse::NomParseError, parse::NomParseResult, parse::Parseable,
-        parse::Sections, Answer, AnswerVec, AocError, AocResult, RangeExt, Solution, SolverInput,
-        YearSolutions,
+        char_add, evolver::Evolver, grid::CharGrid, grid::Grid, grid::GridDefault, grid::GridPoint,
+        grid::GridSize, grid::GridSizeExt, grid::PointTryInto, iter::FilterCount,
+        iter::HasNoneIter, iter::HasRange, iter::IndividualReplacements, iter::SplitRuns,
+        parse::BitInput, parse::DiscardInput, parse::NomParseError, parse::NomParseResult,
+        parse::Parseable, parse::Sections, Answer, AnswerVec, AocError, AocResult, RangeExt,
+        Solution, SolverInput, YearSolutions,
     };
     pub use aoc_derive::CharGridDebug;
 }

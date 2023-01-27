@@ -58,7 +58,7 @@ mod solution {
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             Ok(Self {
-                grid: Self::grid_from_str(s)?,
+                grid: Grid::from_str::<Self>(s)?,
             })
         }
     }
@@ -126,7 +126,7 @@ mod solution {
                 dimensions,
                 active_cubes: initial_slice
                     .grid
-                    .to_coordinates()
+                    .as_coordinates()
                     .iter()
                     .map(|p| {
                         let mut v = vec![p.x.try_into().unwrap(), p.y.try_into().unwrap()];

@@ -89,7 +89,7 @@ mod solution {
         type Err = AocError;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
-            let mut grid = Self::grid_from_str(s)?;
+            let mut grid = Grid::from_str::<Self>(s)?;
             for point in P::stuck_points(&grid) {
                 grid.set(&point, true);
             }
