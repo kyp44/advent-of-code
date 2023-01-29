@@ -1,11 +1,5 @@
+use crate::aoc::prelude::*;
 use itertools::Itertools;
-use nom::{
-    character::complete::one_of,
-    combinator::{all_consuming, map},
-    multi::many1,
-};
-
-use crate::aoc::{parse::trim, prelude::*};
 
 #[cfg(test)]
 mod tests {
@@ -29,142 +23,182 @@ mod tests {
     }
 }
 
-enum Parity {
-    Open,
-    Close,
-}
-#[derive(PartialEq, Eq, Clone, Copy)]
-enum ChunkType {
-    Paren,
-    Square,
-    Brace,
-    Angle,
-}
-impl ChunkType {
-    fn corrupted_score(&self) -> u64 {
-        match *self {
-            ChunkType::Paren => 3,
-            ChunkType::Square => 57,
-            ChunkType::Brace => 1197,
-            ChunkType::Angle => 25137,
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use crate::aoc::parse::trim;
+    use nom::{
+        character::complete::one_of,
+        combinator::{all_consuming, map},
+        multi::many1,
+    };
+
+    /// The parity of a chunk symbol.
+    enum ChunkParity {
+        /// Open, i.e. the start of a new chunk.
+        Open,
+        /// Close, i.e. close out a chunk.
+        Close,
+    }
+
+    /// The type of a chunk.
+    #[derive(PartialEq, Eq, Clone, Copy)]
+    pub enum ChunkType {
+        /// Chunk denoted with parentheses.
+        Paren,
+        /// Chunk denoted with square brackets.
+        Square,
+        /// Chunk denotes with curly braces.
+        Brace,
+        /// Chunk denoted with angle brackets.
+        Angle,
+    }
+    impl ChunkType {
+        /// Score of the chunk for syntax checkers.
+        pub fn score_corrupted(&self) -> u64 {
+            match *self {
+                ChunkType::Paren => 3,
+                ChunkType::Square => 57,
+                ChunkType::Brace => 1197,
+                ChunkType::Angle => 25137,
+            }
+        }
+
+        /// Score of the chunk for auto completers.
+        fn score_incomplete(&self) -> u64 {
+            match *self {
+                ChunkType::Paren => 1,
+                ChunkType::Square => 2,
+                ChunkType::Brace => 3,
+                ChunkType::Angle => 4,
+            }
         }
     }
 
-    fn incomplete_score(&self) -> u64 {
-        match *self {
-            ChunkType::Paren => 1,
-            ChunkType::Square => 2,
-            ChunkType::Brace => 3,
-            ChunkType::Angle => 4,
+    /// A chunk symbol, which can be parsed from text input.
+    #[derive(new)]
+    struct ChunkSymbol {
+        /// Type of the symbol
+        chunk_type: ChunkType,
+        /// The parity of the symbol.
+        parity: ChunkParity,
+    }
+    impl Parseable<'_> for ChunkSymbol {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            map(one_of("()[]{}<>"), |c| {
+                use ChunkParity::*;
+                use ChunkType::*;
+
+                match c {
+                    '(' => ChunkSymbol::new(Paren, Open),
+                    ')' => ChunkSymbol::new(Paren, Close),
+                    '[' => ChunkSymbol::new(Square, Open),
+                    ']' => ChunkSymbol::new(Square, Close),
+                    '{' => ChunkSymbol::new(Brace, Open),
+                    '}' => ChunkSymbol::new(Brace, Close),
+                    '<' => ChunkSymbol::new(Angle, Open),
+                    '>' => ChunkSymbol::new(Angle, Close),
+                    _ => panic!(),
+                }
+            })(input)
         }
     }
-}
 
-struct Chunk {
-    chunk_type: ChunkType,
-    parity: Parity,
-}
-impl Chunk {
-    fn new(chunk_type: ChunkType, parity: Parity) -> Self {
-        Chunk { chunk_type, parity }
+    /// The status of a line once analyzed.
+    pub enum LineStatus {
+        /// A valid line with no problems.
+        Valid,
+        /// A corrupted line with the first illegal chunk symbol.
+        Corrupted(ChunkType),
+        /// Incomplete with the ordered symbol pattern needed to complete it.
+        Incomplete(Vec<ChunkType>),
     }
-}
-impl Parseable<'_> for Chunk {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        map(one_of("()[]{}<>"), |c| {
-            use ChunkType::*;
-            use Parity::*;
-
-            match c {
-                '(' => Chunk::new(Paren, Open),
-                ')' => Chunk::new(Paren, Close),
-                '[' => Chunk::new(Square, Open),
-                ']' => Chunk::new(Square, Close),
-                '{' => Chunk::new(Brace, Open),
-                '}' => Chunk::new(Brace, Close),
-                '<' => Chunk::new(Angle, Open),
-                '>' => Chunk::new(Angle, Close),
-                _ => panic!(),
+    impl LineStatus {
+        /// The score for the line, given its status.
+        /// Valid lines have no score.
+        pub fn score(&self) -> Option<u64> {
+            match self {
+                LineStatus::Valid => None,
+                LineStatus::Corrupted(chunk) => Some(chunk.score_corrupted()),
+                LineStatus::Incomplete(seq) => {
+                    Some(seq.iter().fold(0, |a, ct| 5 * a + ct.score_incomplete()))
+                }
             }
-        })(input)
+        }
     }
-}
 
-enum LineStatus {
-    Valid,
-    Corrupted(ChunkType),
-    Incomplete(Vec<ChunkType>),
-}
-
-struct Line {
-    chunks: Box<[Chunk]>,
-}
-impl Parseable<'_> for Line {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        map(all_consuming(trim(false, many1(Chunk::parser))), |chunks| {
-            Self {
-                chunks: chunks.into_boxed_slice(),
-            }
-        })(input)
+    /// A Line of chunks, which can be parsed from text input.
+    pub struct Line {
+        /// The ordered list of chunk symbols.
+        chunks: Box<[ChunkSymbol]>,
     }
-}
-impl Line {
-    fn analyze(&self) -> LineStatus {
-        let mut stack = Vec::new();
-        for chunk in self.chunks.iter() {
-            match chunk.parity {
-                Parity::Open => stack.push(chunk.chunk_type),
-                Parity::Close => {
-                    let status = LineStatus::Corrupted(chunk.chunk_type);
-                    match stack.pop() {
-                        Some(oct) => {
-                            if oct != chunk.chunk_type {
+    impl Parseable<'_> for Line {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            map(
+                all_consuming(trim(false, many1(ChunkSymbol::parser))),
+                |chunks| Self {
+                    chunks: chunks.into_boxed_slice(),
+                },
+            )(input)
+        }
+    }
+    impl Line {
+        /// Analyze the line and return its status.
+        pub fn analyze(&self) -> LineStatus {
+            let mut stack = Vec::new();
+            for chunk in self.chunks.iter() {
+                match chunk.parity {
+                    ChunkParity::Open => stack.push(chunk.chunk_type),
+                    ChunkParity::Close => {
+                        let status = LineStatus::Corrupted(chunk.chunk_type);
+                        match stack.pop() {
+                            Some(oct) => {
+                                if oct != chunk.chunk_type {
+                                    return status;
+                                }
+                            }
+                            None => {
                                 return status;
                             }
-                        }
-                        None => {
-                            return status;
                         }
                     }
                 }
             }
-        }
-        if stack.is_empty() {
-            LineStatus::Valid
-        } else {
-            LineStatus::Incomplete(stack)
-        }
-    }
-
-    fn incomplete_score(&self) -> Option<u64> {
-        match self.analyze() {
-            LineStatus::Incomplete(stack) => Some(
-                stack
-                    .into_iter()
-                    .rev()
-                    .fold(0, |a, ct| 5 * a + ct.incomplete_score()),
-            ),
-            _ => None,
+            if stack.is_empty() {
+                LineStatus::Valid
+            } else {
+                stack.reverse();
+                LineStatus::Incomplete(stack)
+            }
         }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 10,
     name: "Syntax Scoring",
-    preprocessor: None,
+    preprocessor: Some(|input| {
+        Ok(Box::new(
+            input
+                .lines()
+                .map(|line| Ok(Line::from_str(line)?.analyze()))
+                .collect::<AocResult<Vec<_>>>()?,
+        )
+        .into())
+    }),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let lines = Line::gather(input.expect_input()?.lines())?;
-
             // Process
-            Ok(lines
+            Ok(input
+                .expect_data::<Vec<LineStatus>>()?
                 .iter()
-                .filter_map(|line| {
-                    if let LineStatus::Corrupted(chunk_type) = line.analyze() {
-                        Some(chunk_type.corrupted_score())
+                .filter_map(|ls| {
+                    if matches!(ls, LineStatus::Corrupted(_)) {
+                        Some(ls.score().unwrap())
                     } else {
                         None
                     }
@@ -174,24 +208,25 @@ pub const SOLUTION: Solution = Solution {
         },
         // Part two
         |input| {
-            // Generation
-            let lines = Line::gather(input.expect_input()?.lines())?;
-
-            let scores: Vec<u64> = lines
-                .into_iter()
-                .filter_map(|line| line.incomplete_score())
+            // Process
+            let scores = input
+                .expect_data::<Vec<LineStatus>>()?
+                .iter()
+                .filter_map(|ls| {
+                    if matches!(ls, LineStatus::Incomplete(_)) {
+                        Some(ls.score().unwrap())
+                    } else {
+                        None
+                    }
+                })
                 .sorted()
-                .collect();
-            let len = scores.len();
-
-            if len % 2 == 0 {
+                .collect::<Vec<_>>();
+            if scores.len() % 2 == 0 {
                 return Err(AocError::Process(
                     "One of the incomplete lines is missing an even number of closers!".into(),
                 ));
             }
-
-            // Process
-            Ok(scores[(len - 1) / 2].into())
+            Ok(scores[(scores.len() - 1) / 2].into())
         },
     ],
 };

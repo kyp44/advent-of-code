@@ -91,7 +91,7 @@ where
 pub struct Replacements<'a, 'b, 'c> {
     // Original string.
     original: &'a str,
-    // Current index in teh string.
+    // Current index in the string.
     #[new(value = "0")]
     idx: usize,
     // Substring to replace.

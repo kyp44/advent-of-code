@@ -92,6 +92,7 @@ pub trait Parseable<'a> {
         Self: Sized;
 
     // Runs the parser and gets the result, stripping out the input from the nom parser.
+    // TODO: Can we blanket implement FromStr instead?
     fn from_str(input: &'a str) -> Result<Self, NomParseError>
     where
         Self: Sized,

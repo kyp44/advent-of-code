@@ -1,8 +1,6 @@
-use std::{collections::HashSet, str::FromStr};
-
-use itertools::Itertools;
-
 use crate::aoc::prelude::*;
+use itertools::Itertools;
+use std::{collections::HashSet, str::FromStr};
 
 #[cfg(test)]
 mod tests {
@@ -21,82 +19,118 @@ mod tests {
     }
 }
 
-struct FloorMap {
-    grid: Grid<u8>,
-}
-impl FromStr for FloorMap {
-    type Err = AocError;
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self {
-            grid: Grid::from_str::<Grid<u8>>(s)?,
-        })
+    /// Basin in the cave floor surrounding a low point.
+    pub struct Basin<'a> {
+        /// The floor map in which the basin resides.
+        floor_map: &'a FloorMap,
+        /// The low point in the map for this basin.
+        low_point: GridPoint,
     }
-}
-impl FloorMap {
-    fn low_points(&self) -> impl Iterator<Item = GridPoint> + '_ {
-        self.grid.all_points().filter(|point| {
-            let height = self.grid.get(point);
+    impl Basin<'_> {
+        /// The height of the low point.
+        pub fn low_height(&self) -> u8 {
+            *self.floor_map.grid.get(&self.low_point)
+        }
+
+        /// The size of the basin.
+        pub fn size(&self) -> u64 {
+            /// Recursive sub function of [Basin::size] that finds the size of a region
+            /// given any point in the region.
+            fn region_size(
+                grid: &Grid<u8>,
+                point: GridPoint,
+                points: &mut HashSet<GridPoint>,
+            ) -> u64 {
+                // Base cases
+                if *grid.get(&point) == 9 || points.contains(&point) {
+                    return 0;
+                }
+
+                let mut reg_size = 1;
+                let size = grid.size();
+                points.insert(point);
+                if point.x > 0 {
+                    reg_size += region_size(grid, point - GridPoint::unit_x(), points);
+                }
+                if point.x < size.x - 1 {
+                    reg_size += region_size(grid, point + GridPoint::unit_x(), points);
+                }
+                if point.y > 0 {
+                    reg_size += region_size(grid, point - GridPoint::unit_y(), points);
+                }
+                if point.y < size.y - 1 {
+                    reg_size += region_size(grid, point + GridPoint::unit_y(), points);
+                }
+
+                reg_size
+            }
+
+            region_size(&self.floor_map.grid, self.low_point, &mut HashSet::new())
+        }
+    }
+
+    /// Height map of the cave floor, which can parsed from text input.
+    pub struct FloorMap {
+        /// Grid of the heights.
+        grid: Grid<u8>,
+    }
+    impl FromStr for FloorMap {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ok(Self {
+                grid: Grid::from_str::<Grid<u8>>(s)?,
+            })
+        }
+    }
+    impl FloorMap {
+        /// Returns an [Iterator] over all of the basins on the cave floor.
+        pub fn basins(&self) -> impl Iterator<Item = Basin> {
             self.grid
-                .neighbor_points(point, false, false)
-                .all(|p| height < self.grid.get(&p))
-        })
-    }
-
-    fn low_heights(&self) -> impl Iterator<Item = u8> + '_ {
-        self.low_points().map(|p| *self.grid.get(&p))
-    }
-
-    fn basin_region_size(&self, point: GridSize, points: &mut HashSet<GridPoint>) -> u64 {
-        // Base cases
-        if *self.grid.get(&point) == 9 || points.contains(&point) {
-            return 0;
+                .all_points()
+                .filter(|point| {
+                    let height = self.grid.get(point);
+                    self.grid
+                        .neighbor_points(point, false, false)
+                        .all(|p| height < self.grid.get(&p))
+                })
+                .map(|low_point| Basin {
+                    floor_map: self,
+                    low_point,
+                })
         }
-
-        let mut reg_size = 1;
-        let size = self.grid.size();
-        points.insert(point);
-        if point.x > 0 {
-            reg_size += self.basin_region_size(point - GridPoint::unit_x(), points);
-        }
-        if point.x < size.x - 1 {
-            reg_size += self.basin_region_size(point + GridPoint::unit_x(), points);
-        }
-        if point.y > 0 {
-            reg_size += self.basin_region_size(point - GridPoint::unit_y(), points);
-        }
-        if point.y < size.y - 1 {
-            reg_size += self.basin_region_size(point + GridPoint::unit_y(), points);
-        }
-
-        reg_size
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 9,
     name: "Smoke Basin",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(FloorMap::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let floor_map = FloorMap::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(Answer::Unsigned(
-                floor_map.low_heights().map(|h| u64::from(h) + 1).sum(),
-            ))
+            Ok(input
+                .expect_data::<FloorMap>()?
+                .basins()
+                .map(|basin| u64::from(basin.low_height() + 1))
+                .sum::<u64>()
+                .into())
         },
         // Part two
         |input| {
-            // Generation
-            let floor_map = FloorMap::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(floor_map
-                .low_points()
-                .map(|p| floor_map.basin_region_size(p, &mut HashSet::new()))
+            Ok(input
+                .expect_data::<FloorMap>()?
+                .basins()
+                .map(|basin| basin.size())
                 .sorted()
                 .rev()
                 .take(3)
