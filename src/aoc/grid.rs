@@ -248,6 +248,16 @@ pub trait CharGrid<T> {
 // This does not compile and we might need to post it somewhere as it's not clear
 // how to accomplish this.
 //impl<T, S: From<Grid<T>> + CharGrid<T>> FromStr for S {}
+// I think the best way to refactor this is perhaps to generally use the Newtype
+// pattern for grid elements so that a character conversion can be implemented for
+// these. The current CharGrid trait is weird in that it's implemented on the grid
+// as a whole. There may be crates that help with the Newtype pattern or we could do
+// our own in terms of easily working with the underlying value. Also we could have
+// a general Digit(u8) for most of our u8 grids, and maybe something similar for the
+// current Grid<bool> implementations, though or maybe some special trait for boolean-
+// like Newtypes for the useful methods there (e.g. as_coordinates). Maybe there is some
+// Kind of Repr crate we could use (or we could write our own to easily access the
+// underlying value). Look at the shrinkwraprs crate.
 
 impl Grid<bool> {
     pub fn as_coordinates(&self) -> HashSet<GridPoint> {

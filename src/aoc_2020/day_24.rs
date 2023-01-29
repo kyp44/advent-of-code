@@ -270,6 +270,10 @@ pub const SOLUTION: Solution = Solution {
             Ok(input
                 .expect_data::<Floor>()?
                 .evolutions()
+                // TODO: Can we add a similar method with a trait that does
+                // not require subtracting 1, a name depends on context and
+                // it's not clear we we want to add a different name for each
+                // case and maybe one for EvolverIter.
                 .nth(100 - 1)
                 .unwrap()
                 .num_black_tiles()
