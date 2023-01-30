@@ -1,6 +1,5 @@
-use std::{collections::HashSet, str::FromStr};
-
 use crate::aoc::prelude::*;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -30,116 +29,127 @@ mod tests {
         }
 }
 
-#[derive(Clone)]
-struct Octopi {
-    grid: Grid<u8>,
-}
-impl FromStr for Octopi {
-    type Err = AocError;
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use std::collections::HashSet;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self {
-            grid: Grid::from_str::<Grid<u8>>(s)?,
-        })
+    /// A grid of octopi, which can be parsed from text input.
+    #[derive(Clone)]
+    pub struct Octopi {
+        /// The grid of octopi energies.
+        grid: Grid<u8>,
     }
-}
-impl Octopi {
-    fn evolve(self) -> OctopiEvolver {
-        OctopiEvolver { octopi: self }
+    impl FromStr for Octopi {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ok(Self {
+                grid: Grid::from_str::<Grid<u8>>(s)?,
+            })
+        }
     }
-
-    fn energy(&mut self, point: &GridPoint) -> &mut u8 {
-        self.grid.element_at(point)
-    }
-
-    fn energy_iter(&self) -> impl Iterator<Item = GridPoint> {
-        self.grid.all_points()
-    }
-}
-
-struct OctopiEvolver {
-    octopi: Octopi,
-}
-impl Iterator for OctopiEvolver {
-    type Item = u64;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        // Fist pass to increment all energies
-        for point in self.octopi.energy_iter() {
-            *self.octopi.energy(&point) += 1;
+    impl Octopi {
+        /// Total number of octopi in the grid.
+        pub fn total_octopi(&self) -> usize {
+            let size = self.grid.size();
+            size.x * size.y
         }
 
-        // Now repeated passes to look for flashes
-        let mut flashes: HashSet<GridPoint> = HashSet::new();
-        loop {
-            let mut had_flashes = false;
+        /// Creates an [Iterator] over the evolution of octopi energies.
+        pub fn evolve(self) -> OctopiEvolver {
+            OctopiEvolver { octopi: self }
+        }
+    }
 
-            for point in self.octopi.energy_iter() {
-                let energy = self.octopi.energy(&point);
-                if *energy > 9 && !flashes.contains(&point) {
-                    // We have a new flash, increment neighbors
-                    let fps: Vec<GridPoint> = self
-                        .octopi
-                        .grid
-                        .neighbor_points(&point, true, false)
-                        .collect();
-                    for fp in fps {
-                        *self.octopi.energy(&fp) += 1;
+    /// [Iterator] over the evolution of octopi energies, which yields
+    /// the number of octopi that flashed at each step.
+    pub struct OctopiEvolver {
+        /// The octopi grid that evolves.
+        octopi: Octopi,
+    }
+    impl Iterator for OctopiEvolver {
+        type Item = u64;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            // Fist pass to increment all energies
+            for point in self.octopi.grid.all_points() {
+                *self.octopi.grid.element_at(&point) += 1;
+            }
+
+            // Now repeated passes to look for flashes
+            let mut flashes: HashSet<GridPoint> = HashSet::new();
+            loop {
+                let mut had_flashes = false;
+
+                for point in self.octopi.grid.all_points() {
+                    let energy = self.octopi.grid.get(&point);
+                    if *energy > 9 && !flashes.contains(&point) {
+                        // We have a new flash, increment neighbors
+                        let fps: Vec<GridPoint> = self
+                            .octopi
+                            .grid
+                            .neighbor_points(&point, true, false)
+                            .collect();
+                        for fp in fps {
+                            *self.octopi.grid.element_at(&fp) += 1;
+                        }
+
+                        // Add flash
+                        flashes.insert(point);
+                        had_flashes = true;
                     }
+                }
 
-                    // Add flash
-                    flashes.insert(point);
-                    had_flashes = true;
+                if !had_flashes {
+                    break;
                 }
             }
 
-            if !had_flashes {
-                break;
+            // Lastly, reset all energies that flashed
+            for point in flashes.iter() {
+                *self.octopi.grid.element_at(point) = 0;
             }
-        }
 
-        // Lastly, reset all energies that flashed
-        for point in flashes.iter() {
-            *self.octopi.energy(point) = 0;
+            Some(flashes.len().try_into().unwrap())
         }
-
-        Some(flashes.len().try_into().unwrap())
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 11,
     name: "Dumbo Octopus",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Octopi::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let octopi = Octopi::from_str(input.expect_input()?)?;
-
-            /*let mut evolver = octopi.clone().evolve();
-            for _ in 0..5 {
-                println!("{:?}", evolver.octopi);
-                println!("Flashes: {}\n", evolver.next().unwrap());
-            }*/
-
             // Process
-            Ok(octopi.evolve().take(100).sum::<u64>().into())
+            Ok(input
+                .expect_data::<Octopi>()?
+                .clone()
+                .evolve()
+                .take(100)
+                .sum::<u64>()
+                .into())
         },
         // Part two
         |input| {
-            // Generation
-            let octopi = Octopi::from_str(input.expect_input()?)?;
-            let size = octopi.grid.size();
-            let total_octopi = u64::try_from(size.x * size.y).unwrap();
-
             // Process
-            Ok(
-                (u64::try_from(octopi.evolve().take_while(|n| *n != total_octopi).count())
-                    .unwrap()
-                    + 1)
-                .into(),
+            let octopi = input.expect_data::<Octopi>()?;
+            let total_octopi = u64::try_from(octopi.total_octopi()).unwrap();
+            Ok((u64::try_from(
+                octopi
+                    .clone()
+                    .evolve()
+                    .take_while(|n| *n != total_octopi)
+                    .count(),
             )
+            .unwrap()
+                + 1)
+            .into())
         },
     ],
 };

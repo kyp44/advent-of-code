@@ -77,12 +77,6 @@ mod solution {
         }
     }
 
-    // Move below to this TODO
-    /* static TODO: HashMap<Digit, u8> = hashmap! {
-        Digit::from_str("abcefg").unwrap() =>  0,
-        Digit::from_str("cf").unwrap() => 1,
-    }; */
-
     lazy_static! {
         /// Mapping of the of a [Digit] using corrected signals to the numeric
         /// digit.
@@ -200,7 +194,9 @@ mod solution {
             };
 
             // Deduce which character corresponds to the variable name characters
-            // This procedure was derived ahead of time using Python experimentation
+            // This procedure was derived ahead of time using interactive Python
+            // experimentation.
+            // TODO: Should we document the solution process in the notes? Probably should.
             let a = map_add('a', d7.segments.difference(&d1.segments).collect())?;
             let is5 = length_intersection(5);
             let is6 = length_intersection(6);
