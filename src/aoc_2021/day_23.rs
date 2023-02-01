@@ -20,15 +20,6 @@ mod tests {
 mod solution {
     use super::*;
     use crate::aoc::parse::trim;
-    use std::{
-        cmp::Ordering,
-        collections::{BTreeSet, HashMap},
-        fmt,
-        iter::repeat_with,
-        marker::PhantomData,
-        ops::Add,
-    };
-
     use enum_map::{Enum, EnumMap};
     use nom::{
         bytes::complete::tag,
@@ -41,6 +32,14 @@ mod solution {
         algo::{bellman_ford, FloatMeasure},
         graph::NodeIndex,
         prelude::StableUnGraph,
+    };
+    use std::{
+        cmp::Ordering,
+        collections::{BTreeSet, HashMap},
+        fmt,
+        iter::repeat_with,
+        marker::PhantomData,
+        ops::Add,
     };
     use strum::IntoEnumIterator;
     use strum_macros::EnumIter;
