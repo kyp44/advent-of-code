@@ -64,11 +64,16 @@ mod solution {
         fmt::Debug,
     };
 
+    /// The type of a cave, which can be parsed from text input.
     #[derive(PartialEq, Eq, Hash, Copy, Clone)]
     enum CaveType {
+        /// The starting cave
         Start,
+        /// The ending cave we want to get to.
         End,
+        /// A big cave that can be visited any number of times.
         Big,
+        /// A small cave than can only be visited once (part one) or maybe twice (part two).
         Small,
     }
     impl From<&str> for CaveType {
@@ -82,9 +87,12 @@ mod solution {
         }
     }
 
+    /// A cave.
     #[derive(Eq)]
     pub struct Cave {
+        /// The cave name.
         name: String,
+        /// The type of the cave.
         cave_type: CaveType,
     }
     impl Debug for Cave {
@@ -93,6 +101,7 @@ mod solution {
         }
     }
     impl Cave {
+        /// Create a cave from a string.
         fn new(name: &str) -> Self {
             Self {
                 name: name.to_string(),
@@ -116,16 +125,23 @@ mod solution {
         }
     }
 
+    /// The entire cave system, which can be parsed from text input.
     pub struct CaveSystem {
+        /// The graph node of the starting cave.
         start: NodeIndex,
+        /// The graph of the cave system.
         graph: UnGraph<Cave, ()>,
     }
     impl FromStr for CaveSystem {
         type Err = AocError;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
+            /// Sub-struct used when parsing a [CaveSystem], which is a passage
+            /// between caves and can be parsed from text input.
             struct RawPassage<'a> {
+                /// Cave name at one end of the passage.
                 cave1: &'a str,
+                /// Cave name at the other end of passage.
                 cave2: &'a str,
             }
             impl<'a> Parseable<'a> for RawPassage<'a> {
@@ -159,10 +175,9 @@ mod solution {
         }
     }
     impl CaveSystem {
-        pub fn paths(
-            &self,
-            special_cave: Option<NodeIndex>,
-        ) -> Result<HashSet<Vec<&Cave>>, AocError> {
+        /// Determines and returns the set of all possible paths through the cave system,
+        /// only ever visiting small caves at most once.
+        pub fn paths(&self, special_cave: Option<NodeIndex>) -> HashSet<Vec<&Cave>> {
             // Remaining visits for each cave
             let mut visits_left = HashMap::new();
             for index in self.graph.node_indices() {
@@ -177,38 +192,69 @@ mod solution {
                 );
             }
 
-            // Paths from the given cave to the end having already visited some
+            /// Recursive sub-function of [Cave::paths].
+            ///
+            /// Given the cave system graph, a current cave node, and the remaining visits
+            /// for every cave, returns the set of possible paths from the current cave
+            /// to the ending cave.
             fn paths_rec<'a>(
                 graph: &'a UnGraph<Cave, ()>,
                 index: NodeIndex,
                 visits_left: &HashMap<NodeIndex, Infinitable<usize>>,
-            ) -> Option<HashSet<Vec<&'a Cave>>> {
+            ) -> HashSet<Vec<&'a Cave>> {
                 let mut paths = HashSet::new();
                 let cave = graph.node_weight(index).unwrap();
 
                 if cave.cave_type == CaveType::End {
                     // We've reached the end so this is the only path
                     paths.insert(vec![cave]);
-                    Some(paths)
                 } else {
-                    //let x = visits_left.get(&index).unwrap() - Infinitable::Finite(1usize);
-                    todo!()
+                    // TODO: This would be easier if Sub is implemented for Infinitable.
+                    // See: https://github.com/ObjectBoxPC/rust-infinitable/issues/1
+                    let visits = visits_left.get(&index).unwrap();
+                    if match visits.finite() {
+                        Some(v) => v > 0,
+                        None => true,
+                    } {
+                        // We can visit this cave again, so first mark that it was visited.
+                        let mut visits_left = visits_left.clone();
+                        if let Infinitable::Finite(v) = visits {
+                            *visits_left.get_mut(&index).unwrap() = Infinitable::Finite(*v - 1);
+                        }
+
+                        // Now go through connecting caves and recurse
+                        for next_cave in graph.neighbors(index).filter(|nc| {
+                            graph.node_weight(*nc).unwrap().cave_type != CaveType::Start
+                        }) {
+                            for mut path in paths_rec(graph, next_cave, &visits_left).into_iter() {
+                                // Prepend current cave to path and add the path.
+                                path.insert(0, cave);
+                                paths.insert(path);
+                            }
+                        }
+                    }
                 }
+
+                paths
             }
 
-            paths_rec(&self.graph, self.start, &visits_left).ok_or(AocError::NoSolution)
+            paths_rec(&self.graph, self.start, &visits_left)
         }
 
-        pub fn paths_special(&self) -> Result<HashSet<Vec<&Cave>>, AocError> {
-            /* let mut paths = HashSet::new();
-            for cave in self.caves.iter().filter(|c| c.has_type(CaveType::Small)) {
-                paths.extend(self.paths(SpecialCave::Some {
-                    cave: cave.clone(),
-                    count: 2,
-                })?)
+        /// Determines and returns the set of all possible paths through the cave system,
+        /// only ever visiting small caves at most once except for a single small cave, which
+        /// may be visited twice.
+        pub fn paths_special(&self) -> HashSet<Vec<&Cave>> {
+            let mut paths = HashSet::new();
+            for special_cave in self
+                .graph
+                .node_indices()
+                .filter(|ni| self.graph.node_weight(*ni).unwrap().cave_type == CaveType::Small)
+            {
+                paths.extend(self.paths(Some(special_cave)));
             }
-            Ok(paths) */
-            todo!()
+
+            paths
         }
     }
 }
@@ -227,7 +273,7 @@ pub const SOLUTION: Solution = Solution {
             Ok(Answer::Unsigned(
                 input
                     .expect_data::<CaveSystem>()?
-                    .paths(None)?
+                    .paths(None)
                     .len()
                     .try_into()
                     .unwrap(),
@@ -235,13 +281,15 @@ pub const SOLUTION: Solution = Solution {
         },
         // Part two
         |input| {
-            // Generation
-            /* let cave_system = CaveSystem::from_str(input.expect_input()?)?;
-            let paths = cave_system.paths_special()?;
-
             // Process
-            Ok(Answer::Unsigned(paths.len().try_into().unwrap())) */
-            todo!()
+            Ok(Answer::Unsigned(
+                input
+                    .expect_data::<CaveSystem>()?
+                    .paths_special()
+                    .len()
+                    .try_into()
+                    .unwrap(),
+            ))
         },
     ],
 };

@@ -101,6 +101,9 @@ pub trait Parseable<'a> {
     }
 
     // Gathers a vector of items from an iterator with each item being a string to parse.
+    // TODO: Can we and should we change this it return an iterator instead? I have
+    // noticed numerous places where a vector is immediately transformed into an
+    // iterator and so this would be more efficient instead of allocating.
     fn gather<I>(strs: I) -> Result<Vec<Self>, NomParseError>
     where
         Self: Sized,
