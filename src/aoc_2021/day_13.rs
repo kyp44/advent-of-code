@@ -204,33 +204,37 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 13,
     name: "Transparent Origami",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Problem::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let problem = Problem::from_str(input.expect_input()?)?;
-            let first_fold = problem.apply_folds().next().unwrap();
-
-            //println!("{:?}\n", problem.page);
-            //println!("{:?}\n", first_fold);
-
             // Process
-            Ok(Answer::Unsigned(first_fold.num_dots().try_into().unwrap()))
+            Ok(Answer::Unsigned(
+                input
+                    .expect_data::<Problem>()?
+                    .apply_folds()
+                    .next()
+                    .unwrap()
+                    .num_dots()
+                    .try_into()
+                    .unwrap(),
+            ))
         },
         // Part two
         |input| {
-            // Generation
-            let problem = Problem::from_str(input.expect_input()?)?;
+            // Process
+            let last_page = input
+                .expect_data::<Problem>()?
+                .apply_folds()
+                .last()
+                .unwrap();
 
             // This is a little annoying because it requires looking at letters in the folded image,
             // which cannot really be done in automated way easily.
-            let last_page = problem.apply_folds().last().unwrap();
             println!("Part two folded image:\n");
             println!("{last_page:?}");
             println!("Part two actual answer: JGAJEFKU\n");
 
-            // Process
             Ok(Answer::Unsigned(last_page.num_dots().try_into().unwrap()))
         },
     ],
