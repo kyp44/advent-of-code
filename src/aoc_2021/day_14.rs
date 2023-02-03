@@ -114,13 +114,13 @@ mod solution {
         }
     }
 
-    /// The occurances of each element in a formula.
+    /// The occurrences of each element in a formula.
     #[derive(Debug, Clone)]
-    pub struct Occurances {
+    pub struct Occurrences {
         /// Map of element characters to the number of times it appears in the formula.
         map: HashMap<char, u64>,
     }
-    impl Occurances {
+    impl Occurrences {
         /// Creates a new set of occurrences in which every element begins with zero.
         fn new() -> Self {
             Self {
@@ -146,15 +146,15 @@ mod solution {
             self.map.values().copied().range().unwrap_or(0..=0)
         }
     }
-    impl From<char> for Occurances {
+    impl From<char> for Occurrences {
         fn from(c: char) -> Self {
-            let mut occurances = Self::new();
-            occurances.increment(c);
-            occurances
+            let mut occurrences = Self::new();
+            occurrences.increment(c);
+            occurrences
         }
     }
-    impl Add for &Occurances {
-        type Output = Occurances;
+    impl Add for &Occurrences {
+        type Output = Occurrences;
 
         fn add(self, rhs: Self) -> Self::Output {
             let mut map = HashMap::new();
@@ -167,16 +167,16 @@ mod solution {
             Self::Output { map }
         }
     }
-    impl Sum for Occurances {
+    impl Sum for Occurrences {
         fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
             iter.reduce(|o1, o2| &o1 + &o2)
-                .unwrap_or_else(Occurances::new)
+                .unwrap_or_else(Occurrences::new)
         }
     }
 
     /// Builder for a polymer, which can be parsed from text input.
     #[derive(Debug)]
-    pub struct PolymerBuilder {
+    pub struct Problem {
         /// The initial polymer template formula.
         template: Formula,
         /// The possible insertions.
@@ -184,7 +184,7 @@ mod solution {
         /// The set of element characters involved in the whole process.
         chars: HashSet<char>,
     }
-    impl FromStr for PolymerBuilder {
+    impl FromStr for Problem {
         type Err = AocError;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -202,47 +202,57 @@ mod solution {
             })
         }
     }
-    impl PolymerBuilder {
-        pub fn occurrences(&self, nth: usize) -> Occurances {
-            // Map of every pair and TODO
-            let mut occurances_map: HashMap<(Pair, usize), Occurances> =
+    impl Problem {
+        /// Calculates the occurrences of every element after the `nth` step.
+        pub fn occurrences(&self, nth: usize) -> Occurrences {
+            // Map of every pair and step to its occurrences of elements
+            let mut occurrences_map: HashMap<(Pair, usize), Occurrences> =
                 self.pairs().map(|p| ((p, 0), p.0.into())).collect();
 
-            // First, build up occurances for all levels
+            // First, build up occurrences for all levels and all combinations of pairs
             for level in 1..=nth {
                 // Go through every possible pair of characters
                 for pair in self.pairs() {
-                    let occurances = match self.pair_insertions.get(&pair) {
+                    let occurrences = match self.pair_insertions.get(&pair) {
                         Some(ip) => {
-                            occurances_map
+                            occurrences_map
                                 .get(&((pair.0, ip.insert), level - 1))
                                 .unwrap()
-                                + occurances_map
+                                + occurrences_map
                                     .get(&((ip.insert, pair.1), level - 1))
                                     .unwrap()
                         }
                         None => pair.0.into(),
                     };
-                    occurances_map.insert((pair, level), occurances);
+                    occurrences_map.insert((pair, level), occurrences);
                 }
             }
 
-            // Now go through the template and add occurances
-            let mut occurances = self
+            // Now go through the template and add occurrences
+            let mut occurrences = self
                 .template
                 .pairs()
-                .map(|p| occurances_map.get(&(p, nth)).unwrap().clone())
-                .sum::<Occurances>();
+                .map(|p| occurrences_map.get(&(p, nth)).unwrap().clone())
+                .sum::<Occurrences>();
 
             // Need to add the last element, which is otherwise not included
-            occurances.increment(*self.template.elements.last().unwrap());
-            occurances
+            occurrences.increment(*self.template.elements.last().unwrap());
+            occurrences
         }
 
         /// Returns an [Iterator] over all possible pairs of characters.
         fn pairs(&self) -> impl Iterator<Item = Pair> + '_ {
             iproduct!(self.chars.iter().copied(), self.chars.iter().copied())
         }
+    }
+
+    /// An [Iterator] over the occurrences of every element at each step of
+    /// the polymer building process.
+    struct PolymerBuilder<'a> {
+        /// The problem we are building for.
+        problem: &'a Problem,
+        /// The current number of occurrences.
+        current_occurrences: Occurrences,
     }
 }
 
@@ -257,7 +267,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let builder = PolymerBuilder::from_str(input.expect_input()?)?;
+            let builder = Problem::from_str(input.expect_input()?)?;
             let range = builder.occurrences(10).range();
 
             // Process
@@ -266,7 +276,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let builder = PolymerBuilder::from_str(input.expect_input()?)?;
+            let builder = Problem::from_str(input.expect_input()?)?;
             let range = builder.occurrences(40).range();
 
             // Process
