@@ -1,4 +1,4 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 use std::str::FromStr;
 
 #[cfg(test)]

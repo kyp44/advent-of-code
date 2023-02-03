@@ -1,10 +1,10 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Signed;
 
     solution_test! {
@@ -22,7 +22,7 @@ forward 2",
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use crate::aoc::parse::field_line_parser;
+    use aoc::parse::field_line_parser;
     use nom::{branch::alt, combinator::map};
 
     /// A direction the submarine can move, depending on the problem part.

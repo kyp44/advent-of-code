@@ -16,6 +16,7 @@ impl syn::parse::Parse for GenericParams {
     }
 }
 
+/// TODO: After refactoring CharGrid do we even need this?
 #[proc_macro_derive(CharGridDebug, attributes(generics))]
 pub fn char_grid_debug(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);

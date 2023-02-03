@@ -1,11 +1,11 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 use std::str::FromStr;
 use strum::IntoEnumIterator;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -124,6 +124,7 @@ Tile 3079:
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use derive_new::new;
     use enum_map::{enum_map, Enum, EnumMap};
     use itertools::{iproduct, Itertools};
     use nom::{

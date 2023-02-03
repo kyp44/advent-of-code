@@ -1,10 +1,6 @@
-use std::collections::HashMap;
-use std::hash::Hash;
-use std::ops::Add;
-use std::rc::Rc;
-use std::{collections::HashSet, str::FromStr};
-
+use aoc::{parse::trim, prelude::*};
 use cgmath::{Quaternion, Vector3, Zero};
+use derive_new::new;
 use itertools::iproduct;
 use maplit::hashset;
 use nom::{
@@ -14,15 +10,18 @@ use nom::{
     sequence::{delimited, preceded},
     Finish,
 };
+use std::collections::HashMap;
+use std::hash::Hash;
+use std::ops::Add;
+use std::rc::Rc;
+use std::{collections::HashSet, str::FromStr};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-
-use crate::aoc::{parse::trim, prelude::*};
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {

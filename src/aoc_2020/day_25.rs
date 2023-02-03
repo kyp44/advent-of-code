@@ -1,10 +1,10 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -18,6 +18,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use derive_new::new;
 
     /// An [Iterator] that performs transformations on a number given the subject number.
     #[derive(new)]

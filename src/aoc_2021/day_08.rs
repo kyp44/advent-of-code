@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -27,8 +27,9 @@ gcafb gcf dcaebfg ecagb gf abcdeg gaef cafbge fdbac fegbdc | fgae cfgab fg bagce
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use crate::aoc::parse::separated;
+    use aoc::parse::separated;
     use itertools::Itertools;
+    use lazy_static::lazy_static;
     use maplit::hashmap;
     use nom::{
         bytes::complete::tag,

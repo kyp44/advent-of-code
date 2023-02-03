@@ -1,6 +1,6 @@
-use std::str::FromStr;
-
+use aoc::{parse::trim, prelude::*};
 use cgmath::{Vector2, Zero};
+use derive_new::new;
 use itertools::Itertools;
 use multiset::HashMultiSet;
 use nom::{
@@ -8,13 +8,12 @@ use nom::{
     combinator::map,
     sequence::{pair, preceded},
 };
-
-use crate::aoc::{parse::trim, prelude::*};
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{expensive_test, solution_test};
+    use aoc::{expensive_test, solution_test};
     use Answer::Unsigned;
 
     const INPUT: &str = "Player 1 starting position: 4

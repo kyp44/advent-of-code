@@ -9,12 +9,12 @@ use nom::{
     sequence::{separated_pair, terminated, tuple},
 };
 
-use crate::aoc::{parse::field_line_parser, prelude::*};
+use aoc::{parse::field_line_parser, prelude::*};
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {

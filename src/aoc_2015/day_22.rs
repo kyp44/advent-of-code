@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -16,9 +16,9 @@ mod tests {
 
 /// Contains solution implementation items.
 mod solution {
-    use crate::aoc::parse::field_line_parser;
-
     use super::*;
+    use aoc::parse::field_line_parser;
+    use derive_new::new;
     use nom::{combinator::map, sequence::tuple};
     use std::fmt;
     use strum::IntoEnumIterator;

@@ -1,10 +1,10 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 use std::{collections::HashSet, str::FromStr};
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -50,9 +50,9 @@ HOHOHO",
 /// For a discussion of the properties of the input that allow this see
 /// [this reddit post](https://www.reddit.com/r/adventofcode/comments/3xflz8/day_19_solutions/)
 mod solution {
-    use crate::aoc::parse::trim;
-
     use super::*;
+    use aoc::parse::trim;
+    use derive_new::new;
     use nom::{
         bytes::complete::tag, character::complete::alpha1, combinator::map,
         sequence::separated_pair,

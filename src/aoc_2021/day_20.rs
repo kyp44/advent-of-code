@@ -4,12 +4,12 @@ use bitbuffer::{BitReadBuffer, BitWriteStream, LittleEndian};
 use cgmath::Vector2;
 use nom::{character::complete::one_of, combinator::map, multi::many_m_n};
 
-use crate::aoc::{parse::trim, prelude::*};
+use aoc::{parse::trim, prelude::*};
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -169,7 +169,7 @@ pub const SOLUTION: Solution = Solution {
             Ok(Answer::Unsigned(
                 image
                     .evolutions()
-                    .nth(2 - 1)
+                    .iterations(2)
                     .unwrap()
                     .num_lit()
                     .try_into()
@@ -185,7 +185,7 @@ pub const SOLUTION: Solution = Solution {
             Ok(Answer::Unsigned(
                 image
                     .evolutions()
-                    .nth(50 - 1)
+                    .iterations(50)
                     .unwrap()
                     .num_lit()
                     .try_into()

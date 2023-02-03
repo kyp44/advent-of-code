@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Signed;
 
     solution_test! {

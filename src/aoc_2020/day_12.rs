@@ -1,12 +1,12 @@
 use cgmath::Vector2;
 use std::str::FromStr;
 
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {

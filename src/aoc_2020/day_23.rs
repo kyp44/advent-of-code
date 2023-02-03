@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{expensive_test, solution_test};
+    use aoc::{expensive_test, solution_test};
     use Answer::Unsigned;
 
     solution_test! {
@@ -20,9 +20,9 @@ mod tests {
 
 /// Contains solution implementation items.
 mod solution {
-    use crate::aoc::parse::single_digit;
-
     use super::*;
+    use aoc::parse::single_digit;
+    use derive_new::new;
     use itertools::Itertools;
     use nom::{multi::many1, Finish};
     use std::{
@@ -282,7 +282,7 @@ mod solution {
                 // First remove the next three cups
                 let three = self.current.next().unwrap();
                 self.current
-                    .set_next(three.iter().nth(2).unwrap().set_next(None));
+                    .set_next(three.iter().iterations(3).unwrap().set_next(None));
 
                 // Search for the destination cup
                 let mut dest_label = self.current.label();

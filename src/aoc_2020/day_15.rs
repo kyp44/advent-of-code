@@ -1,10 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::expensive_test;
-    use crate::solution_test;
+    use aoc::{expensive_test, solution_test};
     use Answer::Unsigned;
 
     solution_test! {

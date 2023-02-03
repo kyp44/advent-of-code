@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -86,7 +86,7 @@ mod solution {
             // Just going to naively assume that the string is long
             // enough to contain both characters.
             let check =
-                |position: usize| password.chars().nth(position - 1).unwrap() == self.character;
+                |position: usize| password.chars().iterations(position).unwrap() == self.character;
 
             let a = check(self.positions[0]);
             let b = check(self.positions[1]);

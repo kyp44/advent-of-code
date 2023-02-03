@@ -1,10 +1,10 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -20,6 +20,7 @@ mod tests {
 mod solution {
     use super::*;
     use cgmath::Vector2;
+    use derive_new::new;
     use itertools::Itertools;
     use std::{collections::HashSet, convert::TryInto, fmt::Debug, ops::RangeInclusive};
 

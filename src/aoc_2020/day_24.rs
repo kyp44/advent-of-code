@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -274,7 +274,7 @@ pub const SOLUTION: Solution = Solution {
                 // not require subtracting 1, a name depends on context and
                 // it's not clear we we want to add a different name for each
                 // case and maybe one for EvolverIter.
-                .nth(100 - 1)
+                .iterations(100)
                 .unwrap()
                 .num_black_tiles()
                 .into())

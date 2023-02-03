@@ -10,20 +10,13 @@
 //! The document is in the `notes` directory and includes a `Makefile`.
 #![feature(hash_set_entry)]
 #![feature(type_alias_impl_trait)]
-#![feature(slice_pattern)]
 #![feature(let_chains)]
 #![feature(is_some_and)]
 #![feature(step_trait)]
+#![feature(once_cell)]
 #![warn(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
 
-#[macro_use]
-extern crate derive_new;
-
-#[macro_use]
-extern crate lazy_static;
-
-mod aoc;
 mod aoc_2015;
 mod aoc_2020;
 mod aoc_2021;
@@ -39,7 +32,7 @@ use structopt::StructOpt;
     author = "Dan Whitman <dwhitman44@gmail.com>",
     about = "Run the Advent of Code solution for a particular year and day."
 )]
-
+// TODO: Replace this with `clap`.
 /// Command line arguments.
 struct Cli {
     /// List the implemented solutions

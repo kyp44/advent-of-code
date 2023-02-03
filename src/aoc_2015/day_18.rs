@@ -1,11 +1,11 @@
 use std::str::FromStr;
 
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -145,7 +145,12 @@ mod solution {
 
     /// Solve a part of the problem.
     pub fn solve<P: Part + Clone>(grid: &LightGrid<P>) -> AocResult<Answer> {
-        Ok(grid.evolutions().nth(100 - 1).unwrap().lights_on().into())
+        Ok(grid
+            .evolutions()
+            .iterations(100)
+            .unwrap()
+            .lights_on()
+            .into())
     }
 }
 

@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -23,9 +23,9 @@ f -> a",
 
 /// Contains solution implementation items.
 mod solution {
-    use crate::aoc::parse::separated;
-
     use super::*;
+    use aoc::parse::separated;
+    use derive_new::new;
     use nom::{
         branch::alt,
         bytes::complete::tag,
@@ -179,7 +179,9 @@ mod solution {
             // Ensure that no wire is connected to multiple outputs
             for element in elements.iter() {
                 let wire = element.output();
-                if FilterCount::<_, usize>::filter_count(elements.iter(), |e| e.output() == wire)
+                if elements
+                    .iter()
+                    .filter_count::<usize>(|e| e.output() == wire)
                     > 1
                 {
                     return Err(AocError::InvalidInput(

@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{expensive_test, solution_test};
+    use aoc::{expensive_test, solution_test};
     use Answer::String;
 
     solution_test! {
@@ -38,10 +38,10 @@ mod solution {
             .collect::<Vec<char>>()
             .windows(3)
             .any(|w| (0..3).all(|i: usize| w[i] == char_add(w[0], i.try_into().unwrap())))
-        // Does not contain any forbidden characters
-        && BAD_CHARS.iter().all(|c| !self.contains(*c))
-        // Two different, non-overlapping pairs
-        && FilterCount::<_, usize>::filter_count(self.split_runs().map(|s| s.len()), |n| *n > 1) > 1
+            // Does not contain any forbidden characters
+            && BAD_CHARS.iter().all(|c| !self.contains(*c))
+            // Two different, non-overlapping pairs
+            && self.split_runs().filter_count::<usize>(|s| s.len() > 1) > 1
         }
     }
 
@@ -110,7 +110,7 @@ pub const SOLUTION: Solution = Solution {
             let mut passwords = LexOrder::valid(input.expect_input()?.trim());
 
             // Process
-            Ok(passwords.nth(1).unwrap().into())
+            Ok(passwords.iterations(2).unwrap().into())
         },
     ],
 };

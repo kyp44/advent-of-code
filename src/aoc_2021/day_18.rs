@@ -8,12 +8,12 @@ use nom::{
     sequence::{delimited, separated_pair},
 };
 
-use crate::aoc::{parse::trim, prelude::*};
+use aoc::{parse::trim, prelude::*};
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {

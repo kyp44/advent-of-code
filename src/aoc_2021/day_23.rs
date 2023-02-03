@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -19,8 +19,9 @@ mod tests {
 
 mod solution {
     use super::*;
-    use crate::aoc::parse::trim;
+    use aoc::parse::trim;
     use enum_map::{Enum, EnumMap};
+    use lazy_static::lazy_static;
     use nom::{
         bytes::complete::tag,
         character::complete::{line_ending, one_of},

@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -17,9 +17,9 @@ Armor: 3",
 
 /// Contains solution implementation items.
 mod solution {
-    use crate::aoc::parse::field_line_parser;
-
     use super::*;
+    use aoc::parse::field_line_parser;
+    use derive_new::new;
     use itertools::{iproduct, Itertools, MinMaxResult};
     use nom::{combinator::map, sequence::tuple};
     use std::{iter::Sum, ops::Add};
@@ -212,7 +212,7 @@ mod solution {
             // Go through every combination of 1 weapon, 0-1 armor, and 0-2 rings
             match iproduct!(
                 WEAPONS.iter(),
-                ARMORS.iter().none_iter(),
+                [None].into_iter().chain(ARMORS.iter().map(Some)),
                 (0..=2).flat_map(|n| RINGS.iter().combinations(n))
             )
             .filter_map(|(weapon, armor, rings)| {

@@ -1,11 +1,11 @@
 use std::{cell::RefCell, str::FromStr};
 
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -28,6 +28,7 @@ L.LLLLL.LL",
 mod solution {
     use super::*;
     use cgmath::{Vector2, Zero};
+    use derive_new::new;
     use itertools::iproduct;
     use std::{collections::HashSet, fmt::Display, hash::Hash, rc::Rc};
 

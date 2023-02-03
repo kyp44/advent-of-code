@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -49,7 +49,8 @@ mod solution {
             const BAD_STRS: &[&str] = &["ab", "cd", "pq", "xy"];
 
             // Check vowels
-            FilterCount::<_, usize>::filter_count(self.chars(), |c| VOWELS.contains(c)) >= 3
+            self.chars().filter_count::<usize>(|c| VOWELS.contains(c))
+             >= 3
                 // Double letters
                     && self
                         .chars()

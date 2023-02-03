@@ -1,17 +1,17 @@
+use aoc::{
+    parse::{field_line_parser, trim},
+    prelude::*,
+};
 use cgmath::{Vector2, Zero};
+use derive_new::new;
 use itertools::iproduct;
 use nom::{bytes::complete::tag, combinator::map, sequence::separated_pair};
 use std::ops::RangeInclusive;
 
-use crate::aoc::{
-    parse::{field_line_parser, trim},
-    prelude::*,
-};
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {

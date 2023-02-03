@@ -1,7 +1,10 @@
+#![feature(slice_pattern)]
+
 use anyhow::Context;
 use colored::Colorize;
 use itertools::Itertools;
 use num::Integer;
+use parse::NomParseError;
 use std::any::Any;
 use std::borrow::Cow;
 use std::fmt::Debug;
@@ -9,19 +12,16 @@ use std::fs;
 use std::ops::RangeInclusive;
 use thiserror::Error;
 
-use self::parse::NomParseError;
-
-mod evolver;
-mod grid;
-mod iter;
+pub mod evolver;
+pub mod grid;
+pub mod iter;
 pub mod parse;
 
 // Prelude
 pub mod prelude {
     pub use super::{
         char_add, evolver::Evolver, grid::CharGrid, grid::Grid, grid::GridDefault, grid::GridPoint,
-        grid::GridSize, grid::GridSizeExt, grid::PointTryInto, iter::FilterCount,
-        iter::HasNoneIter, iter::HasRange, iter::IndividualReplacements, iter::SplitRuns,
+        grid::GridSize, grid::GridSizeExt, grid::PointTryInto, iter::IteratorExt, iter::StrExt,
         parse::BitInput, parse::DiscardInput, parse::NomParseError, parse::NomParseResult,
         parse::Parseable, parse::Sections, Answer, AnswerVec, AocError, AocResult, RangeExt,
         Solution, SolverInput, YearSolutions,
@@ -305,7 +305,7 @@ macro_rules! year_solutions {
 	    pub mod $day;
 	)*
 
-	use super::aoc::YearSolutions;
+	use aoc::YearSolutions;
 
 	// All of the solutions.
 	pub const YEAR_SOLUTIONS: YearSolutions = YearSolutions {

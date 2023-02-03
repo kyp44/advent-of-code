@@ -1,10 +1,10 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -34,7 +34,7 @@ CN -> C",
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use crate::aoc::parse::{single_alphanumeric, trim};
+    use aoc::parse::{single_alphanumeric, trim};
     use itertools::{iproduct, Itertools};
     use maplit::hashset;
     use nom::{
@@ -114,14 +114,14 @@ mod solution {
         }
     }
 
-    /// The occurrences of each element in a formula.
+    /// The number of occurrences of each element in a formula.
     #[derive(Debug, Clone)]
     pub struct Occurrences {
         /// Map of element characters to the number of times it appears in the formula.
         map: HashMap<char, u64>,
     }
     impl Occurrences {
-        /// Creates a new set of occurrences in which every element begins with zero.
+        /// Creates a new set of occurrences in which every element initially has zero occurrences.
         fn new() -> Self {
             Self {
                 map: HashMap::new(),
@@ -203,56 +203,66 @@ mod solution {
         }
     }
     impl Problem {
-        /// Calculates the occurrences of every element after the `nth` step.
-        pub fn occurrences(&self, nth: usize) -> Occurrences {
-            // Map of every pair and step to its occurrences of elements
-            let mut occurrences_map: HashMap<(Pair, usize), Occurrences> =
-                self.pairs().map(|p| ((p, 0), p.0.into())).collect();
-
-            // First, build up occurrences for all levels and all combinations of pairs
-            for level in 1..=nth {
-                // Go through every possible pair of characters
-                for pair in self.pairs() {
-                    let occurrences = match self.pair_insertions.get(&pair) {
-                        Some(ip) => {
-                            occurrences_map
-                                .get(&((pair.0, ip.insert), level - 1))
-                                .unwrap()
-                                + occurrences_map
-                                    .get(&((ip.insert, pair.1), level - 1))
-                                    .unwrap()
-                        }
-                        None => pair.0.into(),
-                    };
-                    occurrences_map.insert((pair, level), occurrences);
-                }
-            }
-
-            // Now go through the template and add occurrences
-            let mut occurrences = self
-                .template
-                .pairs()
-                .map(|p| occurrences_map.get(&(p, nth)).unwrap().clone())
-                .sum::<Occurrences>();
-
-            // Need to add the last element, which is otherwise not included
-            occurrences.increment(*self.template.elements.last().unwrap());
-            occurrences
-        }
-
         /// Returns an [Iterator] over all possible pairs of characters.
         fn pairs(&self) -> impl Iterator<Item = Pair> + '_ {
             iproduct!(self.chars.iter().copied(), self.chars.iter().copied())
+        }
+
+        /// Returns an [Iterator] over the element occurrences at each step as the polymer is built up.
+        pub fn builder(&self) -> PolymerBuilder<'_> {
+            PolymerBuilder::new(self)
         }
     }
 
     /// An [Iterator] over the occurrences of every element at each step of
     /// the polymer building process.
-    struct PolymerBuilder<'a> {
-        /// The problem we are building for.
+    pub struct PolymerBuilder<'a> {
+        /// The problem for which we are building the polymer.
         problem: &'a Problem,
-        /// The current number of occurrences.
-        current_occurrences: Occurrences,
+        /// Map from every possible initial pair of elements to the occurrences of each
+        /// element in the expansion of that initial pair at the current step, which
+        /// does not include the final element in the expansion
+        occurrence_map: HashMap<Pair, Occurrences>,
+    }
+    impl<'a> PolymerBuilder<'a> {
+        /// Creates a new [Iterator] for a given problem.
+        fn new(problem: &'a Problem) -> Self {
+            // Build the initial occurrence map for every possible pair.
+            let occurrence_map = problem.pairs().map(|p| (p, p.0.into())).collect();
+
+            Self {
+                problem,
+                occurrence_map,
+            }
+        }
+    }
+    impl Iterator for PolymerBuilder<'_> {
+        type Item = Occurrences;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            // Update the map with the next step of expansions.
+            // Go through every possible pair of characters
+            let mut occurrence_map = self.occurrence_map.clone();
+            for (pair, occ) in occurrence_map.iter_mut() {
+                if let Some(ins) = self.problem.pair_insertions.get(pair) {
+                    *occ = self.occurrence_map.get(&(pair.0, ins.insert)).unwrap()
+                        + self.occurrence_map.get(&(ins.insert, pair.1)).unwrap()
+                }
+            }
+            self.occurrence_map = occurrence_map;
+
+            // Now build occurrences for the expanded polymer from the initial template.
+            let mut occurrences = self
+                .problem
+                .template
+                .pairs()
+                .map(|p| self.occurrence_map.get(&p).unwrap().clone())
+                .sum::<Occurrences>();
+
+            // Need to add the last element, which is otherwise not included
+            occurrences.increment(*self.problem.template.elements.last().unwrap());
+            Some(occurrences)
+        }
     }
 }
 
@@ -262,24 +272,29 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 14,
     name: "Extended Polymerization",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Problem::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let builder = Problem::from_str(input.expect_input()?)?;
-            let range = builder.occurrences(10).range();
-
             // Process
+            // TODO: Another use case for `iterations` or `steps` extension method for [Iterator].
+            let range = input
+                .expect_data::<Problem>()?
+                .builder()
+                .iterations(10)
+                .unwrap()
+                .range();
             Ok((range.end() - range.start()).into())
         },
         // Part two
         |input| {
-            // Generation
-            let builder = Problem::from_str(input.expect_input()?)?;
-            let range = builder.occurrences(40).range();
-
             // Process
+            let range = input
+                .expect_data::<Problem>()?
+                .builder()
+                .iterations(40)
+                .unwrap()
+                .range();
             Ok((range.end() - range.start()).into())
         },
     ],

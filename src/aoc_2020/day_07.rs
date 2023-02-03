@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -31,10 +31,9 @@ dark violet bags contain no other bags.",
 
 /// Contains solution implementation items.
 mod solution {
-    use std::collections::HashSet;
-
     use super::*;
     use bimap::hash::BiHashMap;
+    use derive_new::new;
     use nom::{
         bytes::complete::{is_not, tag, take_until},
         character::complete::space1,
@@ -44,6 +43,7 @@ mod solution {
         sequence::{separated_pair, tuple},
         Finish,
     };
+    use std::collections::HashSet;
 
     /// Type to use for bag IDs.
     pub type BagId = u32;

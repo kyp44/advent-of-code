@@ -1,10 +1,10 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -27,7 +27,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use crate::aoc::parse::trim;
+    use aoc::parse::trim;
     use itertools::process_results;
     use nom::{
         branch::alt,

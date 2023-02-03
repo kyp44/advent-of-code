@@ -1,102 +1,170 @@
-// Collection of Iterator adapter extensions and other extensions that return Iterators.
+//! Collection of extension methods for various items that involve iteration.
+//!
+//! This includes the [`IteratorExt`] trait, which provides iterator adapter methods,
+//! and the [`StrExt`] trait, which provides methods to iterate over strings.
+
+use itertools::{Itertools, MinMaxResult};
 use std::{fmt::Debug, ops::RangeInclusive};
 
-use num::Integer;
+/// Extension methods for [`Iterator`]s.
+pub trait IteratorExt<T> {
+    /// Convenience method to count the elements of an iterator after filtering by
+    /// some predicate.
+    ///
+    /// The numeric return type is anything that can be fallibly
+    /// converted from a [`usize`]. An empty iterator will of course return zero
+    /// regardless of the predicate.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the [`usize`] count cannot be converted into the numeric return type.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aoc::prelude::*;
+    ///
+    /// assert_eq!(std::iter::empty::<u8>().filter_count::<usize>(|_| true), 0);
+    /// assert_eq!([-1, 3, 5, -7, 0, 8, -9, -2, 5].into_iter().filter_count::<u32>(|x| *x <= 0), 5);
+    /// ```
+    fn filter_count<O: TryFrom<usize>>(self, f: impl Fn(&T) -> bool) -> O
+    where
+        <O as TryFrom<usize>>::Error: Debug;
 
-// Convenience function to count from a filtered Iterator.
-pub trait FilterCount<T, O> {
-    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> O;
+    /// Returns an inclusive range for an [`Iterator`] over applicable ordered types.
+    ///
+    /// Will return `None` if the iterator is empty, and the single-element range
+    /// `x..=x` if the iterator yields only a single element `x`.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aoc::prelude::*;
+    ///
+    /// assert_eq!(std::iter::empty::<u8>().range(), None);
+    /// assert_eq!([5u8].into_iter().range(), Some(5..=5));
+    /// assert_eq!([-9, 4, 7, -11, 8, 5, -6, -3, 15].into_iter().range(), Some(-11..=15));
+    /// ```
+    fn range(self) -> Option<RangeInclusive<T>>
+    where
+        T: PartialOrd + Copy;
+
+    /// Advance the [`Iterator`] by some number of iterations and return the resulting item.
+    ///
+    /// Note that this is the same as [`Iterator::nth`], but just offset by one, which can
+    /// be more convenient in some situations. If `0` is passed then `None` will be returned
+    /// and likewise if the iterator is exhausted before `n` iterations.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aoc::prelude::*;
+    ///
+    /// assert_eq!([0, 1, 2, 3, 4, 5, 6].into_iter().iterations(0), None);
+    /// assert_eq!([0, 1, 2, 3, 4, 5, 6].into_iter().iterations(20), None);
+    /// assert_eq!([0, 1, 2, 3, 4, 5, 6].into_iter().iterations(4), Some(3));
+    /// ```
+    fn iterations(&mut self, n: usize) -> Option<T>;
 }
-impl<T, I, O: TryFrom<usize>> FilterCount<T, O> for I
-where
-    I: Iterator<Item = T>,
-    <O as TryFrom<usize>>::Error: Debug,
-{
-    fn filter_count<F: Fn(&T) -> bool>(self, f: F) -> O {
+impl<T, I: Iterator<Item = T>> IteratorExt<T> for I {
+    fn filter_count<O: TryFrom<usize>>(self, f: impl Fn(&T) -> bool) -> O
+    where
+        <O as TryFrom<usize>>::Error: Debug,
+    {
         self.filter(f).count().try_into().unwrap()
     }
-}
 
-// Convenience trait to get the range from an Iterator of integers.
-// Any empty iterator will just have a range of 0..1.
-pub trait HasRange<T> {
-    fn range(self) -> Option<RangeInclusive<T>>;
-}
-impl<T, I> HasRange<T> for I
-where
-    T: Integer + Copy,
-    I: Iterator<Item = T>,
-{
-    fn range(self) -> Option<RangeInclusive<T>> {
-        let mut min = None;
-        let mut max = None;
-
-        for x in self {
-            if min.is_none() || x < min.unwrap() {
-                min = Some(x);
-            }
-            if max.is_none() || x > max.unwrap() {
-                max = Some(x);
-            }
+    fn range(self) -> Option<RangeInclusive<T>>
+    where
+        T: PartialOrd + Copy,
+    {
+        match self.minmax() {
+            MinMaxResult::NoElements => None,
+            MinMaxResult::OneElement(n) => Some(n..=n),
+            MinMaxResult::MinMax(a, b) => Some(a..=b),
         }
+    }
 
-        if let (Some(min), Some(max)) = (min, max) {
-            Some(min..=max)
+    fn iterations(&mut self, n: usize) -> Option<T> {
+        if n > 0 {
+            self.nth(n - 1)
         } else {
             None
         }
     }
 }
 
-// Iterator adapter to an Option Iterator that includes None at the beginning.
-#[derive(new, Clone)]
-pub struct NoneIter<I> {
-    #[new(value = "false")]
-    did_none: bool,
-    iter: I,
-}
-impl<I> Iterator for NoneIter<I>
-where
-    I: Iterator,
-{
-    type Item = Option<I::Item>;
+/// Extension methods for iteration over strings.
+pub trait StrExt {
+    /// Returns an [`Iterator`] the performs substring replacements on a string, one replacement
+    /// at a time, yielding the resulting string after each replacement.
+    ///
+    /// The replacements are
+    /// independent and not cumulative.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aoc::prelude::*;
+    ///
+    /// let mut replacements = "The red fox jumps over the blue fox and lands on the yellow fox".individual_replacements("fox", "dog");
+    ///
+    /// assert_eq!(replacements.next().unwrap(), "The red dog jumps over the blue fox and lands on the yellow fox");
+    /// assert_eq!(replacements.next().unwrap(), "The red fox jumps over the blue dog and lands on the yellow fox");
+    /// assert_eq!(replacements.next().unwrap(), "The red fox jumps over the blue fox and lands on the yellow dog");
+    /// assert_eq!(replacements.next(), None);
+    /// ```
+    fn individual_replacements<'a, 'b, 'c>(
+        &'a self,
+        from: &'b str,
+        to: &'c str,
+    ) -> Replacements<'a, 'b, 'c>;
 
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.did_none {
-            self.iter.next().map(Some)
-        } else {
-            self.did_none = true;
-            Some(None)
+    /// Returns an [`Iterator`] over runs of repeated characters in a string.
+    ///
+    /// The iterator yields substrings of one or more characters that are the same.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aoc::prelude::*;
+    ///
+    /// assert_eq!("".split_runs().next(), None);
+    /// assert_eq!("ABCDEF".split_runs().collect::<Vec<_>>(), vec!["A", "B", "C", "D", "E", "F"]);
+    /// assert_eq!("abbbcddddeefggg".split_runs().collect::<Vec<_>>(), vec!["a", "bbb", "c", "dddd", "ee", "f", "ggg"]);
+    /// ```
+    fn split_runs(&self) -> Runs;
+}
+impl StrExt for str {
+    fn individual_replacements<'a, 'b, 'c>(
+        &'a self,
+        from: &'b str,
+        to: &'c str,
+    ) -> Replacements<'a, 'b, 'c> {
+        Replacements {
+            original: self,
+            idx: 0,
+            from,
+            to,
         }
     }
-}
 
-// Adapter extension trait
-pub trait HasNoneIter {
-    fn none_iter(self) -> NoneIter<Self>
-    where
-        Self: Sized;
-}
-impl<I> HasNoneIter for I
-where
-    I: Iterator,
-{
-    fn none_iter(self) -> NoneIter<Self> {
-        NoneIter::new(self)
+    fn split_runs(&self) -> Runs {
+        Runs { remaining: self }
     }
 }
 
-// [Iterator] to replace occurrences in a string one at a time.
-#[derive(new)]
+/// [`Iterator`] to perform string replacements.
+///
+/// See [`StrExt::individual_replacements`].
 pub struct Replacements<'a, 'b, 'c> {
-    // Original string.
+    /// Original string.
     original: &'a str,
-    // Current index in the string.
-    #[new(value = "0")]
+    /// Current index in the string.
     idx: usize,
-    // Substring to replace.
+    /// Substring to replace.
     from: &'b str,
-    // String to which to replace substrings.
+    /// String to which to replace substrings.
     to: &'c str,
 }
 impl Iterator for Replacements<'_, '_, '_> {
@@ -114,18 +182,11 @@ impl Iterator for Replacements<'_, '_, '_> {
     }
 }
 
-// Trait to create a Replacements [Iterator]].
-pub trait IndividualReplacements<'a, 'b, 'c> {
-    fn individual_replacements(&'a self, from: &'b str, to: &'c str) -> Replacements<'a, 'b, 'c>;
-}
-impl<'a, 'b, 'c> IndividualReplacements<'a, 'b, 'c> for str {
-    fn individual_replacements(&'a self, from: &'b str, to: &'c str) -> Replacements<'a, 'b, 'c> {
-        Replacements::new(self, from, to)
-    }
-}
-
-// [Iterator] over runs of the same characters in strings.
+/// [`Iterator`] over runs of the same characters in strings.
+///
+/// See [`StrExt::split_runs`].
 pub struct Runs<'a> {
+    /// String portion remaining after
     remaining: &'a str,
 }
 impl<'a> Iterator for Runs<'a> {
@@ -144,15 +205,5 @@ impl<'a> Iterator for Runs<'a> {
         let next = &self.remaining[0..end];
         self.remaining = &self.remaining[end..];
         Some(next)
-    }
-}
-
-// Trait that allows splitting by runs on the same elements.
-pub trait SplitRuns {
-    fn split_runs(&self) -> Runs;
-}
-impl SplitRuns for str {
-    fn split_runs(&self) -> Runs {
-        Runs { remaining: self }
     }
 }

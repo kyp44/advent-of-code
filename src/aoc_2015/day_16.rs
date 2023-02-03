@@ -1,9 +1,9 @@
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {
@@ -16,6 +16,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use derive_new::new;
     use maplit::hashmap;
     use nom::{
         bytes::complete::{tag, take_until},

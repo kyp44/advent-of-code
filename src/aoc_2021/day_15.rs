@@ -3,12 +3,12 @@ use std::{cmp::Reverse, collections::HashMap, str::FromStr};
 use cgmath::Zero;
 use priority_queue::PriorityQueue;
 
-use crate::aoc::prelude::*;
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::solution_test;
+    use aoc::solution_test;
     use Answer::Unsigned;
 
     solution_test! {

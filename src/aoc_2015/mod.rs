@@ -1,4 +1,4 @@
-use crate::year_solutions;
+use aoc::year_solutions;
 
 year_solutions! {
     year = 2015,
