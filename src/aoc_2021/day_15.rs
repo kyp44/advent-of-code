@@ -1,9 +1,5 @@
-use std::{cmp::Reverse, collections::HashMap, str::FromStr};
-
-use cgmath::Zero;
-use priority_queue::PriorityQueue;
-
 use aoc::prelude::*;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -27,108 +23,125 @@ mod tests {
     }
 }
 
-struct RiskLevels {
-    grid: Grid<u8>,
-}
-impl FromStr for RiskLevels {
-    type Err = AocError;
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use cgmath::Zero;
+    use priority_queue::PriorityQueue;
+    use std::{cmp::Reverse, collections::HashMap};
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self {
-            grid: Grid::from_str::<Grid<u8>>(s)?,
-        })
+    /// The risk level grid, which can be parsed from text input.
+    pub struct RiskLevels {
+        /// The grid of risk levels.
+        grid: Grid<u8>,
     }
-}
-impl RiskLevels {
-    fn min_risk(&self) -> u64 {
-        // Implements Dijkstra's algorithm to find the minimum path
-        let mut visited = HashMap::new();
-        let mut queue = PriorityQueue::new();
+    impl FromStr for RiskLevels {
+        type Err = AocError;
 
-        // Add starting point to queue
-        queue.push(GridPoint::zero(), Reverse(0));
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ok(Self {
+                grid: Grid::from_str::<Grid<u8>>(s)?,
+            })
+        }
+    }
+    impl RiskLevels {
+        /// Implements Dijkstra's algorithm to find the path with minimal total risk
+        /// and returns the total minimal risk.
+        pub fn min_risk(&self) -> u64 {
+            let mut visited = HashMap::new();
+            let mut queue = PriorityQueue::new();
 
-        // Destination point
-        let dest = self.grid.size() - GridPoint::new(1, 1);
+            // Add starting point to queue
+            queue.push(GridPoint::zero(), Reverse(0));
 
-        // Fan out the visited nodes
-        loop {
-            let (current, dist) = queue.pop().unwrap();
-            for neighbor in self.grid.neighbor_points(&current, false, false) {
-                let alt_dist = dist.0 + u64::from(*self.grid.get(&neighbor));
-                match queue.get_priority(&neighbor) {
-                    Some(d) => {
-                        if alt_dist < d.0 {
-                            queue.change_priority(&neighbor, Reverse(alt_dist));
+            // Destination point
+            let dest = self.grid.size() - GridPoint::new(1, 1);
+
+            // Fan out the visited nodes
+            loop {
+                let (current, dist) = queue.pop().unwrap();
+                for neighbor in self.grid.neighbor_points(&current, false, false) {
+                    let alt_dist = dist.0 + u64::from(*self.grid.get(&neighbor));
+                    match queue.get_priority(&neighbor) {
+                        Some(d) => {
+                            if alt_dist < d.0 {
+                                queue.change_priority(&neighbor, Reverse(alt_dist));
+                            }
+                        }
+                        None => {
+                            queue.push(neighbor, Reverse(alt_dist));
                         }
                     }
-                    None => {
-                        queue.push(neighbor, Reverse(alt_dist));
-                    }
+                }
+                if current == dest {
+                    break dist.0;
+                }
+                visited.insert(current, dist);
+            }
+        }
+
+        /// Expands this map as a tile into a `n` by `n` tile area and each tile
+        /// adds one to the risk levels of the tile above or to the left of it.
+        pub fn full_map(&self, n: u8) -> Self {
+            let mut base_rows: Vec<Box<[u8]>> = Vec::new();
+
+            /// Sub-function of [RiskLevels::full_map] that adds two risk level, wrapping around
+            /// if the sum is greater than 9.
+            // TODO: This can be implemented as the [Add] trait on the wrapper type once [Grid] is refactored.
+            fn add_wrap(a: u8, b: u8) -> u8 {
+                let s = a + b;
+                if s > 9 {
+                    (s % 10) + 1
+                } else {
+                    s
                 }
             }
-            if current == dest {
-                break dist.0;
+
+            // First add all the additional columns for the first major row
+            for row in self.grid.rows_iter() {
+                base_rows.push(
+                    (0..n)
+                        .flat_map(|i| row.iter().map(move |r| add_wrap(*r, i)))
+                        .collect(),
+                );
             }
-            visited.insert(current, dist);
-        }
-    }
 
-    fn full_map(&self, num_copies: u8) -> Self {
-        let mut base_rows: Vec<Box<[u8]>> = Vec::new();
-
-        fn add_wrap(a: u8, b: u8) -> u8 {
-            let s = a + b;
-            if s > 9 {
-                (s % 10) + 1
-            } else {
-                s
+            // Now duplicate all the rows
+            let mut rows: Vec<Box<[u8]>> = Vec::new();
+            for i in 0..n {
+                for row in base_rows.iter() {
+                    rows.push(row.iter().map(|r| add_wrap(*r, i)).collect())
+                }
             }
-        }
 
-        // First add all the additional colums for the first major row
-        for row in self.grid.rows_iter() {
-            base_rows.push(
-                (0..num_copies)
-                    .flat_map(|i| row.iter().map(move |r| add_wrap(*r, i)))
-                    .collect(),
-            );
-        }
-
-        // Now duplicate all the rows
-        let mut rows: Vec<Box<[u8]>> = Vec::new();
-        for i in 0..num_copies {
-            for row in base_rows.iter() {
-                rows.push(row.iter().map(|r| add_wrap(*r, i)).collect())
+            Self {
+                grid: Grid::from_data(rows.into_boxed_slice()).unwrap(),
             }
-        }
-
-        Self {
-            grid: Grid::from_data(rows.into_boxed_slice()).unwrap(),
         }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 15,
     name: "Chiton",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(RiskLevels::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let risk_levels = RiskLevels::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(risk_levels.min_risk().into())
+            Ok(input.expect_data::<RiskLevels>()?.min_risk().into())
         },
         // Part two
         |input| {
-            // Generation
-            let risk_levels = RiskLevels::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(risk_levels.full_map(5).min_risk().into())
+            Ok(input
+                .expect_data::<RiskLevels>()?
+                .full_map(5)
+                .min_risk()
+                .into())
         },
     ],
 };

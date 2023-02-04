@@ -19,17 +19,16 @@ debug = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0"
-nom = "7.1"
-structopt = "0.3"
 # Would like to use this to get better nom parsing errors but it doesn't
 # implement Clone on its ErrorTree so I can't (and I can't implement
 # a foreign trait on a foreign struct).
 #nom-supreme = "0.4.4"
+anyhow = "1.0"
 aoc_derive = {path = "aoc_derive"}
 bimap = "0.6.2"
 bitbuffer = "0.10"
 cgmath = "0.18"
+clap = {version = "4.1", features = ["derive", "string"]}
 colored = "2.0"
 derive-new = "0.5"
 enum-map = "2.4"
@@ -40,6 +39,7 @@ lazy_static = "1.4"
 maplit = "1.0.2"
 md5 = "0.7"
 multiset = "0.0.5"
+nom = "7.1"
 num = "0.4"
 petgraph = "0.6"
 priority-queue = "1.3"

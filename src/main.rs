@@ -22,33 +22,28 @@ mod aoc_2020;
 mod aoc_2021;
 
 use aoc::AocError;
+use clap::Parser;
 use colored::Colorize;
 use itertools::Itertools;
-use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(
-    name = "Advent of Code Solutions",
-    author = "Dan Whitman <dwhitman44@gmail.com>",
-    about = "Run the Advent of Code solution for a particular year and day."
-)]
-// TODO: Replace this with `clap`.
-/// Command line arguments.
-struct Cli {
+/// Run the Advent of Code solution for a particular year and day.
+#[derive(Parser)]
+#[command(name = "Advent of Code Solutions", author, version)]
+struct Args {
     /// List the implemented solutions
-    #[structopt(short, long)]
+    #[arg(short, long)]
     list: bool,
     /// Year of the problem solution to run
-    #[structopt(name = "YEAR", required_unless("list"))]
+    #[arg(name = "YEAR", required_unless_present("list"))]
     year: Option<u32>,
     /// Day of the problem solution to run (1-25)
-    #[structopt(name = "DAY", required_unless("list"))]
+    #[arg(name = "DAY", required_unless_present("list"))]
     day: Option<u32>,
 }
 
 fn main() -> anyhow::Result<()> {
     // Parse command line arguments
-    let cli = Cli::from_args();
+    let cli = Args::parse();
 
     let all_year_solutions = vec![
         &aoc_2015::YEAR_SOLUTIONS,

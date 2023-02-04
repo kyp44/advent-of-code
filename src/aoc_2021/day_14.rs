@@ -277,7 +277,6 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Process
-            // TODO: Another use case for `iterations` or `steps` extension method for [Iterator].
             let range = input
                 .expect_data::<Problem>()?
                 .builder()
