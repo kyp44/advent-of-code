@@ -25,24 +25,7 @@ mod solution {
     use super::*;
     use cgmath::Zero;
     use nom::{character::complete::one_of, combinator::map, sequence::pair};
-    use num::Signed;
-    use std::convert::TryInto;
     use std::fmt::Debug;
-
-    /// Allows something to calculate its Manhattan distance.
-    pub trait Manhattan<T> {
-        /// Calcaulte the Manhattan distance.
-        fn manhattan(&self) -> T;
-    }
-    impl<T, O> Manhattan<O> for Vector2<T>
-    where
-        T: Signed + TryInto<O>,
-        T::Error: Debug,
-    {
-        fn manhattan(&self) -> O {
-            (self.x.abs() + self.y.abs()).try_into().unwrap()
-        }
-    }
 
     /// A single navigation instruction, which can be parsed from text input.
     #[derive(Debug)]
@@ -174,7 +157,9 @@ pub const SOLUTION: Solution = Solution {
                 input
                     .expect_data::<NavigationInstructions>()?
                     .final_ship_position(None)
-                    .manhattan(),
+                    .manhattan_len()
+                    .try_into()
+                    .unwrap(),
             ))
         },
         // Part two
@@ -184,7 +169,9 @@ pub const SOLUTION: Solution = Solution {
                 input
                     .expect_data::<NavigationInstructions>()?
                     .final_ship_position(Some(&Vector2::new(10, 1)))
-                    .manhattan(),
+                    .manhattan_len()
+                    .try_into()
+                    .unwrap(),
             ))
         },
     ],

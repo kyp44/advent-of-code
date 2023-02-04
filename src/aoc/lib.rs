@@ -3,7 +3,7 @@
 use anyhow::Context;
 use colored::Colorize;
 use itertools::Itertools;
-use num::Integer;
+use num::{Integer, Signed};
 use parse::NomParseError;
 use std::any::Any;
 use std::borrow::Cow;
@@ -24,7 +24,7 @@ pub mod prelude {
         grid::GridSize, grid::GridSizeExt, grid::PointTryInto, iter::IteratorExt, iter::StrExt,
         parse::BitInput, parse::DiscardInput, parse::NomParseError, parse::NomParseResult,
         parse::Parseable, parse::Sections, Answer, AnswerVec, AocError, AocResult, RangeExt,
-        Solution, SolverInput, YearSolutions,
+        Solution, SolverInput, VectorExt, YearSolutions,
     };
     pub use aoc_derive::CharGridDebug;
 }
@@ -52,6 +52,30 @@ pub enum AocError {
     NoSolution,
 }
 pub type AocResult<T> = Result<T, AocError>;
+
+// TODO: Use some modules here to better organize these items.
+
+/// Extension methods for vector types.
+pub trait VectorExt<T> {
+    /// Calculate the Manhattan length of the vector.
+    fn manhattan_len(&self) -> T;
+}
+impl<T> VectorExt<T> for cgmath::Vector2<T>
+where
+    T: Signed,
+{
+    fn manhattan_len(&self) -> T {
+        self.x.abs() + self.y.abs()
+    }
+}
+impl<T> VectorExt<T> for cgmath::Vector3<T>
+where
+    T: Signed,
+{
+    fn manhattan_len(&self) -> T {
+        self.x.abs() + self.y.abs() + self.z.abs()
+    }
+}
 
 // Extension trait for ranges.
 pub trait RangeExt<T>: Sized {

@@ -209,18 +209,11 @@ mod solution {
                     // We've reached the end so this is the only path
                     paths.insert(vec![cave]);
                 } else {
-                    // TODO: This would be easier if Sub is implemented for Infinitable.
-                    // See: https://github.com/ObjectBoxPC/rust-infinitable/issues/1
-                    let visits = visits_left.get(&index).unwrap();
-                    if match visits.finite() {
-                        Some(v) => v > 0,
-                        None => true,
-                    } {
+                    let num_visits = *visits_left.get(&index).unwrap();
+                    if num_visits > 0.into() {
                         // We can visit this cave again, so first mark that it was visited.
                         let mut visits_left = visits_left.clone();
-                        if let Infinitable::Finite(v) = visits {
-                            *visits_left.get_mut(&index).unwrap() = Infinitable::Finite(*v - 1);
-                        }
+                        *visits_left.get_mut(&index).unwrap() = num_visits - 1.into();
 
                         // Now go through connecting caves and recurse
                         for next_cave in graph.neighbors(index).filter(|nc| {
