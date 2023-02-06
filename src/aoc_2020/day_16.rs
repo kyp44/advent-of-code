@@ -176,12 +176,12 @@ mod solution {
             self.fields.iter().any(|f| f.is_valid(value))
         }
 
-        /// Returns an [Iterator] over field values from a ticket that are not
+        /// Returns an [`Iterator`] over field values from a ticket that are not
         /// valid for any field.
         ///
         /// NOTE: Made [a post](https://users.rust-lang.org/t/returning-iterator-seemingly-requiring-multiple-liftetimes/62179/3)
-        /// about how to accomplish returning an Iterator here instead of a collected Vec.
-        /// This was later simplified to use u32 instead of &u32 in the Iterator.
+        /// about how to accomplish returning an Iterator here instead of a collected [`Vec`].
+        /// This was later simplified to use [`u32`] instead of `&u32` in the Iterator.
         fn invalid_fields<'a>(&'a self, ticket: &'a Ticket) -> impl Iterator<Item = u32> + 'a {
             ticket
                 .field_values
@@ -189,7 +189,7 @@ mod solution {
                 .filter_map(move |v| if self.is_valid(v) { None } else { Some(*v) })
         }
 
-        /// Returns an [Iterator] over field values from all tickets that are not
+        /// Returns an [`Iterator`] over field values from all tickets that are not
         /// valid for any field.
         pub fn all_invalid_fields(&self) -> impl Iterator<Item = u32> + '_ {
             self.nearby_tickets

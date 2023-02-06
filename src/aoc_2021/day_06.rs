@@ -26,7 +26,7 @@ mod solution {
     /// A simulation of lanternfish population growth, which can be
     /// parsed from CSV text input of the initial fish timer values.
     ///
-    /// This implements [Iterator] to carry out each step of the simulation,
+    /// This implements [`Iterator`] to carry out each step of the simulation,
     /// which yields the total number of fish in the population at each step.
     pub struct Simulation {
         /// Array of the number of fish with a certain time left until spawn.

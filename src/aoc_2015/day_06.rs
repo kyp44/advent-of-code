@@ -55,9 +55,9 @@ mod solution {
 
     /// That that describes the position of a light.
     type Point = Vector2<usize>;
-    /// [nom] parser for a [Point].
+    /// [`nom`] parser for a [`Point`].
     ///  
-    /// NOTE: This cannot be done as a [Parseable] implementation due
+    /// NOTE: This cannot be done as a [`Parseable`] implementation due
     /// to a potential conflict.
     fn point_parser(input: &str) -> NomParseResult<&str, Point> {
         use nom::character::complete::u64 as cu64;
@@ -95,7 +95,7 @@ mod solution {
         }
     }
     impl Rect {
-        /// Returns an [Iterator] of points contained in the rectangle.
+        /// Returns an [`Iterator`] of points contained in the rectangle.
         fn iter(&self) -> impl Iterator<Item = Point> {
             iproduct!(
                 self.lower_left.x..=self.upper_right.x,

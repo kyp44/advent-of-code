@@ -109,8 +109,9 @@ mod solution {
     }
     impl Report {
         /// Given a bit number to examine in each report line, determine
-        /// which is the most common bit, if any. Will panic if the
-        /// bit number is invalid.
+        /// which is the most common bit, if any.
+        ///
+        /// Will panic if the bit number is invalid.
         fn most_common(&self, bit_num: usize) -> MostCommon {
             let n_ones: usize = self.lines.iter().filter_count(|l| l.bit_vec[bit_num]);
             match (2 * n_ones).cmp(&self.lines.len()) {
@@ -139,9 +140,11 @@ mod solution {
         }
 
         /// Calculates a rating by filtering the report lines according to the most
-        /// or least common value for each bit number. The `criteria` closure should
-        /// take a [MostCommon] value for the bit number and return what the bit value
-        /// should be for that bit number in the lines that are kept.
+        /// or least common value for each bit number.
+        ///
+        /// The `criteria` closure should take a [`MostCommon`] value for the bit
+        /// number and return what the bit value should be for that bit number in
+        /// the lines that are kept.
         fn calculate_rating(&self, criteria: impl Fn(MostCommon) -> bool) -> AocResult<u64> {
             let mut report = self.clone();
 

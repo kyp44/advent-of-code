@@ -49,7 +49,7 @@ mod solution {
     /// The deck of space cards for a player, which can be parsed from text input.
     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Deck {
-        /// Player number (1 or 2)
+        /// Player number (1 or 2).
         player: u8,
         /// Card values in order from bottom to top.
         cards: Vec<u8>,
@@ -208,7 +208,7 @@ mod solution {
                 player2: Deck::from_str(secs[1])?,
             };
 
-            /// Internal function for [Game::from_str].
+            /// Internal function for [`Game::from_str`].
             ///
             /// Verifies that the player numbers are correct.
             fn check(exp: u8, found: u8) -> AocResult<()> {

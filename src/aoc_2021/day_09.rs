@@ -38,7 +38,7 @@ mod solution {
 
         /// The size of the basin.
         pub fn size(&self) -> u64 {
-            /// Recursive sub function of [Basin::size] that finds the size of a region
+            /// Recursive subfunction of [`Basin::size`] that finds the size of a region
             /// given any point in the region.
             fn region_size(
                 grid: &Grid<u8>,
@@ -88,7 +88,7 @@ mod solution {
         }
     }
     impl FloorMap {
-        /// Returns an [Iterator] over all of the basins on the cave floor.
+        /// Returns an [`Iterator`] over all of the basins on the cave floor.
         pub fn basins(&self) -> impl Iterator<Item = Basin> {
             self.grid
                 .all_points()

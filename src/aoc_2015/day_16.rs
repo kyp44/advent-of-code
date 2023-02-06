@@ -26,7 +26,7 @@ mod solution {
     };
     use std::collections::HashMap;
 
-    /// An Aunt Sue and what you remember about her that can be read from text input.
+    /// An Aunt Sue and what you remember about her, which can be read from text input.
     #[derive(Debug, new)]
     pub struct Sue<'a> {
         /// The number of this Aunt Sue.
@@ -105,7 +105,7 @@ mod solution {
             })
         }
 
-        /// [Iterator] of Aunt Sues who match the readout from the MFCSAM.
+        /// [`Iterator`] of Aunt Sues who match the readout from the MFCSAM.
         pub fn matches<P: Part>(&self) -> impl Iterator<Item = &Sue<'_>> {
             let output = Sue::new(hashmap! {
                 "children" => 3,

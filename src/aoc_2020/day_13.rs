@@ -74,7 +74,7 @@ mod solution {
         }
     }
     impl Schedule {
-        /// Returns an [Iterator] of all bus IDs, ignoring those that are not running.
+        /// Returns an [`Iterator`] of all bus IDs, ignoring those that are not running.
         fn valid_ids(&self) -> impl Iterator<Item = u64> + '_ {
             self.bus_ids.iter().filter_map(|id| *id)
         }
@@ -140,14 +140,14 @@ mod solution {
     }
 
     /// Returns `-d` modulo `m`.
-    /// Note that is correct and differs from `m` - (`d` % `m`) when `d` = 0.
+    /// Note that is correct and differs from `m - (d % m)` when `d == 0`.
     fn neg_modulo(d: u64, m: u64) -> u64 {
         let md: i64 = -TryInto::<i64>::try_into(d).unwrap();
         let m: i64 = m.try_into().unwrap();
         (md.rem_euclid(m)).try_into().unwrap()
     }
 
-    /// Endless [Iterator] over successive numbers that are all the same modulo some other number.
+    /// Endless [`Iterator`] over successive numbers that are all the same modulo some other number.
     struct ModuloValues {
         /// The next value in the sequence.
         current: u64,
@@ -155,7 +155,7 @@ mod solution {
         modulo: u64,
     }
     impl ModuloValues {
-        /// Create a new [Iterator], starting at the lowest positive number and
+        /// Create a new [`Iterator`], starting at the lowest positive number and
         /// going through all numbers congruent to `a` modulo `modulo`.
         fn new(a: u64, modulo: u64) -> ModuloValues {
             ModuloValues {

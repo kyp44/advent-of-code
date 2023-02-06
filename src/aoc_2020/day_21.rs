@@ -89,7 +89,7 @@ mod solution {
         safe_ingredients: StrSet,
     }
     impl PartialSolution {
-        /// [Iterator] over all of the foods in the problem.
+        /// [`Iterator`] over all of the foods in the problem.
         pub fn foods(&self) -> impl Iterator<Item = &Food> {
             self.problem.foods.iter()
         }
@@ -146,9 +146,9 @@ mod solution {
 
     /// Problem definition, which can be parsed from text input.
     ///
-    /// NOTE: I tried to originally have the [HashSet]s own the [String]s
-    /// and then have the [Food] vectors reference them, but self
-    /// referential structs are not possible in Rust without [std::pin::Pin]
+    /// NOTE: I tried to originally have the [`HashSet`]s own the [`String`]s
+    /// and then have the [`Food`] vectors reference them, but self
+    /// referential structs are not possible in Rust without [`std::pin::Pin`]
     /// and unsafe code.
     pub struct Problem {
         /// List of all ingredients.
@@ -164,9 +164,9 @@ mod solution {
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             let foods = Food::gather(s.lines())?;
 
-            /// Internal function for [Problem::from_str].
+            /// Internal function for [`Problem::from_str`].
             ///
-            /// Creates a set of a particular element of a [Food] based on
+            /// Creates a set of a particular element of a [`Food`] based on
             /// a mapping function for all foods.
             fn convert(foods: &[Food], f: fn(&Food) -> &StrSet) -> StrSet {
                 foods

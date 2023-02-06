@@ -46,7 +46,7 @@ mod solution {
     }
     impl Parseable<'_> for Line {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
-            /// Internal function of [Line::parser], which is a [nom] parser for
+            /// Internal function of [`Line::parser`], which is a [`nom`] parser for
             /// a single point on the 2D grid.
             fn point_parser(input: &str) -> NomParseResult<&str, GridPoint> {
                 map(
@@ -67,7 +67,7 @@ mod solution {
     impl Line {
         /// Returns the type for this line.
         fn line_type(&self) -> LineType {
-            /// Internal function of [Line::line_type], that simply returns an inclusive
+            /// Internal function of [`Line::line_type`], that simply returns an inclusive
             /// range from the smallest of two integers to the largest.
             fn range(a: usize, b: usize) -> RangeInclusive<usize> {
                 a.min(b)..=a.max(b)
@@ -100,7 +100,7 @@ mod solution {
             }
         }
 
-        /// Return a [LineIterator] for this line.
+        /// Return a [`LineIterator`] for this line.
         fn iter(&self) -> LineIterator {
             LineIterator::new(self.line_type())
         }
@@ -118,7 +118,7 @@ mod solution {
         DiagonalUp(RangeInclusive<usize>, Rev<RangeInclusive<usize>>),
     }
 
-    /// An [Iterator] over the integer points along a 2D line segment, including the
+    /// An [`Iterator`] over the integer points along a 2D line segment, including the
     /// end points.
     #[derive(new)]
     struct LineIterator {
@@ -190,7 +190,7 @@ mod solution {
 
     /// Behavior specific to one particular part of the problem.
     pub trait Part {
-        /// Returns whether a [Line] should be used for this part.
+        /// Returns whether a [`Line`] should be used for this part.
         fn line_filter(_line: &Line) -> bool;
     }
 
@@ -229,8 +229,8 @@ mod solution {
         }
     }
     impl Vents {
-        /// Creates the [FloorMap] for these vents, filtering the vent lines
-        /// according to the [Part].
+        /// Creates the [`FloorMap`] for these vents, filtering the vent lines
+        /// according to the [`Part`].
         pub fn floor_map<P: Part>(&self) -> AocResult<FloorMap> {
             // First determine how large the grid needs to be
             let max = |f: fn(&GridPoint) -> usize| {

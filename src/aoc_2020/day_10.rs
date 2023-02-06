@@ -93,7 +93,7 @@ mod solution {
         Compatible(u32),
     }
     impl AdapterDifference {
-        /// Compared adapters is compatible or not.
+        /// Whether the compared adapters are compatible or not.
         fn is_compatible(&self) -> bool {
             matches!(self, Self::Compatible(_))
         }
@@ -115,6 +115,7 @@ mod solution {
     /// The complete set of adapters, which can be parsed from text input.
     pub struct AdapterSet {
         /// The set of adapters in order of increasing output joltage.
+        ///
         /// Also includes the outlet (0 jolts) and the maximum built-in adapter
         /// input joltage.
         adapters: Vec<Adapter>,
@@ -150,7 +151,7 @@ mod solution {
         }
     }
     impl AdapterSet {
-        /// Returns an [Iterator] over the difference between the ordered adapters/joltages.
+        /// Returns an [`Iterator`] over the difference between the ordered adapters/joltages.
         fn differences(&self) -> impl Iterator<Item = AdapterDifference> + '_ {
             self.adapters.windows(2).map(|w| w[1] - w[0])
         }

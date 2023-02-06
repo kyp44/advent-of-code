@@ -58,7 +58,7 @@ mod solution {
     impl CrabSubs {
         /// Determines the optimum way for the crabs to all align to the same
         /// horizontal position, and returns the amount of fuel needed for this
-        /// based on the fuel usage requirements for the [Part].
+        /// based on the fuel usage requirements for the [`Part`].
         pub fn align<P: Part>(&self) -> AocResult<u64> {
             match self.positions.iter().minmax() {
                 MinMaxResult::MinMax(min, max) => Ok(((*min)..=(*max))

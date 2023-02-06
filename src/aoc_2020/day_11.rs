@@ -80,6 +80,7 @@ mod solution {
     }
     impl TerminationStatus<Rc<Area>> {
         /// The the simulation result to ensure that its stable.
+        ///
         /// The `Ok` return variant contains the number of occupied seats.
         pub fn check(&self) -> AocResult<u64> {
             match self {
@@ -92,7 +93,8 @@ mod solution {
     }
 
     /// Part of the problem.
-    /// This must be an enum because the behavior of the [Evolver] methods depend
+    ///
+    /// This must be an enum because the behavior of the [`Evolver`] methods depend
     /// on the part so it cannot be a generic parameter (since the trait method
     /// has no generic parameters).
     #[derive(Clone, Copy, Hash, PartialEq, Eq)]

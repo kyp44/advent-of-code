@@ -23,7 +23,7 @@ mod solution {
     use super::*;
     use std::convert::TryInto;
 
-    /// Capability to determine if a password is valid.
+    /// Extension trait to determine if a password is valid.
     trait Password {
         /// Determines if the password is valid according to the security restrictions.
         fn is_valid(&self) -> bool;
@@ -45,20 +45,20 @@ mod solution {
         }
     }
 
-    /// [Iterator] over passwords where each character is incremented by lexical order.
+    /// [`Iterator`] over passwords where each character is incremented by lexical order.
     pub struct LexOrder {
         /// Current string.
         chars: Vec<char>,
     }
     impl LexOrder {
-        /// Create a new [Iterator] from a starting string.
+        /// Create a new [`Iterator`] from a starting string.
         fn new(s: &str) -> Self {
             LexOrder {
                 chars: s.chars().rev().collect(),
             }
         }
 
-        /// Returns an [Iterator] from a starting string of only valid passwords.
+        /// Returns an [`Iterator`] from a starting string of only valid passwords.
         pub fn valid(s: &str) -> impl Iterator<Item = String> {
             Self::new(s).filter(|s| s.is_valid())
         }

@@ -158,7 +158,7 @@ mod solution {
         }
     }
 
-    /// Recursive [Iterator] over all permutations of some number of numeric values that sum to a constant.
+    /// Recursive [`Iterator`] over all permutations of some number of numeric values that sum to a constant.
     struct SumPermutations<T> {
         /// Number to which the permutations must sum.
         sum: T,
@@ -172,7 +172,7 @@ mod solution {
         rest_iter: Box<dyn Iterator<Item = Vec<T>>>,
     }
     impl<T: Copy + Step + num::Num + 'static> SumPermutations<T> {
-        /// Create a new permutation [Iterator].
+        /// Create a new permutation [`Iterator`].
         fn new(sum: T, number: usize) -> Self {
             let mut first_iter = T::zero()..=sum;
             let first = first_iter.next().unwrap();

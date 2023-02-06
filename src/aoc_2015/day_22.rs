@@ -56,6 +56,7 @@ mod solution {
         }
 
         /// Take a turn in which this characer casts a spell against an opponent.
+        ///
         /// Returns whether or not the spell could be and was cast.
         fn turn_cast(&mut self, spell_type: SpellType, opponent: &mut Character) -> bool {
             let spell = spell_type.create();
@@ -142,7 +143,7 @@ mod solution {
         }
     }
 
-    /// This is a workaround that allows [Spell] trait objects to be cloned.
+    /// This is a workaround that allows [`Spell`] trait objects to be cloned.
     /// See [this StackOverflow post](https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object).
     trait SpellClone {
         /// Clone the trait object.
@@ -362,7 +363,7 @@ mod solution {
     /// `hard_mode` causes the player character to take 1 damage at the beginning of
     /// each player turn.
     pub fn solve(characters: &Characters, hard_mode: bool) -> AocResult<u64> {
-        /// Recursive sub-function of [solve].
+        /// Recursive sub-function of [`solve`].
         fn solve_rec(
             level: usize,
             spent: u32,

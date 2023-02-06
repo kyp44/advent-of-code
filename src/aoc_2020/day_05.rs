@@ -35,7 +35,8 @@ mod solution {
     }
     impl Parseable<'_> for Seat {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
-            /// Sub-function of [Seat::parser].
+            /// Sub-function of [`Seat::parser`].
+            ///
             /// Creates a parser closure for a letter-coded binary value of a
             /// certain number of bits.
             fn binary_parser(

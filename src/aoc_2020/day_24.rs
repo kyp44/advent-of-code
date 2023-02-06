@@ -114,7 +114,7 @@ mod solution {
         }
     }
 
-    /// A roue to take on the tile floor, which can be parsed from text input.
+    /// A route to take on the tile floor, which can be parsed from text input.
     #[derive(Debug)]
     struct Route {
         /// Ordered list of directions to take from some starting tile.
@@ -128,8 +128,8 @@ mod solution {
         }
     }
     impl Route {
-        /// Given the starting tile [Point], follow the route and return the
-        /// tile [Point] on which you end up.
+        /// Given the starting tile [`Point`], follow the route and return the
+        /// tile [`Point`] on which you end up.
         fn follow(&self, start: Point) -> Point {
             self.directions
                 .iter()
@@ -143,7 +143,7 @@ mod solution {
     /// the requisite tiles black.
     #[derive(Clone)]
     pub struct Floor {
-        /// Set of tile [Points](Point) that have been flipped over to be black.
+        /// Set of tile [`Point`]s that have been flipped over to be black.
         black_tiles: HashSet<Point>,
     }
     impl FromStr for Floor {

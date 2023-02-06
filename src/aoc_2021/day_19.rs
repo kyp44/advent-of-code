@@ -197,7 +197,7 @@ mod solution {
         }
     }
 
-    /// Extension trait for [Quaternion] because, for some reason, certain operations
+    /// Extension trait for [`Quaternion`] because, for some reason, certain operations
     /// are not implemented for integer quaternions, only floats.
     ///
     /// Note that these could not have been implemented as the normal operator traits
@@ -452,7 +452,7 @@ mod solution {
     impl ScannerNetwork {
         /// Correlate all the scanners together and return the correlated network.
         pub fn correlate(&self) -> CorrelatedScannerNetwork {
-            /// Recursive sub-function of [ScannerNetwork::correlate] that correlates
+            /// Recursive sub-function of [`ScannerNetwork::correlate`] that correlates
             /// scanners one by one.
             fn correlate_rec(
                 from: Rc<Scanner>,
@@ -502,7 +502,7 @@ mod solution {
         correlations: CorrelationMap,
     }
     impl CorrelatedScannerNetwork {
-        /// Returns an [Iterator] of the coordinates of every beacon relative
+        /// Returns an [`Iterator`] of the coordinates of every beacon relative
         /// to scanner 0.
         pub fn beacons(&self) -> impl Iterator<Item = Point> + '_ {
             self.correlations

@@ -170,7 +170,7 @@ mod solution {
     impl Problem {
         /// Apply the complete sequence of folds.
         ///
-        /// Returns an [Iterator] of pages after each fold is made.
+        /// Returns an [`Iterator`] of pages after each fold is made.
         pub fn apply_folds(&self) -> FoldedPages {
             FoldedPages {
                 page: Rc::new(self.page.clone()),
@@ -179,11 +179,11 @@ mod solution {
         }
     }
 
-    /// [Iterator] over the pages after each fold.
+    /// [`Iterator`] over the pages after each fold.
     pub struct FoldedPages<'a> {
         /// The current page.
         page: Rc<Page>,
-        /// [Iterator] over the actual folds.
+        /// [`Iterator`] over the actual folds.
         folds: std::slice::Iter<'a, Fold>,
     }
     impl Iterator for FoldedPages<'_> {

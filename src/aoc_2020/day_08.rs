@@ -152,7 +152,7 @@ mod solution {
             }
         }
 
-        /// Returns an [ProgramVariations] iterator over variations on the program.
+        /// Returns a [`ProgramVariations`] iterator over variations on the program.
         pub fn variations(&self) -> ProgramVariations {
             ProgramVariations {
                 original: self,
@@ -165,16 +165,16 @@ mod solution {
         }
     }
 
-    /// Type of the filter [Iterator] used by the [ProgramVariations] iterator.
+    /// Type of the filter [`Iterator`] used by the [`ProgramVariations`] iterator.
     type VariationsIterator<'a> =
         Filter<Enumerate<Iter<'a, Instruction>>, fn(&(usize, &Instruction)) -> bool>;
 
-    /// Iterator over variations of a program  with every `jmp` instruction
+    /// [`Iterator`] over variations of a program  with every `jmp` instruction
     /// replaced with a `nop` instruction and vice versa.
     pub struct ProgramVariations<'a> {
         /// Original program that is being varied.
         original: &'a Program,
-        /// Iterator over the 'jmp' and 'nop' instructions in the program.
+        /// [`Iterator`] over the `jmp` and `nop` instructions in the program.
         iter: VariationsIterator<'a>,
     }
     impl Iterator for ProgramVariations<'_> {

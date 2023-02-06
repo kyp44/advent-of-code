@@ -25,6 +25,7 @@ mod solution {
     /// A present with specific dimensions.
     struct Present {
         /// List of dimensions in feet.
+        ///
         /// This will always be sorted from least to greatest
         dimensions: Vec<u64>,
     }

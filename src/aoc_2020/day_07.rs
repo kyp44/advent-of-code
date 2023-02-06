@@ -1,4 +1,5 @@
 use aoc::prelude::*;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -133,9 +134,10 @@ mod solution {
         /// Set of rules.
         pub rules: Vec<BagRule>,
     }
-    impl BagRules {
-        /// Parses the rule set from text input.
-        pub fn from_str(s: &str) -> Result<Self, NomParseError> {
+    impl FromStr for BagRules {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
             let mut bags = BagTable::new();
             let rules: Vec<BagRule> = s
                 .lines()
@@ -152,7 +154,8 @@ mod solution {
 
             Ok(BagRules { bags, rules })
         }
-
+    }
+    impl BagRules {
         /// Fetches the ID for a bag color name.
         pub fn get_id(&mut self, bag_str: &str) -> BagId {
             self.bags.get_or_add_bag(bag_str)

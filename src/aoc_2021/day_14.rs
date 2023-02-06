@@ -67,7 +67,7 @@ mod solution {
         }
     }
     impl Formula {
-        /// Returns an ordered [Iterator] over adjacent pairs of elements in the formula.
+        /// Returns an ordered [`Iterator`] over adjacent pairs of elements in the formula.
         fn pairs(&self) -> impl Iterator<Item = Pair> + '_ {
             self.elements.iter().copied().tuple_windows()
         }
@@ -108,7 +108,7 @@ mod solution {
             (self.left, self.right)
         }
 
-        /// Returns an [Iterator] of the unique elements involved in the insertion.
+        /// Returns an [`Iterator`] of the unique elements involved in the insertion.
         fn chars(&self) -> impl Iterator<Item = char> {
             hashset![self.left, self.right, self.insert].into_iter()
         }
@@ -174,7 +174,7 @@ mod solution {
         }
     }
 
-    /// Builder for a polymer, which can be parsed from text input.
+    /// Problem definition, which can be parsed from text input.
     #[derive(Debug)]
     pub struct Problem {
         /// The initial polymer template formula.
@@ -203,18 +203,18 @@ mod solution {
         }
     }
     impl Problem {
-        /// Returns an [Iterator] over all possible pairs of characters.
+        /// Returns an [`Iterator`] over all possible pairs of characters.
         fn pairs(&self) -> impl Iterator<Item = Pair> + '_ {
             iproduct!(self.chars.iter().copied(), self.chars.iter().copied())
         }
 
-        /// Returns an [Iterator] over the element occurrences at each step as the polymer is built up.
+        /// Returns an [`Iterator`] over the element occurrences at each step as the polymer is built up.
         pub fn builder(&self) -> PolymerBuilder<'_> {
             PolymerBuilder::new(self)
         }
     }
 
-    /// An [Iterator] over the occurrences of every element at each step of
+    /// An [`Iterator`] over the occurrences of every element at each step of
     /// the polymer building process.
     pub struct PolymerBuilder<'a> {
         /// The problem for which we are building the polymer.
@@ -225,7 +225,7 @@ mod solution {
         occurrence_map: HashMap<Pair, Occurrences>,
     }
     impl<'a> PolymerBuilder<'a> {
-        /// Creates a new [Iterator] for a given problem.
+        /// Creates a new [`Iterator`] for a given problem.
         fn new(problem: &'a Problem) -> Self {
             // Build the initial occurrence map for every possible pair.
             let occurrence_map = problem.pairs().map(|p| (p, p.0.into())).collect();

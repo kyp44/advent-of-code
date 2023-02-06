@@ -44,7 +44,7 @@ HOHOHO",
 ///
 /// I dislike this problem because a solution in a reasonable amount of time
 /// depends on the specific input of the problem. In particular there are special
-/// Characters that can be transformed into their "meanings" when turning all the
+/// characters that can be transformed into their "meanings" when turning all the
 /// element names into single characters for ease of understanding.
 ///
 /// For a discussion of the properties of the input that allow this see
@@ -158,7 +158,7 @@ mod solution {
         }
     }
     impl Machine {
-        /// Returns an [Iterator] over each individual molecule replacement in an input molecule.
+        /// Returns an [`Iterator`] over each individual molecule replacement in an input molecule.
         pub fn replace_iter<'a>(&'a self, input: &'a str) -> impl Iterator<Item = String> + 'a {
             self.replacements
                 .iter()
@@ -168,7 +168,7 @@ mod solution {
         /// Counts the number of replacement steps required to create a target molecule
         /// from a starting molecule.
         pub fn number_of_steps(&self, target: &str, input: &str) -> Option<u64> {
-            /// Recursive sub-function of [Machine::number_of_steps].
+            /// Recursive sub-function of [`Machine::number_of_steps`].
             fn number_of_steps_rec(
                 replacements: &[Replacement],
                 bad_strs: &mut HashSet<String>,

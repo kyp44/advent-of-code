@@ -136,7 +136,7 @@ mod solution {
         type Err = AocError;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
-            /// Sub-struct used when parsing a [CaveSystem], which is a passage
+            /// Sub-struct used when parsing a [`CaveSystem`], which is a passage
             /// between caves and can be parsed from text input.
             struct RawPassage<'a> {
                 /// Cave name at one end of the passage.
@@ -192,7 +192,7 @@ mod solution {
                 );
             }
 
-            /// Recursive sub-function of [CaveSystem::paths].
+            /// Recursive sub-function of [`CaveSystem::paths`].
             ///
             /// Given the cave system graph, a current cave node, and the remaining visits
             /// for every cave, returns the set of possible paths from the current cave

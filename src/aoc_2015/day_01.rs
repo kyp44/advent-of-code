@@ -77,7 +77,7 @@ mod solution {
         }
     }
     impl Directions {
-        /// Returns an [Iterator] of floor numbers when the directions are followed,
+        /// Returns an [`Iterator`] of floor numbers when the directions are followed,
         /// starting at floor 0.
         pub fn floors(&self) -> impl Iterator<Item = i64> + '_ {
             self.directions.iter().scan(0i64, |a, d| {

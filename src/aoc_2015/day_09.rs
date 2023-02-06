@@ -80,7 +80,7 @@ mod solution {
         }
     }
 
-    /// Problem definition.
+    /// Problem definition, which can be parsed from text input.
     pub struct Problem<'a> {
         /// Set of all cities names.
         cities: HashSet<&'a str>,
@@ -111,7 +111,7 @@ mod solution {
                 .sum()
         }
 
-        /// Returns an [Iterator] over the distances for all possible routes.
+        /// Returns an [`Iterator`] over the distances for all possible routes.
         fn routes_distances(&self) -> impl Iterator<Item = u64> + '_ {
             self.cities
                 .iter()

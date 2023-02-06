@@ -55,6 +55,9 @@ pub type AocResult<T> = Result<T, AocError>;
 
 // TODO: Use some modules here to better organize these items.
 
+// TODO: Do we want some kind of modulo arithmetic type, probably crates for this.
+// In particular sometimes we want, modulo `n` but from `1` to `n` instead of `0` to `n-1`.
+
 /// Extension methods for vector types.
 pub trait VectorExt<T> {
     /// Calculate the Manhattan length of the vector.

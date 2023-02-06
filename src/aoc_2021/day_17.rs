@@ -33,7 +33,9 @@ mod solution {
     }
     impl Parseable<'_> for TargetArea {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
-            /// Sub-function of [TargetArea::parser] that parses a single range.
+            /// [`nom`] parser that parses a single inclusive range.
+            ///
+            /// This is a sub-function of [`TargetArea::parser`].
             fn range_parser(
                 label: &'static str,
             ) -> impl FnMut(&str) -> NomParseResult<&str, RangeInclusive<i32>> {
@@ -65,7 +67,7 @@ mod solution {
         }
     }
     impl TargetArea {
-        /// Returns an [Iterator] over the peak `y` positions of the probe for each trajectory
+        /// Returns an [`Iterator`] over the peak `y` positions of the probe for each trajectory
         /// for which the probe hits the target.
         pub fn peaks(&self) -> impl Iterator<Item = i32> + '_ {
             // TODO: Derive in the notes document.
@@ -99,7 +101,7 @@ mod solution {
     /// is at the origin.
     type Vector = Vector2<i32>;
 
-    /// A trajectory taken by the probe, which is an [Iterator] over the probe
+    /// A trajectory taken by the probe, which is an [`Iterator`] over the probe
     /// locations at every step.
     #[derive(new)]
     struct Trajectory {

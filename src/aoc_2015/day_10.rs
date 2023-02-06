@@ -26,7 +26,7 @@ mod solution {
 
     /// Number sequence that can be parsed from text input.
     ///
-    /// Also an [Iterator] to iterate over the look-and-say sequence of sequences.
+    /// Also an [`Iterator`] to iterate over the look-and-say sequence of sequences.
     pub struct Sequence {
         /// Sequence for the next iteration.
         current: Takeable<String>,

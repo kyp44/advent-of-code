@@ -20,7 +20,7 @@ mod solution {
     use super::*;
     use derive_new::new;
 
-    /// An [Iterator] that performs transformations on a number given the subject number.
+    /// An [`Iterator`] that performs transformations on a number given the subject number.
     #[derive(new)]
     struct Transform {
         /// The subject number.
@@ -80,8 +80,8 @@ mod solution {
         /// and then using one of these to calculate the shared encryption key
         /// using the other's public key.
         pub fn solve(&self) -> AocResult<u64> {
-            /// Internal function for [Problem::solve] that determines
-            // the secret loop size given an end key.
+            /// Internal function for [`Problem::solve`] that determines
+            /// the secret loop size given an end key.
             fn find_loop_size(key: u64) -> usize {
                 Transform::new(7).take_while(|v| *v != key).count() + 1
             }

@@ -45,8 +45,8 @@ mod solution {
         }
     }
     impl RiskLevels {
-        /// Implements Dijkstra's algorithm to find the path with minimal total risk
-        /// and returns the total minimal risk.
+        /// Implements [Dijkstra's algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
+        /// to find the path with minimal total risk and returns the total minimal risk.
         pub fn min_risk(&self) -> u64 {
             let mut visited = HashMap::new();
             let mut queue = PriorityQueue::new();
@@ -85,9 +85,10 @@ mod solution {
         pub fn full_map(&self, n: u8) -> Self {
             let mut base_rows: Vec<Box<[u8]>> = Vec::new();
 
-            /// Sub-function of [RiskLevels::full_map] that adds two risk level, wrapping around
+            /// Sub-function of [`RiskLevels::full_map`] that adds two risk level, wrapping around
             /// if the sum is greater than 9.
-            // TODO: This can be implemented as the [Add] trait on the wrapper type once [Grid] is refactored.
+            ///
+            /// TODO: This can be implemented as the [`std::ops::Add`] trait on the wrapper type once [`Grid`] is refactored.
             fn add_wrap(a: u8, b: u8) -> u8 {
                 let s = a + b;
                 if s > 9 {

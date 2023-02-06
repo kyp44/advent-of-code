@@ -82,6 +82,7 @@ mod solution {
         }
 
         /// Determines the potentially multiple winners at a time in seconds.
+        ///
         /// That is, which reindeer have traveled the furthest distance.
         pub fn winners_at(&self, time: u64) -> Vec<&Reindeer> {
             let dist = self

@@ -56,13 +56,13 @@ mod solution {
             size.x * size.y
         }
 
-        /// Creates an [Iterator] over the evolution of octopi energies.
+        /// Creates an [`Iterator`] over the evolution of octopi energies.
         pub fn evolve(self) -> OctopiEvolver {
             OctopiEvolver { octopi: self }
         }
     }
 
-    /// [Iterator] over the evolution of octopi energies, which yields
+    /// [`Iterator`] over the evolution of octopi energies, which yields
     /// the number of octopi that flashed at each step.
     pub struct OctopiEvolver {
         /// The octopi grid that evolves.

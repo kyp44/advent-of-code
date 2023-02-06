@@ -69,10 +69,13 @@ mod solution {
     }
     impl Assignment {
         /// Creates an assignment, validating the values.
+        ///
         /// Panics if any values exceed the system bit depth.
         fn new(address: u64, value: u64) -> Assignment {
             /// Verifies that a number does not exceed the system bit depth.
-            /// Panics if this is the case or simply returns the same number otherwise.
+            ///
+            /// Sub-function of [`Assignment::new`] that panics if this is the
+            /// case or simply returns the same number otherwise.
             fn check(val: u64) -> u64 {
                 assert!(val < (1 << BITS), "Value of {val} exceeds {BITS} bits");
                 val
@@ -113,6 +116,7 @@ mod solution {
     /// Mask with behavior specific to a particular decoder chip version (problem part).
     pub trait Mask: for<'a> From<&'a [MaskBit]> + Default {
         /// Apply the mask to an assignment request according the rules for the version.
+        ///
         /// Returns a list of hard assignments to make.
         fn apply_mask(&self, memory: &Assignment) -> Vec<Assignment>;
 

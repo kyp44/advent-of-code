@@ -54,7 +54,7 @@ mod solution {
             }
         }
 
-        /// Compares the operator based on the precedence defined in the [Part].
+        /// Compares the operator based on the precedence defined in the [`Part`].
         fn cmp(&self, other: &Operator, part: &dyn Part) -> Ordering {
             part.precedence(self).cmp(&part.precedence(other))
         }
@@ -63,6 +63,7 @@ mod solution {
     /// Behavior specific to one particular part of the problem.
     pub trait Part {
         /// Convert an operator to its precedence number.
+        ///
         /// Higher numbered operators are evaluated first.
         fn precedence(&self, op: &Operator) -> u8;
     }
@@ -174,6 +175,7 @@ mod solution {
 
         /// Evaluate the expression, returning the result if the expression
         /// is valid.
+        ///
         /// This uses the operator precedence defined by the `part`.
         fn evaluate(&self, part: &dyn Part) -> AocResult<u64> {
             // First validate
@@ -257,6 +259,7 @@ mod solution {
     }
     impl ExpressionList {
         /// Validate and evaluate every expression and sum the results.
+        ///
         /// Each expression uses the operator precedence defined by `part`.
         pub fn evaluation_sum(&self, part: &dyn Part) -> AocResult<u64> {
             process_results(self.expressions.iter().map(|e| e.evaluate(part)), |iter| {

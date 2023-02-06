@@ -59,7 +59,7 @@ mod solution {
     #[derive(Clone, CharGridDebug)]
     #[generics(PartTwo)]
     pub struct LightGrid<P> {
-        /// The [Grid] object.
+        /// The the actual grid.
         grid: Grid<bool>,
         /// Phantom data for the part
         phant: PhantomData<P>,

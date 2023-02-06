@@ -33,7 +33,7 @@ mod solution {
         fn new(a: u32, b: u32, character: char) -> Self;
         /// Validate a string according to the policy.
         fn validate(&self, password: &str) -> bool;
-        /// Nom parser.
+        /// [`nom`] parser.
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             use nom::character::complete::u32 as cu32;
             context(
@@ -95,6 +95,7 @@ mod solution {
     }
 
     /// Full password, including the applicable policy.
+    ///
     /// This can be parsed from text input.
     pub struct Password<'a, P: PasswordPolicy> {
         /// The policy for this password.

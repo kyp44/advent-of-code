@@ -74,8 +74,8 @@ mod solution {
         }
     }
 
-    /// An [Iterator] for over whether the points taken on a downhill route through
-    /// a [Map] with a particular slope have a tree or not.
+    /// An [`Iterator`] for over whether the points taken on a downhill route through
+    /// a [`Map`] with a particular slope have a tree or not.
     #[derive(new)]
     struct MapDownhill<'a> {
         /// Map through which we are traversing.
@@ -105,7 +105,7 @@ mod solution {
         }
     }
 
-    /// For a particular [Map] and slope, counts the number of trees encountered on the way down.
+    /// For a particular [`Map`] and slope, counts the number of trees encountered on the way down.
     pub fn count_slope(map: &Map, slope: GridPoint) -> u64 {
         MapDownhill::new(map, slope).filter_count(|t| *t)
     }

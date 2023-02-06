@@ -93,7 +93,7 @@ mod solution {
             })
         }
 
-        /// Returns an [Iterator] over all possible seating arrangements.
+        /// Returns an [`Iterator`] over all possible seating arrangements.
         fn arrangements(&self) -> impl Iterator<Item = Vec<&str>> {
             let others = &self.attendees[1..];
             others

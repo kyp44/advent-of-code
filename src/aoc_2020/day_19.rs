@@ -174,9 +174,9 @@ mod solution {
             Ok(RuleSet { rules })
         }
 
-        /// Determined whether the input string is valid according to a particular rule in the set.
+        /// Determines whether the input string is valid according to a particular rule in the set.
         fn is_valid(&self, s: &str, rule_num: usize) -> AocResult<bool> {
-            /// Recursive internal function for [RuleSet::is_valid].
+            /// Recursive internal function of [`RuleSet::is_valid`].
             fn valid<'a>(
                 rule_set: &RuleSet,
                 s: &'a str,

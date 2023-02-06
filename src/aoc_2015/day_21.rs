@@ -84,7 +84,7 @@ mod solution {
     ];
 
     /// Armor avilable at the shop.
-    const ARMORS: &[ShopItem] = &[
+    const ARMOR: &[ShopItem] = &[
         shop_item!("Leather", 13, 0, 1),
         shop_item!("Chainmail", 31, 0, 2),
         shop_item!("Splintmail", 53, 0, 3),
@@ -128,6 +128,7 @@ mod solution {
     }
     impl Character {
         /// Have a battle with another character until one runs out of hit points and dies.
+        ///
         /// Returns whether this character won the battle.
         fn battle(&self, other: &Self) -> bool {
             let mut hp = self.hit_points;
@@ -135,7 +136,8 @@ mod solution {
 
             /// Take character `a`'s turn, attacking player `b`, who has a specified number of hit points.
             /// Returns whether the attack killed player `b`.
-            /// This is a sub-function of [Character::battle].
+            ///
+            /// This is a sub-function of [`Character::battle`].
             fn turn(_astr: &str, _bstr: &str, a: &Character, b: &Character, hp: &mut u32) -> bool {
                 let damage = a.attack(b);
                 *hp = hp.saturating_sub(damage);
@@ -212,7 +214,7 @@ mod solution {
             // Go through every combination of 1 weapon, 0-1 armor, and 0-2 rings
             match iproduct!(
                 WEAPONS.iter(),
-                [None].into_iter().chain(ARMORS.iter().map(Some)),
+                [None].into_iter().chain(ARMOR.iter().map(Some)),
                 (0..=2).flat_map(|n| RINGS.iter().combinations(n))
             )
             .filter_map(|(weapon, armor, rings)| {

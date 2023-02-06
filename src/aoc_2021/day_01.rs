@@ -27,9 +27,9 @@ mod tests {
 mod solution {
     use super::*;
 
-    /// Extension for [Iterator]s.
+    /// Extension for [`Iterator`]s.
     pub trait CountIncreases {
-        /// Count the number of times that the values yielded by the [Iterator] increase.
+        /// Count the number of times that the values yielded by the [`Iterator`] increase.
         fn count_increases(self) -> u64;
     }
     impl<I: Iterator> CountIncreases for I

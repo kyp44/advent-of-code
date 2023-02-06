@@ -33,7 +33,7 @@ mod solution {
         rc::{Rc, Weak},
     };
 
-    /// Shared reference to a [Cup].
+    /// Shared reference to a [`Cup`].
     ///
     /// Weak references are needed here to avoid the issue that circular strong references
     /// that would lead to a memory leak (one of the few ways to create a memory
@@ -65,7 +65,7 @@ mod solution {
             old
         }
 
-        /// Returns an [Iterator] over the chain of cups with the first element being this cup.
+        /// Returns an [`Iterator`] over the chain of cups with the first element being this cup.
         fn iter(&self) -> CupIter {
             CupIter::new(self)
         }
@@ -81,9 +81,9 @@ mod solution {
         }
     }
 
-    /// [Iterator] over a chain of cups.
+    /// [`Iterator`] over a chain of cups.
     ///
-    /// If the chain is circular the [Iterator] will stop just before the
+    /// If the chain is circular the [`Iterator`] will stop just before the
     /// first cup is reached again so that every cup in the circle is visited
     /// exactly once.
     #[derive(Debug)]
@@ -94,7 +94,7 @@ mod solution {
         next_ref: Option<CupRef>,
     }
     impl CupIter {
-        /// Creates a new [Iterator] with the first item being the passed cup.
+        /// Creates a new [`Iterator`] with the first item being the passed cup.
         fn new(cr: &CupRef) -> CupIter {
             CupIter {
                 first_label: cr.label(),
@@ -181,12 +181,12 @@ mod solution {
 
     /// A circle of cups, which can be parsed from text input.
     ///
-    /// This is also an [Iterator] over the move numbers that the crab makes,
+    /// This is also an [`Iterator`] over the move numbers that the crab makes,
     /// with the arrangement of the cups changing accordingly.
     pub struct Cups {
         /// All the cups with strong references so that this is effectively their owner.
         ///
-        /// NOTE: We need the [RefCell] here to complete the circle.
+        /// NOTE: We need the [`RefCell`] here to complete the circle.
         cups: Box<[Rc<RefCell<Cup>>]>,
         /// A map of the labels to the cups.
         ///

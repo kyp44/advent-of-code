@@ -62,7 +62,7 @@ mod solution {
         }
     }
     impl Digit {
-        /// Creates a new [Digit] based on a mapping from these signal names to
+        /// Creates a new [`Digit`] based on a mapping from these signal names to
         /// a new set of signal names.
         fn map(&self, map: &HashMap<char, char>) -> Self {
             Digit {
@@ -79,7 +79,7 @@ mod solution {
     }
 
     lazy_static! {
-        /// Mapping of the of a [Digit] using corrected signals to the numeric
+        /// Mapping of the of a [`Digit`] using corrected signals to the numeric
         /// digit.
         static ref DIGITS: HashMap<Digit, u8> = hashmap! {
             Digit::from_str("abcefg").unwrap() => 0,
@@ -166,7 +166,7 @@ mod solution {
             let d8 = get_len(7)?;
 
             let mut map_add = |c: char, set: Vec<&char>| -> AocResult<char> {
-                /// Sub function of [Entry::solve] that creates an error given a signal name
+                /// Sub-function of [`Entry::solve`] that creates an error given a signal name
                 /// and message string.
                 fn err(c: char, msg: &str) -> AocError {
                     AocError::Process(format!("Problem deducing '{c}': {msg}!").into())

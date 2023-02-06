@@ -95,7 +95,7 @@ mod solution {
         Operator(Operation, Box<[Packet]>),
     }
     impl PacketType {
-        /// [nom] parser for the packet type.
+        /// [`nom`] parser for the packet type.
         fn parser(i: BitInput) -> NomParseResult<BitInput, (Self, usize)> {
             let (i, type_id) = take(3usize)(i)?;
             let mut taken_bits = 3;
@@ -200,7 +200,7 @@ mod solution {
             Ok(match self {
                 PacketType::Literal(v) => *v,
                 PacketType::Operator(operation, packets) => {
-                    /// Sub-function of [PacketType::evaluate] that just creates an error
+                    /// Sub-function of [`PacketType::evaluate`] that just creates an error
                     /// for an operation that is missing operands.
                     fn min_one_err(operation: &Operation) -> AocError {
                         AocError::Process(
@@ -261,7 +261,7 @@ mod solution {
         packet_type: PacketType,
     }
     impl Packet {
-        /// [nom] parser for the packet.
+        /// [`nom`] parser for the packet.
         fn parser(i: BitInput) -> NomParseResult<BitInput, (Self, usize)> {
             let (i, version) = take(3usize)(i)?;
             let (i, (packet_type, type_bits)) = PacketType::parser(i)?;

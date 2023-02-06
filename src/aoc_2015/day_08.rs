@@ -30,7 +30,7 @@ mod solution {
         Finish,
     };
 
-    /// Trait to escape or encode a string.
+    /// Extension trait to escape or encode a string.
     trait ProgramString {
         /// Compress the item into an escaped string as it would actually be stored in memory.
         fn escaped(&self) -> AocResult<String>;

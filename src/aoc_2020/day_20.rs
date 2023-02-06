@@ -322,9 +322,10 @@ mod solution {
             out
         }
 
-        /// Searches the image for a sub-image mask, where set pixels of the sub-image
-        /// must be set pixels in this image, and unset pixels in the sub-image can be
-        /// any pixels in this image.
+        /// Searches the image for a sub-image mask.
+        ///
+        /// Set pixels of the sub-image  must be set pixels in this image, and
+        /// unset pixels in the sub-image can be any pixels in this image.
         fn search(&self, image: &Self) -> Vec<GridPoint> {
             let size = self.pixels.size();
             let image_size = image.pixels.size();
@@ -348,7 +349,9 @@ mod solution {
         }
 
         /// Subtracts a smaller sub-image from this image at the specified
-        /// upper left coordinates. Pixels in the sub image that are set
+        /// upper left coordinates.
+        ///
+        /// Pixels in the sub image that are set
         /// are unset in this image, and those that are unset in the sub-image
         /// are left unchanged in this image.
         fn subtract(&mut self, point: &GridPoint, image: &Self) {
@@ -676,11 +679,13 @@ mod solution {
     }
     impl Solver {
         /// Solves the set by finding a filled tile map such that all the tile edges match
-        /// up correctly. Note that this is correct only up to rotations of the entire map.
+        /// up correctly.
+        ///
+        /// Note that this is correct only up to rotations of the entire map.
         pub fn solve(self) -> AocResult<TileMap> {
             let map = TileMap::new(self.tile_set);
 
-            /// Recursive internal function of [Solver::solve].
+            /// Recursive internal function of [`Solver::solve`].
             fn solve_slot(x: usize, y: usize, map: TileMap) -> Option<TileMap> {
                 if map.remaining.is_empty() {
                     return Some(map);
