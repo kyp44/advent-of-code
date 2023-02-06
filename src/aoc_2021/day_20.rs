@@ -1,10 +1,5 @@
-use std::{rc::Rc, str::FromStr};
-
-use bitbuffer::{BitReadBuffer, BitWriteStream, LittleEndian};
-use cgmath::Vector2;
-use nom::{character::complete::one_of, combinator::map, multi::many_m_n};
-
-use aoc::{parse::trim, prelude::*};
+use aoc::prelude::*;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -31,143 +26,164 @@ mod tests {
     }
 }
 
-const ALG_SIZE: usize = 512;
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use aoc::parse::trim;
+    use bitbuffer::{BitReadBuffer, BitWriteStream, LittleEndian};
+    use cgmath::Vector2;
+    use nom::{character::complete::one_of, combinator::map, multi::many_m_n};
+    use std::rc::Rc;
 
-#[derive(Clone, Debug)]
-struct Algorithm {
-    table: [bool; ALG_SIZE],
-}
-impl Parseable<'_> for Algorithm {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        map(
-            many_m_n(
-                ALG_SIZE,
-                ALG_SIZE,
-                map(trim(true, one_of(".#")), |c| c == '#'),
-            ),
-            |v| {
-                let table = v.try_into().unwrap();
-                Self { table }
-            },
-        )(input)
+    /// The size of the image enhancement algorithm table.
+    const ALG_SIZE: usize = 512;
+
+    /// The image enhancement algorithm table, which can be parsed from text input.
+    #[derive(Clone, Debug)]
+    struct Algorithm {
+        /// The table of enhanced pixel values.
+        table: [bool; ALG_SIZE],
     }
-}
-impl Algorithm {
-    fn lookup(&self, value: usize) -> Option<bool> {
-        self.table.get(value).copied()
+    impl Parseable<'_> for Algorithm {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            map(
+                many_m_n(
+                    ALG_SIZE,
+                    ALG_SIZE,
+                    map(trim(true, one_of(".#")), |c| c == '#'),
+                ),
+                |v| {
+                    let table = v.try_into().unwrap();
+                    Self { table }
+                },
+            )(input)
+        }
     }
-}
-
-#[derive(Debug, Clone)]
-struct Image {
-    algorithm: Rc<Algorithm>,
-    grid: Grid<bool>,
-    infinity_pixels: bool,
-}
-impl FromStr for Image {
-    type Err = AocError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let sections = s.sections(2)?;
-        let algorithm = Algorithm::from_str(sections[0].trim())?;
-
-        Ok(Self {
-            algorithm: Rc::new(algorithm),
-            grid: Grid::from_str::<Grid<bool>>(sections[1].trim())?,
-            infinity_pixels: false,
-        })
-    }
-}
-impl Image {
-    fn next_size(&self) -> GridSize {
-        self.grid.size() + GridSize::new(2, 2)
+    impl Algorithm {
+        /// Look up a pixel value in the table based on the binary number.
+        fn lookup(&self, value: usize) -> Option<bool> {
+            self.table.get(value).copied()
+        }
     }
 
-    fn num_lit(&self) -> usize {
-        self.grid.all_values().filter_count(|b| **b)
+    /// An image that can be enhanced, which can be parsed from text input.
+    #[derive(Debug, Clone)]
+    pub struct Image {
+        /// The enhancement algorithm table.
+        algorithm: Rc<Algorithm>,
+        /// The image grid of pixels.
+        grid: Grid<bool>,
+        /// The pixel value of all pixels outside the defined image grid space.
+        infinity_pixels: bool,
     }
-}
-impl Evolver<bool> for Image {
-    type Point = Vector2<isize>;
+    impl FromStr for Image {
+        type Err = AocError;
 
-    fn next_default(other: &Self) -> Self {
-        let infinity_pixels = other
-            .algorithm
-            .lookup(if other.infinity_pixels {
-                ALG_SIZE - 1
-            } else {
-                0
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let sections = s.sections(2)?;
+            let algorithm = Algorithm::from_str(sections[0].trim())?;
+
+            Ok(Self {
+                algorithm: Rc::new(algorithm),
+                grid: Grid::from_str::<Grid<bool>>(sections[1].trim())?,
+                infinity_pixels: false,
             })
-            .unwrap();
-
-        Self {
-            algorithm: other.algorithm.clone(),
-            grid: Grid::default(other.next_size()),
-            infinity_pixels,
         }
     }
-
-    fn get_element(&self, point: &Self::Point) -> bool {
-        match self.grid.valid_point(point) {
-            Some(p) => *self.grid.get(&p),
-            None => self.infinity_pixels,
-        }
-    }
-
-    fn set_element(&mut self, point: &Self::Point, value: bool) {
-        self.grid.set(&point.try_point_into().unwrap(), value);
-    }
-
-    fn next_cell(&self, point: &Self::Point) -> bool {
-        let mut binary_data = vec![];
-        let mut write_stream = BitWriteStream::new(&mut binary_data, LittleEndian);
-
-        // New grid is offset so need to convert point into current grid space
-        let point = point - Self::Point::new(1, 1);
-        let bits: Vec<bool> = self
-            .grid
-            .all_neighbor_points(point, true, true)
-            .map(|p| self.get_element(&p))
-            .collect();
-        // The suggestion by the clippy lint does not compile.
-        /*for b in self
-            .grid
-            .all_neighbor_points(point, true, true)
-            .map(|p| self.get_element(&p))
-            .rev()
-        {*/
-        for b in bits.into_iter().rev() {
-            write_stream.write_bool(b).unwrap();
+    impl Image {
+        /// The size of the next enhanced image, which will be a bit larger.
+        fn enhanced_size(&self) -> GridSize {
+            self.grid.size() + GridSize::new(2, 2)
         }
 
-        let read_buffer = BitReadBuffer::new(&binary_data, LittleEndian);
-        let binary_value = read_buffer.read_int(0, read_buffer.bit_len()).unwrap();
-
-        self.algorithm.lookup(binary_value).unwrap()
+        /// Count the number of lit pixels in the image.
+        pub fn num_lit(&self) -> usize {
+            self.grid.all_values().filter_count(|b| **b)
+        }
     }
+    impl Evolver<bool> for Image {
+        type Point = Vector2<isize>;
 
-    fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
-        Box::new(
-            self.next_size()
-                .all_points()
-                .map(|p| p.try_point_into().unwrap()),
-        )
+        fn next_default(other: &Self) -> Self {
+            let infinity_pixels = other
+                .algorithm
+                .lookup(if other.infinity_pixels {
+                    ALG_SIZE - 1
+                } else {
+                    0
+                })
+                .unwrap();
+
+            Self {
+                algorithm: other.algorithm.clone(),
+                grid: Grid::default(other.enhanced_size()),
+                infinity_pixels,
+            }
+        }
+
+        fn get_element(&self, point: &Self::Point) -> bool {
+            match self.grid.valid_point(point) {
+                Some(p) => *self.grid.get(&p),
+                None => self.infinity_pixels,
+            }
+        }
+
+        fn set_element(&mut self, point: &Self::Point, value: bool) {
+            self.grid.set(&point.try_point_into().unwrap(), value);
+        }
+
+        fn next_cell(&self, point: &Self::Point) -> bool {
+            let mut binary_data = vec![];
+            let mut write_stream = BitWriteStream::new(&mut binary_data, LittleEndian);
+
+            // New grid is offset so need to convert point into current grid space
+            let point = point - Self::Point::new(1, 1);
+            let bits: Vec<bool> = self
+                .grid
+                .all_neighbor_points(point, true, true)
+                .map(|p| self.get_element(&p))
+                .collect();
+            // The suggestion by the clippy lint does not compile.
+            /*for b in self
+                .grid
+                .all_neighbor_points(point, true, true)
+                .map(|p| self.get_element(&p))
+                .rev()
+            {*/
+            for b in bits.into_iter().rev() {
+                write_stream.write_bool(b).unwrap();
+            }
+
+            let read_buffer = BitReadBuffer::new(&binary_data, LittleEndian);
+            let binary_value = read_buffer.read_int(0, read_buffer.bit_len()).unwrap();
+
+            self.algorithm.lookup(binary_value).unwrap()
+        }
+
+        fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
+            Box::new(
+                self.enhanced_size()
+                    .all_points()
+                    .map(|p| p.try_point_into().unwrap()),
+            )
+        }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 20,
     name: "Trench Map",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Image::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let image = Image::from_str(input.expect_input()?)?;
-
             // Process
             Ok(Answer::Unsigned(
-                image
+                input
+                    .expect_data::<Image>()?
                     .evolutions()
                     .iterations(2)
                     .unwrap()
@@ -178,12 +194,10 @@ pub const SOLUTION: Solution = Solution {
         },
         // Part two
         |input| {
-            // Generation
-            let image = Image::from_str(input.expect_input()?)?;
-
             // Process
             Ok(Answer::Unsigned(
-                image
+                input
+                    .expect_data::<Image>()?
                     .evolutions()
                     .iterations(50)
                     .unwrap()

@@ -1,13 +1,4 @@
-use aoc::{parse::trim, prelude::*};
-use cgmath::{Vector2, Zero};
-use derive_new::new;
-use itertools::Itertools;
-use multiset::HashMultiSet;
-use nom::{
-    bytes::complete::tag,
-    combinator::map,
-    sequence::{pair, preceded},
-};
+use aoc::prelude::*;
 use std::str::FromStr;
 
 #[cfg(test)]
@@ -31,159 +22,194 @@ mod tests {
     }
 }
 
-#[derive(new)]
-struct DeterministicDie {
-    #[new(value = "0")]
-    next: u32,
-    #[new(value = "0")]
-    times_rolled: u32,
-}
-impl DeterministicDie {
-    fn roll(&mut self) -> u32 {
-        let ret = self.next + 1;
-        self.next = (self.next + 1) % 100;
-        self.times_rolled += 1;
-        ret
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use aoc::parse::trim;
+    use cgmath::{Vector2, Zero};
+    use derive_new::new;
+    use itertools::Itertools;
+    use multiset::HashMultiSet;
+    use nom::{
+        bytes::complete::tag,
+        combinator::map,
+        sequence::{pair, preceded},
+    };
+
+    /// The deterministic die used in part one.
+    #[derive(new)]
+    struct DeterministicDie {
+        /// The value of the next roll of the die.
+        #[new(value = "0")]
+        next: u32,
+        /// The number of times the die was rolled.
+        #[new(value = "0")]
+        times_rolled: u32,
     }
-}
-
-fn dirac_roll(num_rolls: usize) -> HashMultiSet<u32> {
-    (0..num_rolls)
-        .map(|_| 1..=3)
-        .multi_cartesian_product()
-        .map(|v| v.into_iter().sum::<u32>())
-        .collect()
-}
-
-const NUM_SPACES: u32 = 10;
-
-/// Represents a player's position on the board
-#[derive(Debug, Clone)]
-struct Player {
-    position: u32,
-    score: u32,
-}
-impl Player {
-    fn new(position: u32) -> Self {
-        Self {
-            position: (position + NUM_SPACES - 1) % NUM_SPACES,
-            score: 0,
+    impl DeterministicDie {
+        /// Roll the die and return the rolled value.
+        fn roll(&mut self) -> u32 {
+            let ret = self.next + 1;
+            self.next = (self.next + 1) % 100;
+            self.times_rolled += 1;
+            ret
         }
     }
 
-    /// Moves a player by the number of spaces
-    fn move_player(&mut self, spaces: u32) {
-        self.position = (self.position + spaces) % NUM_SPACES;
-        self.score += self.position + 1;
-    }
-
-    fn _position(&self) -> u32 {
-        self.position + 1
-    }
-}
-impl Parseable<'_> for Player {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        fn preceded_u32<'a>(
-            text: &'static str,
-        ) -> impl FnMut(&'a str) -> NomParseResult<&'a str, u32> {
-            preceded(trim(false, tag(text)), nom::character::complete::u32)
+    /// The quantum Dirac die used in part two.
+    #[derive(new)]
+    struct DiracDie {}
+    impl DiracDie {
+        /// Roll the die some number of times and return a multi-set of the sums of the rolls.
+        fn roll(&self, num_rolls: usize) -> HashMultiSet<u32> {
+            (0..num_rolls)
+                .map(|_| 1..=3)
+                .multi_cartesian_product()
+                .map(|v| v.into_iter().sum::<u32>())
+                .collect()
         }
-        map(
-            pair(preceded_u32("Player"), preceded_u32("starting position:")),
-            |(_, pos)| Self::new(pos),
-        )(input)
     }
-}
 
-const NUM_ROLLS_PER_TURN: usize = 3;
+    /// The number of spaces on the board.
+    const NUM_SPACES: u32 = 10;
 
-#[derive(Debug, Clone)]
-struct Game {
-    players: [Player; 2],
-}
-impl FromStr for Game {
-    type Err = AocError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let players = Player::gather(s.lines())?;
-        Ok(Self {
-            players: players.try_into().expect("Incorrect number of players"),
-        })
+    /// The current state of a player, whose initial position can be parsed from text input.
+    #[derive(Debug, Clone)]
+    struct Player {
+        /// The current position on the board.
+        position: u32,
+        /// The current score.
+        score: u32,
     }
-}
-impl Game {
-    /// Play the game with the deterministic die and return the loser's score times the number of rolls
-    fn play_deterministic(&mut self) -> u32 {
-        let mut die = DeterministicDie::new();
+    impl Player {
+        /// Create a new player with a particular starting position on the board.
+        fn new(position: u32) -> Self {
+            Self {
+                position: (position + NUM_SPACES - 1) % NUM_SPACES,
+                score: 0,
+            }
+        }
 
-        loop {
-            for (i, player) in self.players.iter_mut().enumerate() {
-                let roll = (0..NUM_ROLLS_PER_TURN).map(|_| die.roll()).sum();
+        /// Moves a player by a number of spaces.
+        fn move_player(&mut self, spaces: u32) {
+            self.position = (self.position + spaces) % NUM_SPACES;
+            self.score += self.position + 1;
+        }
 
-                player.move_player(roll);
-                /*println!(
-                    "Player {} rolled {} and moved to space {} for a total score of {}",
-                    i,
-                    roll,
-                    player._position(),
-                    player.score
-                );*/
-                if player.score >= 1000 {
-                    return self.players[1 - i].score * die.times_rolled;
+        /// Returns the current position of the player on the board.
+        fn _position(&self) -> u32 {
+            self.position + 1
+        }
+    }
+    impl Parseable<'_> for Player {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            /// Internal function of [`Player::parser`] that parses a [`u32`] preceded by some
+            /// text.
+            fn preceded_u32<'a>(
+                text: &'static str,
+            ) -> impl FnMut(&'a str) -> NomParseResult<&'a str, u32> {
+                preceded(trim(false, tag(text)), nom::character::complete::u32)
+            }
+            map(
+                pair(preceded_u32("Player"), preceded_u32("starting position:")),
+                |(_, pos)| Self::new(pos),
+            )(input)
+        }
+    }
+
+    /// The number of die rolls per turn.
+    const NUM_ROLLS_PER_TURN: usize = 3;
+
+    /// The current state of a game, the initial state of which can be parsed from text input.
+    #[derive(Debug, Clone)]
+    pub struct Game {
+        /// The current state of both players.
+        players: [Player; 2],
+    }
+    impl FromStr for Game {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let players = Player::gather(s.lines())?;
+            Ok(Self {
+                players: players.try_into().expect("Incorrect number of players"),
+            })
+        }
+    }
+    impl Game {
+        /// Play the game with the deterministic die and return the loser's score times the number of rolls
+        pub fn play_deterministic(&self) -> u32 {
+            let mut game = self.clone();
+            let mut die = DeterministicDie::new();
+
+            loop {
+                for (i, player) in game.players.iter_mut().enumerate() {
+                    let roll = (0..NUM_ROLLS_PER_TURN).map(|_| die.roll()).sum();
+
+                    player.move_player(roll);
+                    /*println!(
+                        "Player {} rolled {} and moved to space {} for a total score of {}",
+                        i,
+                        roll,
+                        player._position(),
+                        player.score
+                    );*/
+                    if player.score >= 1000 {
+                        return game.players[1 - i].score * die.times_rolled;
+                    }
                 }
             }
         }
-    }
 
-    /// Play the game with Dirac die and return the number of universes in which the winning player wins.
-    fn play_dirac(&self) -> u64 {
-        let rolls = dirac_roll(NUM_ROLLS_PER_TURN);
+        /// Play the game with Dirac die and return the number of universes in which the winning player wins.
+        pub fn play_dirac(&self) -> u64 {
+            let rolls = DiracDie::new().roll(NUM_ROLLS_PER_TURN);
 
-        /// Recursive version that takes the current game and returns the number of universes in which each
-        /// player wins the game.
-        fn play_dirac_rec(game: &Game, rolls: &HashMultiSet<u32>, turn: usize) -> Vector2<u64> {
-            let mut universes = Vector2::zero();
-            for r in rolls.distinct_elements() {
-                let num_universes = u64::try_from(rolls.count_of(r)).unwrap();
-                let mut game = game.clone();
-                let player = &mut game.players[turn];
-                player.move_player(*r);
-                if player.score >= 21 {
-                    // This player has won in these universes
-                    universes[turn] += num_universes;
-                } else {
-                    // Need to recurse
-                    universes += num_universes * play_dirac_rec(&game, rolls, 1 - turn);
+            /// Recursive sub-function of [`Game::play_dirac`] that takes the current game and returns
+            /// the number of universes in which each player wins the game.
+            fn play_dirac_rec(game: &Game, rolls: &HashMultiSet<u32>, turn: usize) -> Vector2<u64> {
+                let mut universes = Vector2::zero();
+                for r in rolls.distinct_elements() {
+                    let num_universes = u64::try_from(rolls.count_of(r)).unwrap();
+                    let mut game = game.clone();
+                    let player = &mut game.players[turn];
+                    player.move_player(*r);
+                    if player.score >= 21 {
+                        // This player has won in these universes
+                        universes[turn] += num_universes;
+                    } else {
+                        // Need to recurse
+                        universes += num_universes * play_dirac_rec(&game, rolls, 1 - turn);
+                    }
                 }
+                universes
             }
-            universes
-        }
 
-        let universes = play_dirac_rec(self, &rolls, 0);
-        universes[0].max(universes[1])
+            let universes = play_dirac_rec(self, &rolls, 0);
+            universes[0].max(universes[1])
+        }
     }
 }
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 21,
     name: "Dirac Dice",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Game::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let mut game = Game::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(Answer::Unsigned(game.play_deterministic().into()))
+            Ok(Answer::Unsigned(
+                input.expect_data::<Game>()?.play_deterministic().into(),
+            ))
         },
         // Part two
         |input| {
-            // Generation
-            let game = Game::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(game.play_dirac().into())
+            Ok(input.expect_data::<Game>()?.play_dirac().into())
         },
     ],
 };
