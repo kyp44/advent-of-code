@@ -1,15 +1,4 @@
-use std::ops::RangeInclusive;
-
-use cgmath::Vector3;
-use nom::{
-    branch::alt,
-    bytes::complete::tag,
-    character::complete::space1,
-    combinator::map,
-    sequence::{separated_pair, terminated, tuple},
-};
-
-use aoc::{parse::field_line_parser, prelude::*};
+use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
@@ -111,185 +100,234 @@ off x=-93533..-4276,y=-16170..68771,z=-104985..-24507",
             }
 }
 
-type CuboidRange = RangeInclusive<i32>;
+/// Contains solution implementation items.
+mod solution {
+    use super::*;
+    use aoc::parse::field_line_parser;
+    use cgmath::Vector3;
+    use nom::{
+        branch::alt,
+        bytes::complete::tag,
+        character::complete::space1,
+        combinator::map,
+        sequence::{separated_pair, terminated, tuple},
+    };
+    use std::ops::RangeInclusive;
 
-#[derive(Debug, Clone)]
-struct Cuboid {
-    ranges: Vector3<CuboidRange>,
-}
-impl Parseable<'_> for Cuboid {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        fn parse_range(input: &str) -> NomParseResult<&str, CuboidRange> {
+    /// The range type used to define a cuboid.
+    type CuboidRange = RangeInclusive<i32>;
+
+    /// A cuboid region defined by an inclusive range in each dimension.
+    ///
+    /// This can be parsed from text input.
+    #[derive(Debug, Clone)]
+    pub struct Cuboid {
+        /// Inclusive ranges for each dimension.
+        ranges: Vector3<CuboidRange>,
+    }
+    impl Parseable<'_> for Cuboid {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            /// [`nom`] parser that parses an inclusive range.
+            ///
+            /// This is a sub-function of [`Cuboid::parser`].
+            fn parse_range(input: &str) -> NomParseResult<&str, CuboidRange> {
+                map(
+                    separated_pair(
+                        nom::character::complete::i32,
+                        tag(".."),
+                        nom::character::complete::i32,
+                    ),
+                    |(a, b)| a..=b,
+                )(input)
+            }
+
             map(
-                separated_pair(
-                    nom::character::complete::i32,
-                    tag(".."),
-                    nom::character::complete::i32,
-                ),
-                |(a, b)| a..=b,
+                tuple((
+                    field_line_parser("x=", terminated(parse_range, tag(","))),
+                    field_line_parser("y=", terminated(parse_range, tag(","))),
+                    field_line_parser("z=", parse_range),
+                )),
+                |(x, y, z)| Self {
+                    ranges: Vector3::new(x, y, z),
+                },
             )(input)
         }
-
-        map(
-            tuple((
-                field_line_parser("x=", terminated(parse_range, tag(","))),
-                field_line_parser("y=", terminated(parse_range, tag(","))),
-                field_line_parser("z=", parse_range),
-            )),
-            |(x, y, z)| Self {
-                ranges: Vector3::new(x, y, z),
-            },
-        )(input)
     }
-}
-impl Cuboid {
-    fn cube(range: CuboidRange) -> Self {
-        Cuboid {
-            ranges: Vector3::new(range.clone(), range.clone(), range),
+    impl Cuboid {
+        /// Returns a cubic region in which the `range` of every dimension is the same.
+        pub fn cube(range: CuboidRange) -> Self {
+            Cuboid {
+                ranges: Vector3::new(range.clone(), range.clone(), range),
+            }
+        }
+
+        /// Returns the intersection of this and another cuboid, which is itself also a
+        /// cuboid region.
+        ///
+        /// If the cuboids are disjoint, then `None` is returned.
+        fn intersection(&self, other: &Cuboid) -> Option<Cuboid> {
+            let rx = self.ranges.x.intersection(&other.ranges.x);
+            let ry = self.ranges.y.intersection(&other.ranges.y);
+            let rz = self.ranges.z.intersection(&other.ranges.z);
+
+            match (rx, ry, rz) {
+                (Some(x), Some(y), Some(z)) => Some(Cuboid {
+                    ranges: Vector3::new(x, y, z),
+                }),
+                _ => None,
+            }
+        }
+
+        /// Calculates the number of points contained in the cuboid region.
+        fn num_points(&self) -> u64 {
+            let ranges = &self.ranges;
+            [&ranges.x, &ranges.y, &ranges.z]
+                .into_iter()
+                .map(|r| u64::try_from(r.len()).unwrap())
+                .product::<u64>()
         }
     }
-    fn intersection(&self, other: &Cuboid) -> Option<Cuboid> {
-        let rx = self.ranges.x.intersection(&other.ranges.x);
-        let ry = self.ranges.y.intersection(&other.ranges.y);
-        let rz = self.ranges.z.intersection(&other.ranges.z);
 
-        match (rx, ry, rz) {
-            (Some(x), Some(y), Some(z)) => Some(Cuboid {
-                ranges: Vector3::new(x, y, z),
-            }),
-            _ => None,
-        }
+    /// Step in the reboot process, which can be parsed from text input.
+    #[derive(Debug)]
+    pub enum RebootStep {
+        /// Turn a cuboid region on.
+        On(Cuboid),
+        /// Turn a cuboid region off.
+        Off(Cuboid),
     }
-
-    fn num_points(&self) -> u64 {
-        let ranges = &self.ranges;
-        [&ranges.x, &ranges.y, &ranges.z]
-            .into_iter()
-            .map(|r| u64::try_from(r.len()).unwrap())
-            .product::<u64>()
-    }
-}
-
-#[derive(Debug)]
-enum RebootStep {
-    On(Cuboid),
-    Off(Cuboid),
-}
-impl Parseable<'_> for RebootStep {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
-        map(
-            separated_pair(alt((tag("on"), tag("off"))), space1, Cuboid::parser),
-            |(w, cub)| match w {
-                "on" => Self::On(cub),
-                _ => Self::Off(cub),
-            },
-        )(input)
-    }
-}
-
-#[derive(Clone, Debug)]
-enum Set {
-    Empty,
-    Basic(Cuboid),
-    Difference(Box<Set>, Box<Set>),
-    Union(Box<Set>, Box<Set>),
-}
-impl Set {
-    fn is_empty(&self) -> bool {
-        matches!(self, Self::Empty)
-    }
-
-    fn intersection(&self, other: &Self) -> Self {
-        if self.is_empty() || other.is_empty() {
-            Self::Empty
-        } else {
-            match self {
-                Set::Empty => Self::Empty,
-                Set::Basic(c1) => match other {
-                    Set::Basic(c2) => match c1.intersection(c2) {
-                        Some(c) => Self::Basic(c),
-                        None => Self::Empty,
-                    },
-                    _ => other.intersection(self),
+    impl Parseable<'_> for RebootStep {
+        fn parser(input: &str) -> NomParseResult<&str, Self> {
+            map(
+                separated_pair(alt((tag("on"), tag("off"))), space1, Cuboid::parser),
+                |(w, cub)| match w {
+                    "on" => Self::On(cub),
+                    _ => Self::Off(cub),
                 },
-                Set::Difference(s1, s2) => {
-                    s1.intersection(other).difference(s2.intersection(other))
+            )(input)
+        }
+    }
+
+    /// A set of points in 3D integer space represented as various combinations of cuboid
+    /// regions.
+    #[derive(Clone, Debug)]
+    pub enum Set {
+        /// The empty set with no points.
+        Empty,
+        /// The set of points contained in a basic cuboid region.
+        Basic(Cuboid),
+        /// The difference between two sets, i.e. the first set with the second set
+        /// removed if they intersect.
+        Difference(Box<Set>, Box<Set>),
+        /// The union of two other sets.
+        Union(Box<Set>, Box<Set>),
+    }
+    impl Set {
+        /// Returns whether this is the empty set.
+        fn is_empty(&self) -> bool {
+            matches!(self, Self::Empty)
+        }
+
+        /// Returns the intersection of this set with another.
+        pub fn intersection(&self, other: &Self) -> Self {
+            if self.is_empty() || other.is_empty() {
+                Self::Empty
+            } else {
+                match self {
+                    Set::Empty => Self::Empty,
+                    Set::Basic(c1) => match other {
+                        Set::Basic(c2) => match c1.intersection(c2) {
+                            Some(c) => Self::Basic(c),
+                            None => Self::Empty,
+                        },
+                        _ => other.intersection(self),
+                    },
+                    Set::Difference(s1, s2) => {
+                        s1.intersection(other).difference(s2.intersection(other))
+                    }
+                    Set::Union(s1, s2) => s1.intersection(other).union(s2.intersection(other)),
                 }
-                Set::Union(s1, s2) => s1.intersection(other).union(s2.intersection(other)),
+            }
+        }
+
+        /// Returns the difference of this set and another, i.e. this set with the
+        /// points of the other set removed if they intersect.
+        fn difference(self, other: Self) -> Self {
+            if self.is_empty() {
+                Self::Empty
+            } else if other.is_empty() {
+                self
+            } else {
+                Self::Difference(self.into(), other.into())
+            }
+        }
+
+        /// The union of this set and another.
+        fn union(self, other: Self) -> Self {
+            if self.is_empty() {
+                other
+            } else if other.is_empty() {
+                self
+            } else {
+                Self::Union(self.into(), other.into())
+            }
+        }
+
+        /// The number of points in this set.
+        pub fn num_points(&self) -> u64 {
+            match self {
+                Set::Empty => 0,
+                Set::Basic(c) => c.num_points(),
+                Set::Difference(s1, s2) => s1.num_points() - s1.intersection(s2).num_points(),
+                Set::Union(s1, s2) => {
+                    s1.num_points() + s2.num_points() - s1.intersection(s2).num_points()
+                }
             }
         }
     }
-
-    fn difference(self, other: Self) -> Self {
-        if self.is_empty() {
-            Self::Empty
-        } else if other.is_empty() {
-            self
-        } else {
-            Self::Difference(self.into(), other.into())
+    impl From<Cuboid> for Set {
+        fn from(c: Cuboid) -> Self {
+            Self::Basic(c)
         }
     }
-
-    fn union(self, other: Self) -> Self {
-        if self.is_empty() {
-            other
-        } else if other.is_empty() {
-            self
-        } else {
-            Self::Union(self.into(), other.into())
-        }
-    }
-
-    fn num_points(&self) -> u64 {
-        match self {
-            Set::Empty => 0,
-            Set::Basic(c) => c.num_points(),
-            Set::Difference(s1, s2) => s1.num_points() - s1.intersection(s2).num_points(),
-            Set::Union(s1, s2) => {
-                s1.num_points() + s2.num_points() - s1.intersection(s2).num_points()
-            }
+    impl FromIterator<RebootStep> for Set {
+        fn from_iter<T: IntoIterator<Item = RebootStep>>(iter: T) -> Self {
+            iter.into_iter().fold(Self::Empty, |set, step| match step {
+                RebootStep::On(c) => set.union(c.into()),
+                RebootStep::Off(c) => set.difference(c.into()),
+            })
         }
     }
 }
-impl From<Cuboid> for Set {
-    fn from(c: Cuboid) -> Self {
-        Self::Basic(c)
-    }
-}
-impl FromIterator<RebootStep> for Set {
-    fn from_iter<T: IntoIterator<Item = RebootStep>>(iter: T) -> Self {
-        iter.into_iter().fold(Self::Empty, |set, step| match step {
-            RebootStep::On(c) => set.union(c.into()),
-            RebootStep::Off(c) => set.difference(c.into()),
-        })
-    }
-}
 
+use solution::*;
+
+/// Solution struct.
 pub const SOLUTION: Solution = Solution {
     day: 22,
     name: "Reactor Reboot",
-    preprocessor: None,
+    preprocessor: Some(|input| {
+        Ok(Box::new(
+            RebootStep::gather(input.lines())?
+                .into_iter()
+                .collect::<Set>(),
+        )
+        .into())
+    }),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let steps = RebootStep::gather(input.expect_input()?.lines())?;
-            let set = steps
-                .into_iter()
-                .collect::<Set>()
-                .intersection(&Cuboid::cube(-50..=50).into());
-
             // Process
-            Ok(set.num_points().into())
+            Ok(input
+                .expect_data::<Set>()?
+                .intersection(&Cuboid::cube(-50..=50).into())
+                .num_points()
+                .into())
         },
         // Part two
         |input| {
-            // Generation
-            let steps = RebootStep::gather(input.expect_input()?.lines())?;
-            let set = steps.into_iter().collect::<Set>();
-
             // Process
-            Ok(set.num_points().into())
+            Ok(input.expect_data::<Set>()?.num_points().into())
         },
     ],
 };

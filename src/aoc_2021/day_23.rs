@@ -17,10 +17,12 @@ mod tests {
     }
 }
 
+/// Contains solution implementation items.
 mod solution {
     use super::*;
     use aoc::parse::trim;
     use enum_map::{Enum, EnumMap};
+    use infinitable::Infinitable;
     use lazy_static::lazy_static;
     use nom::{
         bytes::complete::tag,
@@ -34,8 +36,8 @@ mod solution {
         graph::NodeIndex,
         prelude::StableUnGraph,
     };
+    use shrinkwraprs::Shrinkwrap;
     use std::{
-        cmp::Ordering,
         collections::{BTreeSet, HashMap},
         fmt,
         iter::repeat_with,
@@ -45,32 +47,41 @@ mod solution {
     use strum::IntoEnumIterator;
     use strum_macros::EnumIter;
 
+    /// Behavior specific to one particular part of the problem.
     pub trait Part: Clone + Eq + std::hash::Hash {
+        /// The depth of the amphipod rooms, i.e. the number of spaces in each.
         const DEPTH: usize;
 
+        /// Returns the board for this part.
         fn board() -> &'static Board<Self>;
+
+        /// Adds in additional amphipod positions from the folded part of the diagram.
         fn add_folded(position_map: &mut PositionMap);
     }
+
+    /// Behavior for part one.
     #[derive(Clone, PartialEq, Eq, Hash)]
     pub struct PartOne;
     impl Part for PartOne {
         const DEPTH: usize = 2;
 
         fn board() -> &'static Board<Self> {
-            &BOARD_A
+            &BOARD_ONE
         }
 
         fn add_folded(_position_map: &mut PositionMap) {
             // No folded positions for this part
         }
     }
+
+    /// Behavior for part two.
     #[derive(Clone, PartialEq, Eq, Hash)]
     pub struct PartTwo;
     impl Part for PartTwo {
         const DEPTH: usize = 4;
 
         fn board() -> &'static Board<Self> {
-            &BOARD_B
+            &BOARD_TWO
         }
 
         fn add_folded(position_map: &mut PositionMap) {
@@ -88,11 +99,16 @@ mod solution {
         }
     }
 
+    /// An amphipod, which can be created from a [`char`].
     #[derive(Debug, Clone, Copy, Enum, EnumIter, PartialEq, Eq)]
     pub enum Amphipod {
+        /// An Amber amphipod (`A`).
         Amber,
+        /// An Bronze amphipod (`B`).
         Bronze,
+        /// An Copper amphipod (`C`).
         Copper,
+        /// An Desert amphipod (`D`).
         Desert,
     }
     impl From<char> for Amphipod {
@@ -120,6 +136,7 @@ mod solution {
         }
     }
     impl Amphipod {
+        /// The energy required for this amphipod to move one space.
         fn required_energy(&self) -> u64 {
             match self {
                 Amphipod::Amber => 1,
@@ -130,75 +147,63 @@ mod solution {
         }
     }
 
+    /// The type of space on a board.
     #[derive(Debug, Clone)]
     enum SpaceType {
+        /// A hall space.
         Hall,
+        /// A room space with the home amphipod type, and the position of the space,
+        /// with 0 being adjacent to the hall and highest number being the deepest.
         Room(Amphipod, usize),
     }
 
-    /// Integer measure for graph distances
-    #[derive(Clone, Copy, Debug, PartialEq)]
-    enum Distance {
-        Finite(u8),
-        Infinite,
-    }
+    /// The distance between two graph nodes.
+    #[derive(Shrinkwrap, Clone, Copy, Debug, PartialEq, PartialOrd)]
+    struct Distance(Infinitable<u8>);
     impl From<u8> for Distance {
         fn from(v: u8) -> Self {
-            Self::Finite(v)
+            Self(v.into())
         }
     }
     impl Default for Distance {
         fn default() -> Self {
-            Self::Finite(0)
-        }
-    }
-    impl PartialOrd for Distance {
-        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-            match self {
-                Distance::Finite(a) => match other {
-                    Distance::Finite(b) => a.partial_cmp(b),
-                    Distance::Infinite => Some(Ordering::Less),
-                },
-                Distance::Infinite => match other {
-                    Distance::Finite(_) => Some(Ordering::Greater),
-                    Distance::Infinite => None,
-                },
-            }
+            Self::zero()
         }
     }
     impl Add for Distance {
         type Output = Self;
 
         fn add(self, rhs: Self) -> Self::Output {
-            match self {
-                Distance::Finite(a) => match rhs {
-                    Distance::Finite(b) => Self::Finite(a + b),
-                    Distance::Infinite => Self::Infinite,
-                },
-                Distance::Infinite => Self::Infinite,
-            }
+            Self(*self + *rhs)
         }
     }
     impl FloatMeasure for Distance {
         fn zero() -> Self {
-            Self::Finite(0)
+            Self(0.into())
         }
 
         fn infinite() -> Self {
-            Self::Infinite
+            Self(Infinitable::Infinity)
         }
     }
 
+    /// The type of the graph used to model the board.
     type Graph = StableUnGraph<SpaceType, Distance>;
 
+    /// The board on which the amphipods move.
     #[derive(Clone)]
     pub struct Board<P> {
+        /// The graph model of the board.
         graph: Graph,
+        /// The graph nodes for the hall spaces.
         hall_spaces: Vec<NodeIndex>,
+        /// Map from the amphipod type to their home room space graph nodes.
         room_spaces: EnumMap<Amphipod, Vec<NodeIndex>>,
+        /// Phantom  data for the part of the problem.
         _phantom: PhantomData<P>,
     }
     impl<P: Part> Board<P> {
+        /// Create a new board for the part of the problem.
         fn new() -> Self {
             let mut graph = Graph::with_capacity(15, 18);
 
@@ -271,23 +276,35 @@ mod solution {
     }
 
     lazy_static! {
-        static ref BOARD_A: Board<PartOne> = Board::new();
-        static ref BOARD_B: Board<PartTwo> = Board::new();
+        /// Board for part one.
+        static ref BOARD_ONE: Board<PartOne> = Board::new();
+        /// Board for part two.
+        static ref BOARD_TWO: Board<PartTwo> = Board::new();
     }
+
+    /// Character to use for displaying the border of the board.
     const BORDER_DISP: &str = "#";
+    /// Character to use for displaying an empty space on the board.
     const EMPTY_DISP: &str = ".";
 
+    /// A move that an amphipod can make.
     #[derive(Debug)]
     struct Move<P: Part + 'static> {
+        /// Energy required to make the move.
         energy: u64,
+        /// The resulting amphipod positions after the move is made.
         new_position: Position<P>,
     }
 
+    /// Map of amphipod types to the nodes occupied by those amphipods.
     type PositionMap = EnumMap<Amphipod, BTreeSet<NodeIndex>>;
 
+    /// The positions of all amphipods, which can be parsed from text input.
     #[derive(PartialEq, Eq, Clone, Hash)]
     pub struct Position<P> {
+        /// The position map of the amphipods.
         positions: PositionMap,
+        /// Phantom data for the part of the problem.
         _phantom: PhantomData<P>,
     }
     impl<P: Part + 'static> Parseable<'_> for Position<P> {
@@ -403,13 +420,14 @@ mod solution {
             None
         }
 
-        /// Returns an iterator of all occupied spaces.
+        /// Returns an [`Iterator`] over all occupied spaces.
         fn occupied_spaces(&self) -> impl Iterator<Item = NodeIndex> + '_ {
             self.positions.values().flatten().copied()
         }
 
-        /// Returns the deepest space in a given room that is unoccupied.
-        /// None is returns if every room space is occupied.
+        /// Returns the deepest space in a given home room that is unoccupied.
+        ///
+        /// `None` is returned if every home room space is occupied.
         fn deepest_free_space(&self, room: Amphipod) -> Option<NodeIndex> {
             (0..P::DEPTH).rev().find_map(|depth| {
                 let node = P::board().room_spaces[room][depth];
@@ -437,7 +455,7 @@ mod solution {
             nodes.insert(new);
         }
 
-        /// Returns a vector of possible moves for all amphipods.
+        /// Returns a vector of all possible moves for all amphipods.
         fn moves(&self) -> Vec<Move<P>> {
             // NOTE: One principle we follow that is not a rule we never move an amphipod only partially into
             // a room, we always go as deep as possible. Likewise we never move an amphipod to a different space
@@ -497,10 +515,9 @@ mod solution {
                         let new_space_type = graph.node_weight(node).unwrap();
 
                         // Do not want to move to unreachable nodes
-                        let d = match paths.distances[node.index()] {
-                            Distance::Finite(d) => d,
-                            // Node is unreachable
-                            Distance::Infinite => return None,
+                        let d = match paths.distances[node.index()].finite() {
+                            Some(d) => d,
+                            None => return None,
                         };
                         // Do not want to move to our own space
                         if d == 0 {
@@ -539,10 +556,14 @@ mod solution {
             moves
         }
 
-        /// Runs a reursive algorithm to determine the minimum energy needed
-        /// to solve from this position.
+        /// Runs a recursive algorithm to determine the minimum energy needed
+        /// to solve from this position, i.e. to return all amphipods to their
+        /// home rooms
         pub fn minimal_energy(self) -> AocResult<u64> {
+            /// Internal trait for [`Position::minimal_energy`] that updates a minimum
+            /// value.
             trait Min<T> {
+                /// Update with a new minimum if it is less than the current minimum.
                 fn update_min(&mut self, v: T);
             }
             impl Min<u64> for Option<u64> {
@@ -554,7 +575,7 @@ mod solution {
                 }
             }
 
-            // Recursive function
+            /// Recursive internal function for [`Position::minimal_energy`].
             fn rec<P: Part + 'static>(
                 position: Position<P>,
                 seen: &mut HashMap<Position<P>, Option<u64>>,
@@ -573,7 +594,7 @@ mod solution {
                     return *e;
                 }
 
-                // Are we already a larger energy than the global minimium?
+                // Are we already a larger energy than the global minimum?
                 if let Some(e) = global_min_energy && current_energy >= e {
                     return None;
                 }

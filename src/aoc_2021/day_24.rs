@@ -69,7 +69,7 @@ mod solution {
     /// Type to use for ALU numbers.
     pub type Number = i64;
 
-    /// Represents one of the ALU registers.
+    /// Represents one of the ALU registers, which can be parsed from text input.
     #[derive(Debug, Enum, Clone, Copy)]
     pub enum Register {
         /// The `w` register.
@@ -99,9 +99,9 @@ mod solution {
     /// Represents an operand.
     #[derive(Debug)]
     enum Operand {
-        /// A [Register].
+        /// A register.
         Register(Register),
-        /// A [Number] literal.
+        /// A number literal.
         Number(Number),
     }
     impl<'a> Parseable<'a> for Operand {
@@ -123,7 +123,7 @@ mod solution {
         ReadInput(Register),
         /// `add` addition instruction.
         Add(Register, Operand),
-        /// `mul` multiplication instruction
+        /// `mul` multiplication instruction.
         Multiply(Register, Operand),
         /// `div` truncated division instruction.
         Divide(Register, Operand),
@@ -137,7 +137,9 @@ mod solution {
         where
             Self: Sized,
         {
-            /// [nom] parser to parse a pair of operands, or rather a [Register] then an [Operand]
+            /// Internal function of [`Instruction::parser`].
+            ///
+            /// [`nom`] parser to parse a pair of operands, or rather a [`Register`] then an [`Operand`].
             fn operands_parser(input: &str) -> NomParseResult<&str, (Register, Option<Operand>)> {
                 preceded(
                     space1,
@@ -282,22 +284,31 @@ mod solution {
         program: &Program,
         digit_iter: impl Iterator<Item = Number> + Clone,
     ) -> AocResult<Number> {
-        /// Determines a digit from the previous z and the b parameter.
+        /// Internal function of [`find_solution`].
+        ///
+        /// Determines a digit from the previous `z` and the `b` parameter.
         fn set_digit(z: Number, b: Number) -> Number {
             (z % 26) + b
         }
 
-        /// Determines the next z value based on the previous one.
+        /// Internal function of [`find_solution`].
+        ///
+        /// Determines the next `z` value based on the previous one.
         fn set_z(z: Number) -> Number {
             z / 26
         }
 
+        /// Internal function of [`find_solution`].
+        ///
         /// Tests whether a digit is valid (i.e. 1-9).
         fn valid_digit(d: Number) -> bool {
             (1..=9).contains(&d)
         }
 
-        /// Converts an array it digits into a [Number].
+        /// Internal function of [`find_solution`].
+        ///
+        /// Converts an array of digits into a number with the first digit being the
+        /// least significant.
         fn digits_to_number(digits: &[Number]) -> Number {
             digits
                 .iter()
