@@ -37,6 +37,7 @@ mod solution {
     type Questions = HashSet<char>;
 
     /// A set of questions with "yes" answers for a single person.
+    ///
     /// This can be parsed from text input.
     struct PersonQuestions {
         /// List of questions.

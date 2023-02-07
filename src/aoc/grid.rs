@@ -208,7 +208,9 @@ impl<T> Grid<T> {
     }
 }
 
+/// Create an object from a default [`Grid`].
 pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
+    /// The a default object from a default [`Grid`] of some `size`.
     fn default(size: GridSize) -> Self {
         Grid::default(size).into()
     }

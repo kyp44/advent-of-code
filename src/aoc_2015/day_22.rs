@@ -144,6 +144,7 @@ mod solution {
     }
 
     /// This is a workaround that allows [`Spell`] trait objects to be cloned.
+    ///
     /// See [this StackOverflow post](https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object).
     trait SpellClone {
         /// Clone the trait object.

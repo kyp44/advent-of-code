@@ -5,6 +5,7 @@ use quote::ToTokens;
 use syn::GenericArgument;
 use syn::{parse_macro_input, parse_quote, punctuated::Punctuated, DeriveInput, ItemImpl};
 
+/// TODO
 struct GenericParams(Punctuated<GenericArgument, syn::token::Comma>);
 impl syn::parse::Parse for GenericParams {
     fn parse(input: syn::parse::ParseStream) -> syn::parse::Result<Self> {

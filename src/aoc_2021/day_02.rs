@@ -26,6 +26,7 @@ mod solution {
     use nom::{branch::alt, combinator::map};
 
     /// A direction the submarine can move, depending on the problem part.
+    ///
     /// This can be parsed from text input.
     pub enum Direction {
         /// Increase horizontal position (part one) or both this and depth (part two) by some amount.

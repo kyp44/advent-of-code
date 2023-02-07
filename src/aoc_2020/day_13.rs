@@ -140,6 +140,7 @@ mod solution {
     }
 
     /// Returns `-d` modulo `m`.
+    ///
     /// Note that is correct and differs from `m - (d % m)` when `d == 0`.
     fn neg_modulo(d: u64, m: u64) -> u64 {
         let md: i64 = -TryInto::<i64>::try_into(d).unwrap();

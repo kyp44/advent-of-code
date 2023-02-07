@@ -100,6 +100,7 @@ mod solution {
         }
 
         /// Exploits the encryption by finding at least two contiguous numbers that sum to the number passed.
+        ///
         /// If such a contiguous set is found, returns the sum of the smallest and largest of these.
         pub fn exploit(&self, invalid_n: Number) -> Option<Number> {
             // Go through each number and look for the contiguous sequence

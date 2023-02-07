@@ -209,13 +209,6 @@ mod solution {
         }
     }
     impl Image {
-        /// Create a default blank image of a particular size.
-        fn default(size: GridSize) -> Self {
-            Self {
-                pixels: Grid::default(size),
-            }
-        }
-
         /// Returns this image rotated 90 degrees counter-clockwise
         fn rot_90(&self) -> Self {
             let size = self.pixels.size();
@@ -393,6 +386,7 @@ mod solution {
             self.pixels.all_values().filter_count(|v| **v)
         }
     }
+    impl GridDefault for Image {}
 
     /// A tile (an image from the satellite camera array), which can be parsed from text input.
     #[derive(Debug)]
