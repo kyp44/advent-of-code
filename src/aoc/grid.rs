@@ -1,5 +1,5 @@
 use core::slice::SlicePattern;
-use std::{cmp::Eq, collections::HashSet, hash::Hash};
+use std::{cmp::Eq, collections::HashSet, hash::Hash, str::FromStr};
 
 use super::prelude::*;
 use cgmath::Vector2;
@@ -208,6 +208,28 @@ impl<T> Grid<T> {
     }
 }
 
+/// Parsing a grid from characters for types that can be fallibly converted from
+/// characters.
+impl<T: TryFrom<char>> FromStr for Grid<T> {
+    type Err = AocError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let data = s
+            .lines()
+            .map(|line| {
+                line.chars()
+                    .map(|c| {
+                        T::try_from(c).map_err(|_| {
+                            AocError::InvalidInput(format!("Invalid character found: '{c}'").into())
+                        })
+                    })
+                    .collect()
+            })
+            .collect::<Result<_, _>>()?;
+        Self::from_data(data)
+    }
+}
+
 /// Create an object from a default [`Grid`].
 pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
     /// The a default object from a default [`Grid`] of some `size`.
@@ -215,6 +237,9 @@ pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
         Grid::default(size).into()
     }
 }
+
+/// Parse an object from characters that can be created from a [`Grid`].
+impl<T: TryFrom<char>, O: From<Grid<T>>> FromStr for O {}
 
 // A data structure that can be represented by a 2D grid of characters
 pub trait CharGrid<T> {

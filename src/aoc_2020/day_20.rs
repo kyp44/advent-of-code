@@ -386,7 +386,12 @@ mod solution {
             self.pixels.all_values().filter_count(|v| **v)
         }
     }
-    impl GridDefault for Image {}
+    impl From<Grid<bool>> for Image {
+        fn from(value: Grid<bool>) -> Self {
+            Self::new(value)
+        }
+    }
+    impl GridDefault<bool> for Image {}
 
     /// A tile (an image from the satellite camera array), which can be parsed from text input.
     #[derive(Debug)]

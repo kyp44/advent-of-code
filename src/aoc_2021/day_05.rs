@@ -153,6 +153,7 @@ mod solution {
             Self { grid: value }
         }
     }
+    impl GridDefault<u8> for FloorMap {}
     impl CharGrid<u8> for FloorMap {
         fn get_grid(&self) -> &Grid<u8> {
             &self.grid
@@ -186,7 +187,6 @@ mod solution {
             self.grid.all_values().filter_count(|v| **v > 1)
         }
     }
-    impl GridDefault<u8> for FloorMap {}
 
     /// Behavior specific to one particular part of the problem.
     pub trait Part {
