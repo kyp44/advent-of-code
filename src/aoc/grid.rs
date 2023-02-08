@@ -1,9 +1,9 @@
-use core::slice::SlicePattern;
-use std::{cmp::Eq, collections::HashSet, hash::Hash, str::FromStr};
-
 use super::prelude::*;
 use cgmath::Vector2;
+use core::slice::SlicePattern;
+use derive_more::{Deref, From, Into};
 use itertools::{iproduct, Itertools};
+use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
 // Specifies elements of a Grid
 pub type GridPoint = Vector2<usize>;
@@ -190,26 +190,10 @@ impl<T> Grid<T> {
         }
         out
     }
-
-    pub fn from_str<C: CharGrid<T>>(s: &str) -> AocResult<Self> {
-        let data = s
-            .lines()
-            .map(|line| {
-                line.chars()
-                    .map(|c| {
-                        C::from_char(c).ok_or_else(|| {
-                            AocError::InvalidInput(format!("Invalid character found: '{c}'").into())
-                        })
-                    })
-                    .collect()
-            })
-            .collect::<Result<_, _>>()?;
-        Self::from_data(data)
-    }
 }
 
-/// Parsing a grid from characters for types that can be fallibly converted from
-/// characters.
+/// Parsing a grid from a grid of characters for element types that can be fallibly
+/// converted from characters.
 impl<T: TryFrom<char>> FromStr for Grid<T> {
     type Err = AocError;
 
@@ -230,6 +214,22 @@ impl<T: TryFrom<char>> FromStr for Grid<T> {
     }
 }
 
+/// Debug display for grid whose elements implement [`Debug`].
+impl<T: fmt::Debug> fmt::Debug for Grid<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let size = self.size();
+        writeln!(
+            f,
+            "{}",
+            (0..size.y)
+                .map(|y| (0..size.x)
+                    .map(|x| format!("{:?}", self.get(&GridPoint::new(x, y))))
+                    .collect::<String>())
+                .join("\n")
+        )
+    }
+}
+
 /// Create an object from a default [`Grid`].
 pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
     /// The a default object from a default [`Grid`] of some `size`.
@@ -238,33 +238,21 @@ pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
     }
 }
 
-/// Parse an object from characters that can be created from a [`Grid`].
-impl<T: TryFrom<char>, O: From<Grid<T>>> FromStr for O {}
+/// Parse from a string of a grid characters with each row on a separate line.
+///
+/// Note that we cannot just blanket implement [`FromStr`] due to the orphan rule.
+trait GridFromStr<T>: Sized {
+    /// The error type if the conversion fails.
+    type Err;
 
-// A data structure that can be represented by a 2D grid of characters
-pub trait CharGrid<T> {
-    // Maps the read character to the Element.
-    fn from_char(c: char) -> Option<T>;
+    /// Create from a grid of characters.
+    fn from_str(s: &str) -> Result<Self, Self::Err>;
+}
+impl<T: TryFrom<char>, O: From<Grid<T>>> GridFromStr<T> for O {
+    type Err = AocError;
 
-    // Maps the Element to a character for display purposes.
-    fn to_char(e: &T) -> char;
-
-    // Retrieve the Grid
-    fn get_grid(&self) -> &Grid<T>;
-
-    // Formats the structure as a grid of characters.
-    fn out_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let grid = self.get_grid();
-        let size = grid.size();
-        writeln!(
-            f,
-            "{}",
-            (0..size.y)
-                .map(|y| (0..size.x)
-                    .map(|x| Self::to_char(grid.get(&GridPoint::new(x, y))))
-                    .collect::<String>())
-                .join("\n")
-        )
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(<Grid<T> as FromStr>::from_str(s)?.into())
     }
 }
 
@@ -286,11 +274,27 @@ pub trait CharGrid<T> {
 // Kind of Repr crate we could use (or we could write our own to easily access the
 // underlying value). Look at the shrinkwraprs crate.
 
-impl Grid<bool> {
-    pub fn as_coordinates(&self) -> HashSet<GridPoint> {
-        self.all_points().filter(|p| *self.get(p)).collect()
-    }
+#[derive(Deref, From, Into, Default, Clone, Copy)]
+struct StdBool(bool);
+impl TryFrom<char> for StdBool {
+    type Error = ();
 
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        match value {
+            '#' => Ok(true.into()),
+            '.' => Ok(false.into()),
+            _ => Err(()),
+        }
+    }
+}
+impl fmt::Debug for StdBool {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", if **self { '#' } else { '.' })
+    }
+}
+
+// Additional traits for grids with boolean-like elements.
+impl<T: From<bool> + Default + Clone> Grid<T> {
     pub fn from_coordinates(points: impl Iterator<Item = Vector2<isize>> + Clone) -> Self {
         let x_range = points.clone().map(|p| p.x).range().unwrap_or(0..=0);
         let y_range = points.clone().map(|p| p.y).range().unwrap_or(0..=0);
@@ -306,38 +310,20 @@ impl Grid<bool> {
                 (p.y - y_range.start()).try_into().unwrap(),
             )
         }) {
-            grid.set(&point, true);
+            grid.set(&point, true.into());
         }
         grid
     }
 }
-impl CharGrid<bool> for Grid<bool> {
-    fn get_grid(&self) -> &Grid<bool> {
-        self
-    }
-
-    fn from_char(c: char) -> Option<bool> {
-        match c {
-            '#' => Some(true),
-            '.' => Some(false),
-            _ => None,
-        }
-    }
-
-    fn to_char(e: &bool) -> char {
-        if *e {
-            '#'
-        } else {
-            '.'
-        }
-    }
-}
-impl core::fmt::Debug for Grid<bool> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.out_fmt(f)
+impl<T: Into<bool> + Clone> Grid<T> {
+    pub fn as_coordinates(&self) -> HashSet<GridPoint> {
+        self.all_points()
+            .filter(|p| Into::<bool>::into(self.get(p).clone()))
+            .collect()
     }
 }
 
+/*
 // Grid for single digit numbers
 impl CharGrid<u8> for Grid<u8> {
     fn get_grid(&self) -> &Grid<u8> {
@@ -356,4 +342,4 @@ impl core::fmt::Debug for Grid<u8> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.out_fmt(f)
     }
-}
+} */
