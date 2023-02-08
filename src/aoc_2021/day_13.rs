@@ -45,11 +45,10 @@ mod solution {
         combinator::map,
         sequence::{preceded, separated_pair},
     };
-    use shrinkwraprs::Shrinkwrap;
     use std::{collections::HashSet, fmt::Debug, rc::Rc};
 
     /// A dot location on the transparent page, which can be parsed from text input.
-    #[derive(Shrinkwrap, PartialEq, Eq, Hash, Clone)]
+    #[derive(PartialEq, Eq, Hash, Clone)]
     struct Dot(Vector2<isize>);
     impl Parseable<'_> for Dot {
         fn parser(input: &str) -> NomParseResult<&str, Self> {

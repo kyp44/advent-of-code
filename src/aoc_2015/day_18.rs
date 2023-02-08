@@ -23,6 +23,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use aoc::grid::StdBool;
     use maplit::hashset;
     use std::{collections::HashSet, marker::PhantomData};
 
@@ -56,34 +57,11 @@ mod solution {
     }
 
     /// The light grid evolver that can be parsed from text input.
-    #[derive(Clone, CharGridDebug)]
-    #[generics(PartTwo)]
     pub struct LightGrid<P> {
         /// The the actual grid.
-        grid: Grid<bool>,
+        grid: Grid<StdBool>,
         /// Phantom data for the part
         phant: PhantomData<P>,
-    }
-    impl<P: Part> CharGrid<bool> for LightGrid<P> {
-        fn from_char(c: char) -> Option<bool> {
-            match c {
-                '#' => Some(true),
-                '.' => Some(false),
-                _ => None,
-            }
-        }
-
-        fn to_char(e: &bool) -> char {
-            if *e {
-                '#'
-            } else {
-                '.'
-            }
-        }
-
-        fn get_grid(&self) -> &Grid<bool> {
-            &self.grid
-        }
     }
     impl<P: Part> FromStr for LightGrid<P> {
         type Err = AocError;

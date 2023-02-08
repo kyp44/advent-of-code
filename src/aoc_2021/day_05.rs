@@ -26,7 +26,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::parse::separated;
+    use aoc::{grid::Digit, parse::separated};
     use derive_new::new;
     use nom::{
         bytes::complete::tag,
@@ -143,38 +143,17 @@ mod solution {
     }
 
     /// Map of the ocean floor.
-    #[derive(CharGridDebug)]
     pub struct FloorMap {
         /// The grid of the number of lines that cover each integer point.
-        grid: Grid<u8>,
+        grid: Grid<Digit>,
     }
     impl From<Grid<u8>> for FloorMap {
         fn from(value: Grid<u8>) -> Self {
             Self { grid: value }
         }
     }
+    /// TODO: . => 0, n => n for n > 0
     impl GridDefault<u8> for FloorMap {}
-    impl CharGrid<u8> for FloorMap {
-        fn get_grid(&self) -> &Grid<u8> {
-            &self.grid
-        }
-
-        fn from_char(c: char) -> Option<u8> {
-            if c == '.' {
-                Some(0)
-            } else {
-                Grid::from_char(c)
-            }
-        }
-
-        fn to_char(e: &u8) -> char {
-            if *e == 0 {
-                '.'
-            } else {
-                Grid::to_char(e)
-            }
-        }
-    }
     impl FloorMap {
         /// Increments the number for a point.
         fn increment_point(&mut self, point: &GridPoint) {

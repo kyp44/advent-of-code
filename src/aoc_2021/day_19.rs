@@ -164,7 +164,6 @@ mod solution {
         sequence::{delimited, preceded},
         Finish,
     };
-    use shrinkwraprs::Shrinkwrap;
     use std::hash::Hash;
     use std::rc::Rc;
     use std::{collections::HashMap, ops::Sub};
@@ -176,7 +175,7 @@ mod solution {
     type Vector = Vector3<i32>;
 
     /// A 3D point in our coordinate system, which can be parsed from text input.
-    #[derive(Shrinkwrap, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct Point(Vector);
     impl Parseable<'_> for Point {
         fn parser(input: &str) -> NomParseResult<&str, Self> {

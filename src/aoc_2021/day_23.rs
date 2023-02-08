@@ -36,7 +36,6 @@ mod solution {
         graph::NodeIndex,
         prelude::StableUnGraph,
     };
-    use shrinkwraprs::Shrinkwrap;
     use std::{
         collections::{BTreeSet, HashMap},
         fmt,

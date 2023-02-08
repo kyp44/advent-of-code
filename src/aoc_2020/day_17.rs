@@ -19,6 +19,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use aoc::grid::StdBool;
     use cgmath::Vector2;
     use derive_new::new;
     use itertools::Itertools;
@@ -31,36 +32,11 @@ mod solution {
     #[derive(new)]
     pub struct Slice {
         /// Grid for the 2D slice.
-        grid: Grid<bool>,
+        grid: Grid<StdBool>,
     }
-    impl CharGrid<bool> for Slice {
-        fn get_grid(&self) -> &Grid<bool> {
-            &self.grid
-        }
-
-        fn from_char(c: char) -> Option<bool> {
-            match c {
-                '#' => Some(true),
-                '.' => Some(false),
-                _ => None,
-            }
-        }
-
-        fn to_char(e: &bool) -> char {
-            if *e {
-                '#'
-            } else {
-                '.'
-            }
-        }
-    }
-    impl FromStr for Slice {
-        type Err = AocError;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Ok(Self {
-                grid: Grid::from_str::<Self>(s)?,
-            })
+    impl From<Grid<StdBool>> for Slice {
+        fn from(value: Grid<StdBool>) -> Self {
+            Self { grid: value }
         }
     }
     impl Slice {

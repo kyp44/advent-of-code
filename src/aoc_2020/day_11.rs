@@ -154,27 +154,12 @@ mod solution {
         /// The grid of seats.
         grid: Grid<Seat>,
     }
-    impl CharGrid<Seat> for Area {
-        fn get_grid(&self) -> &Grid<Seat> {
-            &self.grid
-        }
-
-        fn from_char(c: char) -> Option<Seat> {
-            Some(c.into())
-        }
-
-        fn to_char(e: &Seat) -> char {
-            e.into()
-        }
-    }
-    impl FromStr for Area {
-        type Err = AocError;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Ok(Area {
+    impl From<Grid<Seat>> for Area {
+        fn from(value: Grid<Seat>) -> Self {
+            Self {
                 part: Part::PartOne,
-                grid: Grid::from_str::<Self>(s)?,
-            })
+                grid: value,
+            }
         }
     }
     impl Evolver<Seat> for Area {

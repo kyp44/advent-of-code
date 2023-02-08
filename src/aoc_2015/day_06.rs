@@ -21,6 +21,7 @@ turn off 499,499 through 500,500",
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use aoc::grid::{Digit, StdBool};
     use cgmath::Vector2;
     use itertools::iproduct;
     use nom::{
@@ -130,39 +131,37 @@ mod solution {
         /// Updates this light state based on the action.
         fn update(&mut self, action: &Action);
     }
-    impl Part for bool {
+    impl Part for StdBool {
         fn initial() -> Self {
-            false
+            false.into()
         }
 
         fn update(&mut self, action: &Action) {
             use Action::*;
-            match action {
-                TurnOn => *self = true,
-                Toggle => *self = !*self,
-                TurnOff => *self = false,
+            *self = match action {
+                TurnOn => true.into(),
+                Toggle => !*self,
+                TurnOff => false.into(),
             }
         }
     }
 
-    impl Part for u8 {
+    impl Part for Digit {
         fn initial() -> Self {
-            0
+            0.into()
         }
 
         fn update(&mut self, action: &Action) {
             use Action::*;
             match action {
-                TurnOn => *self += 1,
-                Toggle => *self += 2,
-                TurnOff => *self = self.saturating_sub(1),
+                TurnOn => *self += 1.into(),
+                Toggle => *self += 2.into(),
+                TurnOff => *self = self.saturating_sub(1).into(),
             }
         }
     }
 
     /// Grid of lights.
-    #[derive(CharGridDebug)]
-    #[generics(bool)]
     pub struct LightGrid<T> {
         /// Actual grid.
         grid: Grid<T>,
@@ -175,6 +174,11 @@ mod solution {
             }
         }
     }
+    impl<T: Part> From<Grid<T>> for LightGrid<T> {
+        fn from(value: Grid<T>) -> Self {
+            Self { grid: value }
+        }
+    }
     impl<T: Part> LightGrid<T> {
         /// Executes a list of instructions on the given light grid.
         pub fn execute_instruction(&mut self, instructions: &[Instruction]) {
@@ -185,41 +189,21 @@ mod solution {
             }
         }
     }
-    impl LightGrid<bool> {
+
+    impl LightGrid<StdBool> {
         /// Determines the number of lights that are lit.
         pub fn number_lit(&self) -> usize {
-            self.grid.all_values().filter_count(|b| **b)
-        }
-    }
-    impl CharGrid<bool> for LightGrid<bool> {
-        fn get_grid(&self) -> &Grid<bool> {
-            &self.grid
-        }
-
-        fn from_char(c: char) -> Option<bool> {
-            match c {
-                '#' => Some(true),
-                '.' => Some(false),
-                _ => None,
-            }
-        }
-
-        fn to_char(e: &bool) -> char {
-            if *e {
-                '#'
-            } else {
-                '.'
-            }
+            self.grid.all_values().filter_count(|b| ***b)
         }
     }
 
-    impl LightGrid<u8> {
+    impl LightGrid<Digit> {
         /// Calculates the total brightness across all of the lights.
         pub fn total_brightness(&self) -> u64 {
             self.grid
                 .all_values()
                 .copied()
-                .map::<u64, _>(|v| v.into())
+                .map::<u64, _>(|v| u64::from(*v))
                 .sum()
         }
     }
@@ -236,7 +220,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let mut light_grid = LightGrid::<bool>::new(1000);
+            let mut light_grid = LightGrid::new(1000);
             light_grid.execute_instruction(input.expect_data::<Vec<Instruction>>()?);
 
             // Print the grid just to see what it is
@@ -250,7 +234,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let mut light_grid = LightGrid::<u8>::new(1000);
+            let mut light_grid = LightGrid::new(1000);
             light_grid.execute_instruction(input.expect_data::<Vec<Instruction>>()?);
 
             // Process

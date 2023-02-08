@@ -124,6 +124,7 @@ Tile 3079:
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use aoc::grid::StdBool;
     use derive_new::new;
     use enum_map::{enum_map, Enum, EnumMap};
     use itertools::{iproduct, Itertools};
@@ -176,37 +177,10 @@ mod solution {
     }
 
     /// A general monochrome image, which can be parsed from text input.
-    #[derive(Clone, CharGridDebug, new)]
+    #[derive(Clone, new)]
     pub struct Image {
         /// Grid of pixels.
-        pixels: Grid<bool>,
-    }
-    impl CharGrid<bool> for Image {
-        fn get_grid(&self) -> &Grid<bool> {
-            &self.pixels
-        }
-
-        fn from_char(c: char) -> Option<bool> {
-            match c {
-                '#' => Some(true),
-                '.' => Some(false),
-                ' ' => Some(false),
-                _ => None,
-            }
-        }
-
-        fn to_char(e: &bool) -> char {
-            Grid::<bool>::to_char(e)
-        }
-    }
-    impl FromStr for Image {
-        type Err = AocError;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Ok(Image {
-                pixels: Grid::from_str::<Self>(s)?,
-            })
-        }
+        pixels: Grid<StdBool>,
     }
     impl Image {
         /// Returns this image rotated 90 degrees counter-clockwise

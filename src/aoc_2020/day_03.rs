@@ -28,42 +28,18 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use aoc::grid::StdBool;
     use cgmath::Zero;
     use derive_new::new;
 
     /// Map denoting open squares and trees, which can be parsed from text input.
     pub struct Map {
         /// Boolean grid for the hill denoting where trees are located.
-        grid: Grid<bool>,
+        grid: Grid<StdBool>,
     }
-    impl CharGrid<bool> for Map {
-        fn get_grid(&self) -> &Grid<bool> {
-            &self.grid
-        }
-
-        fn from_char(c: char) -> Option<bool> {
-            match c {
-                '#' => Some(true),
-                '.' => Some(false),
-                _ => None,
-            }
-        }
-
-        fn to_char(e: &bool) -> char {
-            if *e {
-                '#'
-            } else {
-                '.'
-            }
-        }
-    }
-    impl FromStr for Map {
-        type Err = AocError;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Ok(Self {
-                grid: Grid::from_str::<Self>(s)?,
-            })
+    impl From<Grid<StdBool>> for Map {
+        fn from(value: Grid<StdBool>) -> Self {
+            Self { grid: value }
         }
     }
     impl Map {

@@ -1,7 +1,7 @@
 use super::prelude::*;
 use cgmath::Vector2;
 use core::slice::SlicePattern;
-use derive_more::{Deref, From, Into};
+use derive_more::{Add, AddAssign, Deref, From, Into, Not, Sub, SubAssign};
 use itertools::{iproduct, Itertools};
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
@@ -191,109 +191,7 @@ impl<T> Grid<T> {
         out
     }
 }
-
-/// Parsing a grid from a grid of characters for element types that can be fallibly
-/// converted from characters.
-impl<T: TryFrom<char>> FromStr for Grid<T> {
-    type Err = AocError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let data = s
-            .lines()
-            .map(|line| {
-                line.chars()
-                    .map(|c| {
-                        T::try_from(c).map_err(|_| {
-                            AocError::InvalidInput(format!("Invalid character found: '{c}'").into())
-                        })
-                    })
-                    .collect()
-            })
-            .collect::<Result<_, _>>()?;
-        Self::from_data(data)
-    }
-}
-
-/// Debug display for grid whose elements implement [`Debug`].
-impl<T: fmt::Debug> fmt::Debug for Grid<T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let size = self.size();
-        writeln!(
-            f,
-            "{}",
-            (0..size.y)
-                .map(|y| (0..size.x)
-                    .map(|x| format!("{:?}", self.get(&GridPoint::new(x, y))))
-                    .collect::<String>())
-                .join("\n")
-        )
-    }
-}
-
-/// Create an object from a default [`Grid`].
-pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
-    /// The a default object from a default [`Grid`] of some `size`.
-    fn default(size: GridSize) -> Self {
-        Grid::default(size).into()
-    }
-}
-
-/// Parse from a string of a grid characters with each row on a separate line.
-///
-/// Note that we cannot just blanket implement [`FromStr`] due to the orphan rule.
-trait GridFromStr<T>: Sized {
-    /// The error type if the conversion fails.
-    type Err;
-
-    /// Create from a grid of characters.
-    fn from_str(s: &str) -> Result<Self, Self::Err>;
-}
-impl<T: TryFrom<char>, O: From<Grid<T>>> GridFromStr<T> for O {
-    type Err = AocError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(<Grid<T> as FromStr>::from_str(s)?.into())
-    }
-}
-
-// TODO: Can we add a from_grid required method and then implement FromStr?
-// This would be useful at least in the 2020 day 17 problem, but would need
-// to go look for other use cases.
-// This might makes sense to implement From<str> when From<Grid> is implemented.
-// This does not compile and we might need to post it somewhere as it's not clear
-// how to accomplish this.
-//impl<T, S: From<Grid<T>> + CharGrid<T>> FromStr for S {}
-// I think the best way to refactor this is perhaps to generally use the Newtype
-// pattern for grid elements so that a character conversion can be implemented for
-// these. The current CharGrid trait is weird in that it's implemented on the grid
-// as a whole. There may be crates that help with the Newtype pattern or we could do
-// our own in terms of easily working with the underlying value. Also we could have
-// a general Digit(u8) for most of our u8 grids, and maybe something similar for the
-// current Grid<bool> implementations, though or maybe some special trait for boolean-
-// like Newtypes for the useful methods there (e.g. as_coordinates). Maybe there is some
-// Kind of Repr crate we could use (or we could write our own to easily access the
-// underlying value). Look at the shrinkwraprs crate.
-
-#[derive(Deref, From, Into, Default, Clone, Copy)]
-struct StdBool(bool);
-impl TryFrom<char> for StdBool {
-    type Error = ();
-
-    fn try_from(value: char) -> Result<Self, Self::Error> {
-        match value {
-            '#' => Ok(true.into()),
-            '.' => Ok(false.into()),
-            _ => Err(()),
-        }
-    }
-}
-impl fmt::Debug for StdBool {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", if **self { '#' } else { '.' })
-    }
-}
-
-// Additional traits for grids with boolean-like elements.
+// Additional methods for grids with boolean-like elements.
 impl<T: From<bool> + Default + Clone> Grid<T> {
     pub fn from_coordinates(points: impl Iterator<Item = Vector2<isize>> + Clone) -> Self {
         let x_range = points.clone().map(|p| p.x).range().unwrap_or(0..=0);
@@ -322,24 +220,104 @@ impl<T: Into<bool> + Clone> Grid<T> {
             .collect()
     }
 }
+/// Parsing a grid from a grid of characters with each row on a separate line.
+///
+/// This can be done for element types that can be fallibly converted from characters.
+impl<T: TryFrom<char>> FromStr for Grid<T> {
+    type Err = AocError;
 
-/*
-// Grid for single digit numbers
-impl CharGrid<u8> for Grid<u8> {
-    fn get_grid(&self) -> &Grid<u8> {
-        self
-    }
-
-    fn from_char(c: char) -> Option<u8> {
-        c.to_digit(10).map(|d| d.try_into().unwrap())
-    }
-
-    fn to_char(e: &u8) -> char {
-        char::from_digit((*e).into(), 10).unwrap()
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let data = s
+            .lines()
+            .map(|line| {
+                line.chars()
+                    .map(|c| {
+                        T::try_from(c).map_err(|_| {
+                            AocError::InvalidInput(format!("Invalid character found: '{c}'").into())
+                        })
+                    })
+                    .collect()
+            })
+            .collect::<Result<_, _>>()?;
+        Self::from_data(data)
     }
 }
-impl core::fmt::Debug for Grid<u8> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.out_fmt(f)
+/// Debug display for grid whose elements implement [`Debug`].
+impl<T: fmt::Debug> fmt::Debug for Grid<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let size = self.size();
+        writeln!(
+            f,
+            "{}",
+            (0..size.y)
+                .map(|y| (0..size.x)
+                    .map(|x| format!("{:?}", self.get(&GridPoint::new(x, y))))
+                    .collect::<String>())
+                .join("\n")
+        )
     }
-} */
+}
+
+/// Create an object from a default [`Grid`].
+pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
+    /// The a default object from a default [`Grid`] of some `size`.
+    fn default(size: GridSize) -> Self {
+        Grid::default(size).into()
+    }
+}
+/// Parse objects that can be created from a grid from a grid of characters.
+///
+/// Note that we cannot just blanket implement [`FromStr`] due to the orphan rule.
+trait GridFromStr<T>: Sized {
+    /// The error type if the conversion fails.
+    type Err;
+
+    /// Create from a grid of characters.
+    fn from_str(s: &str) -> Result<Self, Self::Err>;
+}
+impl<T: TryFrom<char>, O: From<Grid<T>>> GridFromStr<T> for O {
+    type Err = AocError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(<Grid<T> as FromStr>::from_str(s)?.into())
+    }
+}
+
+/// Standard boolean grid element where '.' is false and '#' is true.
+#[derive(Deref, From, Into, Not, Default, Clone, Copy)]
+pub struct StdBool(bool);
+impl TryFrom<char> for StdBool {
+    type Error = ();
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        match value {
+            '#' => Ok(true.into()),
+            '.' => Ok(false.into()),
+            _ => Err(()),
+        }
+    }
+}
+impl fmt::Debug for StdBool {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", if **self { '#' } else { '.' })
+    }
+}
+
+/// Grid of numbers parsed from digit characters.
+#[derive(Deref, From, Into, Default, Clone, Copy, Add, Sub, AddAssign, SubAssign)]
+pub struct Digit(u8);
+impl TryFrom<char> for Digit {
+    type Error = ();
+
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        value
+            .to_digit(10)
+            .map(|d| Self(d.try_into().unwrap()))
+            .ok_or(())
+    }
+}
+impl fmt::Debug for Digit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", **self)
+    }
+}
