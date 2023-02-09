@@ -124,7 +124,7 @@ Tile 3079:
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::grid::StdBool;
+    use derive_more::{Deref, From, Into};
     use derive_new::new;
     use enum_map::{enum_map, Enum, EnumMap};
     use itertools::{iproduct, Itertools};
@@ -176,11 +176,31 @@ mod solution {
         Rot90FlipV,
     }
 
+    #[derive(Deref, From, Into, Default, Clone, Copy)]
+    pub struct Pixel(bool);
+    impl TryFrom<char> for Pixel {
+        type Error = ();
+
+        fn try_from(value: char) -> Result<Self, Self::Error> {
+            match value {
+                '#' => Ok(true.into()),
+                '.' => Ok(false.into()),
+                ' ' => Ok(false.into()),
+                _ => Err(()),
+            }
+        }
+    }
+    impl fmt::Debug for Pixel {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{}", if **self { '#' } else { '.' })
+        }
+    }
+
     /// A general monochrome image, which can be parsed from text input.
-    #[derive(Clone, new)]
+    #[derive(Clone, new, Debug)]
     pub struct Image {
         /// Grid of pixels.
-        pixels: Grid<StdBool>,
+        pixels: Grid<Pixel>,
     }
     impl Image {
         /// Returns this image rotated 90 degrees counter-clockwise
@@ -305,7 +325,7 @@ mod solution {
                         .pixels
                         .all_values()
                         .zip(sub_image.all_values())
-                        .all(|(pi, ps)| !pi || *ps)
+                        .all(|(pi, ps)| !**pi || **ps)
                     {
                         Some(point)
                     } else {
@@ -323,8 +343,8 @@ mod solution {
         /// are left unchanged in this image.
         fn subtract(&mut self, point: &GridPoint, image: &Self) {
             for image_point in image.pixels.all_points() {
-                if *image.pixels.get(&image_point) {
-                    self.pixels.set(&(point + image_point), false);
+                if **image.pixels.get(&image_point) {
+                    self.pixels.set(&(point + image_point), false.into());
                 }
             }
         }
@@ -332,7 +352,7 @@ mod solution {
         /// Fins the sea monster in whatever orientation necessary and subtracts it,
         /// returning the subtracted image.
         pub fn find_and_subtract_sea_monster(&self) -> AocResult<Self> {
-            let sea_monster: Image = Image::from_str(
+            let sea_monster: Image = Image::from_grid_str(
                 "                  # 
 #    ##    ##    ###
  #  #  #  #  #  #   ",
@@ -357,15 +377,15 @@ mod solution {
 
         /// Counts the set pixels.
         pub fn count_set_pixels(&self) -> u64 {
-            self.pixels.all_values().filter_count(|v| **v)
+            self.pixels.all_values().filter_count(|v| ***v)
         }
     }
-    impl From<Grid<bool>> for Image {
-        fn from(value: Grid<bool>) -> Self {
+    impl From<Grid<Pixel>> for Image {
+        fn from(value: Grid<Pixel>) -> Self {
             Self::new(value)
         }
     }
-    impl GridDefault<bool> for Image {}
+    impl GridDefault<Pixel> for Image {}
 
     /// A tile (an image from the satellite camera array), which can be parsed from text input.
     #[derive(Debug)]
@@ -389,7 +409,7 @@ mod solution {
                 pair(tag(":"), line_ending),
             )(s)
             .finish()?;
-            let full_image = Image::from_str(image_str)?;
+            let full_image = Image::from_grid_str(image_str)?;
 
             // Verify the tile dimensions
             let size = full_image.pixels.size().x;
@@ -408,10 +428,10 @@ mod solution {
 
             // Pull out the edges
             let edges: EnumMap<_, Vec<bool>> = enum_map! {
-                Edge::Top => full_image.pixels.row_iter(0).cloned().collect(),
-                Edge::Bottom => full_image.pixels.row_iter(full_image.pixels.size().y-1).cloned().collect(),
-                Edge::Left => full_image.pixels.col_iter(0).cloned().collect(),
-                Edge::Right => full_image.pixels.col_iter(full_image.pixels.size().x - 1).cloned().collect(),
+                Edge::Top => full_image.pixels.row_iter(0).map(|sb| **sb).collect(),
+                Edge::Bottom => full_image.pixels.row_iter(full_image.pixels.size().y-1).map(|sb| **sb).collect(),
+                Edge::Left => full_image.pixels.col_iter(0).map(|sb| **sb).collect(),
+                Edge::Right => full_image.pixels.col_iter(full_image.pixels.size().x - 1).map(|sb| **sb).collect(),
             };
             let mut edges_reversed = EnumMap::default();
             for (k, v) in edges.iter() {

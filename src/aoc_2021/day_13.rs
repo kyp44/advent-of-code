@@ -37,8 +37,9 @@ fold along x=5",
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::parse::trim;
+    use aoc::{grid::StdBool, parse::trim};
     use cgmath::Vector2;
+    use derive_more::{AsRef, Deref};
     use nom::{
         bytes::complete::tag,
         character::complete::{multispace1, one_of},
@@ -48,7 +49,7 @@ mod solution {
     use std::{collections::HashSet, fmt::Debug, rc::Rc};
 
     /// A dot location on the transparent page, which can be parsed from text input.
-    #[derive(PartialEq, Eq, Hash, Clone)]
+    #[derive(Deref, AsRef, PartialEq, Eq, Hash, Clone)]
     struct Dot(Vector2<isize>);
     impl Parseable<'_> for Dot {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
@@ -86,8 +87,11 @@ mod solution {
     }
     impl Debug for Page {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let grid = Grid::from_coordinates(self.dots.iter().map(|d| **d));
-            write!(f, "{grid:?}")
+            write!(
+                f,
+                "{:?}",
+                Grid::<StdBool>::from_coordinates(self.dots.iter().map(|d| **d))
+            )
         }
     }
     impl Page {

@@ -147,23 +147,22 @@ mod solution {
         /// The grid of the number of lines that cover each integer point.
         grid: Grid<Digit>,
     }
-    impl From<Grid<u8>> for FloorMap {
-        fn from(value: Grid<u8>) -> Self {
+    impl From<Grid<Digit>> for FloorMap {
+        fn from(value: Grid<Digit>) -> Self {
             Self { grid: value }
         }
     }
-    /// TODO: . => 0, n => n for n > 0
-    impl GridDefault<u8> for FloorMap {}
+    impl GridDefault<Digit> for FloorMap {}
     impl FloorMap {
         /// Increments the number for a point.
         fn increment_point(&mut self, point: &GridPoint) {
-            *self.grid.element_at(point) += 1;
+            *self.grid.element_at(point) += 1.into();
         }
 
         /// Counts the number of integer points that have more than one vent
         /// overlapping there.
         pub fn num_overlap_points(&self) -> u64 {
-            self.grid.all_values().filter_count(|v| **v > 1)
+            self.grid.all_values().filter_count(|v| **v > 1.into())
         }
     }
 

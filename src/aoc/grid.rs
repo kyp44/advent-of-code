@@ -268,17 +268,17 @@ pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
 /// Parse objects that can be created from a grid from a grid of characters.
 ///
 /// Note that we cannot just blanket implement [`FromStr`] due to the orphan rule.
-trait GridFromStr<T>: Sized {
+pub trait FromGridStr<T>: Sized {
     /// The error type if the conversion fails.
     type Err;
 
     /// Create from a grid of characters.
-    fn from_str(s: &str) -> Result<Self, Self::Err>;
+    fn from_grid_str(s: &str) -> Result<Self, Self::Err>;
 }
-impl<T: TryFrom<char>, O: From<Grid<T>>> GridFromStr<T> for O {
+impl<T: TryFrom<char>, O: From<Grid<T>>> FromGridStr<T> for O {
     type Err = AocError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_grid_str(s: &str) -> Result<Self, Self::Err> {
         Ok(<Grid<T> as FromStr>::from_str(s)?.into())
     }
 }
@@ -304,7 +304,22 @@ impl fmt::Debug for StdBool {
 }
 
 /// Grid of numbers parsed from digit characters.
-#[derive(Deref, From, Into, Default, Clone, Copy, Add, Sub, AddAssign, SubAssign)]
+#[derive(
+    Deref,
+    From,
+    Into,
+    Default,
+    Clone,
+    Copy,
+    Add,
+    Sub,
+    AddAssign,
+    SubAssign,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+)]
 pub struct Digit(u8);
 impl TryFrom<char> for Digit {
     type Error = ();

@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -39,6 +38,11 @@ mod solution {
             Self { grid: value }
         }
     }
+    impl Debug for Slice {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            Debug::fmt(&self.grid, f)
+        }
+    }
     impl Slice {
         /// Initialize a new pocket dimension with this slice.
         pub fn initialize_pocket_dimension(&self, dimensions: usize) -> AocResult<PocketDimension> {
@@ -63,7 +67,7 @@ mod solution {
                     .map(|i| ranges[i].clone())
                     .multi_cartesian_product()
                 {
-                    let slice = Slice::new(Grid::<bool>::from_coordinates(
+                    let slice = Slice::new(Grid::<StdBool>::from_coordinates(
                         self.active_cubes
                             .iter()
                             .filter(|pt| pt[2..] == coords)
@@ -79,13 +83,13 @@ mod solution {
                             .map(|(i, v)| format!("x{} = {}", i + 3, v))
                             .join(", ")
                     )?;
-                    slice.out_fmt(f)?;
+                    Debug::fmt(&slice, f)?;
                 }
             } else {
-                let slice = Slice::new(Grid::<bool>::from_coordinates(
+                let slice = Slice::new(Grid::<StdBool>::from_coordinates(
                     self.active_cubes.iter().map(|v| Vector2::new(v[0], v[1])),
                 ));
-                slice.out_fmt(f)?;
+                Debug::fmt(&slice, f)?;
             }
 
             Ok(())
@@ -195,7 +199,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 17,
     name: "Conway Cubes",
-    preprocessor: Some(|input| Ok(Box::new(Slice::from_str(input)?).into())),
+    preprocessor: Some(|input| Ok(Box::new(Slice::from_grid_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {

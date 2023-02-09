@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -46,7 +45,7 @@ mod solution {
         /// Returns whether a certain point on the map is a tree or not.
         fn is_tree(&self, point: &GridPoint) -> bool {
             let x = point.x % self.grid.size().x;
-            *self.grid.get(&GridPoint::new(x, point.y))
+            **self.grid.get(&GridPoint::new(x, point.y))
         }
     }
 
@@ -93,7 +92,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 3,
     name: "Toboggan Trajectory",
-    preprocessor: Some(|input| Ok(Box::new(Map::from_str(input)?).into())),
+    preprocessor: Some(|input| Ok(Box::new(Map::from_grid_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {

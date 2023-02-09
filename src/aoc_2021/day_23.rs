@@ -21,6 +21,7 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::parse::trim;
+    use derive_more::{Add, Deref, From};
     use enum_map::{Enum, EnumMap};
     use infinitable::Infinitable;
     use lazy_static::lazy_static;
@@ -41,7 +42,6 @@ mod solution {
         fmt,
         iter::repeat_with,
         marker::PhantomData,
-        ops::Add,
     };
     use strum::IntoEnumIterator;
     use strum_macros::EnumIter;
@@ -157,23 +157,11 @@ mod solution {
     }
 
     /// The distance between two graph nodes.
-    #[derive(Shrinkwrap, Clone, Copy, Debug, PartialEq, PartialOrd)]
+    #[derive(Deref, From, Add, Clone, Copy, Debug, PartialEq, PartialOrd)]
     struct Distance(Infinitable<u8>);
-    impl From<u8> for Distance {
-        fn from(v: u8) -> Self {
-            Self(v.into())
-        }
-    }
     impl Default for Distance {
         fn default() -> Self {
             Self::zero()
-        }
-    }
-    impl Add for Distance {
-        type Output = Self;
-
-        fn add(self, rhs: Self) -> Self::Output {
-            Self(*self + *rhs)
         }
     }
     impl FloatMeasure for Distance {
@@ -206,14 +194,18 @@ mod solution {
         fn new() -> Self {
             let mut graph = Graph::with_capacity(15, 18);
 
+            // Some oft-used [`Infinitable`] values
+            let inf_one = Infinitable::from(1).into();
+            let inf_two = Infinitable::from(2).into();
+
             // All the hall spaces
             let hall_spaces: Vec<_> = repeat_with(|| graph.add_node(SpaceType::Hall))
                 .take(7)
                 .collect();
 
             // Connect the end hall spaces
-            graph.add_edge(hall_spaces[0], hall_spaces[1], 1.into());
-            graph.add_edge(hall_spaces[5], hall_spaces[6], 1.into());
+            graph.add_edge(hall_spaces[0], hall_spaces[1], inf_one);
+            graph.add_edge(hall_spaces[5], hall_spaces[6], inf_one);
 
             // Build and connect the side rooms
             let room_spaces = Amphipod::iter()
@@ -224,15 +216,15 @@ mod solution {
                     for ri in 0..P::DEPTH {
                         rooms.push(graph.add_node(SpaceType::Room(amph, ri)));
                         if ri == 0 {
-                            graph.add_edge(hall_spaces[ai + 1], rooms[0], 2.into());
-                            graph.add_edge(hall_spaces[ai + 2], rooms[0], 2.into());
+                            graph.add_edge(hall_spaces[ai + 1], rooms[0], inf_two);
+                            graph.add_edge(hall_spaces[ai + 2], rooms[0], inf_two);
                         } else {
-                            graph.add_edge(rooms[ri - 1], rooms[ri], 1.into());
+                            graph.add_edge(rooms[ri - 1], rooms[ri], inf_one);
                         }
                     }
 
                     // Connect the hall nodes
-                    graph.add_edge(hall_spaces[ai + 1], hall_spaces[ai + 2], 2.into());
+                    graph.add_edge(hall_spaces[ai + 1], hall_spaces[ai + 2], inf_two);
 
                     (amph, rooms)
                 })

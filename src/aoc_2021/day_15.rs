@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -26,6 +25,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use aoc::grid::Digit;
     use cgmath::Zero;
     use priority_queue::PriorityQueue;
     use std::{cmp::Reverse, collections::HashMap};
@@ -33,15 +33,11 @@ mod solution {
     /// The risk level grid, which can be parsed from text input.
     pub struct RiskLevels {
         /// The grid of risk levels.
-        grid: Grid<u8>,
+        grid: Grid<Digit>,
     }
-    impl FromStr for RiskLevels {
-        type Err = AocError;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Ok(Self {
-                grid: Grid::from_str::<Grid<u8>>(s)?,
-            })
+    impl From<Grid<Digit>> for RiskLevels {
+        fn from(value: Grid<Digit>) -> Self {
+            Self { grid: value }
         }
     }
     impl RiskLevels {
@@ -61,7 +57,7 @@ mod solution {
             loop {
                 let (current, dist) = queue.pop().unwrap();
                 for neighbor in self.grid.neighbor_points(&current, false, false) {
-                    let alt_dist = dist.0 + u64::from(*self.grid.get(&neighbor));
+                    let alt_dist = dist.0 + u64::from(**self.grid.get(&neighbor));
                     match queue.get_priority(&neighbor) {
                         Some(d) => {
                             if alt_dist < d.0 {
@@ -88,7 +84,7 @@ mod solution {
             /// Sub-function of [`RiskLevels::full_map`] that adds two risk level, wrapping around
             /// if the sum is greater than 9.
             ///
-            /// TODO: This can be implemented as the [`std::ops::Add`] trait on the wrapper type once [`Grid`] is refactored.
+            /// TODO: This may be better implemented as a modulo number (off by one I think).
             fn add_wrap(a: u8, b: u8) -> u8 {
                 let s = a + b;
                 if s > 9 {
@@ -102,16 +98,16 @@ mod solution {
             for row in self.grid.rows_iter() {
                 base_rows.push(
                     (0..n)
-                        .flat_map(|i| row.iter().map(move |r| add_wrap(*r, i)))
+                        .flat_map(|i| row.iter().map(move |r| add_wrap(**r, i)))
                         .collect(),
                 );
             }
 
             // Now duplicate all the rows
-            let mut rows: Vec<Box<[u8]>> = Vec::new();
+            let mut rows: Vec<Box<[Digit]>> = Vec::new();
             for i in 0..n {
                 for row in base_rows.iter() {
-                    rows.push(row.iter().map(|r| add_wrap(*r, i)).collect())
+                    rows.push(row.iter().map(|r| add_wrap(*r, i).into()).collect())
                 }
             }
 
@@ -128,7 +124,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 15,
     name: "Chiton",
-    preprocessor: Some(|input| Ok(Box::new(RiskLevels::from_str(input)?).into())),
+    preprocessor: Some(|input| Ok(Box::new(RiskLevels::from_grid_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {

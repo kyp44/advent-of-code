@@ -30,22 +30,23 @@ mod solution {
     /// Behavior specific to one particular part of the problem.
     pub trait Part {
         /// Given a grid, returns the set of lights that are stuck on.
-        fn stuck_points(_grid: &Grid<bool>) -> HashSet<GridPoint> {
-            // No stuck points by default
+        fn stuck_points(grid: &Grid<StdBool>) -> HashSet<GridPoint>;
+    }
+
+    /// Behavior for part one.
+    #[derive(Clone)]
+    pub struct PartOne;
+    impl Part for PartOne {
+        fn stuck_points(_grid: &Grid<StdBool>) -> HashSet<GridPoint> {
             HashSet::new()
         }
     }
-    #[derive(Clone)]
-
-    /// Behavior for part one.
-    pub struct PartOne;
-    impl Part for PartOne {}
-    #[derive(Clone)]
 
     /// Behavior for part two.
+    #[derive(Clone)]
     pub struct PartTwo;
     impl Part for PartTwo {
-        fn stuck_points(grid: &Grid<bool>) -> HashSet<GridPoint> {
+        fn stuck_points(grid: &Grid<StdBool>) -> HashSet<GridPoint> {
             let size = grid.size();
             hashset![
                 GridPoint::new(0, 0),
@@ -57,6 +58,7 @@ mod solution {
     }
 
     /// The light grid evolver that can be parsed from text input.
+    #[derive(Clone)]
     pub struct LightGrid<P> {
         /// The the actual grid.
         grid: Grid<StdBool>,
@@ -67,9 +69,9 @@ mod solution {
         type Err = AocError;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
-            let mut grid = Grid::from_str::<Self>(s)?;
+            let mut grid = Grid::<StdBool>::from_str(s)?;
             for point in P::stuck_points(&grid) {
-                grid.set(&point, true);
+                grid.set(&point, true.into());
             }
             Ok(Self {
                 grid,
@@ -88,11 +90,11 @@ mod solution {
         }
 
         fn get_element(&self, point: &Self::Point) -> bool {
-            *self.grid.get(point)
+            **self.grid.get(point)
         }
 
         fn set_element(&mut self, point: &Self::Point, value: bool) {
-            self.grid.set(point, value)
+            self.grid.set(point, value.into())
         }
 
         fn next_cell(&self, point: &Self::Point) -> bool {
@@ -117,7 +119,8 @@ mod solution {
     impl<P: Part> LightGrid<P> {
         /// Returns the number of lights that are on.
         fn lights_on(&self) -> u64 {
-            self.next_iter().filter_count(|point| *self.grid.get(point))
+            self.next_iter()
+                .filter_count(|point| **self.grid.get(point))
         }
     }
 

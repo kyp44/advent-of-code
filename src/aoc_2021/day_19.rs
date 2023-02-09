@@ -154,6 +154,7 @@ mod solution {
     use super::*;
     use aoc::parse::trim;
     use cgmath::{Quaternion, Vector3, Zero};
+    use derive_more::{Add, Deref, Sub};
     use derive_new::new;
     use itertools::{iproduct, Itertools};
     use maplit::hashset;
@@ -165,9 +166,10 @@ mod solution {
         Finish,
     };
     use std::hash::Hash;
-    use std::rc::Rc;
-    use std::{collections::HashMap, ops::Sub};
-    use std::{collections::HashSet, ops::Add};
+    use std::{
+        collections::{HashMap, HashSet},
+        rc::Rc,
+    };
     use strum::IntoEnumIterator;
     use strum_macros::EnumIter;
 
@@ -175,7 +177,7 @@ mod solution {
     type Vector = Vector3<i32>;
 
     /// A 3D point in our coordinate system, which can be parsed from text input.
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+    #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, Add, Sub)]
     pub struct Point(Vector);
     impl Parseable<'_> for Point {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
@@ -334,7 +336,7 @@ mod solution {
         /// Transposes a point relative to scanner B to be relative
         /// to scanner A.
         fn transpose_point(&self, point: Point) -> Point {
-            Point(self.rotation.rotate_point(point).add(*self.location))
+            self.rotation.rotate_point(point) + self.location
         }
 
         /// Composes transpositions.
@@ -343,11 +345,7 @@ mod solution {
         /// to B, then the result transposes C to A.
         fn compose(self, other: Self) -> Self {
             Self {
-                location: Point(
-                    self.rotation
-                        .rotate_point(other.location)
-                        .add(*self.location),
-                ),
+                location: self.rotation.rotate_point(other.location) + self.location,
                 rotation: other.rotation.compose(self.rotation),
             }
         }
@@ -401,23 +399,23 @@ mod solution {
             // First try every possible orientation
             for rotation in RotationQuaternion::orientations() {
                 // Try every pairing of points to find the relative difference
-                let other_points: HashSet<Vector> = other
+                let other_points: HashSet<Point> = other
                     .points
                     .iter()
-                    .map(|p| *rotation.rotate_point(*p))
+                    .map(|p| rotation.rotate_point(*p))
                     .collect();
                 for (ps, po) in iproduct!(self.points.iter(), other_points.iter()) {
-                    let delta = ps.sub(po);
+                    let delta = *ps - *po;
                     if self
                         .points
                         .iter()
-                        .filter(|p| other_points.contains(&(p.sub(delta))))
+                        .filter(|p| other_points.contains(&(**p - delta)))
                         .count()
                         >= 12
                     {
                         // We have a sufficient number of correlated points!
                         return Some(Transposer {
-                            location: Point(delta),
+                            location: delta,
                             rotation,
                         });
                     }
@@ -518,7 +516,7 @@ mod solution {
         /// Determines the maximum Manhattan distance between any two scanners.
         pub fn max_scanner_distance(&self) -> i32 {
             iproduct!(self.correlations.values(), self.correlations.values())
-                .map(|(ta, tb)| ta.location.sub(*tb.location).manhattan_len())
+                .map(|(ta, tb)| (ta.location - tb.location).manhattan_len())
                 .max()
                 .unwrap()
         }

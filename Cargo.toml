@@ -24,7 +24,6 @@ debug = true
 # a foreign trait on a foreign struct).
 #nom-supreme = "0.4.4"
 anyhow = "1.0"
-aoc_derive = {path = "aoc_derive"}
 bimap = "0.6"
 bitbuffer = "0.10"
 cgmath = "0.18"

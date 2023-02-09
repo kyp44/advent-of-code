@@ -22,13 +22,12 @@ pub mod parse;
 // Prelude
 pub mod prelude {
     pub use super::{
-        char_add, evolver::Evolver, grid::Grid, grid::GridDefault, grid::GridPoint, grid::GridSize,
-        grid::GridSizeExt, grid::PointTryInto, iter::IteratorExt, iter::StrExt, parse::BitInput,
-        parse::DiscardInput, parse::NomParseError, parse::NomParseResult, parse::Parseable,
-        parse::Sections, Answer, AnswerVec, AocError, AocResult, RangeExt, Solution, SolverInput,
-        VectorExt, YearSolutions,
+        char_add, evolver::Evolver, grid::FromGridStr, grid::Grid, grid::GridDefault,
+        grid::GridPoint, grid::GridSize, grid::GridSizeExt, grid::PointTryInto, iter::IteratorExt,
+        iter::StrExt, parse::BitInput, parse::DiscardInput, parse::NomParseError,
+        parse::NomParseResult, parse::Parseable, parse::Sections, Answer, AnswerVec, AocError,
+        AocResult, RangeExt, Solution, SolverInput, VectorExt, YearSolutions,
     };
-    pub use aoc_derive::CharGridDebug;
 }
 
 // Custom error type for AoC problem functions.

@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -31,6 +30,8 @@ mod tests {
 
 /// Contains solution implementation items.
 mod solution {
+    use aoc::grid::Digit;
+
     use super::*;
     use std::collections::HashSet;
 
@@ -38,15 +39,11 @@ mod solution {
     #[derive(Clone)]
     pub struct Octopi {
         /// The grid of octopi energies.
-        grid: Grid<u8>,
+        grid: Grid<Digit>,
     }
-    impl FromStr for Octopi {
-        type Err = AocError;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Ok(Self {
-                grid: Grid::from_str::<Grid<u8>>(s)?,
-            })
+    impl From<Grid<Digit>> for Octopi {
+        fn from(value: Grid<Digit>) -> Self {
+            Self { grid: value }
         }
     }
     impl Octopi {
@@ -74,7 +71,7 @@ mod solution {
         fn next(&mut self) -> Option<Self::Item> {
             // Fist pass to increment all energies
             for point in self.octopi.grid.all_points() {
-                *self.octopi.grid.element_at(&point) += 1;
+                *self.octopi.grid.element_at(&point) += 1.into();
             }
 
             // Now repeated passes to look for flashes
@@ -84,7 +81,7 @@ mod solution {
 
                 for point in self.octopi.grid.all_points() {
                     let energy = self.octopi.grid.get(&point);
-                    if *energy > 9 && !flashes.contains(&point) {
+                    if **energy > 9 && !flashes.contains(&point) {
                         // We have a new flash, increment neighbors
                         let fps: Vec<GridPoint> = self
                             .octopi
@@ -92,7 +89,7 @@ mod solution {
                             .neighbor_points(&point, true, false)
                             .collect();
                         for fp in fps {
-                            *self.octopi.grid.element_at(&fp) += 1;
+                            *self.octopi.grid.element_at(&fp) += 1.into();
                         }
 
                         // Add flash
@@ -108,7 +105,7 @@ mod solution {
 
             // Lastly, reset all energies that flashed
             for point in flashes.iter() {
-                *self.octopi.grid.element_at(point) = 0;
+                *self.octopi.grid.element_at(point) = 0.into();
             }
 
             Some(flashes.len().try_into().unwrap())
@@ -122,7 +119,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 11,
     name: "Dumbo Octopus",
-    preprocessor: Some(|input| Ok(Box::new(Octopi::from_str(input)?).into())),
+    preprocessor: Some(|input| Ok(Box::new(Octopi::from_grid_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {

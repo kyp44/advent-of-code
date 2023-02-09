@@ -29,7 +29,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::parse::trim;
+    use aoc::{grid::StdBool, parse::trim};
     use bitbuffer::{BitReadBuffer, BitWriteStream, LittleEndian};
     use cgmath::Vector2;
     use nom::{character::complete::one_of, combinator::map, multi::many_m_n};
@@ -72,7 +72,7 @@ mod solution {
         /// The enhancement algorithm table.
         algorithm: Rc<Algorithm>,
         /// The image grid of pixels.
-        grid: Grid<bool>,
+        grid: Grid<StdBool>,
         /// The pixel value of all pixels outside the defined image grid space.
         infinity_pixels: bool,
     }
@@ -85,7 +85,7 @@ mod solution {
 
             Ok(Self {
                 algorithm: Rc::new(algorithm),
-                grid: Grid::from_str::<Grid<bool>>(sections[1].trim())?,
+                grid: Grid::from_str(sections[1].trim())?,
                 infinity_pixels: false,
             })
         }
@@ -98,7 +98,7 @@ mod solution {
 
         /// Count the number of lit pixels in the image.
         pub fn num_lit(&self) -> usize {
-            self.grid.all_values().filter_count(|b| **b)
+            self.grid.all_values().filter_count(|b| ***b)
         }
     }
     impl Evolver<bool> for Image {
@@ -123,13 +123,14 @@ mod solution {
 
         fn get_element(&self, point: &Self::Point) -> bool {
             match self.grid.valid_point(point) {
-                Some(p) => *self.grid.get(&p),
+                Some(p) => **self.grid.get(&p),
                 None => self.infinity_pixels,
             }
         }
 
         fn set_element(&mut self, point: &Self::Point, value: bool) {
-            self.grid.set(&point.try_point_into().unwrap(), value);
+            self.grid
+                .set(&point.try_point_into().unwrap(), value.into());
         }
 
         fn next_cell(&self, point: &Self::Point) -> bool {

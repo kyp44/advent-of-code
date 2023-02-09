@@ -1,4 +1,4 @@
-use std::{cell::RefCell, str::FromStr};
+use std::cell::RefCell;
 
 use aoc::prelude::*;
 
@@ -241,7 +241,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 11,
     name: "Seating System",
-    preprocessor: Some(|input| Ok(Box::new(RefCell::new(Area::from_str(input)?)).into())),
+    preprocessor: Some(|input| Ok(Box::new(RefCell::new(Area::from_grid_str(input)?)).into())),
     solvers: &[
         // Part one
         |input| {
