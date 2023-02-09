@@ -15,6 +15,8 @@ mod tests {
 
 /// Contains solution implementation items.
 mod solution {
+    use num::Integer;
+
     use super::*;
 
     /// Represents the number of presents delivered to each house below some maximum house number.
@@ -35,7 +37,7 @@ mod solution {
             // target <= 10*(n + n/2)
             // since n/2 will be a divisor for even n.
             let mut max = 2 * target / 30;
-            max += if max % 2 == 0 { 2 } else { 1 };
+            max += if max.is_even() { 2 } else { 1 };
 
             // We implement a seive that calculates all number of presents
             // (effectively the sum of divisors) for all numbers up to max.

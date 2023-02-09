@@ -18,6 +18,7 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::parse::trim;
+    use bare_metal_modulo::{MNum, WrapCountNum};
     use nom::{
         bytes::complete::{tag, take_until},
         combinator::map,
@@ -61,10 +62,8 @@ mod solution {
     impl Reindeer {
         /// Calculates the distance the reindeer has traveled after some time in seconds.
         pub fn distance_at(&self, time: u64) -> u64 {
-            let period: u64 = self.fly_time + self.rest_time;
-            let n_periods = time / period;
-            let partial = time % period;
-            self.fly_speed * (n_periods * self.fly_time + min(self.fly_time, partial))
+            let wrap_time = WrapCountNum::new(time, self.fly_time + self.rest_time);
+            self.fly_speed * (wrap_time.wraps() * self.fly_time + min(self.fly_time, wrap_time.a()))
         }
     }
 

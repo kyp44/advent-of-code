@@ -7,6 +7,7 @@ name = "advent-of-code"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bare_metal_modulo",
  "bimap",
  "bitbuffer",
  "cgmath",
@@ -64,6 +65,15 @@ name = "autocfg"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
+
+[[package]]
+name = "bare_metal_modulo"
+version = "1.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b13dff5487fb1ad12765201c03b44878f5abaf503d99b1db3c4e7f69632ce64"
+dependencies = [
+ "num",
+]
 
 [[package]]
 name = "bimap"

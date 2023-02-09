@@ -16,6 +16,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use aoc::parse::trim;
+    use bare_metal_modulo::{MNum, ModNumC};
 
     use super::*;
     use nom::{
@@ -64,7 +65,9 @@ mod solution {
             let n = ((col + row).pow(2) - col - 3 * row + 2) / 2;
 
             // Now calculate the nth number in the sequence.
-            Ok((1..n).fold(20151125u64, |x, _| (252533 * x) % 33554393))
+            Ok((1..n)
+                .fold(ModNumC::<u64, 33554393>::new(20151125), |x, _| x * 252533)
+                .a())
         }
     }
 }

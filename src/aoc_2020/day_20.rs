@@ -176,6 +176,7 @@ mod solution {
         Rot90FlipV,
     }
 
+    /// A boolean pixel in the image.
     #[derive(Deref, From, Into, Default, Clone, Copy)]
     pub struct Pixel(bool);
     impl TryFrom<char> for Pixel {

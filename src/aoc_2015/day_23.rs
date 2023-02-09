@@ -21,6 +21,7 @@ inc b",
 /// Contains solution implementation items.
 mod solution {
     use aoc::parse::trim;
+    use num::Integer;
 
     use super::*;
     use maplit::hashmap;
@@ -127,7 +128,7 @@ mod solution {
                 Instruction::Increment(r) => register(r, Box::new(|r| r + 1)),
                 Instruction::Jump(o) => state.program_counter += o,
                 Instruction::JumpIfEven(r, o) => {
-                    if state.registers[r] % 2 == 0 {
+                    if state.registers[r].is_even() {
                         state.program_counter += o;
                     } else {
                         state.program_counter += 1;

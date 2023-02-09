@@ -28,6 +28,7 @@ David would gain 41 happiness units by sitting next to Carol.",
 mod solution {
     use super::*;
     use aoc::parse::trim;
+    use bare_metal_modulo::{MNum, ModNum};
     use itertools::{process_results, Itertools, ProcessResults};
     use nom::{
         branch::alt,
@@ -128,10 +129,9 @@ mod solution {
                     .iter()
                     .enumerate()
                     .map(|(i, person)| -> Result<_, _> {
-                        Ok(lookup_change(
-                            person,
-                            arrangement[(i + arrangement.len() - 1) % arrangement.len()],
-                        )? + lookup_change(person, arrangement[(i + 1) % arrangement.len()])?)
+                        let idx = ModNum::new(i, arrangement.len());
+                        Ok(lookup_change(person, arrangement[(idx - 1).a()])?
+                            + lookup_change(person, arrangement[(idx + 1).a()])?)
                     }),
                 |iter: ProcessResults<_, AocError>| iter.sum(),
             )
