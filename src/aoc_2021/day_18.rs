@@ -33,6 +33,7 @@ mod solution {
         combinator::map,
         sequence::{delimited, separated_pair},
     };
+    use num::Integer;
     use std::{iter::Sum, ops::Add};
 
     /// An element of a snailfish number.
@@ -170,7 +171,7 @@ mod solution {
             }
             }) {
                 // Now split
-                let (a, b) = if n % 2 == 0 {
+                let (a, b) = if n.is_even() {
                     (n / 2, n / 2)
                 } else {
                     (n / 2, n / 2 + 1)

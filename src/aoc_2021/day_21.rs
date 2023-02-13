@@ -8,7 +8,7 @@ mod tests {
     use Answer::Unsigned;
 
     const INPUT: &str = "Player 1 starting position: 4
-    Player 2 starting position: 8";
+Player 2 starting position: 8";
 
     solution_test! {
     vec![Unsigned(864900), Unsigned(575111835924670)],
@@ -25,16 +25,13 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::parse::trim;
+    use aoc::parse::field_line_parser;
+    use bare_metal_modulo::{MNum, OffsetNumC};
     use cgmath::{Vector2, Zero};
     use derive_new::new;
     use itertools::Itertools;
     use multiset::HashMultiSet;
-    use nom::{
-        bytes::complete::tag,
-        combinator::map,
-        sequence::{pair, preceded},
-    };
+    use nom::{combinator::map, sequence::pair};
 
     /// The deterministic die used in part one.
     #[derive(new)]
@@ -50,7 +47,7 @@ mod solution {
         /// Roll the die and return the rolled value.
         fn roll(&mut self) -> u32 {
             let ret = self.next + 1;
-            self.next = (self.next + 1) % 100;
+            self.next = ret % 100;
             self.times_rolled += 1;
             ret
         }
@@ -70,14 +67,11 @@ mod solution {
         }
     }
 
-    /// The number of spaces on the board.
-    const NUM_SPACES: u32 = 10;
-
     /// The current state of a player, whose initial position can be parsed from text input.
     #[derive(Debug, Clone)]
     struct Player {
         /// The current position on the board.
-        position: u32,
+        position: OffsetNumC<u32, 10, 1>,
         /// The current score.
         score: u32,
     }
@@ -85,35 +79,31 @@ mod solution {
         /// Create a new player with a particular starting position on the board.
         fn new(position: u32) -> Self {
             Self {
-                position: (position + NUM_SPACES - 1) % NUM_SPACES,
+                position: OffsetNumC::new(position),
                 score: 0,
             }
         }
 
         /// Moves a player by a number of spaces.
         fn move_player(&mut self, spaces: u32) {
-            self.position = (self.position + spaces) % NUM_SPACES;
-            self.score += self.position + 1;
+            self.position += spaces;
+            self.score += self.position.a();
         }
 
         /// Returns the current position of the player on the board.
         fn _position(&self) -> u32 {
-            self.position + 1
+            self.position.a()
         }
     }
     impl Parseable<'_> for Player {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
-            /// Internal function of [`Player::parser`] that parses a [`u32`] preceded by some
-            /// text.
-            fn preceded_u32<'a>(
-                text: &'static str,
-            ) -> impl FnMut(&'a str) -> NomParseResult<&'a str, u32> {
-                preceded(trim(false, tag(text)), nom::character::complete::u32)
-            }
             map(
-                pair(preceded_u32("Player"), preceded_u32("starting position:")),
+                pair(
+                    field_line_parser("Player", nom::character::complete::u32),
+                    field_line_parser("starting position:", nom::character::complete::u32),
+                ),
                 |(_, pos)| Self::new(pos),
-            )(input)
+            )(input.trim())
         }
     }
 

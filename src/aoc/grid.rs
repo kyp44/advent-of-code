@@ -347,5 +347,3 @@ impl FromPrimitive for Digit {
         u8::try_from(n).ok().map(|n| n.into())
     }
 }
-
-pub struct DigitMod(ModNumC<u8, 10>);

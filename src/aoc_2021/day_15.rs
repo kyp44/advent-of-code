@@ -28,12 +28,25 @@ mod solution {
     use aoc::grid::Digit;
     use bare_metal_modulo::{MNum, OffsetNumC};
     use cgmath::Zero;
-    use derive_more::Deref;
+    use derive_more::{Add, Deref, From, Into};
     use priority_queue::PriorityQueue;
     use std::{cmp::Reverse, collections::HashMap};
 
-    #[derive(Deref)]
-    struct RiskLevel(OffsetNumC<Digit, 10, 1>);
+    /// A risk level, which is a single digit with modular arithmetic.
+    #[derive(Clone, Copy, Deref, From, Into, Add)]
+    pub struct RiskLevel(OffsetNumC<u8, 9, 1>);
+    impl TryFrom<char> for RiskLevel {
+        type Error = ();
+
+        fn try_from(value: char) -> Result<Self, Self::Error> {
+            Ok(OffsetNumC::new(*Digit::try_from(value)?).into())
+        }
+    }
+    impl From<u8> for RiskLevel {
+        fn from(value: u8) -> Self {
+            OffsetNumC::new(value).into()
+        }
+    }
 
     /// The risk level grid, which can be parsed from text input.
     pub struct RiskLevels {
@@ -62,7 +75,7 @@ mod solution {
             loop {
                 let (current, dist) = queue.pop().unwrap();
                 for neighbor in self.grid.neighbor_points(&current, false, false) {
-                    let alt_dist = dist.0 + u64::from((**self.grid.get(&neighbor)).a());
+                    let alt_dist = dist.0 + u64::from(self.grid.get(&neighbor).a());
                     match queue.get_priority(&neighbor) {
                         Some(d) => {
                             if alt_dist < d.0 {
