@@ -22,6 +22,7 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::parse::single_digit;
+    use bare_metal_modulo::{MNum, OffsetNum};
     use derive_new::new;
     use itertools::Itertools;
     use nom::{multi::many1, Finish};
@@ -285,12 +286,15 @@ mod solution {
                     .set_next(three.iter().iterations(3).unwrap().set_next(None));
 
                 // Search for the destination cup
-                let mut dest_label = self.current.label();
-                let len: Label = self.cups.len().try_into().unwrap();
+                let mut dest_label =
+                    OffsetNum::new(self.current.label(), self.cups.len().try_into().unwrap(), 1);
                 let dest = loop {
-                    dest_label = ((dest_label + len - 2) % len) + 1;
-                    if three.iter().all(|cr| cr.label() != dest_label) {
-                        break &self.lookup[&dest_label];
+                    // Decrement the destination cup and ensure it was not just picked up
+                    // TODO: We need to subtract two here due some unexpected behavior of `OffsetNum`.
+                    // See: https://github.com/gjf2a/bare_metal_modulo/issues/10
+                    dest_label -= 2;
+                    if three.iter().all(|cr| cr.label() != dest_label.a()) {
+                        break &self.lookup[&dest_label.a()];
                     }
                 };
 

@@ -26,17 +26,22 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::grid::Digit;
+    use bare_metal_modulo::{MNum, OffsetNumC};
     use cgmath::Zero;
+    use derive_more::Deref;
     use priority_queue::PriorityQueue;
     use std::{cmp::Reverse, collections::HashMap};
+
+    #[derive(Deref)]
+    struct RiskLevel(OffsetNumC<Digit, 10, 1>);
 
     /// The risk level grid, which can be parsed from text input.
     pub struct RiskLevels {
         /// The grid of risk levels.
-        grid: Grid<Digit>,
+        grid: Grid<RiskLevel>,
     }
-    impl From<Grid<Digit>> for RiskLevels {
-        fn from(value: Grid<Digit>) -> Self {
+    impl From<Grid<RiskLevel>> for RiskLevels {
+        fn from(value: Grid<RiskLevel>) -> Self {
             Self { grid: value }
         }
     }
@@ -57,7 +62,7 @@ mod solution {
             loop {
                 let (current, dist) = queue.pop().unwrap();
                 for neighbor in self.grid.neighbor_points(&current, false, false) {
-                    let alt_dist = dist.0 + u64::from(**self.grid.get(&neighbor));
+                    let alt_dist = dist.0 + u64::from((**self.grid.get(&neighbor)).a());
                     match queue.get_priority(&neighbor) {
                         Some(d) => {
                             if alt_dist < d.0 {
@@ -79,35 +84,22 @@ mod solution {
         /// Expands this map as a tile into a `n` by `n` tile area and each tile
         /// adds one to the risk levels of the tile above or to the left of it.
         pub fn full_map(&self, n: u8) -> Self {
-            let mut base_rows: Vec<Box<[u8]>> = Vec::new();
-
-            /// Sub-function of [`RiskLevels::full_map`] that adds two risk level, wrapping around
-            /// if the sum is greater than 9.
-            ///
-            /// TODO: This may be better implemented as a modulo number (off by one I think).
-            fn add_wrap(a: u8, b: u8) -> u8 {
-                let s = a + b;
-                if s > 9 {
-                    (s % 10) + 1
-                } else {
-                    s
-                }
-            }
+            let mut base_rows: Vec<Box<[RiskLevel]>> = Vec::new();
 
             // First add all the additional columns for the first major row
             for row in self.grid.rows_iter() {
                 base_rows.push(
                     (0..n)
-                        .flat_map(|i| row.iter().map(move |r| add_wrap(**r, i)))
+                        .flat_map(|i| row.iter().map(move |r| *r + i.into()))
                         .collect(),
                 );
             }
 
             // Now duplicate all the rows
-            let mut rows: Vec<Box<[Digit]>> = Vec::new();
+            let mut rows: Vec<Box<[RiskLevel]>> = Vec::new();
             for i in 0..n {
                 for row in base_rows.iter() {
-                    rows.push(row.iter().map(|r| add_wrap(*r, i).into()).collect())
+                    rows.push(row.iter().map(|r| *r + i.into()).collect())
                 }
             }
 

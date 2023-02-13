@@ -176,6 +176,7 @@ mod solution {
     }
 }
 
+use num::Integer;
 use solution::*;
 
 /// Solution struct.
@@ -223,7 +224,7 @@ pub const SOLUTION: Solution = Solution {
                 })
                 .sorted()
                 .collect::<Vec<_>>();
-            if scores.len() % 2 == 0 {
+            if scores.len().is_even() {
                 return Err(AocError::Process(
                     "One of the incomplete lines is missing an even number of closers!".into(),
                 ));

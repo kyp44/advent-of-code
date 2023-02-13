@@ -1,8 +1,10 @@
 use super::prelude::*;
+use bare_metal_modulo::ModNumC;
 use cgmath::Vector2;
 use core::slice::SlicePattern;
 use derive_more::{Add, AddAssign, Deref, From, Into, Not, Sub, SubAssign};
 use itertools::{iproduct, Itertools};
+use num::FromPrimitive;
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
 // Specifies elements of a Grid
@@ -336,3 +338,14 @@ impl fmt::Debug for Digit {
         write!(f, "{}", **self)
     }
 }
+impl FromPrimitive for Digit {
+    fn from_i64(n: i64) -> Option<Self> {
+        u8::try_from(n).ok().map(|n| n.into())
+    }
+
+    fn from_u64(n: u64) -> Option<Self> {
+        u8::try_from(n).ok().map(|n| n.into())
+    }
+}
+
+pub struct DigitMod(ModNumC<u8, 10>);
