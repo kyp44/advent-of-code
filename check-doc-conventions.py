@@ -27,7 +27,7 @@ class RustLine:
         Parse a raw line from a file.
         """
         sline = raw_line.strip()
-        if sline.startswith("///"):
+        if sline.startswith("///") or sline.startswith("//!"):
             # A doc comment line
             self.doc_comment = True
             self.content = sline[3:].strip()

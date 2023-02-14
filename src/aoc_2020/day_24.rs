@@ -175,10 +175,6 @@ mod solution {
             }
         }
 
-        fn get_element(&self, point: &Self::Point) -> bool {
-            self.black_tiles.contains(point)
-        }
-
         fn set_element(&mut self, point: &Self::Point, value: bool) {
             if value {
                 self.black_tiles.insert(*point);
@@ -190,8 +186,8 @@ mod solution {
         fn next_cell(&self, point: &Self::Point) -> bool {
             let adj: usize = Direction::iter()
                 .map(|d| d.into())
-                .filter_count(|dp: &Point| self.get_element(&(*dp + point)));
-            if self.get_element(point) {
+                .filter_count(|dp: &Point| self.black_tiles.contains(&(*dp + point)));
+            if self.black_tiles.contains(point) {
                 // Tile is black
                 adj > 0 && adj <= 2
             } else {

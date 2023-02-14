@@ -89,10 +89,6 @@ mod solution {
             }
         }
 
-        fn get_element(&self, point: &Self::Point) -> bool {
-            **self.grid.get(point)
-        }
-
         fn set_element(&mut self, point: &Self::Point, value: bool) {
             self.grid.set(point, value.into())
         }
@@ -104,8 +100,8 @@ mod solution {
             let occupied: usize = self
                 .grid
                 .neighbor_points(point, true, false)
-                .filter_count(|p| self.get_element(p));
-            if self.get_element(point) {
+                .filter_count(|p| **self.grid.get(p));
+            if **self.grid.get(point) {
                 occupied == 2 || occupied == 3
             } else {
                 occupied == 3

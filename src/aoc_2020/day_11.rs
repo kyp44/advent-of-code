@@ -169,17 +169,13 @@ mod solution {
             Area::new(other.part, Grid::default(*other.grid.size()))
         }
 
-        fn get_element(&self, point: &Self::Point) -> Seat {
-            *self.grid.get(point)
-        }
-
         fn set_element(&mut self, point: &Self::Point, value: Seat) {
             self.grid.set(point, value)
         }
 
         fn next_cell(&self, point: &Self::Point) -> Seat {
             let occupied = self.part.point_occupied(self, point);
-            let orig = self.get_element(point);
+            let orig = *self.grid.get(point);
             match orig {
                 Seat::Empty => {
                     if occupied == 0 {

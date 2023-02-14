@@ -96,9 +96,17 @@ mod solution {
             self.grid.size() + GridSize::new(2, 2)
         }
 
-        /// Count the number of lit pixels in the image.
+        /// Counts the number of lit pixels in the image.
         pub fn num_lit(&self) -> usize {
             self.grid.all_values().filter_count(|b| ***b)
+        }
+
+        /// Returns the pixel value for a point on the image.
+        fn get_pixel(&self, point: &Vector2<isize>) -> bool {
+            match self.grid.valid_point(point) {
+                Some(p) => **self.grid.get(&p),
+                None => self.infinity_pixels,
+            }
         }
     }
     impl Evolver<bool> for Image {
@@ -121,13 +129,6 @@ mod solution {
             }
         }
 
-        fn get_element(&self, point: &Self::Point) -> bool {
-            match self.grid.valid_point(point) {
-                Some(p) => **self.grid.get(&p),
-                None => self.infinity_pixels,
-            }
-        }
-
         fn set_element(&mut self, point: &Self::Point, value: bool) {
             self.grid
                 .set(&point.try_point_into().unwrap(), value.into());
@@ -142,7 +143,7 @@ mod solution {
             let bits: Vec<bool> = self
                 .grid
                 .all_neighbor_points(point, true, true)
-                .map(|p| self.get_element(&p))
+                .map(|p| self.get_pixel(&p))
                 .collect();
             // The suggestion by the clippy lint does not compile.
             /*for b in self

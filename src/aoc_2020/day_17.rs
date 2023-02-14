@@ -155,11 +155,6 @@ mod solution {
             }
         }
 
-        fn get_element(&self, point: &Self::Point) -> bool {
-            self.verify_point(point);
-            self.active_cubes.contains(point)
-        }
-
         fn set_element(&mut self, point: &Self::Point, value: bool) {
             self.verify_point(point);
             if value {
@@ -177,9 +172,9 @@ mod solution {
                     (v - 1)..=(v + 1)
                 })
                 .multi_cartesian_product()
-                .filter_count(|pt| pt != point && self.get_element(pt));
+                .filter_count(|pt| pt != point && self.active_cubes.contains(pt));
 
-            (self.get_element(point) && neighbors == 2) || neighbors == 3
+            (self.active_cubes.contains(point) && neighbors == 2) || neighbors == 3
         }
 
         fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {

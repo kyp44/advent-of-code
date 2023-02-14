@@ -1,4 +1,8 @@
+//! Support crate for the [Advent of Code solutions](../advent_of_code/index.html).
+//!
+//! Contains useful abstractions are that are used for one more than one solution.
 #![feature(slice_pattern)]
+#![feature(assert_matches)]
 #![warn(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
 

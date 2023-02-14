@@ -1,21 +1,55 @@
 use super::prelude::*;
-use bare_metal_modulo::ModNumC;
-use cgmath::Vector2;
+use cgmath::{Vector2, Vector3};
 use core::slice::SlicePattern;
 use derive_more::{Add, AddAssign, Deref, From, Into, Not, Sub, SubAssign};
 use itertools::{iproduct, Itertools};
 use num::FromPrimitive;
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
-// Specifies elements of a Grid
+/// A point in the [`Grid`].
 pub type GridPoint = Vector2<usize>;
-// Specifies sizes of a Grid
+/// The size of a [`Grid`].
 pub type GridSize = Vector2<usize>;
 
-// Useful trait to convert between point types since we cannot implement the std trait
+// TODO: Should this be moved into the main crate?
+// TODO: Also need to try and look for cases where this might be useful, since it was largely forgotten about.
+/// Extension trait to convert between [`cgmath`] vector component types more easily.
+///
+/// Note that we cannot implement the [`std`] conversion traits due to the orphan rule.
+///
+/// # Example
+///
+/// ```
+/// # #![feature(assert_matches)]
+/// # use std::assert_matches::assert_matches;
+/// use aoc::prelude::*;
+/// use cgmath::{Vector2, Vector3};
+///
+/// // Some 2D vector conversions
+/// assert_matches!(Vector2::<isize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<usize>::new(3, 4));
+/// assert_matches!(Vector2::<isize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<u8>::new(3, 4));
+/// assert_matches!(Vector2::<isize>::new(-3, 4).try_point_into(), Ok(v) if v == Vector2::<i8>::new(-3, 4));
+/// assert_matches!(Vector2::<usize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<u8>::new(3, 4));
+/// assert_matches!(<Vector2<isize> as aoc::grid::PointTryInto<Vector2<usize>>>::try_point_into(Vector2::new(3, -4)), Err(_));
+/// assert_matches!(<Vector2<isize> as aoc::grid::PointTryInto<Vector2<u8>>>::try_point_into(Vector2::new(3, -4)), Err(_));
+/// assert_matches!(<Vector2<u16> as aoc::grid::PointTryInto<Vector2<u8>>>::try_point_into(Vector2::new(1000, 4)), Err(_));
+/// assert_matches!(<Vector2<i64> as aoc::grid::PointTryInto<Vector2<i32>>>::try_point_into(Vector2::new(3, 4294967296)), Err(_));
+///
+/// // Some 3D vector conversions
+/// assert_matches!(Vector3::<isize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<usize>::new(3, 4, 5));
+/// assert_matches!(Vector3::<isize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<u8>::new(3, 4, 5));
+/// assert_matches!(Vector3::<isize>::new(-3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<i8>::new(-3, 4, 5));
+/// assert_matches!(Vector3::<usize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<u8>::new(3, 4, 5));
+/// assert_matches!(<Vector3<isize> as aoc::grid::PointTryInto<Vector3<usize>>>::try_point_into(Vector3::new(3, -4, 5)), Err(_));
+/// assert_matches!(<Vector3<isize> as aoc::grid::PointTryInto<Vector3<u8>>>::try_point_into(Vector3::new(3, -4, 5)), Err(_));
+/// assert_matches!(<Vector3<u16> as aoc::grid::PointTryInto<Vector3<u8>>>::try_point_into(Vector3::new(1000, 4, 5)), Err(_));
+/// assert_matches!(<Vector3<i64> as aoc::grid::PointTryInto<Vector3<i32>>>::try_point_into(Vector3::new(3, 4294967296, 5)), Err(_));
+/// ```
 pub trait PointTryInto<T> {
+    /// Error type if the conversion fails.
     type Error;
 
+    /// Attempt the vector component type conversion.
     fn try_point_into(self) -> Result<T, Self::Error>;
 }
 impl<A, B> PointTryInto<Vector2<B>> for Vector2<A>
@@ -26,6 +60,20 @@ where
 
     fn try_point_into(self) -> Result<Vector2<B>, Self::Error> {
         Ok(Vector2::new(self.x.try_into()?, self.y.try_into()?))
+    }
+}
+impl<A, B> PointTryInto<Vector3<B>> for Vector3<A>
+where
+    B: TryFrom<A>,
+{
+    type Error = B::Error;
+
+    fn try_point_into(self) -> Result<Vector3<B>, Self::Error> {
+        Ok(Vector3::new(
+            self.x.try_into()?,
+            self.y.try_into()?,
+            self.z.try_into()?,
+        ))
     }
 }
 
