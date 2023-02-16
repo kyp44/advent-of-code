@@ -19,7 +19,7 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::grid::StdBool;
-    use cgmath::Vector2;
+    use cgmath::Point2;
     use derive_new::new;
     use itertools::Itertools;
     use std::{collections::HashSet, convert::TryInto, fmt::Debug, ops::RangeInclusive};
@@ -71,7 +71,7 @@ mod solution {
                         self.active_cubes
                             .iter()
                             .filter(|pt| pt[2..] == coords)
-                            .map(|v| Vector2::new(v[0], v[1])),
+                            .map(|v| Point2::new(v[0], v[1])),
                     ));
 
                     writeln!(
@@ -87,7 +87,7 @@ mod solution {
                 }
             } else {
                 let slice = Slice::new(Grid::<StdBool>::from_coordinates(
-                    self.active_cubes.iter().map(|v| Vector2::new(v[0], v[1])),
+                    self.active_cubes.iter().map(|v| Point2::new(v[0], v[1])),
                 ));
                 Debug::fmt(&slice, f)?;
             }

@@ -124,6 +124,7 @@ Tile 3079:
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use cgmath::EuclideanSpace;
     use derive_more::{Deref, From, Into};
     use derive_new::new;
     use enum_map::{enum_map, Enum, EnumMap};
@@ -339,13 +340,14 @@ mod solution {
         /// Subtracts a smaller sub-image from this image at the specified
         /// upper left coordinates.
         ///
-        /// Pixels in the sub image that are set
-        /// are unset in this image, and those that are unset in the sub-image
-        /// are left unchanged in this image.
+        /// Pixels in the sub image that are set are unset in this image,
+        /// and those that are unset in the sub-image are left unchanged
+        /// in this image.
         fn subtract(&mut self, point: &GridPoint, image: &Self) {
             for image_point in image.pixels.all_points() {
                 if **image.pixels.get(&image_point) {
-                    self.pixels.set(&(point + image_point), false.into());
+                    self.pixels
+                        .set(&(point + image_point.to_vec()), false.into());
                 }
             }
         }

@@ -1,5 +1,5 @@
 use super::prelude::*;
-use cgmath::{Vector2, Vector3};
+use cgmath::{EuclideanSpace, Point2, Vector2};
 use core::slice::SlicePattern;
 use derive_more::{Add, AddAssign, Deref, From, Into, Not, Sub, SubAssign};
 use itertools::{iproduct, Itertools};
@@ -7,75 +7,9 @@ use num::FromPrimitive;
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
 /// A point in the [`Grid`].
-pub type GridPoint = Vector2<usize>;
+pub type GridPoint = Point2<usize>;
 /// The size of a [`Grid`].
 pub type GridSize = Vector2<usize>;
-
-// TODO: Should this be moved into the main crate?
-// TODO: Also need to try and look for cases where this might be useful, since it was largely forgotten about.
-/// Extension trait to convert between [`cgmath`] vector component types more easily.
-///
-/// Note that we cannot implement the [`std`] conversion traits due to the orphan rule.
-///
-/// # Example
-///
-/// ```
-/// # #![feature(assert_matches)]
-/// # use std::assert_matches::assert_matches;
-/// use aoc::prelude::*;
-/// use cgmath::{Vector2, Vector3};
-///
-/// // Some 2D vector conversions
-/// assert_matches!(Vector2::<isize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<usize>::new(3, 4));
-/// assert_matches!(Vector2::<isize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<u8>::new(3, 4));
-/// assert_matches!(Vector2::<isize>::new(-3, 4).try_point_into(), Ok(v) if v == Vector2::<i8>::new(-3, 4));
-/// assert_matches!(Vector2::<usize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<u8>::new(3, 4));
-/// assert_matches!(<Vector2<isize> as aoc::grid::PointTryInto<Vector2<usize>>>::try_point_into(Vector2::new(3, -4)), Err(_));
-/// assert_matches!(<Vector2<isize> as aoc::grid::PointTryInto<Vector2<u8>>>::try_point_into(Vector2::new(3, -4)), Err(_));
-/// assert_matches!(<Vector2<u16> as aoc::grid::PointTryInto<Vector2<u8>>>::try_point_into(Vector2::new(1000, 4)), Err(_));
-/// assert_matches!(<Vector2<i64> as aoc::grid::PointTryInto<Vector2<i32>>>::try_point_into(Vector2::new(3, 4294967296)), Err(_));
-///
-/// // Some 3D vector conversions
-/// assert_matches!(Vector3::<isize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<usize>::new(3, 4, 5));
-/// assert_matches!(Vector3::<isize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<u8>::new(3, 4, 5));
-/// assert_matches!(Vector3::<isize>::new(-3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<i8>::new(-3, 4, 5));
-/// assert_matches!(Vector3::<usize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<u8>::new(3, 4, 5));
-/// assert_matches!(<Vector3<isize> as aoc::grid::PointTryInto<Vector3<usize>>>::try_point_into(Vector3::new(3, -4, 5)), Err(_));
-/// assert_matches!(<Vector3<isize> as aoc::grid::PointTryInto<Vector3<u8>>>::try_point_into(Vector3::new(3, -4, 5)), Err(_));
-/// assert_matches!(<Vector3<u16> as aoc::grid::PointTryInto<Vector3<u8>>>::try_point_into(Vector3::new(1000, 4, 5)), Err(_));
-/// assert_matches!(<Vector3<i64> as aoc::grid::PointTryInto<Vector3<i32>>>::try_point_into(Vector3::new(3, 4294967296, 5)), Err(_));
-/// ```
-pub trait PointTryInto<T> {
-    /// Error type if the conversion fails.
-    type Error;
-
-    /// Attempt the vector component type conversion.
-    fn try_point_into(self) -> Result<T, Self::Error>;
-}
-impl<A, B> PointTryInto<Vector2<B>> for Vector2<A>
-where
-    B: TryFrom<A>,
-{
-    type Error = B::Error;
-
-    fn try_point_into(self) -> Result<Vector2<B>, Self::Error> {
-        Ok(Vector2::new(self.x.try_into()?, self.y.try_into()?))
-    }
-}
-impl<A, B> PointTryInto<Vector3<B>> for Vector3<A>
-where
-    B: TryFrom<A>,
-{
-    type Error = B::Error;
-
-    fn try_point_into(self) -> Result<Vector3<B>, Self::Error> {
-        Ok(Vector3::new(
-            self.x.try_into()?,
-            self.y.try_into()?,
-            self.z.try_into()?,
-        ))
-    }
-}
 
 // Extensions for GridSize
 pub trait GridSizeExt {
@@ -153,9 +87,9 @@ impl<T> Grid<T> {
     }
 
     // Validate and convert signed point to unsigned
-    pub fn valid_point(&self, point: &Vector2<isize>) -> Option<GridPoint> {
+    pub fn valid_point(&self, point: &Point2<isize>) -> Option<GridPoint> {
         if point.x >= 0 && point.y >= 0 {
-            let point: GridPoint = point.try_point_into().unwrap();
+            let point: GridPoint = Point2::try_point_from(*point).unwrap();
             let size = self.size();
             if point.x < size.x && point.y < size.y {
                 Some(point)
@@ -195,10 +129,10 @@ impl<T> Grid<T> {
     // Iterate over all neighboring points in row major order, even points not in the grid.
     pub fn all_neighbor_points(
         &self,
-        point: Vector2<isize>,
+        point: Point2<isize>,
         include_diagonals: bool,
         include_self: bool,
-    ) -> impl Iterator<Item = Vector2<isize>> {
+    ) -> impl Iterator<Item = Point2<isize>> {
         iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
             let point = point + Vector2::new(dx, dy);
             if dx == 0 && dy == 0 {
@@ -223,7 +157,7 @@ impl<T> Grid<T> {
         include_self: bool,
     ) -> impl Iterator<Item = GridPoint> + 'a {
         self.all_neighbor_points(
-            point.try_point_into().unwrap(),
+            Point2::try_point_from(*point).unwrap(),
             include_diagonals,
             include_self,
         )
@@ -234,16 +168,17 @@ impl<T> Grid<T> {
     where
         T: Default + Clone,
     {
+        let point = point.to_vec();
         let mut out = Self::default(size);
         for out_point in out.all_points() {
-            out.set(&out_point, self.get(&(*point + out_point)).clone());
+            out.set(&out_point, self.get(&(&out_point + point)).clone());
         }
         out
     }
 }
 // Additional methods for grids with boolean-like elements.
 impl<T: From<bool> + Default + Clone> Grid<T> {
-    pub fn from_coordinates(points: impl Iterator<Item = Vector2<isize>> + Clone) -> Self {
+    pub fn from_coordinates(points: impl Iterator<Item = Point2<isize>> + Clone) -> Self {
         let x_range = points.clone().map(|p| p.x).range().unwrap_or(0..=0);
         let y_range = points.clone().map(|p| p.y).range().unwrap_or(0..=0);
         let size = GridSize::new(

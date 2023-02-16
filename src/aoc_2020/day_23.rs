@@ -290,9 +290,7 @@ mod solution {
                     OffsetNum::new(self.current.label(), self.cups.len().try_into().unwrap(), 1);
                 let dest = loop {
                     // Decrement the destination cup and ensure it was not just picked up
-                    // TODO: We need to subtract two here due some unexpected behavior of `OffsetNum`.
-                    // See: https://github.com/gjf2a/bare_metal_modulo/issues/10
-                    dest_label -= 2;
+                    dest_label -= 1;
                     if three.iter().all(|cr| cr.label() != dest_label.a()) {
                         break &self.lookup[&dest_label.a()];
                     }

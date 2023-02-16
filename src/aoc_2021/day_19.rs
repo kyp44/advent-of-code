@@ -153,8 +153,8 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::parse::trim;
-    use cgmath::{Quaternion, Vector3, Zero};
-    use derive_more::{Add, Deref, Sub};
+    use cgmath::{EuclideanSpace, Point3, Quaternion, Vector3, Zero};
+    use derive_more::{Deref, From};
     use derive_new::new;
     use itertools::{iproduct, Itertools};
     use maplit::hashset;
@@ -165,11 +165,12 @@ mod solution {
         sequence::{delimited, preceded},
         Finish,
     };
-    use std::hash::Hash;
     use std::{
         collections::{HashMap, HashSet},
+        ops::Sub,
         rc::Rc,
     };
+    use std::{hash::Hash, ops::Add};
     use strum::IntoEnumIterator;
     use strum_macros::EnumIter;
 
@@ -177,24 +178,45 @@ mod solution {
     type Vector = Vector3<i32>;
 
     /// A 3D point in our coordinate system, which can be parsed from text input.
-    #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, Add, Sub)]
-    pub struct Point(Vector);
+    #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, From)]
+    pub struct Point(Point3<i32>);
     impl Parseable<'_> for Point {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_list1(tag(","), trim(false, nom::character::complete::i32)),
-                |vec| Self(Vector::new(vec[0], vec[1], vec[2])),
+                |v| Self(Point3::new(v[0], v[1], v[2])),
             )(input)
         }
     }
     impl From<Point> for Quaternion<i32> {
         fn from(p: Point) -> Self {
-            Self::from_sv(0, *p)
+            Self::from_sv(0, p.to_vec())
+        }
+    }
+    impl Add<Vector> for Point {
+        type Output = Self;
+
+        fn add(self, rhs: Vector) -> Self::Output {
+            (*self + rhs).into()
+        }
+    }
+    impl Sub for Point {
+        type Output = Vector;
+
+        fn sub(self, rhs: Self) -> Self::Output {
+            *self - *rhs
+        }
+    }
+    impl Sub<Vector> for Point {
+        type Output = Self;
+
+        fn sub(self, rhs: Vector) -> Self::Output {
+            (*self - rhs).into()
         }
     }
     impl From<Quaternion<i32>> for Point {
         fn from(q: Quaternion<i32>) -> Self {
-            Point(q.v)
+            Point3::from_vec(q.v).into()
         }
     }
 
@@ -328,7 +350,7 @@ mod solution {
         /// Returns the transposer that leaves points unchanged.
         fn identity() -> Self {
             Transposer {
-                location: Point(Vector::zero()),
+                location: Point(Origin::origin()),
                 rotation: RotationQuaternion::identity(),
             }
         }
@@ -336,7 +358,7 @@ mod solution {
         /// Transposes a point relative to scanner B to be relative
         /// to scanner A.
         fn transpose_point(&self, point: Point) -> Point {
-            self.rotation.rotate_point(point) + self.location
+            self.rotation.rotate_point(point) + self.location.to_vec()
         }
 
         /// Composes transpositions.
@@ -345,7 +367,7 @@ mod solution {
         /// to B, then the result transposes C to A.
         fn compose(self, other: Self) -> Self {
             Self {
-                location: self.rotation.rotate_point(other.location) + self.location,
+                location: self.rotation.rotate_point(other.location) + self.location.to_vec(),
                 rotation: other.rotation.compose(self.rotation),
             }
         }
@@ -415,7 +437,7 @@ mod solution {
                     {
                         // We have a sufficient number of correlated points!
                         return Some(Transposer {
-                            location: delta,
+                            location: Point3::from_vec(delta).into(),
                             rotation,
                         });
                     }

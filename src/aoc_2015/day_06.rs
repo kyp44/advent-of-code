@@ -22,7 +22,7 @@ turn off 499,499 through 500,500",
 mod solution {
     use super::*;
     use aoc::grid::{Digit, StdBool};
-    use cgmath::Vector2;
+    use cgmath::Point2;
     use itertools::iproduct;
     use nom::{
         branch::alt,
@@ -31,7 +31,6 @@ mod solution {
         combinator::{map, map_opt, value},
         sequence::{separated_pair, tuple},
     };
-    use std::convert::TryInto;
 
     /// An action that can occur for a light.
     #[derive(Clone)]
@@ -55,7 +54,7 @@ mod solution {
     }
 
     /// That that describes the position of a light.
-    type Point = Vector2<usize>;
+    type Point = Point2<usize>;
     /// [`nom`] parser for a [`Point`].
     ///  
     /// NOTE: This cannot be done as a [`Parseable`] implementation due
@@ -63,7 +62,7 @@ mod solution {
     fn point_parser(input: &str) -> NomParseResult<&str, Point> {
         use nom::character::complete::u64 as cu64;
         map(separated_pair(cu64, tag(","), cu64), |(x, y)| {
-            Vector2::new(x.try_into().unwrap(), y.try_into().unwrap())
+            Point2::new(x, y).try_point_into().unwrap()
         })(input)
     }
 

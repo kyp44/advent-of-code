@@ -1,4 +1,5 @@
 use aoc::prelude::*;
+use cgmath::Vector2;
 
 #[cfg(test)]
 mod tests {
@@ -28,7 +29,6 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::grid::StdBool;
-    use cgmath::Zero;
     use derive_new::new;
 
     /// Map denoting open squares and trees, which can be parsed from text input.
@@ -56,9 +56,9 @@ mod solution {
         /// Map through which we are traversing.
         map: &'a Map,
         /// Slope down the hill.
-        slope: GridPoint,
+        slope: Vector2<usize>,
         /// Current point on the map.
-        #[new(value = "GridPoint::zero()")]
+        #[new(value = "GridPoint::new(0, 0)")]
         point: GridPoint,
     }
     impl Iterator for MapDownhill<'_> {
@@ -81,7 +81,7 @@ mod solution {
     }
 
     /// For a particular [`Map`] and slope, counts the number of trees encountered on the way down.
-    pub fn count_slope(map: &Map, slope: GridPoint) -> u64 {
+    pub fn count_slope(map: &Map, slope: Vector2<usize>) -> u64 {
         MapDownhill::new(map, slope).filter_count(|t| *t)
     }
 }
@@ -97,7 +97,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Process
-            Ok(count_slope(input.expect_data::<Map>()?, GridPoint::new(3, 1)).into())
+            Ok(count_slope(input.expect_data::<Map>()?, Vector2::new(3, 1)).into())
         },
         // Part two
         |input| {
@@ -106,7 +106,7 @@ pub const SOLUTION: Solution = Solution {
             let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
             Ok(slopes
                 .iter()
-                .map(|(x, y)| count_slope(map, GridPoint::new(*x, *y)))
+                .map(|(x, y)| count_slope(map, Vector2::new(*x, *y)))
                 .product::<u64>()
                 .into())
         },

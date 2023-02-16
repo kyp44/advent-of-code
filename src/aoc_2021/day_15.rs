@@ -27,7 +27,7 @@ mod solution {
     use super::*;
     use aoc::grid::Digit;
     use bare_metal_modulo::{MNum, OffsetNumC};
-    use cgmath::Zero;
+    use cgmath::{EuclideanSpace, Vector2};
     use derive_more::{Add, Deref, From, Into};
     use priority_queue::PriorityQueue;
     use std::{cmp::Reverse, collections::HashMap};
@@ -66,10 +66,10 @@ mod solution {
             let mut queue = PriorityQueue::new();
 
             // Add starting point to queue
-            queue.push(GridPoint::zero(), Reverse(0));
+            queue.push(Origin::origin(), Reverse(0));
 
             // Destination point
-            let dest = self.grid.size() - GridPoint::new(1, 1);
+            let dest = GridPoint::from_vec(self.grid.size() - Vector2::new(1, 1));
 
             // Fan out the visited nodes
             loop {

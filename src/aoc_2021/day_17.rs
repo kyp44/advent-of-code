@@ -17,7 +17,7 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::parse::{field_line_parser, trim};
-    use cgmath::{Vector2, Zero};
+    use cgmath::{Point2, Vector2};
     use derive_new::new;
     use itertools::iproduct;
     use nom::{bytes::complete::tag, combinator::map, sequence::separated_pair};
@@ -97,29 +97,31 @@ mod solution {
         }
     }
 
-    /// A 2D vector in the coordinate system in which the submarine
-    /// is at the origin.
-    type Vector = Vector2<i32>;
+    /// Position of the probe relative to the submarine.
+    type Position = Point2<i32>;
+
+    /// A relative velocity vector.
+    type Velocity = Vector2<i32>;
 
     /// A trajectory taken by the probe, which is an [`Iterator`] over the probe
     /// locations at every step.
     #[derive(new)]
     struct Trajectory {
         /// The current position of the probe.
-        #[new(value = "Vector::zero()")]
-        point: Vector,
+        #[new(value = "Position::origin()")]
+        point: Position,
         /// The current velocity of the probe.
-        velocity: Vector,
+        velocity: Velocity,
     }
     impl Iterator for Trajectory {
-        type Item = Vector;
+        type Item = Position;
 
         fn next(&mut self) -> Option<Self::Item> {
             let ret = self.point;
 
             // Determine next point and velocity
             self.point += self.velocity;
-            self.velocity += Vector::new(
+            self.velocity += Velocity::new(
                 match self.velocity.x.cmp(&0) {
                     std::cmp::Ordering::Less => 1,
                     std::cmp::Ordering::Equal => 0,

@@ -27,7 +27,7 @@ L.LLLLL.LL",
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use cgmath::{Vector2, Zero};
+    use cgmath::{Point2, Vector2, Zero};
     use derive_new::new;
     use itertools::iproduct;
     use std::{collections::HashSet, fmt::Display, hash::Hash, rc::Rc};
@@ -128,7 +128,7 @@ mod solution {
                     .filter_count(|dp| {
                         let mut i = 1;
                         loop {
-                            let point = point.try_point_into().unwrap();
+                            let point = Point2::<isize>::try_point_from(*point).unwrap();
 
                             match grid.valid_point(&(point + i * dp)) {
                                 Some(p) => match grid.get(&p) {

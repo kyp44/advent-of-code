@@ -35,7 +35,7 @@ wseweeenwnesenwwwswnew",
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use cgmath::{Vector2, Zero};
+    use cgmath::{Point2, Vector2, Zero};
     use itertools::{iproduct, Itertools};
     use nom::{
         branch::alt,
@@ -55,7 +55,7 @@ mod solution {
     /// For a given tile, increasing the `y` coordinate, on the other hand,
     /// moves along a diagonal line to upper left so that decreasing the `y`
     /// coordinates moves to the lower right.
-    type Point = Vector2<i32>;
+    type Point = Point2<i32>;
 
     /// Direction to go from a tile, which can be parsed from text input.
     ///
@@ -100,7 +100,7 @@ mod solution {
             )(input)
         }
     }
-    impl From<Direction> for Point {
+    impl From<Direction> for Vector2<i32> {
         fn from(dir: Direction) -> Self {
             use Direction::*;
             match dir {
@@ -155,7 +155,7 @@ mod solution {
             // Determine the initial state
             let mut black_tiles = HashSet::new();
             for route in routes.iter() {
-                let tile = route.follow(Vector2::zero());
+                let tile = route.follow(Point::origin());
                 if black_tiles.contains(&tile) {
                     black_tiles.remove(&tile);
                 } else {
@@ -186,7 +186,7 @@ mod solution {
         fn next_cell(&self, point: &Self::Point) -> bool {
             let adj: usize = Direction::iter()
                 .map(|d| d.into())
-                .filter_count(|dp: &Point| self.black_tiles.contains(&(*dp + point)));
+                .filter_count(|dp: &Vector2<i32>| self.black_tiles.contains(&(point + *dp)));
             if self.black_tiles.contains(point) {
                 // Tile is black
                 adj > 0 && adj <= 2
@@ -203,7 +203,7 @@ mod solution {
                 None => 0..=0,
             };
 
-            Box::new(iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Vector2::new(x, y)))
+            Box::new(iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Self::Point::new(x, y)))
         }
     }
     impl Floor {

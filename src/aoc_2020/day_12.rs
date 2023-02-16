@@ -1,4 +1,5 @@
 use cgmath::Vector2;
+use cgmath::{EuclideanSpace, Point2};
 use std::str::FromStr;
 
 use aoc::prelude::*;
@@ -23,7 +24,6 @@ F11",
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use cgmath::Zero;
     use nom::{character::complete::one_of, combinator::map, sequence::pair};
     use std::fmt::Debug;
 
@@ -77,12 +77,12 @@ mod solution {
         }
 
         /// Rotates a point given a turn number
-        fn rotate_point(turn: i32, point: &Vector2<i32>) -> Vector2<i32> {
+        fn rotate_point(turn: i32, point: &Point2<i32>) -> Point2<i32> {
             match Instruction::turn(0, turn) {
                 0 => *point,
-                1 => Vector2::new(-point.y, point.x),
-                2 => -*point,
-                3 => Vector2::new(point.y, -point.x),
+                1 => Point2::new(-point.y, point.x),
+                2 => Point2::from_vec(-point.to_vec()),
+                3 => Point2::new(point.y, -point.x),
                 _ => panic!(),
             }
         }
@@ -108,8 +108,8 @@ mod solution {
         /// Optionally pass an initial waypoint location relative to the ship.
         /// If no initial waypoint is specified the commands always act on the ship,
         /// otherwise most commands act on the waypoint.
-        pub fn final_ship_position(&self, initial_waypoint: Option<&Vector2<i32>>) -> Vector2<i32> {
-            let mut position = Vector2::zero();
+        pub fn final_ship_position(&self, initial_waypoint: Option<&Point2<i32>>) -> Point2<i32> {
+            let mut position = Origin::origin();
             match initial_waypoint {
                 None => {
                     let mut facing = 0;
@@ -132,7 +132,7 @@ mod solution {
                             Instruction::Turn(a) => {
                                 waypoint = Instruction::rotate_point(*a, &waypoint)
                             }
-                            Instruction::Forward(d) => position += *d * waypoint,
+                            Instruction::Forward(d) => position += *d * waypoint.to_vec(),
                         }
                         //println!("Instruction: {:?}, Waypoint: {:?}, Position {:?}", inst, waypoint, position);
                     }
@@ -158,6 +158,7 @@ pub const SOLUTION: Solution = Solution {
                 input
                     .expect_data::<NavigationInstructions>()?
                     .final_ship_position(None)
+                    .to_vec()
                     .manhattan_len()
                     .try_into()
                     .unwrap(),
@@ -169,7 +170,8 @@ pub const SOLUTION: Solution = Solution {
             Ok(Answer::Unsigned(
                 input
                     .expect_data::<NavigationInstructions>()?
-                    .final_ship_position(Some(&Vector2::new(10, 1)))
+                    .final_ship_position(Some(&Point2::new(10, 1)))
+                    .to_vec()
                     .manhattan_len()
                     .try_into()
                     .unwrap(),

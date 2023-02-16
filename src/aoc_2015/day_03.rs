@@ -24,11 +24,14 @@ mod solution {
     use super::*;
     use std::collections::HashSet;
 
-    use cgmath::{Vector2, Zero};
+    use cgmath::{Point2, Vector2};
     use nom::{character::complete::one_of, combinator::map, multi::many1};
 
     /// The type for the coordinates of a house.
-    type Point = Vector2<i32>;
+    type Point = Point2<i32>;
+
+    /// The type for a displacement vector between houses.
+    type Vector = Vector2<i32>;
 
     /// A direction in which Santa can move.
     pub enum Direction {
@@ -55,13 +58,13 @@ mod solution {
     }
     impl Direction {
         /// Returns a direction vector to move one house in this direction.
-        fn to_vector(&self) -> Point {
+        fn to_vector(&self) -> Vector {
             use Direction::*;
             match self {
-                North => Vector2::unit_y(),
-                East => Vector2::unit_x(),
-                South => -Vector2::unit_y(),
-                West => -Vector2::unit_x(),
+                North => Vector::unit_y(),
+                East => Vector::unit_x(),
+                South => -Vector::unit_y(),
+                West => -Vector::unit_x(),
             }
         }
     }
@@ -78,12 +81,12 @@ mod solution {
         fn visited_houses(directions: &[Direction]) -> HashSet<Point> {
             let mut vh: HashSet<Point> = directions
                 .iter()
-                .scan(Vector2::zero(), |a, d| {
+                .scan(Point::origin(), |a, d| {
                     *a += d.to_vector();
                     Some(*a)
                 })
                 .collect();
-            vh.insert(Vector2::zero());
+            vh.insert(Point::origin());
             vh
         }
     }
@@ -93,9 +96,9 @@ mod solution {
     impl Part for PartTwo {
         fn visited_houses(directions: &[Direction]) -> HashSet<Point> {
             let mut vh = HashSet::new();
-            vh.insert(Vector2::zero());
-            let mut santa = Vector2::zero();
-            let mut robo = Vector2::zero();
+            vh.insert(Point::origin());
+            let mut santa = Point::origin();
+            let mut robo = Point::origin();
             let mut santa_turn = true;
             for dir in directions {
                 if santa_turn {

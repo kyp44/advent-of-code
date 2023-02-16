@@ -7,6 +7,7 @@
 #![warn(clippy::missing_docs_in_private_items)]
 
 use anyhow::Context;
+use cgmath::{Point2, Point3, Vector2, Vector3, Zero};
 use colored::Colorize;
 use itertools::Itertools;
 use num::{Integer, Signed};
@@ -27,10 +28,11 @@ pub mod parse;
 pub mod prelude {
     pub use super::{
         char_add, evolver::Evolver, grid::FromGridStr, grid::Grid, grid::GridDefault,
-        grid::GridPoint, grid::GridSize, grid::GridSizeExt, grid::PointTryInto, iter::IteratorExt,
-        iter::StrExt, parse::BitInput, parse::DiscardInput, parse::NomParseError,
-        parse::NomParseResult, parse::Parseable, parse::Sections, Answer, AnswerVec, AocError,
-        AocResult, RangeExt, Solution, SolverInput, VectorExt, YearSolutions,
+        grid::GridPoint, grid::GridSize, grid::GridSizeExt, iter::IteratorExt, iter::StrExt,
+        parse::BitInput, parse::DiscardInput, parse::NomParseError, parse::NomParseResult,
+        parse::Parseable, parse::Sections, Answer, AnswerVec, AocError, AocResult, ManhattanLen,
+        Origin, PointFrom, PointInto, RangeExt, Solution, SolverInput, TryPointFrom, TryPointInto,
+        YearSolutions,
     };
 }
 
@@ -60,15 +62,12 @@ pub type AocResult<T> = Result<T, AocError>;
 
 // TODO: Use some modules here to better organize these items.
 
-// TODO: Do we want some kind of modulo arithmetic type, probably crates for this.
-// In particular sometimes we want, modulo `n` but from `1` to `n` instead of `0` to `n-1`.
-
-/// Extension methods for vector types.
-pub trait VectorExt<T> {
+// TODO: change. Extension methods for vector types.
+pub trait ManhattanLen<T> {
     /// Calculate the Manhattan length of the vector.
     fn manhattan_len(&self) -> T;
 }
-impl<T> VectorExt<T> for cgmath::Vector2<T>
+impl<T> ManhattanLen<T> for cgmath::Vector2<T>
 where
     T: Signed,
 {
@@ -76,12 +75,26 @@ where
         self.x.abs() + self.y.abs()
     }
 }
-impl<T> VectorExt<T> for cgmath::Vector3<T>
+impl<T> ManhattanLen<T> for cgmath::Vector3<T>
 where
     T: Signed,
 {
     fn manhattan_len(&self) -> T {
         self.x.abs() + self.y.abs() + self.z.abs()
+    }
+}
+
+pub trait Origin {
+    fn origin() -> Self;
+}
+impl<T: Zero> Origin for Point2<T> {
+    fn origin() -> Self {
+        Self::new(T::zero(), T::zero())
+    }
+}
+impl<T: Zero> Origin for Point3<T> {
+    fn origin() -> Self {
+        Self::new(T::zero(), T::zero(), T::zero())
     }
 }
 
@@ -350,3 +363,93 @@ macro_rules! year_solutions {
 	};
     }
 }
+
+// TODO: Also need to try and look for cases where this might be useful, since it was largely forgotten about.
+// TODO: Move this to a module maybe?
+// convert module
+// Cannot use std traits because of blanket conflicts.
+
+/// Extension trait to convert between [`cgmath`] vector component types more easily.
+///
+/// Note that we cannot implement the [`std`] conversion traits due to the orphan rule.
+///
+/// # Example
+///
+/// ```
+/// /* # #![feature(assert_matches)]
+/// # use std::assert_matches::assert_matches;
+/// use aoc::prelude::*;
+/// use cgmath::{Vector2, Vector3};
+///
+/// // Some 2D vector conversions
+/// assert_matches!(Vector2::<isize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<usize>::new(3, 4));
+/// assert_matches!(Vector2::<isize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<u8>::new(3, 4));
+/// assert_matches!(Vector2::<isize>::new(-3, 4).try_point_into(), Ok(v) if v == Vector2::<i8>::new(-3, 4));
+/// assert_matches!(Vector2::<usize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<u8>::new(3, 4));
+/// assert_matches!(<Vector2<isize> as aoc::grid::PointTryInto<Vector2<usize>>>::try_point_into(Vector2::new(3, -4)), Err(_));
+/// assert_matches!(<Vector2<isize> as aoc::grid::PointTryInto<Vector2<u8>>>::try_point_into(Vector2::new(3, -4)), Err(_));
+/// assert_matches!(<Vector2<u16> as aoc::grid::PointTryInto<Vector2<u8>>>::try_point_into(Vector2::new(1000, 4)), Err(_));
+/// assert_matches!(<Vector2<i64> as aoc::grid::PointTryInto<Vector2<i32>>>::try_point_into(Vector2::new(3, 4294967296)), Err(_));
+///
+/// // Some 3D vector conversions
+/// assert_matches!(Vector3::<isize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<usize>::new(3, 4, 5));
+/// assert_matches!(Vector3::<isize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<u8>::new(3, 4, 5));
+/// assert_matches!(Vector3::<isize>::new(-3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<i8>::new(-3, 4, 5));
+/// assert_matches!(Vector3::<usize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<u8>::new(3, 4, 5));
+/// assert_matches!(<Vector3<isize> as aoc::grid::PointTryInto<Vector3<usize>>>::try_point_into(Vector3::new(3, -4, 5)), Err(_));
+/// assert_matches!(<Vector3<isize> as aoc::grid::PointTryInto<Vector3<u8>>>::try_point_into(Vector3::new(3, -4, 5)), Err(_));
+/// assert_matches!(<Vector3<u16> as aoc::grid::PointTryInto<Vector3<u8>>>::try_point_into(Vector3::new(1000, 4, 5)), Err(_));
+/// assert_matches!(<Vector3<i64> as aoc::grid::PointTryInto<Vector3<i32>>>::try_point_into(Vector3::new(3, 4294967296, 5)), Err(_)); */
+/// ```
+pub trait PointFrom<T> {
+    fn point_from(value: T) -> Self;
+}
+pub trait PointInto<T> {
+    fn point_into(self) -> T;
+}
+impl<T, S: PointFrom<T>> PointInto<S> for T {
+    fn point_into(self) -> S {
+        S::point_from(self)
+    }
+}
+
+pub trait TryPointFrom<T>: Sized {
+    type Error;
+
+    fn try_point_from(value: T) -> Result<Self, Self::Error>;
+}
+pub trait TryPointInto<T> {
+    type Error;
+
+    fn try_point_into(self) -> Result<T, Self::Error>;
+}
+impl<T, S: TryPointFrom<T>> TryPointInto<S> for T {
+    type Error = S::Error;
+
+    fn try_point_into(self) -> Result<S, Self::Error> {
+        S::try_point_from(self)
+    }
+}
+
+macro_rules! impl_point_conversions {
+    ($ArrayN:ident <$S:ident> {$($field:ident),+}) => {
+        impl<T, $S: From<T>> PointFrom<$ArrayN<T>> for $ArrayN<$S> {
+            fn point_from(value: $ArrayN<T>) -> Self {
+                $ArrayN::new($(value.$field.into()),+)
+            }
+        }
+
+        impl<T, $S: TryFrom<T>> TryPointFrom<$ArrayN<T>> for $ArrayN<$S> {
+            type Error = S::Error;
+
+            fn try_point_from(value: $ArrayN<T>) -> Result<Self, Self::Error> {
+                Ok($ArrayN::new($(value.$field.try_into()?),+))
+            }
+        }
+    };
+}
+
+impl_point_conversions!(Point2<S> {x, y});
+impl_point_conversions!(Point3<S> {x, y, z});
+impl_point_conversions!(Vector2<S> {x, y});
+impl_point_conversions!(Vector3<S> {x, y, z});

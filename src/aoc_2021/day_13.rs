@@ -38,7 +38,7 @@ fold along x=5",
 mod solution {
     use super::*;
     use aoc::{grid::StdBool, parse::trim};
-    use cgmath::Vector2;
+    use cgmath::Point2;
     use derive_more::{AsRef, Deref};
     use nom::{
         bytes::complete::tag,
@@ -50,7 +50,7 @@ mod solution {
 
     /// A dot location on the transparent page, which can be parsed from text input.
     #[derive(Deref, AsRef, PartialEq, Eq, Hash, Clone)]
-    struct Dot(Vector2<isize>);
+    struct Dot(Point2<isize>);
     impl Parseable<'_> for Dot {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
@@ -59,14 +59,14 @@ mod solution {
                     trim(false, tag(",")),
                     nom::character::complete::i32,
                 ),
-                |(x, y)| Self(Vector2::new(x.try_into().unwrap(), y.try_into().unwrap())),
+                |(x, y)| Self(Point2::new(x, y).try_point_into().unwrap()),
             )(input)
         }
     }
     impl Dot {
         /// Create a new dot based on its coordinates on the page.
         fn new(x: isize, y: isize) -> Self {
-            Self(Vector2::new(x, y))
+            Self(Point2::new(x, y))
         }
     }
 
