@@ -6,7 +6,9 @@ from enum import Enum, auto
 from typing import List
 
 parser = argparse.ArgumentParser(
-    description="Checks that doc comments conform to the established conventions for the project.")
+    description="Checks that Rust doc comments conform to the established conventions for the project.")
+parser.add_argument("--lints", "-l", action="store_true",
+                    help="just list the lints with descriptions")
 args = parser.parse_args()
 
 
@@ -20,6 +22,11 @@ class DoctestBlock(Enum):
 class RustLine:
     """
     A line of a Rust source file.
+
+    Attributes:
+    doc_comment - Whether this line is a doc comment (bool)
+    content - The content of the line after the doc comment if applicable
+    doctest_block - What type of doctest line this is (DoctestBlock)
     """
 
     def __init__(self, raw_line: str, in_doctest: bool):
@@ -60,6 +67,10 @@ class RustLine:
 class SourceFile:
     """
     A Rust source file.
+
+    Attributes:
+    file_path - Path to this source file (str)
+    lines - List of lines ([RustLine])
     """
 
     def __init__(self, file_path: str):
@@ -93,6 +104,10 @@ class SourceFile:
 class Lint:
     """
     A general doc comment lint.
+
+    Attributes:
+    name - The name of this lint (str)
+    description - A description of this lint (str)
     """
 
     @abstractmethod
@@ -105,10 +120,16 @@ class Lint:
         """
         print(self.name + ": " + source_file.format_line(line_num))
 
+    def describe(self):
+        """
+        Prints the name and description of the lint.
+        """
+        print(self.name + ":", self.description)
+
     @abstractmethod
     def check_file(self, source_file: SourceFile):
         """
-        Check that a file conforms to the lint.
+        Check that a file conforms to the lint and print out any non-conforming lines.
         """
         pass
 
@@ -121,6 +142,7 @@ class IntroLint(Lint):
 
     def __init__(self):
         self.name = "intro_sentence"
+        self.description = "The introduction to every doc comment must be a single isolated sentence"
 
     def check_file(self, source_file: SourceFile):
         lines = source_file.lines
@@ -153,6 +175,7 @@ class CrossRefLint(Lint):
 
     def __init__(self):
         self.name = "cross_ref_code"
+        self.description = "All cross references must use the Markdown code font"
 
     def check_file(self, source_file: SourceFile):
         lines = source_file.lines
@@ -174,8 +197,21 @@ class CrossRefLint(Lint):
                         break
 
 
+class IntroVerbLint(Lint):
+    """
+    Certain item intro sentences must start with an action verb in the proper tense.
+    """
+
+    def __init__(self):
+        self.name = "intro_verb"
+        self.description = "Certain (TODO) intro sentences must begin with an action verb describing what it does, e.g. 'Returns X' instead of 'Return X'"
+
+    def check_file(self, source_file: SourceFile):
+        pass
+
+
 # All our lints.
-lints = [IntroLint(), CrossRefLint()]
+lints = [IntroLint(), CrossRefLint(), IntroVerbLint()]
 
 
 def source_files() -> str:
@@ -191,9 +227,14 @@ def source_files() -> str:
                     yield os.path.join(dir, fname)
 
 
-# Check every file for every lint
-for source_path in source_files():
-    source_file = SourceFile(source_path)
-
+if args.lints:
     for lint in lints:
-        lint.check_file(source_file)
+        lint.describe()
+else:
+    # Check every file for every lint
+    for source_path in ["src/aoc/grid.rs"]:
+        # for source_path in source_files():
+        source_file = SourceFile(source_path)
+
+        for lint in lints:
+            lint.check_file(source_file)

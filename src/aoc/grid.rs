@@ -1,3 +1,7 @@
+//! A 2D grid of values.
+//!
+//! Contains the main [`Grid`] struct, associated traits, and some useful
+//! grid element types.
 use super::prelude::*;
 use cgmath::{EuclideanSpace, Point2, Vector2};
 use core::slice::SlicePattern;
@@ -6,13 +10,14 @@ use itertools::{iproduct, Itertools};
 use num::FromPrimitive;
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
-/// A point in the [`Grid`].
+/// A point location in a [`Grid`].
 pub type GridPoint = Point2<usize>;
 /// The size of a [`Grid`].
 pub type GridSize = Vector2<usize>;
 
-// Extensions for GridSize
+/// Extension trait for [`GridSize`].
 pub trait GridSizeExt {
+    /// Returns an iterator for TODO
     fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>>;
 }
 impl GridSizeExt for GridSize {
