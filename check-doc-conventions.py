@@ -1,4 +1,12 @@
 #! /usr/bin/env python3
+"""
+Run with `-h` for more info.
+
+NOTE: Looked into creating lints in Rust itself using `dylint`, but this seems overly complex
+for what I need, and it is also geared to towards actual code lints rather than doc comments,
+like `clippy`. I was also unable to find a Rust parser module for Python, only getting results
+for the other way around.
+"""
 import argparse
 import os
 from abc import ABC, abstractmethod
@@ -19,14 +27,27 @@ class DoctestBlock(Enum):
     END = auto()
 
 
+class ItemType(Enum):
+    NONE = auto()
+    FUNCTION = auto()
+    STRUCT = auto()
+    ENUM = auto()
+    TRAIT = auto()
+    TYPE = auto()
+    IMPL = auto()
+    USE = auto()
+
+
 class RustLine:
     """
     A line of a Rust source file.
 
     Attributes:
     doc_comment - Whether this line is a doc comment (bool)
-    content - The content of the line after the doc comment if applicable
     doctest_block - What type of doctest line this is (DoctestBlock)
+    comment - Whether this line is a normal comment (bool)
+    content - The content of the line after the comment if applicable
+    item_type - If an item definition, the type of the item.
     """
 
     def __init__(self, raw_line: str, in_doctest: bool):
@@ -34,9 +55,17 @@ class RustLine:
         Parse a raw line from a file.
         """
         sline = raw_line.strip()
+
+        self.doc_comment = False
+        self.doctest_block = DoctestBlock.NONE
+        self.comment = False
+        self.content = sline
+        self.item_type = ItemType.NONE
+
         if sline.startswith("///") or sline.startswith("//!"):
             # A doc comment line
             self.doc_comment = True
+            self.comment = True
             self.content = sline[3:].strip()
             if self.content.startswith("```"):
                 if in_doctest:
@@ -48,11 +77,26 @@ class RustLine:
                     self.doctest_block = DoctestBlock.CODE
                 else:
                     self.doctest_block = DoctestBlock.NONE
+        elif sline.startswith("//"):
+            # A comment but not a doc comment
+            self.comment = True
+            self.content = sline[2:].strip()
         else:
-            # A normal line of code
-            self.doc_comment = False
-            self.content = sline
-            self.doctest_block = DoctestBlock.NONE
+            # A normal line of code, so check if it defines an item
+            if "fn " in sline:
+                self.item_type = ItemType.FUNCTION
+            elif "struct " in sline:
+                self.item_type = ItemType.STRUCT
+            elif "enum " in sline:
+                self.item_type = ItemType.ENUM
+            elif "trait " in sline:
+                self.item_type = ItemType.TRAIT
+            elif "type " in sline:
+                self.item_type = ItemType.TYPE
+            elif "impl " in sline or "impl<" in sline:
+                self.item_type = ItemType.IMPL
+            elif "use " in sline:
+                self.item_type = ItemType.USE
 
     def format(self) -> str:
         """
@@ -60,6 +104,8 @@ class RustLine:
         """
         if self.doc_comment:
             return "/// " + self.content
+        elif self.comment:
+            return "// " + self.content
         else:
             return self.content
 
@@ -136,13 +182,12 @@ class Lint:
 
 class IntroLint(Lint):
     """
-    Verifies that the intro of every doc comment is only a single
-    sentence.
+    The introduction to every doc comment must be a single isolated sentence.
     """
 
     def __init__(self):
         self.name = "intro_sentence"
-        self.description = "The introduction to every doc comment must be a single isolated sentence"
+        self.description = self.__class__.__doc__.strip()
 
     def check_file(self, source_file: SourceFile):
         lines = source_file.lines
@@ -170,12 +215,12 @@ class IntroLint(Lint):
 
 class CrossRefLint(Lint):
     """
-    Verifies that cross references all use code font.
+    All cross references must use the Markdown code font.
     """
 
     def __init__(self):
         self.name = "cross_ref_code"
-        self.description = "All cross references must use the Markdown code font"
+        self.description = self.__class__.__doc__.strip()
 
     def check_file(self, source_file: SourceFile):
         lines = source_file.lines
@@ -197,26 +242,38 @@ class CrossRefLint(Lint):
                         break
 
 
-class IntroVerbLint(Lint):
+class FunctionIntroVerbLint(Lint):
     """
-    Certain item intro sentences must start with an action verb in the proper tense.
+    Function intro sentences must begin with an action verb describing what it does, e.g. 'Returns X' instead of 'Return X'.
     """
 
     def __init__(self):
-        self.name = "intro_verb"
-        self.description = "Certain (TODO) intro sentences must begin with an action verb describing what it does, e.g. 'Returns X' instead of 'Return X'"
+        self.name = "function_intro_verb"
+        self.description = self.__class__.__doc__.strip()
 
     def check_file(self, source_file: SourceFile):
-        pass
+        for ln, line in enumerate(source_file.lines):
+            # First search for the first line of a doc comment
+            if line.doc_comment and (ln == 0 or not source_file.lines[ln-1].doc_comment):
+                # Now look for the first item line
+                for item_line in source_file.lines[ln+1:]:
+                    item_type = item_line.item_type
+                    if item_type is not ItemType.NONE:
+                        if item_type is ItemType.FUNCTION:
+                            # Now verify the that first word is proper case that ends in `s`
+                            first_word = line.content.split()[0]
+                            if not first_word.istitle() or first_word[-1] != "s":
+                                self.alert(source_file, ln)
+                        break
 
 
 # All our lints.
-lints = [IntroLint(), CrossRefLint(), IntroVerbLint()]
+lints = [IntroLint(), CrossRefLint(), FunctionIntroVerbLint()]
 
 
 def source_files() -> str:
     """
-    Generator over al Rust source file paths.
+    Generator over all Rust source file paths.
     """
     src_dirs = ("src", os.path.join("aoc_derive", "src"))
 
@@ -232,8 +289,8 @@ if args.lints:
         lint.describe()
 else:
     # Check every file for every lint
-    for source_path in ["src/aoc/grid.rs"]:
-        # for source_path in source_files():
+    # for source_path in ["src/aoc/grid.rs"]:
+    for source_path in source_files():
         source_file = SourceFile(source_path)
 
         for lint in lints:

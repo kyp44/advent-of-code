@@ -1,4 +1,4 @@
-//! A 2D grid of values.
+//! 2D grids of values.
 //!
 //! Contains the main [`Grid`] struct, associated traits, and some useful
 //! grid element types.
@@ -17,11 +17,11 @@ pub type GridSize = Vector2<usize>;
 
 /// Extension trait for [`GridSize`].
 pub trait GridSizeExt {
-    /// Returns an iterator for TODO
+    /// Returns an [`Iterator`] over all points in a grid of this size.
+    /// TODO: doc test example
     fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>>;
 }
 impl GridSizeExt for GridSize {
-    // Iterator over all grid points in row major order.
     fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>> {
         Box::new(iproduct!(0..self.y, 0..self.x).map(|(y, x)| GridPoint::new(x, y)))
     }
@@ -210,6 +210,7 @@ impl<T: Into<bool> + Clone> Grid<T> {
             .collect()
     }
 }
+
 /// Parsing a grid from a grid of characters with each row on a separate line.
 ///
 /// This can be done for element types that can be fallibly converted from characters.
