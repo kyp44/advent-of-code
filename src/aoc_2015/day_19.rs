@@ -48,7 +48,7 @@ HOHOHO",
 /// element names into single characters for ease of understanding.
 ///
 /// For a discussion of the properties of the input that allow this see
-/// [this reddit post](https://www.reddit.com/r/adventofcode/comments/3xflz8/day_19_solutions/)
+/// [this reddit post](https://www.reddit.com/r/adventofcode/comments/3xflz8/day_19_solutions/).
 mod solution {
     use super::*;
     use aoc::parse::trim;
@@ -87,7 +87,7 @@ mod solution {
         }
     }
     impl Replacement {
-        /// Create from string slices.
+        /// Creates a replacement from string slices.
         fn from_strs(from: &str, to: &str) -> Self {
             Self::new(from.to_string(), to.to_string())
         }
@@ -168,7 +168,7 @@ mod solution {
         /// Counts the number of replacement steps required to create a target molecule
         /// from a starting molecule.
         pub fn number_of_steps(&self, target: &str, input: &str) -> Option<u64> {
-            /// Recursive sub-function of [`Machine::number_of_steps`].
+            /// This is a recursive sub-function of [`Machine::number_of_steps`].
             fn number_of_steps_rec(
                 replacements: &[Replacement],
                 bad_strs: &mut HashSet<String>,

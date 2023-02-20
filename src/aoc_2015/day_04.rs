@@ -19,7 +19,7 @@ mod tests {
 mod solution {
     /// Behavior specific to each part of the problem.
     pub trait Part {
-        /// Whether the third byte of a MD5 hash meets the criteria for this part.
+        /// Tests whether the third byte of a MD5 hash meets the criteria for this part.
         fn check_third_byte(byte: u8) -> bool;
     }
 

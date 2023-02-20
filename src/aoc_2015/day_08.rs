@@ -32,9 +32,9 @@ mod solution {
 
     /// Extension trait to escape or encode a string.
     trait ProgramString {
-        /// Compress the item into an escaped string as it would actually be stored in memory.
+        /// Compresses the item into an escaped string as it would actually be stored in memory.
         fn escaped(&self) -> AocResult<String>;
-        /// Encode the item by escaping special characters.
+        /// Encodes the item by escaping special characters.
         fn encoded(&self) -> String;
     }
     impl ProgramString for str {
@@ -71,19 +71,19 @@ mod solution {
         items: Vec<&'a str>,
     }
     impl<'a> List<'a> {
-        /// Parse the list from text input.
+        /// Parses the list from text input.
         pub fn from_str(s: &'a str) -> Self {
             List {
                 items: s.lines().map(str::trim).collect(),
             }
         }
 
-        /// Find the total size of the string literals for all items
+        /// Finds the total size of the string literals for all items.
         pub fn literal_size(&self) -> usize {
             self.items.iter().map(|item| item.len()).sum()
         }
 
-        /// Find the total size of the escaped strings in memory.
+        /// Finds the total size of the escaped strings in memory.
         pub fn escaped_size(&self) -> AocResult<usize> {
             process_results(
                 self.items.iter().map(|item| item.escaped()),
@@ -91,7 +91,7 @@ mod solution {
             )
         }
 
-        /// Find the total size of the escaped strings after escaping special characters.
+        /// Finds the total size of the escaped strings after escaping special characters.
         pub fn encoded_size(&self) -> usize {
             self.items.iter().map(|item| item.encoded().len()).sum()
         }

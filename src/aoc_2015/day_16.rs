@@ -98,14 +98,14 @@ mod solution {
         sues: Box<[Sue<'a>]>,
     }
     impl<'a> Problem<'a> {
-        /// Parse from text input.
+        /// Parses from text input.
         pub fn from_str(s: &'a str) -> AocResult<Self> {
             Ok(Problem {
                 sues: Sue::gather(s.lines())?.into_boxed_slice(),
             })
         }
 
-        /// [`Iterator`] of Aunt Sues who match the readout from the MFCSAM.
+        /// Returns an [`Iterator`] of Aunt Sues who match the readout from the MFCSAM.
         pub fn matches<P: Part>(&self) -> impl Iterator<Item = &Sue<'_>> {
             let output = Sue::new(hashmap! {
                 "children" => 3,
@@ -124,7 +124,7 @@ mod solution {
         }
     }
 
-    /// Solve a part of the problem.
+    /// Solves a part of the problem.
     pub fn solve<P: Part>(input: &SolverInput) -> AocResult<Answer> {
         // Generation
         let problem = Problem::from_str(input.expect_input()?)?;

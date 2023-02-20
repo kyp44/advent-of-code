@@ -125,7 +125,7 @@ mod solution {
 
     /// Light states particular to a part of the problem.
     pub trait Part {
-        /// Initial state.
+        /// Returns the initial state.
         fn initial() -> Self;
         /// Updates this light state based on the action.
         fn update(&mut self, action: &Action);

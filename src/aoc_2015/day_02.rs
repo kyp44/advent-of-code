@@ -26,7 +26,7 @@ mod solution {
     struct Present {
         /// List of dimensions in feet.
         ///
-        /// This will always be sorted from least to greatest
+        /// This will always be sorted from least to greatest.
         dimensions: Vec<u64>,
     }
     impl FromStr for Present {

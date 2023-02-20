@@ -51,7 +51,7 @@ mod solution {
         chars: Vec<char>,
     }
     impl LexOrder {
-        /// Create a new [`Iterator`] from a starting string.
+        /// Creates a new [`Iterator`] from a starting string.
         fn new(s: &str) -> Self {
             LexOrder {
                 chars: s.chars().rev().collect(),

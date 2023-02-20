@@ -55,7 +55,7 @@ mod solution {
         }
     }
     impl Direction {
-        /// Change in floor number if Santa goes in this direction.
+        /// Changes in floor number if Santa goes in this direction.
         fn floor_change(&self) -> i64 {
             match self {
                 Direction::Up => 1,

@@ -73,7 +73,7 @@ mod solution {
         reindeer: Box<[Reindeer]>,
     }
     impl Race {
-        /// Parse the race from text input.
+        /// Parses the race from text input.
         pub fn from_str(s: &str) -> AocResult<Self> {
             Ok(Race {
                 reindeer: Reindeer::gather(s.lines())?.into_boxed_slice(),

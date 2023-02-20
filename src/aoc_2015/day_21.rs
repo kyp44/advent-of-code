@@ -102,7 +102,7 @@ mod solution {
         shop_item!("Defense +3", 80, 0, 3),
     ];
 
-    /// A character, i.e. either the player or the boss.
+    /// A character, which is either the player or the boss.
     ///
     /// This can be parsed from text input.
     #[derive(Debug, new)]
@@ -162,7 +162,7 @@ mod solution {
             }
         }
 
-        /// Attack another character, returning the total damage dealt.
+        /// Attacks another character, returning the total damage dealt.
         fn attack(&self, other: &Self) -> u32 {
             self.stats.damage.saturating_sub(other.stats.armor).max(1)
         }

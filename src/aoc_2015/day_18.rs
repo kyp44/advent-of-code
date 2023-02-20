@@ -29,7 +29,7 @@ mod solution {
 
     /// Behavior specific to one particular part of the problem.
     pub trait Part {
-        /// Given a grid, returns the set of lights that are stuck on.
+        /// Returns the set of lights that are stuck on given a grid.
         fn stuck_points(grid: &Grid<StdBool>) -> HashSet<GridPoint>;
     }
 
@@ -62,7 +62,7 @@ mod solution {
     pub struct LightGrid<P> {
         /// The the actual grid.
         grid: Grid<StdBool>,
-        /// Phantom data for the part
+        /// Phantom data for the part.
         phant: PhantomData<P>,
     }
     impl<P: Part> FromStr for LightGrid<P> {
@@ -120,7 +120,7 @@ mod solution {
         }
     }
 
-    /// Solve a part of the problem.
+    /// Solves a part of the problem.
     pub fn solve<P: Part + Clone>(grid: &LightGrid<P>) -> AocResult<Answer> {
         Ok(grid
             .evolutions()

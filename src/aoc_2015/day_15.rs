@@ -147,7 +147,7 @@ mod solution {
         }
     }
     impl Ingredient {
-        /// The total score of a total ingredient.
+        /// Returns the total score of a total ingredient.
         fn score(&self) -> u64 {
             if self.capacity < 0 || self.durability < 0 || self.flavor < 0 || self.texture < 0 {
                 return 0;
@@ -172,7 +172,7 @@ mod solution {
         rest_iter: Box<dyn Iterator<Item = Vec<T>>>,
     }
     impl<T: Copy + Step + num::Num + 'static> SumPermutations<T> {
-        /// Create a new permutation [`Iterator`].
+        /// Creates a new permutation [`Iterator`].
         fn new(sum: T, number: usize) -> Self {
             let mut first_iter = T::zero()..=sum;
             let first = first_iter.next().unwrap();
@@ -229,7 +229,7 @@ mod solution {
         }
     }
 
-    /// Behavior specific to a particular problem part
+    /// Behavior specific to a particular problem part.
     pub trait Part {
         /// Determines if a cookie with particular total ingredients is valid to consider for the part.
         fn valid_recipe(_ingredient: &Ingredient) -> bool {
@@ -265,7 +265,7 @@ mod solution {
         }
     }
     impl Problem {
-        /// Determine score of the highest scoring cookie possible.
+        /// Determines score of the highest scoring cookie possible.
         pub fn best_recipe<P: Part>(&self) -> u64 {
             SumPermutations::new(100, self.ingredients.len())
                 .map(|amounts| {

@@ -78,7 +78,7 @@ mod solution {
         preferences: Vec<SeatingPreference<'a>>,
     }
     impl<'a> Problem<'a> {
-        /// Parse the problem from text input.
+        /// Parses the problem from text input.
         pub fn from_str(s: &'a str) -> AocResult<Self> {
             let preferences = SeatingPreference::gather(s.lines())?;
             let mut attendees: HashSet<&str> = HashSet::new();

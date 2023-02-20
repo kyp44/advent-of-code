@@ -27,7 +27,7 @@ mod solution {
         presents: Vec<usize>,
     }
     impl Delivery {
-        /// Create a delivery base on a target number, a present multiplier (i.e. the number of
+        /// Creates a delivery base on a target number, a present multiplier (which is the number of
         /// presents each elf delivers divided by its elf number), and an optional maximum
         /// number of houses to which each elf delivers.
         pub fn new(target: usize, present_mult: usize, house_limit: Option<usize>) -> Self {
@@ -64,7 +64,7 @@ mod solution {
             Delivery { target, presents }
         }
 
-        /// The first house number who got at least as many presents as the target number.
+        /// Returns the first house number who got at least as many presents as the target number.
         pub fn first_house(&self) -> AocResult<u64> {
             Ok((self
                 .presents

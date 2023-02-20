@@ -18,7 +18,6 @@ pub type GridSize = Vector2<usize>;
 /// Extension trait for [`GridSize`].
 pub trait GridSizeExt {
     /// Returns an [`Iterator`] over all points in a grid of this size.
-    /// TODO: doc test example.
     fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>>;
 }
 impl GridSizeExt for GridSize {

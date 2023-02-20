@@ -45,12 +45,12 @@ mod solution {
             self.hit_points += amount;
         }
 
-        /// Hurt the character by some number of hit points.
+        /// Hurts the character by some number of hit points.
         fn hurt(&mut self, damage: u32) {
             self.hit_points = self.hit_points.saturating_sub(damage);
         }
 
-        /// Whether or not the character is currently dead.
+        /// Returns whether or not the character is currently dead.
         fn dead(&self) -> bool {
             self.hit_points == 0
         }
@@ -119,17 +119,18 @@ mod solution {
 
     /// Interface for spells.
     trait Spell: SpellClone {
-        /// Create the spell.
+        /// Creates the spell.
         fn new() -> Self
         where
             Self: Sized;
-        /// Name of the spell.
+        /// Returns the name of the spell.
         fn name(&self) -> &'static str;
-        /// Mana cost to cast the spell.
+        /// Returns the mana cost to cast the spell.
         fn cost(&self) -> u32;
-        /// Apply the effects of the spell on the player and boss characters.
+        /// Applies the effects of the spell on the player and boss characters.
         fn apply_effect(&mut self, player: &mut Character, opponent: &mut Character);
-        /// Whether or not the spell has expired given the number of times its affect has been applied.
+        /// Returns the whether or not the spell has expired given the number of
+        /// times its affect has been applied.
         fn expired(&self) -> bool;
     }
     impl PartialEq for dyn Spell {
@@ -147,7 +148,7 @@ mod solution {
     ///
     /// See [this StackOverflow post](https://stackoverflow.com/questions/30353462/how-to-clone-a-struct-storing-a-boxed-trait-object).
     trait SpellClone {
-        /// Clone the trait object.
+        /// Clones the trait object.
         fn clone_box(&self) -> Box<dyn Spell>;
     }
     impl<T> SpellClone for T
@@ -338,7 +339,7 @@ mod solution {
         Recharge,
     }
     impl SpellType {
-        /// Create the spell of this type.
+        /// Creates the spell of this type.
         fn create(&self) -> Box<dyn Spell> {
             match *self {
                 SpellType::MagicMissile => Box::new(MagicMissile::new()),
@@ -350,7 +351,7 @@ mod solution {
         }
     }
 
-    /// The characters involved in a battle
+    /// The characters involved in a battle.
     #[derive(Clone, new)]
     pub struct Characters {
         /// The player.
@@ -364,7 +365,7 @@ mod solution {
     /// `hard_mode` causes the player character to take 1 damage at the beginning of
     /// each player turn.
     pub fn solve(characters: &Characters, hard_mode: bool) -> AocResult<u64> {
-        /// Recursive sub-function of [`solve`].
+        /// This is a recursive sub-function of [`solve`].
         fn solve_rec(
             level: usize,
             spent: u32,

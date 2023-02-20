@@ -56,7 +56,7 @@ mod solution {
     }
 
     impl Problem {
-        /// Solve a part of the problem by calculating the number at the correct position.
+        /// Solves a part of the problem by calculating the number at the correct position.
         pub fn solve(&self) -> AocResult<u64> {
             let (row, col) = (self.row, self.col);
 

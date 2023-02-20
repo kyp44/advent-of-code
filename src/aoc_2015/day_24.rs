@@ -38,7 +38,7 @@ mod solution {
         group_weight: u32,
     }
     impl Problem {
-        /// For a given number of division groups/compartments, parse the package weight list from text input.
+        /// Parses the package weight list from text input for a given number of division groups/compartments.
         pub fn from_str(groups: usize, s: &str) -> AocResult<Self> {
             let weights = u32::gather(s.lines())?;
 

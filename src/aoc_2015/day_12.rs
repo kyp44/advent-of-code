@@ -82,7 +82,7 @@ mod solution {
 
     /// Capability to determine the sum of numbers contained in a particular JSON value.
     pub trait SumNumbers {
-        /// Recursively calculates the number sum of the JSON value.
+        /// Calculates the number sum of the JSON value recursively.
         fn sum_numbers<P: Part>(&self) -> i64;
     }
     impl SumNumbers for Value {

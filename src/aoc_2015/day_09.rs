@@ -37,7 +37,7 @@ mod solution {
         origin: &'a str,
         /// Name of the destination city.
         destination: &'a str,
-        /// Distance between the two cities
+        /// Distance between the two cities.
         distance: u64,
     }
     impl<'a> Parseable<'a> for Distance<'a> {
@@ -62,13 +62,13 @@ mod solution {
     #[derive(Eq)]
     struct Transit<'a>(&'a str, &'a str);
     impl<'a> PartialEq for Transit<'a> {
-        /// Equality should not depend on the order.
+        /// Returns whether two transits are equal, which should not depend on the order.
         fn eq(&self, other: &Self) -> bool {
             (self.0 == other.0 && self.1 == other.1) || (self.0 == other.1 && self.1 == other.0)
         }
     }
     impl<'a> hash::Hash for Transit<'a> {
-        /// Need a hash such that it is the same regardless of the order.
+        /// Hashes a transit so that two transits in the opposite order produce the same hash.
         fn hash<H: hash::Hasher>(&self, state: &mut H) {
             if self.0 <= self.1 {
                 self.0.hash(state);
@@ -88,7 +88,7 @@ mod solution {
         distances: HashMap<Transit<'a>, u64>,
     }
     impl<'a> Problem<'a> {
-        /// Parse the problem from text input.
+        /// Parses the problem from text input.
         pub fn from_str(input: &'a str) -> AocResult<Self> {
             let mut cities = HashSet::new();
             let mut distances = HashMap::new();
