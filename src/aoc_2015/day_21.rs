@@ -138,7 +138,7 @@ mod solution {
             /// Take character `a`'s turn, attacking player `b`, who has a specified number of hit points.
             ///
             /// Returns whether the attack killed player `b`.
-            /// This is a sub-function of [`Character::battle`].
+            /// This is an internal function of [`Character::battle`].
             fn turn(_astr: &str, _bstr: &str, a: &Character, b: &Character, hp: &mut u32) -> bool {
                 let damage = a.attack(b);
                 *hp = hp.saturating_sub(damage);

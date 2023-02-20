@@ -58,9 +58,9 @@ mod solution {
     /// Behavior specific to one particular part of the problem, which
     /// holds the state of the submarine for the part.
     pub trait State: Default {
-        /// Apply a direction to the state.
+        /// Applies a direction to the state.
         fn apply_direction(&mut self, direction: &Direction);
-        /// Calculate the result based on the current state.
+        /// Calculates the result based on the current state.
         fn calculate_result(&self) -> i64;
     }
 
@@ -129,7 +129,7 @@ mod solution {
         }
     }
     impl Course {
-        /// Return the submarine state after following all of the directions.
+        /// Returns the submarine state after following all of the directions.
         pub fn end_position<P: State>(&self) -> P {
             let mut position = P::default();
             for direction in self.directions.iter() {

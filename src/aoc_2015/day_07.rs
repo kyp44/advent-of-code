@@ -91,7 +91,7 @@ mod solution {
     }
     impl<'a> Parseable<'a> for Element<'a> {
         fn parser(input: &'a str) -> NomParseResult<&str, Self> {
-            /// A [`nom`] parser for the input/output separator
+            /// This is a [`nom`] parser for the input/output separator.
             fn io_sep<'a, E>(input: &'a str) -> IResult<&str, (), E>
             where
                 E: nom::error::ParseError<&'a str>,
@@ -99,7 +99,7 @@ mod solution {
                 value((), separated(tag("->")))(input)
             }
 
-            /// A [`nom`] parser for the shift element
+            /// This is a [`nom`] parser for the shift element.
             fn shift<'a>(
                 keyword: &'static str,
                 mapper: fn(Unary<'a>, usize) -> Element<'a>,
@@ -118,7 +118,7 @@ mod solution {
                 )
             }
 
-            /// A [`nom`] parser for a binary operation
+            /// This is a [`nom`] parser for a binary operation.
             fn binary<'a>(
                 keyword: &'static str,
                 mapper: fn(Binary<'a>) -> Element<'a>,
@@ -196,9 +196,10 @@ mod solution {
             })
         }
 
-        /// Determines the resulting value on a wire recursively when the circuit is connected.
+        /// Determines the resulting value on a wire when the circuit is connected.
         pub fn determine_signal<'b>(&'b mut self, wire: &'a str) -> AocResult<u16> {
-            /// Recursive internal function for [`Circuit::determine_signal`] to determine the value on a wire.
+            /// This is an internal function for [`Circuit::determine_signal`] to determine
+            /// the value on a wire.
             fn det_sig<'a: 'b, 'b>(
                 wire_values: &'b mut HashMap<&'a str, u16>,
                 elements: &'b [Element<'a>],

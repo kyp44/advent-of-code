@@ -41,7 +41,7 @@ mod solution {
         bit_vec: Vec<bool>,
     }
     impl ReportLine {
-        /// The decimal value of the bits.
+        /// Returns the decimal value of the bits.
         fn value(&self) -> u64 {
             self.bit_vec.iter().fold(0, |a, b| 2 * a + u64::from(*b))
         }

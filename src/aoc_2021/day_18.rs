@@ -41,7 +41,7 @@ mod solution {
     enum Element {
         /// An opening bracket.
         Open,
-        /// A closing bracket
+        /// A closing bracket.
         Close,
         /// A number literal.
         Num(u8),
@@ -98,7 +98,7 @@ mod solution {
         }
     }
     impl SnailfishNumber {
-        /// Fully reduce the number.
+        /// Reduces the number fully.
         fn reduce(&mut self) {
             loop {
                 // Note that, if an explosion is done, the loop will restart due to
@@ -160,7 +160,7 @@ mod solution {
             false
         }
 
-        /// Split the first applicable number and returns whether a split occurred.
+        /// Splits the first applicable number and returns whether a split occurred.
         fn split(&mut self) -> bool {
             // Look for the first candidate element
             if let Some((i, n)) = self.stack.iter().enumerate().find_map(|(i, e)| {

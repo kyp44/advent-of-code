@@ -129,7 +129,7 @@ mod solution {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             /// [`nom`] parser that parses an inclusive range.
             ///
-            /// This is a sub-function of [`Cuboid::parser`].
+            /// This is an internal function of [`Cuboid::parser`].
             fn parse_range(input: &str) -> NomParseResult<&str, CuboidRange> {
                 map(
                     separated_pair(
@@ -216,7 +216,7 @@ mod solution {
         Empty,
         /// The set of points contained in a basic cuboid region.
         Basic(Cuboid),
-        /// The difference between two sets, i.e. the first set with the second set
+        /// The difference between two sets, which is the first set with the second set
         /// removed if they intersect.
         Difference(Box<Set>, Box<Set>),
         /// The union of two other sets.
@@ -250,7 +250,7 @@ mod solution {
             }
         }
 
-        /// Returns the difference of this set and another, i.e. this set with the
+        /// Returns the difference of this set and another, that is this set with the
         /// points of the other set removed if they intersect.
         fn difference(self, other: Self) -> Self {
             if self.is_empty() {
@@ -262,7 +262,7 @@ mod solution {
             }
         }
 
-        /// The union of this set and another.
+        /// Returns the union of this set and another.
         fn union(self, other: Self) -> Self {
             if self.is_empty() {
                 other
@@ -273,7 +273,7 @@ mod solution {
             }
         }
 
-        /// The number of points in this set.
+        /// Returns the number of points in this set.
         pub fn num_points(&self) -> u64 {
             match self {
                 Set::Empty => 0,

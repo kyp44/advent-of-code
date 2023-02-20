@@ -84,7 +84,7 @@ mod solution {
         }
     }
 
-    /// Solves a problem by summing the number of questions for each group
+    /// Solves a problem by summing the number of questions for each group.
     pub fn solve(input: &SolverInput, group_f: fn(&Group) -> Questions) -> AocResult<Answer> {
         Ok(Answer::Unsigned(
             input

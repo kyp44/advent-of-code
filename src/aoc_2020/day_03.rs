@@ -80,7 +80,7 @@ mod solution {
         }
     }
 
-    /// For a particular [`Map`] and slope, counts the number of trees encountered on the way down.
+    /// Counts the number of trees encountered on the way down for a particular [`Map`] and slope.
     pub fn count_slope(map: &Map, slope: Vector2<usize>) -> u64 {
         MapDownhill::new(map, slope).filter_count(|t| *t)
     }

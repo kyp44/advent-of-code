@@ -54,7 +54,7 @@ mod solution {
         }
     }
     impl Game {
-        /// Play the game up to some number of turns, returning the number spoken at that turn.
+        /// Plays the game up to some number of turns, returning the number spoken at that turn.
         pub fn play(&self, to_turn: usize) -> u64 {
             // Maps the spoken number to the last turn number
             // This had been implemented before as a HashMap but was

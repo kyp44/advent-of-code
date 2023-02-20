@@ -11,7 +11,7 @@ import argparse
 import os
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import List
+from typing import List, Tuple
 
 parser = argparse.ArgumentParser(
     description="Checks that Rust doc comments conform to the established conventions for the project.")
@@ -58,6 +58,7 @@ class RustLine:
 
         self.doc_comment = False
         self.doctest_block = DoctestBlock.NONE
+        self.section_header = False
         self.comment = False
         self.content = sline
         self.item_type = ItemType.NONE
@@ -67,7 +68,9 @@ class RustLine:
             self.doc_comment = True
             self.comment = True
             self.content = sline[3:].strip()
-            if self.content.startswith("```"):
+            if self.content.startswith("#"):
+                self.section_header = True
+            elif self.content.startswith("```"):
                 if in_doctest:
                     self.doctest_block = DoctestBlock.END
                 else:
@@ -146,6 +149,15 @@ class SourceFile:
         """
         return self.file_path + ":" + str(line_num + 1) + " " + self.lines[line_num].format()
 
+    def doc_comment_lines(self) -> Tuple[int, RustLine]:
+        """
+        Generator over the first lines of every doc comment.
+        """
+        for ln, line in enumerate(self.lines):
+            # First check for multiple sentences in the doc introduction
+            if line.doc_comment and (ln == 0 or not self.lines[ln-1].doc_comment):
+                yield (ln, line)
+
 
 class Lint:
     """
@@ -180,37 +192,75 @@ class Lint:
         pass
 
 
-class IntroLint(Lint):
+class IsolatedIntroLint(Lint):
     """
     The introduction to every doc comment must be a single isolated sentence.
     """
 
     def __init__(self):
-        self.name = "intro_sentence"
+        self.name = "isolated_intro_sentence"
         self.description = self.__class__.__doc__.strip()
 
     def check_file(self, source_file: SourceFile):
         lines = source_file.lines
 
-        for ln, line in enumerate(lines):
-            # First check for multiple sentences in the doc introduction
-            if line.doc_comment and (ln == 0 or not lines[ln-1].doc_comment):
-                # Append the following lines until a blank or non-comment line is reached
-                long_line = line.content
-                for next_line in lines[ln + 1:]:
-                    if not next_line.doc_comment or len(next_line.content) == 0:
-                        break
+        for ln, line in source_file.doc_comment_lines():
+            # Append the following lines until a blank or non-comment line is reached
+            long_line = line.content
+            for next_line in lines[ln + 1:]:
+                if not next_line.doc_comment or len(next_line.content) == 0:
+                    break
 
+                long_line += " " + next_line.content
+
+            # Determine if the full intro text is more than one sentence
+            for part in long_line.split(". ")[1:]:
+                # Is the first letter of the next "sentence" a capital letter?
+                # This will not be the case for abbreviations like "i.e.", and these
+                # are perfectly ok since they do not start a new sentence.
+                if part[0].isupper():
+                    self.alert(source_file, ln)
+                    break
+
+
+class CompleteSentencesLint(Lint):
+    """
+    Text must be complete sentences.
+    """
+
+    def __init__(self):
+        self.name = "complete_sentences"
+        self.description = self.__class__.__doc__.strip()
+
+    def check_file(self, source_file: SourceFile):
+        lines = source_file.lines
+
+        for ln, line in source_file.doc_comment_lines():
+            # Combine all doc comment text except section headers until until a non-comment line is reached
+            long_line = "" if line.section_header else line.content
+            for next_line in lines[ln + 1:]:
+                if not next_line.doc_comment:
+                    break
+
+                # Only append non-empty lines that are not section headers
+                if next_line.content and not next_line.section_header:
                     long_line += " " + next_line.content
 
-                # Determine if the full intro text is more than one sentence
-                for part in long_line.split(". ")[1:]:
-                    # Is the first letter of the next "sentence" a capital letter?
-                    # This will not be the case for abbreviations like "i.e.", and these
-                    # are perfectly ok since they do not start a new sentence.
-                    if part[0].isupper():
-                        self.alert(source_file, ln)
-                        break
+            # Split into individual sentences and check them
+            sentences = long_line.split(". ")
+            for sentence in sentences:
+                words = sentence.split()
+
+                # Ensure that the first word is capitalized
+                if words[0].isalpha() and not words[0].isupper() and not words[0].istitle():
+                    #print("FIRST WORD", words[0])
+                    self.alert(source_file, ln)
+                    break
+
+            # Lastly, ensure that the final sentence does end in period
+            if sentences[-1][-1] != ".":
+                #print("LAST PERIOD", sentences[-1])
+                self.alert(source_file, ln)
 
 
 class CrossRefLint(Lint):
@@ -252,23 +302,22 @@ class FunctionIntroVerbLint(Lint):
         self.description = self.__class__.__doc__.strip()
 
     def check_file(self, source_file: SourceFile):
-        for ln, line in enumerate(source_file.lines):
-            # First search for the first line of a doc comment
-            if line.doc_comment and (ln == 0 or not source_file.lines[ln-1].doc_comment):
-                # Now look for the first item line
-                for item_line in source_file.lines[ln+1:]:
-                    item_type = item_line.item_type
-                    if item_type is not ItemType.NONE:
-                        if item_type is ItemType.FUNCTION:
-                            # Now verify the that first word is proper case that ends in `s`
-                            first_word = line.content.split()[0]
-                            if not first_word.istitle() or first_word[-1] != "s":
-                                self.alert(source_file, ln)
-                        break
+        for ln, line in source_file.doc_comment_lines():
+            # Now look for the first item line
+            for item_line in source_file.lines[ln+1:]:
+                item_type = item_line.item_type
+                if item_line.doc_comment or item_type is not ItemType.NONE:
+                    if item_type is ItemType.FUNCTION:
+                        # Now verify the that first word is proper case that ends in `s`
+                        first_word = line.content.split()[0]
+                        if not first_word.istitle() or first_word[-1] != "s":
+                            self.alert(source_file, ln)
+                    break
 
 
 # All our lints.
-lints = [IntroLint(), CrossRefLint(), FunctionIntroVerbLint()]
+lints = [IsolatedIntroLint(), CrossRefLint(), CompleteSentencesLint(),
+         FunctionIntroVerbLint()]
 
 
 def source_files() -> str:

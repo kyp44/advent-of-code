@@ -91,7 +91,7 @@ mod solution {
         }
     }
 
-    /// Behavior for Part two.
+    /// Behavior for part two.
     pub struct PartTwo;
     impl Part for PartTwo {
         fn visited_houses(directions: &[Direction]) -> HashSet<Point> {

@@ -159,7 +159,7 @@ mod solution {
     /// and flips.
     #[derive(Clone, Copy, EnumIter, Display)]
     pub enum Transform {
-        /// Rotate 0 degrees, i.e. the identity transformation.
+        /// Rotate 0 degrees, that is the identity transformation.
         Rot0,
         /// Rotate 90 degrees counterclockwise.
         Rot90,
@@ -205,7 +205,7 @@ mod solution {
         pixels: Grid<Pixel>,
     }
     impl Image {
-        /// Returns this image rotated 90 degrees counter-clockwise
+        /// Returns this image rotated 90 degrees counter-clockwise.
         fn rot_90(&self) -> Self {
             let size = self.pixels.size();
             let mut out = Image::default(GridSize::new(size.y, size.x));
@@ -505,7 +505,7 @@ mod solution {
         }
     }
 
-    /// Search for square root of an integer if it exists.
+    /// Searches for square root of an integer if it exists.
     fn sqrt(n: usize) -> Option<usize> {
         let mut i: usize = 0;
         loop {
@@ -599,17 +599,17 @@ mod solution {
             }
         }
 
-        /// The width and height of the square map in tiles.
+        /// Returns the width and height of the square map in tiles.
         fn size(&self) -> usize {
             self.slots.size().x
         }
 
-        /// Set a tile in the map.
+        /// Sets a tile in the map.
         fn set(&mut self, point: &GridPoint, tile: Rc<Tile>, transform: Transform) {
             self.slots.set(point, Some(TileSlot { tile, transform }));
         }
 
-        /// Get the tile at a point in the map, if one is placed there.
+        /// Gets the tile at a point in the map, if one is placed there.
         fn get(&self, point: &GridPoint) -> Option<&TileSlot> {
             self.slots.get(point).as_ref()
         }
@@ -625,7 +625,7 @@ mod solution {
             }
         }
 
-        /// Results a stitched image of the tile map if possible, i.e. if all
+        /// Results a stitched image of the tile map if possible, that is if all
         /// the tiles have been placed.
         pub fn stitched_image(&self) -> AocResult<Image> {
             self.verify_filled()?;
@@ -681,7 +681,7 @@ mod solution {
         pub fn solve(self) -> AocResult<TileMap> {
             let map = TileMap::new(self.tile_set);
 
-            /// Recursive internal function of [`Solver::solve`].
+            /// This is a recursive internal function of [`Solver::solve`].
             fn solve_slot(x: usize, y: usize, map: TileMap) -> Option<TileMap> {
                 if map.remaining.is_empty() {
                     return Some(map);

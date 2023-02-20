@@ -30,17 +30,18 @@ use itertools::Itertools;
 #[derive(Parser)]
 #[command(name = "Advent of Code Solutions", author, version)]
 struct Args {
-    /// List the implemented solutions
+    /// List the implemented solutions.
     #[arg(short, long)]
     list: bool,
-    /// Year of the problem solution to run
+    /// Year of the problem solution to run.
     #[arg(name = "YEAR", required_unless_present("list"))]
     year: Option<u32>,
-    /// Day of the problem solution to run (1-25)
+    /// Day of the problem solution to run (1-25).
     #[arg(name = "DAY", required_unless_present("list"))]
     day: Option<u32>,
 }
 
+/// Runs the program, of course.
 fn main() -> anyhow::Result<()> {
     // Parse command line arguments
     let cli = Args::parse();

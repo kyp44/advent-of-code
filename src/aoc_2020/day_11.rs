@@ -105,7 +105,7 @@ mod solution {
         PartTwo,
     }
     impl Part {
-        /// Minimum number of adjacent seats that are occupied in order for a seat to vacate.
+        /// Returns the minimum number of adjacent seats that are occupied in order for a seat to vacate.
         fn min_needed_to_vacate(&self) -> u8 {
             match self {
                 Part::PartOne => 4,
@@ -113,7 +113,7 @@ mod solution {
             }
         }
 
-        /// Number of occupied seats for a given seat for the part.
+        /// Returns the number of occupied seats for a given seat for the part.
         fn point_occupied(&self, area: &Area, point: &GridPoint) -> u8 {
             let grid = &area.grid;
             match self {
@@ -200,7 +200,7 @@ mod solution {
         }
     }
     impl Area {
-        /// Set the problem at to use.
+        /// Sets the problem at to use.
         pub fn set_part(&mut self, part: Part) {
             self.part = part;
         }
@@ -212,7 +212,7 @@ mod solution {
                 .filter_count(|seat| matches!(seat, Seat::Occupied))
         }
 
-        /// Run the simulation and returns the termination status containing the final state.
+        /// Runs the simulation and returns the termination status containing the final state.
         pub fn simulate(&self) -> TerminationStatus<Rc<Self>> {
             let mut prior_states: HashSet<Rc<Self>> = HashSet::new();
             let mut last_state = prior_states.get_or_insert(Rc::new(self.clone()));

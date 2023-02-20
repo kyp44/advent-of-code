@@ -226,11 +226,11 @@ mod solution {
     /// Note that these could not have been implemented as the normal operator traits
     /// due to the orphan rule.
     trait QuaternionExt {
-        /// Conjugate.
+        /// Conjugates a quaternion.
         fn conj(self) -> Self;
-        /// Multiplication.
+        /// Multiplies two quaternions.
         fn mul(self, rhs: Self) -> Self;
-        /// Division.
+        /// Divides two quaternions.
         fn div(self, rhs: i32) -> Self;
     }
     impl QuaternionExt for Quaternion<i32> {
@@ -469,7 +469,7 @@ mod solution {
         }
     }
     impl ScannerNetwork {
-        /// Correlate all the scanners together and return the correlated network.
+        /// Correlates all the scanners together and return the correlated network.
         pub fn correlate(&self) -> CorrelatedScannerNetwork {
             /// Recursive sub-function of [`ScannerNetwork::correlate`] that correlates
             /// scanners one by one.

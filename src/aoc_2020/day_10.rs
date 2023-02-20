@@ -64,7 +64,7 @@ mod solution {
 
     use super::*;
 
-    /// An adapter with a particular output voltage
+    /// An adapter with a particular output voltage.
     #[derive(PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Copy)]
     struct Adapter {
         /// The output joltage of the adapter.
@@ -93,7 +93,7 @@ mod solution {
         Compatible(u32),
     }
     impl AdapterDifference {
-        /// Whether the compared adapters are compatible or not.
+        /// Returns whether the compared adapters are compatible or not.
         fn is_compatible(&self) -> bool {
             matches!(self, Self::Compatible(_))
         }
@@ -156,7 +156,7 @@ mod solution {
             self.adapters.windows(2).map(|w| w[1] - w[0])
         }
 
-        /// Count the number of adapter transitions that have a particular joltage difference.
+        /// Counts the number of adapter transitions that have a particular joltage difference.
         pub fn count_joltage_differences(&self, difference: u32) -> usize {
             // Verify that the sorted adapters are all compatible
             self.differences().filter_count(|diff| match diff {

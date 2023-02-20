@@ -21,7 +21,7 @@ mod solution {
 
     /// Behavior specific to one particular part of the problem.
     pub trait Part {
-        /// For a given horizontal distance traveled, returns the amount of fuel used.
+        /// Returns the amount of fuel used for a given horizontal distance traveled.
         fn fuel_used(dist: u64) -> u64;
     }
 

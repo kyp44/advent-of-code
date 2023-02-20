@@ -96,7 +96,7 @@ mod solution {
         CountryId,
     }
     impl PassportField {
-        /// Given the field type, returns whether a field value is valid or not.
+        /// Returns whether a field value is valid or not given the field type.
         fn validate(&self, value: &str) -> bool {
             use PassportField::*;
             match self {
@@ -216,7 +216,7 @@ mod solution {
         }
     }
     impl Passport {
-        /// Validate the passport for a particular part of the problem.
+        /// Validates the passport for a particular part of the problem.
         pub fn validate<P: Part>(&self) -> bool {
             P::validate(&self.field_map)
         }
@@ -228,14 +228,14 @@ mod solution {
         passports: Vec<Passport>,
     }
     impl PassportList {
-        /// Parse the list from text input.
+        /// Parses the list from text input.
         pub fn from_str(input: &str) -> AocResult<Self> {
             Ok(Self {
                 passports: Passport::gather(input.split("\n\n"))?,
             })
         }
 
-        /// Count the number of passports in the list that are valid for a particular part of the problem.
+        /// Counts the number of passports in the list that are valid for a particular part of the problem.
         pub fn count_valid<P: Part>(&self) -> u64 {
             self.passports.iter().filter_count(|p| p.validate::<P>())
         }

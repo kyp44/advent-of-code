@@ -38,7 +38,8 @@ mod solution {
         }
     }
     impl Problem {
-        /// [`Iterator`] of all combinations of containers that hold a particular amount of eggnog in liters.
+        /// Returns an [`Iterator`] of all combinations of containers that hold a
+        /// particular amount of eggnog in liters.
         pub fn combinations(&self, amount: u16) -> impl Iterator<Item = Vec<u16>> + '_ {
             (1..=self.containers.len())
                 .flat_map(move |k| {

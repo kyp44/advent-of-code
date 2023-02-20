@@ -114,7 +114,7 @@ mod solution {
         }
     }
     impl Instruction {
-        /// Execute the instruction by modifying the program state.
+        /// Executes the instruction by modifying the program state.
         fn execute(&self, state: &mut State) {
             let mut register = |r: &Register, f: Box<dyn FnOnce(u64) -> u64>| {
                 let reg = state.registers.get_mut(r).unwrap();
@@ -154,7 +154,7 @@ mod solution {
         pub registers: HashMap<Register, u64>,
     }
     impl State {
-        /// Create a state with given register values.
+        /// Creates a state with given register values.
         pub fn new(a: u64, b: u64) -> Self {
             State {
                 program_counter: 0,
@@ -178,7 +178,7 @@ mod solution {
         }
     }
     impl Program {
-        /// Given a starting state, executes the program/instructions, returning
+        /// Executes the program/instructions given a starting state, returning
         /// the final state after completion.
         pub fn execute(&self, mut state: State) -> State {
             loop {

@@ -73,22 +73,22 @@ mod solution {
         }
     }
     impl Deck {
-        /// Draw the top card of the deck if the deck is not empty.
+        /// Draws the top card of the deck if the deck is not empty.
         fn draw(&mut self) -> Option<u8> {
             self.cards.pop()
         }
 
-        /// Returns whether the deck is exhausted, i.e. there are no cards left.
+        /// Returns whether the deck is exhausted, that is there are no cards left.
         fn done(&self) -> bool {
             self.cards.is_empty()
         }
 
-        /// Place a card onto the bottom of the deck.
+        /// Places a card onto the bottom of the deck.
         fn place_bottom(&mut self, c: u8) {
             self.cards.insert(0, c);
         }
 
-        /// Calculate the score of the deck.
+        /// Calculates the score of the deck.
         pub fn score(&self) -> u64 {
             self.cards
                 .iter()
@@ -113,7 +113,7 @@ mod solution {
 
     /// Behavior specific to a particular part of the problem.
     pub trait Part {
-        /// Play the game according to the rules for the part.
+        /// Plays the game according to the rules for the part.
         fn play(game: Game) -> Deck;
     }
 

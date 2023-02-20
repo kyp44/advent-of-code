@@ -64,7 +64,7 @@ pub type AocResult<T> = Result<T, AocError>;
 
 // TODO: change. Extension methods for vector types.
 pub trait ManhattanLen<T> {
-    /// Calculate the Manhattan length of the vector.
+    /// Calculates the Manhattan length of the vector.
     fn manhattan_len(&self) -> T;
 }
 impl<T> ManhattanLen<T> for cgmath::Vector2<T>

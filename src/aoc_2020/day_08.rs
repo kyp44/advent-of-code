@@ -36,11 +36,11 @@ mod solution {
     /// A single program instruction with operand, which can be parsed from text input.
     #[derive(Debug, Clone)]
     enum Instruction {
-        /// `nop` instruction, i.e. do nothing.
+        /// `nop` instruction, which does nothing.
         Nop(i32),
-        /// `acc` instruction, i.e. add a value to the accumulator register.
+        /// `acc` instruction, which adds a value to the accumulator register.
         Acc(i32),
-        /// `jmp` instruction, i.e. jump to a relative instruction.
+        /// `jmp` instruction, which jumps to a relative instruction.
         Jmp(i32),
     }
     impl Parseable<'_> for Instruction {

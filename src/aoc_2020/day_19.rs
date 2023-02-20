@@ -156,7 +156,7 @@ mod solution {
         rules: HashMap<usize, Rule<'a>>,
     }
     impl<'a> RuleSet<'a> {
-        /// Parse from text input, using rule replacements defined in `part`.
+        /// Parses from text input, using rule replacements defined in `part`.
         fn from_str(s: &'a str, part: &dyn Part) -> AocResult<Self> {
             let mut rules = HashMap::new();
             for line in s.lines() {
@@ -174,9 +174,9 @@ mod solution {
             Ok(RuleSet { rules })
         }
 
-        /// Determines whether the input string is valid according to a particular rule in the set.
+        /// Determines whether an input string is valid according to a particular rule in the set.
         fn is_valid(&self, s: &str, rule_num: usize) -> AocResult<bool> {
-            /// Recursive internal function of [`RuleSet::is_valid`].
+            /// This is a recursive internal function of [`RuleSet::is_valid`].
             fn valid<'a>(
                 rule_set: &RuleSet,
                 s: &'a str,
@@ -254,7 +254,7 @@ mod solution {
         strings: Vec<&'a str>,
     }
     impl<'a> Problem<'a> {
-        /// Parse from text input, using rule replacements defined in `part`.
+        /// Parses from text input, using rule replacements defined in `part`.
         pub fn from_str(s: &'a str, part: &dyn Part) -> AocResult<Self> {
             let secs = s.sections(2)?;
             Ok(Problem {
@@ -263,7 +263,7 @@ mod solution {
             })
         }
 
-        /// Count the strings that are valid according to rule 0 in the set.
+        /// Counts the strings that are valid according to rule 0 in the set.
         pub fn count_valid(&self) -> AocResult<u64> {
             process_results(
                 self.strings.iter().map(|s| self.rule_set.is_valid(s, 0)),

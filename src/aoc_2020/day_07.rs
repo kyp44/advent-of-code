@@ -49,7 +49,7 @@ mod solution {
     /// Type to use for bag IDs.
     pub type BagId = u32;
 
-    /// Associates a string bag color with an ID for more efficient comparisons
+    /// Associates a string bag color with an ID for more efficient comparisons.
     #[derive(Debug, new)]
     pub struct BagTable {
         /// Next ID to issue.
@@ -60,7 +60,7 @@ mod solution {
         bimap: BiHashMap<BagId, String>,
     }
     impl BagTable {
-        /// Given a color name, fetches its ID or else creates a new ID for it.
+        /// Fetches its ID given a color name, or else creates a new ID for it.
         pub fn get_or_add_bag(&mut self, bag_str: &str) -> BagId {
             match self.bimap.get_by_right(bag_str) {
                 Some(id) => *id,
@@ -92,7 +92,7 @@ mod solution {
         pub contains: Vec<BagContains>,
     }
     impl BagRule {
-        /// Parse the rule from text input.
+        /// Parses the rule from text input.
         fn parse(bag_table: &mut BagTable, input: &str) -> Result<Self, NomParseError> {
             context(
                 "bag rule",
@@ -127,7 +127,7 @@ mod solution {
         }
     }
 
-    /// Set of bag rules, which can be parsed from text input
+    /// Set of bag rules, which can be parsed from text input.
     pub struct BagRules {
         /// Table that maps bag IDs to the color names.
         pub bags: BagTable,
@@ -183,7 +183,7 @@ mod solution {
             }
         }
 
-        /// Recursively counts all the bags contained in a particular bag.
+        /// Counts all the bags contained in a particular bag recursively.
         pub fn count_contained(&self, id: BagId) -> usize {
             match self.rules.iter().find(|r| r.bag_id == id) {
                 None => 0,

@@ -71,7 +71,7 @@ mod solution {
         EqualTo,
     }
     impl Operation {
-        /// Create the operation from its operation number.
+        /// Creates the operation from its operation number.
         fn from_value(v: u8) -> Option<Self> {
             match v {
                 0 => Some(Self::Sum),
@@ -95,7 +95,7 @@ mod solution {
         Operator(Operation, Box<[Packet]>),
     }
     impl PacketType {
-        /// [`nom`] parser for the packet type.
+        /// This is a [`nom`] parser for the packet type.
         fn parser(i: BitInput) -> NomParseResult<BitInput, (Self, usize)> {
             let (i, type_id) = take(3usize)(i)?;
             let mut taken_bits = 3;
@@ -186,7 +186,7 @@ mod solution {
             })
         }
 
-        /// The sum of version numbers of the sub packets, or zero for literals.
+        /// Returns the sum of version numbers of the sub packets, or zero for literals.
         fn version_sum(&self) -> u64 {
             match self {
                 PacketType::Literal(_) => 0,
@@ -261,7 +261,7 @@ mod solution {
         packet_type: PacketType,
     }
     impl Packet {
-        /// [`nom`] parser for the packet.
+        /// This is a [`nom`] parser for the packet.
         fn parser(i: BitInput) -> NomParseResult<BitInput, (Self, usize)> {
             let (i, version) = take(3usize)(i)?;
             let (i, (packet_type, type_bits)) = PacketType::parser(i)?;

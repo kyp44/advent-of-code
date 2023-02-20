@@ -67,7 +67,7 @@ mod solution {
     /// The type of a cave, which can be parsed from text input.
     #[derive(PartialEq, Eq, Hash, Copy, Clone)]
     enum CaveType {
-        /// The starting cave
+        /// The starting cave.
         Start,
         /// The ending cave we want to get to.
         End,
@@ -101,7 +101,7 @@ mod solution {
         }
     }
     impl Cave {
-        /// Create a cave from a string.
+        /// Creates a cave from a string.
         fn new(name: &str) -> Self {
             Self {
                 name: name.to_string(),

@@ -44,7 +44,7 @@ mod solution {
         }
     }
     impl Slice {
-        /// Initialize a new pocket dimension with this slice.
+        /// Initializes a new pocket dimension with this slice.
         pub fn initialize_pocket_dimension(&self, dimensions: usize) -> AocResult<PocketDimension> {
             PocketDimension::new(dimensions, self)
         }
@@ -96,7 +96,7 @@ mod solution {
         }
     }
     impl PocketDimension {
-        /// Create a new pocket dimension from an initial 2D slice.
+        /// Creates a new pocket dimension from an initial 2D slice.
         fn new(dimensions: usize, initial_slice: &Slice) -> AocResult<Self> {
             if dimensions < 2 {
                 return Err(AocError::InvalidInput(

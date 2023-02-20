@@ -100,7 +100,7 @@ mod solution {
             }
         }
 
-        /// Return a [`LineIterator`] for this line.
+        /// Returns a [`LineIterator`] for this line.
         fn iter(&self) -> LineIterator {
             LineIterator::new(self.line_type())
         }

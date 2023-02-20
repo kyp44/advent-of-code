@@ -103,7 +103,7 @@ mod solution {
         }
     }
     impl PairInsertion {
-        /// The pair involved in the insertion.
+        /// Returns the pair involved in the insertion.
         fn pair(&self) -> Pair {
             (self.left, self.right)
         }
@@ -141,7 +141,7 @@ mod solution {
             *self.map.entry(c).or_insert(0) += 1;
         }
 
-        /// The range of numbers of occurrences over all elements.
+        /// Returns the range of numbers of occurrences over all elements.
         pub fn range(&self) -> RangeInclusive<u64> {
             self.map.values().copied().range().unwrap_or(0..=0)
         }
@@ -221,7 +221,7 @@ mod solution {
         problem: &'a Problem,
         /// Map from every possible initial pair of elements to the occurrences of each
         /// element in the expansion of that initial pair at the current step, which
-        /// does not include the final element in the expansion
+        /// does not include the final element in the expansion.
         occurrence_map: HashMap<Pair, Occurrences>,
     }
     impl<'a> PolymerBuilder<'a> {

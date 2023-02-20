@@ -48,7 +48,7 @@ mod solution {
 
     /// Behavior specific to one particular part of the problem.
     pub trait Part: Clone + Eq + std::hash::Hash {
-        /// The depth of the amphipod rooms, i.e. the number of spaces in each.
+        /// The depth of the amphipod rooms, which is the number of spaces in each room.
         const DEPTH: usize;
 
         /// Returns the board for this part.
@@ -135,7 +135,7 @@ mod solution {
         }
     }
     impl Amphipod {
-        /// The energy required for this amphipod to move one space.
+        /// Returns the energy required for this amphipod to move one space.
         fn required_energy(&self) -> u64 {
             match self {
                 Amphipod::Amber => 1,
@@ -190,7 +190,7 @@ mod solution {
         _phantom: PhantomData<P>,
     }
     impl<P: Part> Board<P> {
-        /// Create a new board for the part of the problem.
+        /// Creates a new board for the part of the problem.
         fn new() -> Self {
             let mut graph = Graph::with_capacity(15, 18);
 
@@ -548,13 +548,13 @@ mod solution {
         }
 
         /// Runs a recursive algorithm to determine the minimum energy needed
-        /// to solve from this position, i.e. to return all amphipods to their
-        /// home rooms
+        /// to solve from this position, that is to return all amphipods to their
+        /// home rooms.
         pub fn minimal_energy(self) -> AocResult<u64> {
             /// Internal trait for [`Position::minimal_energy`] that updates a minimum
             /// value.
             trait Min<T> {
-                /// Update with a new minimum if it is less than the current minimum.
+                /// Updates with a new minimum if it is less than the current minimum.
                 fn update_min(&mut self, v: T);
             }
             impl Min<u64> for Option<u64> {
@@ -566,7 +566,7 @@ mod solution {
                 }
             }
 
-            /// Recursive internal function for [`Position::minimal_energy`].
+            /// This is a recursive internal function for [`Position::minimal_energy`].
             fn rec<P: Part + 'static>(
                 position: Position<P>,
                 seen: &mut HashMap<Position<P>, Option<u64>>,

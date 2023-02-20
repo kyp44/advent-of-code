@@ -36,9 +36,9 @@ mod solution {
 
     /// The parity of a chunk symbol.
     enum ChunkParity {
-        /// Open, i.e. the start of a new chunk.
+        /// Open, which is the start of a new chunk.
         Open,
-        /// Close, i.e. close out a chunk.
+        /// Close, which closes out a chunk.
         Close,
     }
 
@@ -55,7 +55,7 @@ mod solution {
         Angle,
     }
     impl ChunkType {
-        /// Score of the chunk for syntax checkers.
+        /// Returns the score of the chunk for syntax checkers.
         pub fn score_corrupted(&self) -> u64 {
             match *self {
                 ChunkType::Paren => 3,
@@ -65,7 +65,7 @@ mod solution {
             }
         }
 
-        /// Score of the chunk for auto completers.
+        /// Returns the score of the chunk for auto completers.
         fn score_incomplete(&self) -> u64 {
             match *self {
                 ChunkType::Paren => 1,
@@ -79,7 +79,7 @@ mod solution {
     /// A chunk symbol, which can be parsed from text input.
     #[derive(new)]
     struct ChunkSymbol {
-        /// Type of the symbol
+        /// Type of the symbol.
         chunk_type: ChunkType,
         /// The parity of the symbol.
         parity: ChunkParity,
@@ -145,7 +145,7 @@ mod solution {
         }
     }
     impl Line {
-        /// Analyze the line and return its status.
+        /// Analyzes the line and return its status.
         pub fn analyze(&self) -> LineStatus {
             let mut stack = Vec::new();
             for chunk in self.chunks.iter() {

@@ -102,7 +102,7 @@ mod solution {
         pub digits: Box<[u8]>,
     }
     impl OutputDigits {
-        /// The four-digit output as a single number.
+        /// Returns the four-digit output as a single number.
         pub fn as_number(&self) -> u64 {
             self.digits
                 .iter()

@@ -87,7 +87,7 @@ mod solution {
         }
     }
     impl BingoBoard {
-        /// Call a number, marking the hit cells.
+        /// Calls a number, marking the hit cells.
         fn call(&mut self, number: u8) -> bool {
             for point in self.grid.all_points() {
                 let cell = self.grid.element_at(&point);
@@ -98,7 +98,7 @@ mod solution {
             self.check_win()
         }
 
-        /// Check whether this is a winning board, i.e. whether there are
+        /// Checks whether this is a winning board, that is whether there are
         /// hit cells in any complete row or column (diagonals don't count).
         fn check_win(&self) -> bool {
             // Check rows first
@@ -118,7 +118,7 @@ mod solution {
             false
         }
 
-        /// Calculates the score for this board, i.e. the sum of all cells that
+        /// Calculates the score for this board, which is the sum of all cells that
         /// have not been hit.
         fn score(&self, last_number: u8) -> u64 {
             self.grid

@@ -8,7 +8,7 @@ use std::{fmt::Debug, ops::RangeInclusive};
 
 /// Extension methods for [`Iterator`]s.
 pub trait IteratorExt<T> {
-    /// Convenience method to count the elements of an iterator after filtering by
+    /// This is a convenience method to count the elements of an iterator after filtering by
     /// some predicate.
     ///
     /// The numeric return type is anything that can be fallibly

@@ -64,7 +64,7 @@ mod solution {
         }
     }
     impl Dot {
-        /// Create a new dot based on its coordinates on the page.
+        /// Creates a new dot based on its coordinates on the page.
         fn new(x: isize, y: isize) -> Self {
             Self(Point2::new(x, y))
         }
@@ -95,7 +95,7 @@ mod solution {
         }
     }
     impl Page {
-        /// Fold the page and return the new folded page.
+        /// Folds the page and returns the new folded page.
         fn fold(&self, fold: &Fold) -> Self {
             let mut dots = HashSet::new();
             match fold {
@@ -119,7 +119,7 @@ mod solution {
             Self { dots }
         }
 
-        /// Return the number of dots on the page.
+        /// Returns the number of dots on the page.
         pub fn num_dots(&self) -> usize {
             self.dots.len()
         }

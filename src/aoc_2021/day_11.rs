@@ -47,7 +47,7 @@ mod solution {
         }
     }
     impl Octopi {
-        /// Total number of octopi in the grid.
+        /// Returns the total number of octopi in the grid.
         pub fn total_octopi(&self) -> usize {
             let size = self.grid.size();
             size.x * size.y

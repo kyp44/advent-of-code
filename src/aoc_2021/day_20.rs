@@ -60,7 +60,7 @@ mod solution {
         }
     }
     impl Algorithm {
-        /// Look up a pixel value in the table based on the binary number.
+        /// Looks up a pixel value in the table based on the binary number.
         fn lookup(&self, value: usize) -> Option<bool> {
             self.table.get(value).copied()
         }
@@ -91,7 +91,7 @@ mod solution {
         }
     }
     impl Image {
-        /// The size of the next enhanced image, which will be a bit larger.
+        /// Returns the size of the next enhanced image, which will be a bit larger.
         fn enhanced_size(&self) -> GridSize {
             self.grid.size() + GridSize::new(2, 2)
         }

@@ -35,7 +35,7 @@ mod solution {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             /// [`nom`] parser that parses a single inclusive range.
             ///
-            /// This is a sub-function of [`TargetArea::parser`].
+            /// This is an internal function of [`TargetArea::parser`].
             fn range_parser(
                 label: &'static str,
             ) -> impl FnMut(&str) -> NomParseResult<&str, RangeInclusive<i32>> {

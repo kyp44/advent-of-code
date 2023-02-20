@@ -29,11 +29,11 @@ mod solution {
 
     /// General password policy, which can be parsed from text input.
     pub trait PasswordPolicy: Sized {
-        /// Create the policy from the parameters.
+        /// Creates the policy from the parameters.
         fn new(a: u32, b: u32, character: char) -> Self;
-        /// Validate a string according to the policy.
+        /// Validates a string according to the policy.
         fn validate(&self, password: &str) -> bool;
-        /// [`nom`] parser.
+        /// This is a [`nom`] parser.
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             use nom::character::complete::u32 as cu32;
             context(
@@ -119,13 +119,13 @@ mod solution {
         }
     }
     impl<P: PasswordPolicy> Password<'_, P> {
-        /// Validate the password.
+        /// Validates the password.
         pub fn validate(&self) -> bool {
             self.policy.validate(self.password)
         }
     }
 
-    /// Solve a part of the problem by reading in policies and passwords and counting those that are valid.
+    /// Solves a part of the problem by reading in policies and passwords and counting those that are valid.
     pub fn solve<P: PasswordPolicy>(input: &SolverInput) -> AocResult<Answer> {
         // Generation
         let passwords = Password::<P>::gather(input.expect_input()?.lines())?;

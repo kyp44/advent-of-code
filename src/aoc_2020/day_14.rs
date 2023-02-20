@@ -41,7 +41,7 @@ mod solution {
     /// Bit mask bit value, which can be parsed from a text character.
     #[derive(Debug)]
     pub enum MaskBit {
-        /// Leave value bit unchanged (V1) or address bit floating, i.e. all possible values (V2).
+        /// Leave value bit unchanged (V1) or address bit floating, which is all possible values (V2).
         X,
         /// Reset value bit (V1) or leave address bit unchanged (V2).
         Zero,
@@ -120,7 +120,7 @@ mod solution {
         /// Returns a list of hard assignments to make.
         fn apply_mask(&self, memory: &Assignment) -> Vec<Assignment>;
 
-        /// Convert a list of bit mask values to a real bit mask using a bit conversion function.
+        /// Converts a list of bit mask values to a real bit mask using a bit conversion function.
         fn vec_to_mask(vec: &[MaskBit], mut conv: impl FnMut(&MaskBit) -> bool) -> u64 {
             let mut val = 0;
             for (bit, mb) in vec.iter().enumerate() {

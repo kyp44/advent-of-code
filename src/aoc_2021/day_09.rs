@@ -34,12 +34,12 @@ mod solution {
         low_point: GridPoint,
     }
     impl Basin<'_> {
-        /// The height of the low point.
+        /// Returns the height of the low point.
         pub fn low_height(&self) -> u8 {
             **self.floor_map.grid.get(&self.low_point)
         }
 
-        /// The size of the basin.
+        /// Returns the size of the basin.
         pub fn size(&self) -> u64 {
             /// Recursive subfunction of [`Basin::size`] that finds the size of a region
             /// given any point in the region.

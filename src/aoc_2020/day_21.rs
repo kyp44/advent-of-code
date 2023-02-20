@@ -67,7 +67,7 @@ mod solution {
         }
     }
     impl Food {
-        /// Get the set of ingredients.
+        /// Gets the set of ingredients.
         pub fn ingredients(&self) -> &StrSet {
             &self.ingredients
         }
@@ -89,16 +89,17 @@ mod solution {
         safe_ingredients: StrSet,
     }
     impl PartialSolution {
-        /// [`Iterator`] over all of the foods in the problem.
+        /// Returns an [`Iterator`] over all of the foods in the problem.
         pub fn foods(&self) -> impl Iterator<Item = &Food> {
             self.problem.foods.iter()
         }
 
-        /// Set of ingredients that definitely do not contain any allergens.
+        /// Sets of ingredients that definitely do not contain any allergens.
         pub fn safe_ingredients(&self) -> &StrSet {
             &self.safe_ingredients
         }
 
+        // TODO: Why is this not triggering the action verb lint?
         /// Complete the full problem solution by determining in which ingredient each allergen is contained
         /// (needed for part two).
         pub fn finish_solve(&self) -> AocResult<FullSolution> {
@@ -184,7 +185,7 @@ mod solution {
         }
     }
     impl Problem {
-        /// Partially solve the problem, consuming the problem definition itself.
+        /// Solves the problem partially, consuming the problem definition itself.
         pub fn partial_solve(self) -> PartialSolution {
             // First setup up a map of each allergen to possible ingredients,
             // initializing to every ingredient.

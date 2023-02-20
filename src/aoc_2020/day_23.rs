@@ -45,12 +45,12 @@ mod solution {
         rc: Weak<RefCell<Cup>>,
     }
     impl CupRef {
-        /// The label for the referent cup.
+        /// Returns the label for the referent cup.
         fn label(&self) -> Label {
             self.rc.upgrade().unwrap().borrow().label
         }
 
-        /// A reference to the next cup in the chain of cups, if there is one.
+        /// Returns a reference to the next cup in the chain of cups, if there is one.
         fn next(&self) -> Option<CupRef> {
             self.rc.upgrade().unwrap().borrow().next.as_ref().cloned()
         }
@@ -141,9 +141,9 @@ mod solution {
 
     /// Behavior specific to a particular part of the problem.
     pub trait Part {
-        /// Add any additional cups labels to the initially parsed labels.
+        /// Adds any additional cups labels to the initially parsed labels.
         fn add_cups(&self, _cups: &mut Vec<Label>);
-        /// Calculate the score starting at what should be the cup labeled 1.
+        /// Calculates the score starting at what should be the cup labeled 1.
         fn score(&self, one: &CupRef) -> u64;
     }
 
@@ -208,7 +208,7 @@ mod solution {
         }
     }
     impl Cups {
-        /// Parse the cups from text input.
+        /// Parses the cups from text input.
         pub fn from_str(s: &str, part: &dyn Part) -> AocResult<Self> {
             let mut cups = many1::<_, _, NomParseError, _>(single_digit)(s)
                 .finish()

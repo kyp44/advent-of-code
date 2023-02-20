@@ -44,7 +44,7 @@ mod solution {
         times_rolled: u32,
     }
     impl DeterministicDie {
-        /// Roll the die and return the rolled value.
+        /// Rolls the die and returns the rolled value.
         fn roll(&mut self) -> u32 {
             let ret = self.next + 1;
             self.next = ret % 100;
@@ -57,7 +57,7 @@ mod solution {
     #[derive(new)]
     struct DiracDie {}
     impl DiracDie {
-        /// Roll the die some number of times and return a multi-set of the sums of the rolls.
+        /// Rolls the die some number of times and returns a multi-set of the sums of the rolls.
         fn roll(&self, num_rolls: usize) -> HashMultiSet<u32> {
             (0..num_rolls)
                 .map(|_| 1..=3)
@@ -76,7 +76,7 @@ mod solution {
         score: u32,
     }
     impl Player {
-        /// Create a new player with a particular starting position on the board.
+        /// Creates a new player with a particular starting position on the board.
         fn new(position: u32) -> Self {
             Self {
                 position: OffsetNumC::new(position),
@@ -127,7 +127,8 @@ mod solution {
         }
     }
     impl Game {
-        /// Play the game with the deterministic die and return the loser's score times the number of rolls
+        /// Plays the game with the deterministic die and return the loser's score
+        /// times the number of rolls.
         pub fn play_deterministic(&self) -> u32 {
             let mut game = self.clone();
             let mut die = DeterministicDie::new();
@@ -151,7 +152,7 @@ mod solution {
             }
         }
 
-        /// Play the game with Dirac die and return the number of universes in which the winning player wins.
+        /// Plays the game with Dirac die and return the number of universes in which the winning player wins.
         pub fn play_dirac(&self) -> u64 {
             let rolls = DiracDie::new().roll(NUM_ROLLS_PER_TURN);
 

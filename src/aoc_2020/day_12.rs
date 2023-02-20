@@ -59,12 +59,12 @@ mod solution {
     }
 
     impl Instruction {
-        /// Get new facing direction given the current one and turn distance
+        /// Gets the new facing direction given the current one and turn distance.
         fn turn(facing: i32, turn: i32) -> i32 {
             (facing + turn).rem_euclid(4)
         }
 
-        /// Get translation vector given facing direction and distance
+        /// Gets translation vector given facing direction and distance.
         fn go_forward(facing: i32, distance: i32) -> Vector2<i32> {
             distance
                 * match facing % 4 {
@@ -76,7 +76,7 @@ mod solution {
                 }
         }
 
-        /// Rotates a point given a turn number
+        /// Rotates a point given a turn number.
         fn rotate_point(turn: i32, point: &Point2<i32>) -> Point2<i32> {
             match Instruction::turn(0, turn) {
                 0 => *point,

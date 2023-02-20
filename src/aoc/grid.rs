@@ -18,7 +18,7 @@ pub type GridSize = Vector2<usize>;
 /// Extension trait for [`GridSize`].
 pub trait GridSizeExt {
     /// Returns an [`Iterator`] over all points in a grid of this size.
-    /// TODO: doc test example
+    /// TODO: doc test example.
     fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>>;
 }
 impl GridSizeExt for GridSize {
@@ -251,7 +251,7 @@ impl<T: fmt::Debug> fmt::Debug for Grid<T> {
 
 /// Create an object from a default [`Grid`].
 pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
-    /// The a default object from a default [`Grid`] of some `size`.
+    /// The TODO default object from a default [`Grid`] of some `size`.
     fn default(size: GridSize) -> Self {
         Grid::default(size).into()
     }

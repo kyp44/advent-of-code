@@ -24,10 +24,10 @@ mod solution {
     use super::*;
     use itertools::Itertools;
 
-    /// Numeric type for expenses
+    /// Numeric type for expenses.
     pub type Expense = u32;
 
-    /// Solve a part of the problem
+    /// Solves a part of the problem.
     pub fn solve(expenses: &[Expense], num_values: usize) -> AocResult<Answer> {
         let mut combinations = expenses.iter().combinations(num_values);
         loop {

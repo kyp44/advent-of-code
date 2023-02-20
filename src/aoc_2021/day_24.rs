@@ -202,7 +202,7 @@ mod solution {
             }
         }
 
-        /// Execute a single instruction, affecting the appropriate registers.
+        /// Executes a single instruction, affecting the appropriate registers.
         fn execute(
             &mut self,
             instruction: &Instruction,
