@@ -13,7 +13,7 @@ pub trait IteratorExt<T> {
     ///
     /// The numeric return type is anything that can be fallibly
     /// converted from a [`usize`]. An empty iterator will of course return zero
-    /// regardless of the predicate
+    /// regardless of the predicate.
     ///
     /// # Panics
     ///
@@ -27,7 +27,6 @@ pub trait IteratorExt<T> {
     /// assert_eq!(std::iter::empty::<u8>().filter_count::<usize>(|_| true), 0);
     /// assert_eq!([-1, 3, 5, -7, 0, 8, -9, -2, 5].into_iter().filter_count::<u32>(|x| *x <= 0), 5);
     /// ```
-    // TODO: Triggering a lint because of the code at the end.
     fn filter_count<O: TryFrom<usize>>(self, f: impl Fn(&T) -> bool) -> O
     where
         <O as TryFrom<usize>>::Error: Debug;

@@ -248,9 +248,9 @@ impl<T: fmt::Debug> fmt::Debug for Grid<T> {
     }
 }
 
-/// Create an object from a default [`Grid`].
+/// Create an object from a [`GridSize`].
 pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
-    /// The TODO default object from a default [`Grid`] of some `size`.
+    /// Returns a default object from particular [`GridSize`].
     fn default(size: GridSize) -> Self {
         Grid::default(size).into()
     }
@@ -262,7 +262,7 @@ pub trait FromGridStr<T>: Sized {
     /// The error type if the conversion fails.
     type Err;
 
-    /// Create from a grid of characters.
+    /// Creates an object from a grid of characters.
     fn from_grid_str(s: &str) -> Result<Self, Self::Err>;
 }
 impl<T: TryFrom<char>, O: From<Grid<T>>> FromGridStr<T> for O {

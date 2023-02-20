@@ -71,7 +71,7 @@ class RustLine:
             if self.content.startswith("#"):
                 self.doc_line_type = DocLineType.TEXT_HEADER
                 self.content = self.content[1:].strip()
-            elif self.content == "" :
+            elif self.content == "":
                 self.doc_line_type = DocLineType.TEXT_EMPTY
             elif self.content.startswith("```"):
                 if in_doctest:
@@ -102,7 +102,7 @@ class RustLine:
             elif "use " in sline:
                 self.item_type = ItemType.USE
 
-    def is_doc_comment(self) -> bool :
+    def is_doc_comment(self) -> bool:
         """
         Returns whether this line is any kind of doc comment.
         """
@@ -112,9 +112,9 @@ class RustLine:
         """
         Returns the line for printing.
         """
-        if self.is_doc_comment() :
+        if self.is_doc_comment():
             pref = "/// "
-            if self.doc_line_type is DocLineType.TEXT_HEADER :
+            if self.doc_line_type is DocLineType.TEXT_HEADER:
                 pref += "# "
             return pref + self.content
         elif self.comment:
@@ -218,7 +218,7 @@ class IsolatedIntroLint(Lint):
             # Append the following lines until a non-normal doc comment line is found.
             long_line = line.content
             for next_line in lines[ln + 1:]:
-                if next_line.doc_line_type is not DocLineType.TEXT :
+                if next_line.doc_line_type is not DocLineType.TEXT:
                     break
 
                 long_line += " " + next_line.content
@@ -243,41 +243,44 @@ class CompleteSentencesLint(Lint):
         self.description = self.__class__.__doc__.strip()
 
     def check_file(self, source_file: SourceFile):
-        lines = source_file.lines
-
+        # We group all normal text between non-normal delimiters (e.g. empty lines
+        # or headers) and look for at least complete sentences for these section.
+        # Note that we cannot always tell if a period is missing due to needing
+        # to allow for proper case words in the middle of sentences.
         for ln, line in source_file.doc_comment_lines():
-            # We group all normal text between non-normal delimiters (e.g. empty lines
-            # or headers) and look for at least complete sentences for these section.
-            # Note that we cannot always tell if a period is missing due to needing
-            # to allow for proper case words in the middle of sentences.
+            sections = []
+            text_lines = []
+            for lline in source_file.lines[ln:]:
+                if lline.doc_line_type is DocLineType.TEXT:
+                    # Normal text, so just add it
+                    text_lines.append(lline.content)
+                else:
+                    if len(text_lines) > 0:
+                        sections.append(text_lines)
+                    if lline.doc_line_type is DocLineType.NONE:
+                        # End of this doc comment altogether
+                        break
+                    else:
+                        # Some other doc comment line (e.g. header, empty)
+                        text_lines = []
 
-            # TODO need to finish this to separate sections as above.
+            # Now go through sections and make sentences to analyze
+            for lines in sections:
+                # Split into individual sentences and check them
+                sentences = " ".join(lines).split(". ")
+                for sentence in sentences:
+                    words = sentence.split()
 
-            # Combine all normal doc comment text until a non-comment line is reached
-            long_line = "" if line.doc_line_type is not DocLineType.TEXT else line.content
-            for next_line in lines[ln + 1:]:
-                if not next_line.is_doc_comment():
-                    break
+                    # Ensure that the first word is capitalized
+                    if words[0].isalpha() and not words[0].isupper() and not words[0].istitle():
+                        #print("FIRST WORD", words[0])
+                        self.alert(source_file, ln)
+                        break
 
-                # Only append non-empty lines that are not section headers
-                if next_line.doc_line_type is DocLineType.TEXT :
-                    long_line += " " + next_line.content
-
-            # Split into individual sentences and check them
-            sentences = long_line.split(". ")
-            for sentence in sentences:
-                words = sentence.split()
-
-                # Ensure that the first word is capitalized
-                if words[0].isalpha() and not words[0].isupper() and not words[0].istitle():
-                    #print("FIRST WORD", words[0])
+                # Lastly, ensure that the final sentence does end in period
+                if sentences[-1][-1] != ".":
+                    #print("LAST PERIOD", sentences[-1])
                     self.alert(source_file, ln)
-                    break
-
-            # Lastly, ensure that the final sentence does end in period
-            if sentences[-1][-1] != ".":
-                #print("LAST PERIOD", sentences[-1])
-                self.alert(source_file, ln)
 
 
 class CrossRefLint(Lint):
@@ -293,7 +296,7 @@ class CrossRefLint(Lint):
         lines = source_file.lines
 
         for ln, line in enumerate(lines):
-            if line.doc_line_type in (DocLineType.TEXT, DocLineType.TEXT_HEADER) :
+            if line.doc_line_type in (DocLineType.TEXT, DocLineType.TEXT_HEADER):
                 content = line.content
                 while True:
                     idx = content.find("[")
@@ -331,6 +334,7 @@ class FunctionIntroVerbLint(Lint):
                             self.alert(source_file, ln)
                     break
 
+
 class SimpleReplaceLint(Lint):
     """
     Lint class for general terms that should not be used.
@@ -343,10 +347,10 @@ class SimpleReplaceLint(Lint):
     """
 
     def __init__(self):
-        self.name = "function_intro_verb"
         # TODO: Need to finish this and and instance for `sub-functions` -> `internal functions`
         # TODO: There are currently instances of this in the code left intentionally to test.
-        self.description = "Do not use the term`" + self.bad_term + "`. Use `" + self.good_term + "` instead."
+        self.description = "Do not use the term`" + self.bad_term + \
+            "`. Use `" + self.good_term + "` instead."
 
     def check_file(self, source_file: SourceFile):
         for ln, line in source_file.doc_comment_lines():
@@ -360,6 +364,7 @@ class SimpleReplaceLint(Lint):
                         if not first_word.istitle() or first_word[-1] != "s":
                             self.alert(source_file, ln)
                     break
+
 
 # All our lints.
 lints = [IsolatedIntroLint(), CrossRefLint(), CompleteSentencesLint(),
@@ -384,8 +389,8 @@ if args.lints:
         lint.describe()
 else:
     # Check every file for every lint
-    #for source_path in ["src/aoc/iter.rs"]:
-    for source_path in source_files():
+    for source_path in ["src/aoc/iter.rs"]:
+        # for source_path in source_files():
         source_file = SourceFile(source_path)
 
         for lint in lints:
