@@ -192,7 +192,7 @@ mod solution {
                 );
             }
 
-            /// Recursive sub-function of [`CaveSystem::paths`].
+            /// This is a recursive internal function of [`CaveSystem::paths`].
             ///
             /// Given the cave system graph, a current cave node, and the remaining visits
             /// for every cave, returns the set of possible paths from the current cave

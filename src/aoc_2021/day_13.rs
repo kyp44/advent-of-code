@@ -171,7 +171,7 @@ mod solution {
         }
     }
     impl Problem {
-        /// Apply the complete sequence of folds.
+        /// Applies the complete sequence of folds.
         ///
         /// Returns an [`Iterator`] of pages after each fold is made.
         pub fn apply_folds(&self) -> FoldedPages {

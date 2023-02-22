@@ -79,7 +79,7 @@ mod solution {
         }
     }
     impl TerminationStatus<Rc<Area>> {
-        /// The the simulation result to ensure that its stable.
+        /// Checks the simulation result to ensure that its stable.
         ///
         /// The `Ok` return variant contains the number of occupied seats.
         pub fn check(&self) -> AocResult<u64> {

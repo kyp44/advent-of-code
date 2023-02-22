@@ -33,7 +33,7 @@ mod solution {
     }
     impl Parseable<'_> for TargetArea {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
-            /// [`nom`] parser that parses a single inclusive range.
+            /// This is a [`nom`] parser that parses a single inclusive range.
             ///
             /// This is an internal function of [`TargetArea::parser`].
             fn range_parser(

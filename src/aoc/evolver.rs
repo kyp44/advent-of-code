@@ -21,12 +21,11 @@ pub trait Evolver<T> {
     /// Sets the cell value at the specified address.
     fn set_element(&mut self, point: &Self::Point, value: T);
 
-    // TODO: ugh, why is this not triggering a lint?
-    /// Given the address of a cell, should return the value of the that cell
+    /// Givens the address of a cell, should return the value of the that cell
     /// in the next step.
     fn next_cell(&self, point: &Self::Point) -> T;
 
-    /// Should return an iterator over the cell addresses to be set in the
+    /// Returns an iterator over the cell addresses to be set in the
     /// next step.
     fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>>;
 

@@ -46,7 +46,7 @@ mod solution {
     }
     impl Parseable<'_> for Line {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
-            /// Internal function of [`Line::parser`], which is a [`nom`] parser for
+            /// This is an internal function of [`Line::parser`], which is a [`nom`] parser for
             /// a single point on the 2D grid.
             fn point_parser(input: &str) -> NomParseResult<&str, GridPoint> {
                 map(
@@ -67,7 +67,7 @@ mod solution {
     impl Line {
         /// Returns the type for this line.
         fn line_type(&self) -> LineType {
-            /// Internal function of [`Line::line_type`], that simply returns an inclusive
+            /// This is an internal function of [`Line::line_type`], that simply returns an inclusive
             /// range from the smallest of two integers to the largest.
             fn range(a: usize, b: usize) -> RangeInclusive<usize> {
                 a.min(b)..=a.max(b)

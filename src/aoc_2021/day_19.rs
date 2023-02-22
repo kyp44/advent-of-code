@@ -265,7 +265,7 @@ mod solution {
         Rot270,
     }
     impl RotationAngle {
-        /// Generate a rotation quaternion from the rotation angle about a particular
+        /// Generates a rotation quaternion from the rotation angle about a particular
         /// axis, which must be a unit vector.
         fn rotation_quaternion(&self, unit_axis: Vector) -> RotationQuaternion {
             match self {
@@ -413,7 +413,7 @@ mod solution {
         }
     }
     impl Scanner {
-        /// Try to correlate another scanner with this one.
+        /// Tries to correlate another scanner with this one.
         ///
         /// Returns the transposer from this scanner to the other if
         /// correlation was successful.
@@ -471,7 +471,7 @@ mod solution {
     impl ScannerNetwork {
         /// Correlates all the scanners together and return the correlated network.
         pub fn correlate(&self) -> CorrelatedScannerNetwork {
-            /// Recursive sub-function of [`ScannerNetwork::correlate`] that correlates
+            /// This is an internal function of [`ScannerNetwork::correlate`] that recursively correlates
             /// scanners one by one.
             fn correlate_rec(
                 from: Rc<Scanner>,

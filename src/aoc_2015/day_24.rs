@@ -59,7 +59,7 @@ mod solution {
         /// into the compartment groups and finding the quantum entanglement of the group with the
         /// minimum number of packages (and also the minimal QE in the event of a tie).
         pub fn solve(&self) -> AocResult<u64> {
-            /// Recursive sub-function of [`Problem::solve`] that returns an [`Iterator`] over all
+            /// This is a recursive internal function of [`Problem::solve`] that returns an [`Iterator`] over all
             /// possible partitions of a set of numbers for a given number of sub sets.
             ///
             /// Also ensures that all of the subsets have a sum of `subset_sum`.

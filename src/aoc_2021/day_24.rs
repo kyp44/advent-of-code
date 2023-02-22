@@ -137,7 +137,7 @@ mod solution {
         where
             Self: Sized,
         {
-            /// Internal function of [`Instruction::parser`].
+            /// This is an internal function of [`Instruction::parser`].
             ///
             /// [`nom`] parser to parse a pair of operands, or rather a [`Register`] then an [`Operand`].
             fn operands_parser(input: &str) -> NomParseResult<&str, (Register, Option<Operand>)> {
@@ -284,28 +284,28 @@ mod solution {
         program: &Program,
         digit_iter: impl Iterator<Item = Number> + Clone,
     ) -> AocResult<Number> {
-        /// Internal function of [`find_solution`].
+        /// This is an internal function of [`find_solution`].
         ///
         /// Determines a digit from the previous `z` and the `b` parameter.
         fn set_digit(z: Number, b: Number) -> Number {
             (z % 26) + b
         }
 
-        /// Internal function of [`find_solution`].
+        /// This is an internal function of [`find_solution`].
         ///
         /// Determines the next `z` value based on the previous one.
         fn set_z(z: Number) -> Number {
             z / 26
         }
 
-        /// Internal function of [`find_solution`].
+        /// This is an internal function of [`find_solution`].
         ///
         /// Tests whether a digit is valid (i.e. 1-9).
         fn valid_digit(d: Number) -> bool {
             (1..=9).contains(&d)
         }
 
-        /// Internal function of [`find_solution`].
+        /// This is an internal function of [`find_solution`].
         ///
         /// Converts an array of digits into a number with the first digit being the
         /// least significant.

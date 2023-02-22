@@ -136,7 +136,7 @@ mod solution {
         }
     }
     impl Entry {
-        /// Solve this entry, returning the map of the mixed signal names to the corrected
+        /// Solves this entry, returning the map of the mixed signal names to the corrected
         /// signal names.
         fn solve(&self) -> AocResult<HashMap<char, char>> {
             // First verify the number of digits
@@ -166,7 +166,7 @@ mod solution {
             let d8 = get_len(7)?;
 
             let mut map_add = |c: char, set: Vec<&char>| -> AocResult<char> {
-                /// Sub-function of [`Entry::solve`] that creates an error given a signal name
+                /// This is an internal function of [`Entry::solve`] that creates an error given a signal name
                 /// and message string.
                 fn err(c: char, msg: &str) -> AocError {
                     AocError::Process(format!("Problem deducing '{c}': {msg}!").into())

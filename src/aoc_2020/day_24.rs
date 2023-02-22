@@ -35,7 +35,7 @@ wseweeenwnesenwwwswnew",
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use cgmath::{Point2, Vector2, Zero};
+    use cgmath::{Point2, Vector2};
     use itertools::{iproduct, Itertools};
     use nom::{
         branch::alt,
@@ -128,7 +128,7 @@ mod solution {
         }
     }
     impl Route {
-        /// Given the starting tile [`Point`], follow the route and return the
+        /// Follows the route given the starting tile [`Point`], and returns the
         /// tile [`Point`] on which you end up.
         fn follow(&self, start: Point) -> Point {
             self.directions

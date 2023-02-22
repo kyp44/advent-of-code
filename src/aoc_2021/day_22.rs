@@ -127,7 +127,7 @@ mod solution {
     }
     impl Parseable<'_> for Cuboid {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
-            /// [`nom`] parser that parses an inclusive range.
+            /// This is a [`nom`] parser that parses an inclusive range.
             ///
             /// This is an internal function of [`Cuboid::parser`].
             fn parse_range(input: &str) -> NomParseResult<&str, CuboidRange> {

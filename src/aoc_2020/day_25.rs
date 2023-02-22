@@ -80,7 +80,7 @@ mod solution {
         /// and then using one of these to calculate the shared encryption key
         /// using the other's public key.
         pub fn solve(&self) -> AocResult<u64> {
-            /// Internal function for [`Problem::solve`] that determines
+            /// This is an internal function for [`Problem::solve`] that determines
             /// the secret loop size given an end key.
             fn find_loop_size(key: u64) -> usize {
                 Transform::new(7).take_while(|v| *v != key).count() + 1

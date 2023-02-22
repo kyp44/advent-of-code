@@ -41,7 +41,7 @@ mod solution {
 
         /// Returns the size of the basin.
         pub fn size(&self) -> u64 {
-            /// Recursive subfunction of [`Basin::size`] that finds the size of a region
+            /// This is a recursive internal function of [`Basin::size`] that finds the size of a region
             /// given any point in the region.
             fn region_size(
                 grid: &Grid<Digit>,

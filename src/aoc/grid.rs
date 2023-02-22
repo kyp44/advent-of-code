@@ -17,7 +17,21 @@ pub type GridSize = Vector2<usize>;
 
 /// Extension trait for [`GridSize`].
 pub trait GridSizeExt {
-    /// Returns an [`Iterator`] over all points in a grid of this size.
+    /// Returns an [`Iterator`] over all points in a grid of this size in row-major order
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use aoc::prelude::*;
+    ///
+    /// let size = GridSize::new(2, 3);
+    /// let points = size.all_points().collect::<Vec<_>>();
+    ///
+    /// assert_eq!(points, vec![
+    ///     GridPoint::new(0, 0),
+    ///     GridPoint::new(0, 1),
+    /// ]);
+    /// ```
     fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>>;
 }
 impl GridSizeExt for GridSize {

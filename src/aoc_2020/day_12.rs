@@ -103,7 +103,7 @@ mod solution {
         }
     }
     impl NavigationInstructions {
-        /// Follow the instructions to determine the ship's final position.
+        /// Follows the instructions to determine the ship's final position.
         ///
         /// Optionally pass an initial waypoint location relative to the ship.
         /// If no initial waypoint is specified the commands always act on the ship,

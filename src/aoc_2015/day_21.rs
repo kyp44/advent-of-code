@@ -128,14 +128,14 @@ mod solution {
         }
     }
     impl Character {
-        /// Have a battle with another character until one runs out of hit points and dies.
+        /// Holds a battle with another character until one runs out of hit points and dies.
         ///
         /// Returns whether this character won the battle.
         fn battle(&self, other: &Self) -> bool {
             let mut hp = self.hit_points;
             let mut hpo = other.hit_points;
 
-            /// Take character `a`'s turn, attacking player `b`, who has a specified number of hit points.
+            /// Takes character `a`'s turn, attacking player `b`, who has a specified number of hit points.
             ///
             /// Returns whether the attack killed player `b`.
             /// This is an internal function of [`Character::battle`].
@@ -170,11 +170,11 @@ mod solution {
 
     /// Behavior specific to one particular part of the problem.
     pub trait Part {
-        /// Given two costs, select the appropriate one, based on whether we are
+        /// Selects the appropriate one given two costs, based on whether we are
         /// minimizing or maximizing.
         fn select_cost(min_max: &(u32, u32)) -> u32;
-        /// Given whether the player won or not, returns whether this is what we
-        /// want or not.
+        /// Returns whether this is what we want or not given whether the player
+        /// won or not.
         fn win_or_lose(won: bool) -> bool;
     }
 

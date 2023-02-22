@@ -589,7 +589,7 @@ mod solution {
         }
     }
     impl TileMap {
-        /// Create a new map from set of tiles, initially with all tiles
+        /// Creates a new map from set of tiles, initially with all tiles
         /// needing to be placed.
         fn new(tile_set: TileSet) -> Self {
             let size = tile_set.size;

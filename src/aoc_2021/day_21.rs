@@ -156,7 +156,7 @@ mod solution {
         pub fn play_dirac(&self) -> u64 {
             let rolls = DiracDie::new().roll(NUM_ROLLS_PER_TURN);
 
-            /// Recursive sub-function of [`Game::play_dirac`] that takes the current game and returns
+            /// This is a recursive internal function of [`Game::play_dirac`] that takes the current game and returns
             /// the number of universes in which each player wins the game.
             fn play_dirac_rec(game: &Game, rolls: &HashMultiSet<u32>, turn: usize) -> Vector2<u64> {
                 let mut universes = Vector2::zero();

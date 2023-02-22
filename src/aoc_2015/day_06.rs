@@ -55,7 +55,7 @@ mod solution {
 
     /// That that describes the position of a light.
     type Point = Point2<usize>;
-    /// [`nom`] parser for a [`Point`].
+    /// This is a [`nom`] parser for a [`Point`].
     ///  
     /// NOTE: This cannot be done as a [`Parseable`] implementation due
     /// to a potential conflict.

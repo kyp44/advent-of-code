@@ -200,7 +200,7 @@ mod solution {
             Ok(match self {
                 PacketType::Literal(v) => *v,
                 PacketType::Operator(operation, packets) => {
-                    /// Sub-function of [`PacketType::evaluate`] that just creates an error
+                    /// This is an internal function of [`PacketType::evaluate`] that just creates an error
                     /// for an operation that is missing operands.
                     fn min_one_err(operation: &Operation) -> AocError {
                         AocError::Process(

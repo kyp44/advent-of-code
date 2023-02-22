@@ -108,8 +108,8 @@ mod solution {
         }
     }
     impl Report {
-        /// Given a bit number to examine in each report line, determine
-        /// which is the most common bit, if any.
+        /// Determines which is the most common bit, if any, given a bit number
+        /// to examine in each report line.
         ///
         /// Will panic if the bit number is invalid.
         fn most_common(&self, bit_num: usize) -> MostCommon {

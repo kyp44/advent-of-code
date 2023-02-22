@@ -49,8 +49,7 @@ pub trait IteratorExt<T> {
     where
         T: PartialOrd + Copy;
 
-    // TODO: This should trigger the function verb lint.
-    /// Advance the [`Iterator`] by some number of iterations and return the resulting item.
+    /// Advances the [`Iterator`] by some number of iterations and return the resulting item.
     ///
     /// Note that this is the same as [`Iterator::nth`], but just offset by one, which can
     /// be more convenient in some situations. If `0` is passed then `None` will be returned

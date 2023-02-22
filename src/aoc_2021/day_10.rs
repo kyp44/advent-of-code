@@ -115,7 +115,7 @@ mod solution {
         Incomplete(Vec<ChunkType>),
     }
     impl LineStatus {
-        /// The score for the line, given its status.
+        /// Returns the score for the line given its status.
         ///
         /// Valid lines have no score.
         pub fn score(&self) -> Option<u64> {

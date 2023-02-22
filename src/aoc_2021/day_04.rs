@@ -165,7 +165,7 @@ mod solution {
         }
     }
     impl BingoGame {
-        /// Play the game until some number of boards wins, returning
+        /// Plays the game until some number of boards wins, returning
         /// the score of the last board to win.
         fn play_until(mut self, num_boards: usize) -> AocResult<u64> {
             let mut boards_won = 0;
@@ -185,13 +185,13 @@ mod solution {
             ))
         }
 
-        /// Play until the first board wins, returning the score of
+        /// Plays until the first board wins, returning the score of
         /// the winning board.
         pub fn play(self) -> AocResult<u64> {
             self.play_until(1)
         }
 
-        /// Play until all the boards win, returning the score of the
+        /// Plays until all the boards win, returning the score of the
         /// last board to win.
         pub fn play_to_last(self) -> AocResult<u64> {
             let last_board = self.boards.len();

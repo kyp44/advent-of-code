@@ -99,8 +99,7 @@ mod solution {
             &self.safe_ingredients
         }
 
-        // TODO: Why is this not triggering the action verb lint?
-        /// Complete the full problem solution by determining in which ingredient each allergen is contained
+        /// Completes the full problem solution by determining in which ingredient each allergen is contained
         /// (needed for part two).
         pub fn finish_solve(&self) -> AocResult<FullSolution> {
             let mut final_ingredients = HashMap::new();
@@ -165,7 +164,7 @@ mod solution {
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             let foods = Food::gather(s.lines())?;
 
-            /// Internal function for [`Problem::from_str`].
+            /// This is an internal function for [`Problem::from_str`].
             ///
             /// Creates a set of a particular element of a [`Food`] based on
             /// a mapping function for all foods.

@@ -55,7 +55,7 @@ mod solution {
             self.hit_points == 0
         }
 
-        /// Take a turn in which this characer casts a spell against an opponent.
+        /// Takes a turn in which this character casts a spell against an opponent.
         ///
         /// Returns whether or not the spell could be and was cast.
         fn turn_cast(&mut self, spell_type: SpellType, opponent: &mut Character) -> bool {
@@ -77,7 +77,7 @@ mod solution {
             true
         }
 
-        /// Take a turn in which the character performs a physical attack against
+        /// Takes a turn in which the character performs a physical attack against
         /// an opponent.
         fn turn_attack(&mut self, opponent: &mut Character) {
             // Apply effects
@@ -90,7 +90,7 @@ mod solution {
             }
         }
 
-        /// Apply the effects of any active spell both on this character as well
+        /// Applies the effects of any active spell both on this character as well
         /// as on an opponent.
         fn apply_effects(&mut self, opponent: &mut Character) {
             let mut spells: Vec<Box<dyn Spell>> = self.spells.drain(..).collect();
@@ -365,7 +365,7 @@ mod solution {
     /// `hard_mode` causes the player character to take 1 damage at the beginning of
     /// each player turn.
     pub fn solve(characters: &Characters, hard_mode: bool) -> AocResult<u64> {
-        /// This is a recursive sub-function of [`solve`].
+        /// This is a recursive internal function of [`solve`].
         fn solve_rec(
             level: usize,
             spent: u32,

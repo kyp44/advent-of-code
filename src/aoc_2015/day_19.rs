@@ -168,7 +168,7 @@ mod solution {
         /// Counts the number of replacement steps required to create a target molecule
         /// from a starting molecule.
         pub fn number_of_steps(&self, target: &str, input: &str) -> Option<u64> {
-            /// This is a recursive sub-function of [`Machine::number_of_steps`].
+            /// This is a recursive internal function of [`Machine::number_of_steps`].
             fn number_of_steps_rec(
                 replacements: &[Replacement],
                 bad_strs: &mut HashSet<String>,

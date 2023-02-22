@@ -208,7 +208,7 @@ mod solution {
                 player2: Deck::from_str(secs[1])?,
             };
 
-            /// Internal function for [`Game::from_str`].
+            /// This is an internal function for [`Game::from_str`].
             ///
             /// Verifies that the player numbers are correct.
             fn check(exp: u8, found: u8) -> AocResult<()> {
@@ -234,7 +234,7 @@ mod solution {
             }
         }
 
-        /// Play the game according to the rules for the part and returns
+        /// Plays the game according to the rules for the part and returns
         /// the ending deck state for the winning player.
         pub fn play<P: Part>(&self) -> Deck {
             P::play(self.clone())

@@ -273,13 +273,13 @@ class CompleteSentencesLint(Lint):
 
                     # Ensure that the first word is capitalized
                     if words[0].isalpha() and not words[0].isupper() and not words[0].istitle():
-                        #print("FIRST WORD", words[0])
+                        # print("FIRST WORD", words[0])
                         self.alert(source_file, ln)
                         break
 
                 # Lastly, ensure that the final sentence does end in period
-                if sentences[-1][-1] != ".":
-                    #print("LAST PERIOD", sentences[-1])
+                if sentences[-1][-1] not in ".!":
+                    # print("LAST PERIOD", sentences[-1])
                     self.alert(source_file, ln)
 
 
@@ -323,10 +323,15 @@ class FunctionIntroVerbLint(Lint):
 
     def check_file(self, source_file: SourceFile):
         for ln, line in source_file.doc_comment_lines():
-            # Now look for the first item line
-            for item_line in source_file.lines[ln+1:]:
+            # Go until we are out of doc comments
+            for i, doc_line in enumerate(source_file.lines[ln:]):
+                if not doc_line.is_doc_comment():
+                    break
+
+            # Now look for the first item line until we get to another doc comment
+            for item_line in source_file.lines[ln+i:]:
                 item_type = item_line.item_type
-                if item_line.is_doc_comment() or item_type is not ItemType.NONE:
+                if item_line.is_doc_comment() is not ItemType.NONE:
                     if item_type is ItemType.FUNCTION:
                         # Now verify the that first word is proper case that ends in `s`
                         first_word = line.content.split()[0]
@@ -342,33 +347,39 @@ class SimpleReplaceLint(Lint):
     Sub-class should define the following attributes in the constructor
     then call this constructor:
     name - Lint name (str)
-    bad_term - The term to avoid (str)
+    bad_terms - The terms to avoid ([str])
     good_term - The term that should be used instead (str)
     """
 
     def __init__(self):
-        # TODO: Need to finish this and and instance for `sub-functions` -> `internal functions`
-        # TODO: There are currently instances of this in the code left intentionally to test.
-        self.description = "Do not use the term`" + self.bad_term + \
+        self.description = "Do not use the term `" + self.bad_terms[0] + \
             "`. Use `" + self.good_term + "` instead."
 
     def check_file(self, source_file: SourceFile):
         for ln, line in source_file.doc_comment_lines():
             # Now jut look for the term in all subsequent doc comment lines.
-            for item_line in source_file.lines[ln+1:]:
-                item_type = item_line.item_type
-                if item_line.doc_comment or item_type is not ItemType.NONE:
-                    if item_type is ItemType.FUNCTION:
-                        # Now verify the that first word is proper case that ends in `s`
-                        first_word = line.content.split()[0]
-                        if not first_word.istitle() or first_word[-1] != "s":
-                            self.alert(source_file, ln)
+            for doc_line in source_file.lines[ln:]:
+                if not doc_line.is_doc_comment():
                     break
+                elif doc_line.doc_line_type not in (DocLineType.TEXT, DocLineType.TEXT_HEADER):
+                    continue
+
+                for term in self.bad_terms:
+                    if term.lower() in doc_line.content.lower():
+                        self.alert(source_file, ln)
+
+
+class SubFunctionReplaceLint(SimpleReplaceLint):
+    def __init__(self):
+        self.name = "sub_function"
+        self.bad_terms = ["sub-function", "subfunction"]
+        self.good_term = "internal function"
+        super().__init__()
 
 
 # All our lints.
 lints = [IsolatedIntroLint(), CrossRefLint(), CompleteSentencesLint(),
-         FunctionIntroVerbLint()]
+         FunctionIntroVerbLint(), SubFunctionReplaceLint()]
 
 
 def source_files() -> str:
@@ -389,8 +400,8 @@ if args.lints:
         lint.describe()
 else:
     # Check every file for every lint
-    for source_path in ["src/aoc/iter.rs"]:
-        # for source_path in source_files():
+    # for source_path in ["src/aoc/iter.rs"]:
+    for source_path in source_files():
         source_file = SourceFile(source_path)
 
         for lint in lints:
