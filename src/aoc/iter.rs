@@ -16,14 +16,12 @@ pub trait IteratorExt<T> {
     /// regardless of the predicate.
     ///
     /// # Panics
+    /// This will panic if the [`usize`] count cannot be converted into the numeric return type.
     ///
-    /// Panics if the [`usize`] count cannot be converted into the numeric return type.
-    ///
-    /// # Example
-    ///
+    /// # Examples
+    /// Basic usage:
     /// ```
-    /// use aoc::prelude::*;
-    ///
+    /// # use aoc::prelude::*;
     /// assert_eq!(std::iter::empty::<u8>().filter_count::<usize>(|_| true), 0);
     /// assert_eq!([-1, 3, 5, -7, 0, 8, -9, -2, 5].into_iter().filter_count::<u32>(|x| *x <= 0), 5);
     /// ```
@@ -36,11 +34,10 @@ pub trait IteratorExt<T> {
     /// Will return `None` if the iterator is empty, and the single-element range
     /// `x..=x` if the iterator yields only a single element `x`.
     ///
-    /// # Example
-    ///
+    /// # Examples
+    /// Basic usage:
     /// ```
-    /// use aoc::prelude::*;
-    ///
+    /// # use aoc::prelude::*;
     /// assert_eq!(std::iter::empty::<u8>().range(), None);
     /// assert_eq!([5u8].into_iter().range(), Some(5..=5));
     /// assert_eq!([-9, 4, 7, -11, 8, 5, -6, -3, 15].into_iter().range(), Some(-11..=15));
@@ -55,11 +52,10 @@ pub trait IteratorExt<T> {
     /// be more convenient in some situations. If `0` is passed then `None` will be returned
     /// and likewise if the iterator is exhausted before `n` iterations.
     ///
-    /// # Example
-    ///
+    /// # Examples
+    /// Basic usage:
     /// ```
-    /// use aoc::prelude::*;
-    ///
+    /// # use aoc::prelude::*;
     /// assert_eq!([0, 1, 2, 3, 4, 5, 6].into_iter().iterations(0), None);
     /// assert_eq!([0, 1, 2, 3, 4, 5, 6].into_iter().iterations(20), None);
     /// assert_eq!([0, 1, 2, 3, 4, 5, 6].into_iter().iterations(4), Some(3));
@@ -99,20 +95,22 @@ pub trait StrExt {
     /// Returns an [`Iterator`] the performs substring replacements on a string, one replacement
     /// at a time, yielding the resulting string after each replacement.
     ///
-    /// The replacements are
-    /// independent and not cumulative.
+    /// The replacements are independent and not cumulative. If the `from` string is not found
+    /// in the string, then the [`Iterator`] will be empty.
     ///
-    /// # Example
-    ///
+    /// # Examples
+    /// Basic usage:
     /// ```
-    /// use aoc::prelude::*;
-    ///
-    /// let mut replacements = "The red fox jumps over the blue fox and lands on the yellow fox".individual_replacements("fox", "dog");
+    /// # use aoc::prelude::*;
+    /// let string = "The red fox jumps over the blue fox and lands on the yellow fox";
+    /// let mut replacements = string.individual_replacements("fox", "dog");
     ///
     /// assert_eq!(replacements.next().unwrap(), "The red dog jumps over the blue fox and lands on the yellow fox");
     /// assert_eq!(replacements.next().unwrap(), "The red fox jumps over the blue dog and lands on the yellow fox");
     /// assert_eq!(replacements.next().unwrap(), "The red fox jumps over the blue fox and lands on the yellow dog");
     /// assert_eq!(replacements.next(), None);
+    ///
+    /// assert_eq!(string.individual_replacements("tiger", "dog").next(), None);
     /// ```
     fn individual_replacements<'a, 'b, 'c>(
         &'a self,
@@ -122,14 +120,15 @@ pub trait StrExt {
 
     /// Returns an [`Iterator`] over runs of repeated characters in a string.
     ///
-    /// The iterator yields substrings of one or more characters that are the same.
+    /// The iterator yields substrings of one or more characters that are the same. Only if the
+    /// string is empty will the iterator also me empty.
     ///
-    /// # Example
-    ///
+    /// # Examples
+    /// Basic usage:
     /// ```
-    /// use aoc::prelude::*;
-    ///
+    /// # use aoc::prelude::*;
     /// assert_eq!("".split_runs().next(), None);
+    /// assert_eq!("X".split_runs().collect::<Vec<_>>(), vec!["X"]);
     /// assert_eq!("ABCDEF".split_runs().collect::<Vec<_>>(), vec!["A", "B", "C", "D", "E", "F"]);
     /// assert_eq!("abbbcddddeefggg".split_runs().collect::<Vec<_>>(), vec!["a", "bbb", "c", "dddd", "ee", "f", "ggg"]);
     /// ```

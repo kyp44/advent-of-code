@@ -6,7 +6,7 @@ use super::prelude::*;
 use cgmath::{EuclideanSpace, Point2, Vector2};
 use core::slice::SlicePattern;
 use derive_more::{Add, AddAssign, Deref, From, Into, Not, Sub, SubAssign};
-use itertools::{iproduct, Itertools};
+use itertools::{iproduct, process_results, Itertools};
 use num::FromPrimitive;
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
@@ -17,66 +17,118 @@ pub type GridSize = Vector2<usize>;
 
 /// Extension trait for [`GridSize`].
 pub trait GridSizeExt {
-    /// Returns an [`Iterator`] over all points in a grid of this size in row-major order
+    /// Returns an [`Iterator`] over all points in a grid of this size in row-major order.
     ///
-    /// # Example
-    ///
+    /// # Examples
+    /// Basic usage:
     /// ```
-    /// use aoc::prelude::*;
-    ///
+    /// # use aoc::prelude::*;
     /// let size = GridSize::new(2, 3);
     /// let points = size.all_points().collect::<Vec<_>>();
     ///
     /// assert_eq!(points, vec![
     ///     GridPoint::new(0, 0),
+    ///     GridPoint::new(1, 0),
     ///     GridPoint::new(0, 1),
+    ///     GridPoint::new(1, 1),
+    ///     GridPoint::new(0, 2),
+    ///     GridPoint::new(1, 2),
     /// ]);
     /// ```
     fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>>;
+
+    /// Validates that a size if valid for a grid.
+    ///
+    /// Valid sizes are those that are nonzero in both dimensions.
+    ///
+    /// # Panics
+    /// This will panic if the size is invalid.
+    fn validate(self) -> Self;
 }
 impl GridSizeExt for GridSize {
     fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>> {
         Box::new(iproduct!(0..self.y, 0..self.x).map(|(y, x)| GridPoint::new(x, y)))
     }
+
+    fn validate(self) -> Self {
+        if self.x == 0 || self.y == 0 {
+            panic!("A GridSize of (${}, ${}) is invalid", self.x, self.y);
+        }
+        self
+    }
 }
 
-// A grid of arbitrary data
+/// A 2D grid of values.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Grid<T> {
+    /// The size of the grid.
     size: GridSize,
+    /// The actual grid data of fixed size.
+    ///
+    /// This is an array of arrays in which each inner array is a row and is
+    /// guaranteed to have the same length, which is of course the width of
+    /// the grid.
     data: Box<[Box<[T]>]>,
 }
 impl<T: Default + Clone> Grid<T> {
+    /// Creates a default grid of a particular `size` with default values.
+    ///
+    /// # Panics
+    /// This will panic if the `size` is invalid, that is it contains zero in either dimension.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// # use aoc::grid::Digit;
+    /// let grid = Grid::<Digit>::default(GridSize::new(3, 3));
+    ///
+    /// assert_eq!(format!("{grid:?}"), "000\n000\n000\n");
+    /// ```
     pub fn default(size: GridSize) -> Self {
         Self {
-            size,
+            size: size.validate(),
             data: vec![vec![T::default(); size.x].into_boxed_slice(); size.y].into_boxed_slice(),
         }
     }
 }
 impl<T> Grid<T> {
-    // Size of the grid
-    pub fn size(&self) -> &GridSize {
-        &self.size
-    }
-
-    // Get element at a point
-    pub fn get(&self, point: &GridPoint) -> &T {
-        &self.data[point.y][point.x]
-    }
-
-    // Set element at a point
-    pub fn set(&mut self, point: &GridPoint, value: T) {
-        *self.element_at(point) = value;
-    }
-
-    // Get mut reference to an element
-    pub fn element_at(&mut self, point: &GridPoint) -> &mut T {
-        &mut self.data[point.y][point.x]
-    }
-
-    // From data with verification
-    pub fn from_data(data: Box<[Box<[T]>]>) -> AocResult<Self> {
+    /// Creates a grid from raw data.
+    ///
+    /// The raw data should be a [`Vec`] for rows, with each row being
+    /// itself a [`Vec`] of the same length. Returns an [`AocError::InvalidInput`]
+    /// if either the passed data is empty, or if there are rows with different
+    /// lengths.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// # use aoc::grid::Digit;
+    /// let grid = Grid::<Digit>::from_data(vec![
+    ///     vec![0.into(), 1.into()],
+    ///     vec![2.into(), 3.into()],
+    ///     vec![4.into(), 5.into()],
+    /// ]).unwrap();
+    /// assert_eq!(format!("{grid:?}"), "01\n23\n45\n");
+    /// ```
+    ///
+    /// Invalid usage:
+    /// ```
+    /// # #![feature(assert_matches)]
+    /// # use std::assert_matches::assert_matches;
+    /// # use aoc::prelude::*;
+    /// # use aoc::grid::Digit;
+    /// assert_matches!(Grid::<u8>::from_data(vec![]), Err(AocError::InvalidInput(_)));
+    ///
+    /// let result = Grid::from_data(vec![
+    ///     vec![1, 2, 3],
+    ///     vec![4, 5],
+    ///     vec![6],
+    /// ]);
+    /// assert_matches!(result, Err(AocError::InvalidInput(_)));
+    /// ```
+    pub fn from_data(data: Vec<Vec<T>>) -> AocResult<Self> {
         // Verify that we have at least one row
         let height = data.len();
         if height < 1 {
@@ -85,18 +137,23 @@ impl<T> Grid<T> {
 
         // Verify that all the row widths are the same
         let width = data[0].len();
-        for row in data.iter() {
-            if row.len() != width {
-                return Err(AocError::InvalidInput(
-                    format!(
-                        "Grid row has a length of {} instead of the expected {}",
-                        row.len(),
-                        width
-                    )
-                    .into(),
-                ));
-            }
-        }
+        let data = process_results(
+            data.into_iter().map(|row| {
+                if row.len() != width {
+                    Err(AocError::InvalidInput(
+                        format!(
+                            "Grid row has a length of {} instead of the expected {}",
+                            row.len(),
+                            width
+                        )
+                        .into(),
+                    ))
+                } else {
+                    Ok(row.into_boxed_slice())
+                }
+            }),
+            |iter| iter.collect(),
+        )?;
 
         Ok(Self {
             size: GridSize::new(width, height),
@@ -104,7 +161,100 @@ impl<T> Grid<T> {
         })
     }
 
-    // Validate and convert signed point to unsigned
+    /// Returns the size the grid.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2], vec![3, 4], vec![5, 6]]).unwrap();
+    ///
+    /// assert_eq!(*grid.size(), GridSize::new(2, 3));
+    /// ```
+    pub fn size(&self) -> &GridSize {
+        &self.size
+    }
+
+    /// Gets a reference to the element at a location.
+    ///
+    /// # Panics
+    /// This will panic if the location is out of the bounds of the grid based on
+    /// its size.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2], vec![3, 4], vec![5, 6]]).unwrap();
+    ///
+    /// assert_eq!(*grid.get(&GridPoint::new(0, 1)), 3);
+    /// assert_eq!(*grid.get(&GridPoint::new(1, 1)), 4);
+    /// assert_eq!(*grid.get(&GridPoint::new(0, 0)), 1);
+    /// ```
+    pub fn get(&self, point: &GridPoint) -> &T {
+        &self.data[point.y][point.x]
+    }
+
+    /// Sets element at a location.
+    ///
+    /// # Panics
+    /// This will panic if the location is out of the bounds of the grid based on
+    /// its size.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let mut grid = Grid::<u8>::from_data(vec![vec![1, 2], vec![3, 4], vec![5, 6]]).unwrap();
+    /// let point = GridPoint::new(1, 1);
+    ///
+    /// assert_eq!(*grid.get(&point), 4);
+    ///
+    /// grid.set(&point, 21);
+    /// assert_eq!(*grid.get(&point), 21);
+    /// ```
+    pub fn set(&mut self, point: &GridPoint, value: T) {
+        *self.element_at(point) = value;
+    }
+
+    /// Gets a mutable reference to an element.
+    ///
+    /// # Panics
+    /// This will panic if the location is out of the bounds of the grid based on
+    /// its size.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let mut grid = Grid::<u8>::from_data(vec![vec![1, 2], vec![3, 4], vec![5, 6]]).unwrap();
+    /// let point = GridPoint::new(1, 1);
+    ///
+    /// assert_eq!(*grid.element_at(&point), 4);
+    /// *grid.element_at(&point) =  21;
+    /// assert_eq!(*grid.element_at(&point), 21);
+    /// ```
+    pub fn element_at(&mut self, point: &GridPoint) -> &mut T {
+        &mut self.data[point.y][point.x]
+    }
+
+    /// Validates and converts a `point` location with signed values.
+    ///
+    /// If the signed `point` is out bounds, then `None` will be returned.
+    /// If it is in bounds then the corresponding unsigned point will be returned.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// # use cgmath::Point2;
+    /// let grid = Grid::<bool>::default(GridSize::new(2, 3));
+    ///
+    /// assert_eq!(grid.valid_point(&Point2::new(0, 1)), Some(GridPoint::new(0, 1)));
+    /// assert_eq!(grid.valid_point(&Point2::new(1, 2)), Some(GridPoint::new(1, 2)));
+    /// assert_eq!(grid.valid_point(&Point2::new(0, -1)), None);
+    /// assert_eq!(grid.valid_point(&Point2::new(2, 0)), None);
+    /// ```
     pub fn valid_point(&self, point: &Point2<isize>) -> Option<GridPoint> {
         if point.x >= 0 && point.y >= 0 {
             let point: GridPoint = Point2::try_point_from(*point).unwrap();
@@ -119,12 +269,41 @@ impl<T> Grid<T> {
         }
     }
 
-    // Iterator over all points
+    /// Returns an [`Iterator`] over all valid grid points in row-major order.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6]]).unwrap();
+    /// let points = vec![
+    ///     GridPoint::new(0, 0),
+    ///     GridPoint::new(1, 0),
+    ///     GridPoint::new(2, 0),
+    ///     GridPoint::new(0, 1),
+    ///     GridPoint::new(1, 1),
+    ///     GridPoint::new(2, 1),
+    /// ];
+    ///
+    /// assert_eq!(grid.all_points().collect::<Vec<_>>(), points);
+    /// ```
     pub fn all_points(&self) -> impl Iterator<Item = GridPoint> {
         self.size().all_points()
     }
 
-    // Iterate over all values
+    /// Returns an [`Iterator`] over all grid values in row-major order.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6]]).unwrap();
+    ///
+    /// assert_eq!(
+    ///     grid.all_values().copied().collect::<Vec<_>>(),
+    ///     vec![1, 2, 3, 4, 5, 6]
+    /// );
+    /// ```
     pub fn all_values(&self) -> impl Iterator<Item = &T> {
         Box::new(self.all_points().map(|p| self.get(&p)))
     }

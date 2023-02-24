@@ -78,10 +78,7 @@ mod solution {
             Ok((
                 input,
                 Self {
-                    grid: Grid::from_data(
-                        rows.into_iter().map(|row| row.into_boxed_slice()).collect(),
-                    )
-                    .unwrap(),
+                    grid: Grid::from_data(rows).unwrap(),
                 },
             ))
         }

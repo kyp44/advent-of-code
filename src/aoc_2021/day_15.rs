@@ -109,7 +109,7 @@ mod solution {
             }
 
             // Now duplicate all the rows
-            let mut rows: Vec<Box<[RiskLevel]>> = Vec::new();
+            let mut rows = Vec::new();
             for i in 0..n {
                 for row in base_rows.iter() {
                     rows.push(row.iter().map(|r| *r + i.into()).collect())
@@ -117,7 +117,7 @@ mod solution {
             }
 
             Self {
-                grid: Grid::from_data(rows.into_boxed_slice()).unwrap(),
+                grid: Grid::from_data(rows).unwrap(),
             }
         }
     }

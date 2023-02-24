@@ -373,14 +373,14 @@ macro_rules! year_solutions {
 ///
 /// Note that we cannot implement the [`std`] conversion traits due to the orphan rule.
 ///
-/// # Example
-///
+/// # Examples
+/// Basic usage:
+/// TODO
 /// ```
 /// /* # #![feature(assert_matches)]
 /// # use std::assert_matches::assert_matches;
-/// use aoc::prelude::*;
-/// use cgmath::{Vector2, Vector3};
-///
+/// # use aoc::prelude::*;
+/// # use cgmath::{Vector2, Vector3};
 /// // Some 2D vector conversions
 /// assert_matches!(Vector2::<isize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<usize>::new(3, 4));
 /// assert_matches!(Vector2::<isize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<u8>::new(3, 4));
