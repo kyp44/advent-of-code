@@ -27,6 +27,7 @@ L.LLLLL.LL",
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use aoc::grid::AnyGridPoint;
     use cgmath::{Point2, Vector2, Zero};
     use derive_new::new;
     use itertools::iproduct;
@@ -128,9 +129,9 @@ mod solution {
                     .filter_count(|dp| {
                         let mut i = 1;
                         loop {
-                            let point = Point2::<isize>::try_point_from(*point).unwrap();
+                            let point = AnyGridPoint::try_point_from(*point).unwrap();
 
-                            match grid.valid_point(&(point + i * dp)) {
+                            match grid.bounded_point(&(point + i * dp)) {
                                 Some(p) => match grid.get(&p) {
                                     Seat::Occupied => break true,
                                     Seat::Empty => break false,

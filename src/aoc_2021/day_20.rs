@@ -31,7 +31,7 @@ mod solution {
     use super::*;
     use aoc::{grid::StdBool, parse::trim};
     use bitbuffer::{BitReadBuffer, BitWriteStream, LittleEndian};
-    use cgmath::{Point2, Vector2};
+    use cgmath::Vector2;
     use nom::{character::complete::one_of, combinator::map, multi::many_m_n};
     use std::rc::Rc;
 
@@ -102,15 +102,15 @@ mod solution {
         }
 
         /// Returns the pixel value for a point on the image.
-        fn get_pixel(&self, point: &Point2<isize>) -> bool {
-            match self.grid.valid_point(point) {
+        fn get_pixel(&self, point: &AnyGridPoint) -> bool {
+            match self.grid.bounded_point(point) {
                 Some(p) => **self.grid.get(&p),
                 None => self.infinity_pixels,
             }
         }
     }
     impl Evolver<bool> for Image {
-        type Point = Point2<isize>;
+        type Point = AnyGridPoint;
 
         fn next_default(other: &Self) -> Self {
             let infinity_pixels = other
@@ -140,9 +140,7 @@ mod solution {
 
             // New grid is offset so need to convert point into current grid space
             let point = point - Vector2::new(1, 1);
-            let bits: Vec<bool> = self
-                .grid
-                .all_neighbor_points(point, true, true)
+            let bits: Vec<bool> = Grid::all_neighbor_points(point, true, true)
                 .map(|p| self.get_pixel(&p))
                 .collect();
             for b in bits.into_iter().rev() {

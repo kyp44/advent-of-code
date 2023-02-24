@@ -10,10 +10,14 @@ use itertools::{iproduct, process_results, Itertools};
 use num::FromPrimitive;
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
-/// A point location in a [`Grid`].
+/// A point location in a [`Grid`] that should be within the bounds of the grid.
 pub type GridPoint = Point2<usize>;
 /// The size of a [`Grid`].
 pub type GridSize = Vector2<usize>;
+/// A point location in any [`Grid`] regardless of its bounds.
+pub type AnyGridPoint = Point2<isize>;
+
+// TODO: Extension for GridPoint with moved Grid::all_neighbor_points.
 
 /// Extension trait for [`GridSize`].
 pub trait GridSizeExt {
@@ -238,7 +242,7 @@ impl<T> Grid<T> {
         &mut self.data[point.y][point.x]
     }
 
-    /// Validates and converts a `point` location with signed values.
+    /// Verifies that any grid point is in the bounds of the grid and converts it if so.
     ///
     /// If the signed `point` is out bounds, then `None` will be returned.
     /// If it is in bounds then the corresponding unsigned point will be returned.
@@ -247,17 +251,16 @@ impl<T> Grid<T> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// # use cgmath::Point2;
     /// let grid = Grid::<bool>::default(GridSize::new(2, 3));
     ///
-    /// assert_eq!(grid.valid_point(&Point2::new(0, 1)), Some(GridPoint::new(0, 1)));
-    /// assert_eq!(grid.valid_point(&Point2::new(1, 2)), Some(GridPoint::new(1, 2)));
-    /// assert_eq!(grid.valid_point(&Point2::new(0, -1)), None);
-    /// assert_eq!(grid.valid_point(&Point2::new(2, 0)), None);
+    /// assert_eq!(grid.valid_point(&AnyGridPoint::new(0, 1)), Some(GridPoint::new(0, 1)));
+    /// assert_eq!(grid.valid_point(&AnyGridPoint::new(1, 2)), Some(GridPoint::new(1, 2)));
+    /// assert_eq!(grid.valid_point(&AnyGridPoint::new(0, -1)), None);
+    /// assert_eq!(grid.valid_point(&AnyGridPoint::new(2, 0)), None);
     /// ```
-    pub fn valid_point(&self, point: &Point2<isize>) -> Option<GridPoint> {
+    pub fn bounded_point(&self, point: &AnyGridPoint) -> Option<GridPoint> {
         if point.x >= 0 && point.y >= 0 {
-            let point: GridPoint = Point2::try_point_from(*point).unwrap();
+            let point = GridPoint::try_point_from(*point).unwrap();
             let size = self.size();
             if point.x < size.x && point.y < size.y {
                 Some(point)
@@ -308,28 +311,77 @@ impl<T> Grid<T> {
         Box::new(self.all_points().map(|p| self.get(&p)))
     }
 
-    // Iterate over a row
+    /// Returns an [`Iterator`] over the values in a `row`.
+    ///
+    /// # Panics
+    /// This will panic if the `row` has a value that is out of bounds for the size of the grid.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2], vec![3, 4], vec![5, 6]]).unwrap();
+    ///
+    /// assert_eq!(grid.row_iter(1).copied().collect::<Vec<_>>(), vec![3, 4]);
+    /// ```
     pub fn row_iter(&self, row: usize) -> impl Iterator<Item = &T> {
         self.data[row].iter()
     }
 
-    // Iterator over column
-    pub fn col_iter(&self, col: usize) -> impl Iterator<Item = &T> {
-        (0..self.size.y).map(move |y| &self.data[y][col])
+    /// Returns an [`Iterator`] over the values in a `column`.
+    ///
+    /// # Panics
+    /// This will panic if the `column` has a value that is out of bounds for the size of the grid.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 4], vec![2, 5], vec![3, 6]]).unwrap();
+    ///
+    /// assert_eq!(grid.column_iter(1).copied().collect::<Vec<_>>(), vec![4, 5, 6]);
+    /// ```
+    pub fn column_iter(&self, column: usize) -> impl Iterator<Item = &T> {
+        (0..self.size.y).map(move |y| &self.data[y][column])
     }
 
-    // Iterator over all rows as slices
+    /// Returns an [`Iterator`] over the rows as slices.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 4], vec![2, 5], vec![3, 6]]).unwrap();
+    /// let mut iter = grid.rows_iter();
+    ///
+    /// assert_eq!(iter.next().unwrap(), &[1, 4]);
+    /// assert_eq!(iter.next().unwrap(), &[2, 5]);
+    /// assert_eq!(iter.next().unwrap(), &[3, 6]);
+    /// assert_eq!(iter.next(), None);
+    /// ```
     pub fn rows_iter(&self) -> impl Iterator<Item = &[T]> {
         self.data.iter().map(|row| row.as_slice())
     }
 
-    // Iterate over all neighboring points in row major order, even points not in the grid.
+    /// Returns an [`Iterator`] over all the neighboring points around a `point`
+    /// in row-major order.
+    ///
+    /// Note that this is independent of any particular [`Grid`] instance.
+    /// May optionally include the four diagonal neighbor points as well as this
+    /// `point` itself. These options will dictate the length of the [`Iterator`].
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    ///
+    /// assert_eq!(Grid::all_neighbor_points(AnyGridPoint::new()))
+    /// ```
     pub fn all_neighbor_points(
-        &self,
-        point: Point2<isize>,
+        point: AnyGridPoint,
         include_diagonals: bool,
         include_self: bool,
-    ) -> impl Iterator<Item = Point2<isize>> {
+    ) -> impl Iterator<Item = AnyGridPoint> {
         iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
             let point = point + Vector2::new(dx, dy);
             if dx == 0 && dy == 0 {
@@ -346,19 +398,34 @@ impl<T> Grid<T> {
         })
     }
 
-    // Iterate over neighboring points in row major order.
+    /// Returns an [`Iterator`] over all the neighboring points around a `point`
+    /// in row-major order regardless of whether the neighboring points are
+    /// actually within the bounds of the grid or not.
+    ///
+    /// The length of the [`Iterator`] will depend on the location of the `point`.
+    /// May optionally include the (up to) four diagonal neighbor points as well
+    /// as this `point` itself.
+    ///
+    /// # Examples
+    /// Basic ussage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 4], vec![5, 6, 7], vec![3, 6]]).unwrap();
+    ///
+    /// dasdas
+    /// ```
     pub fn neighbor_points<'a>(
         &'a self,
         point: &GridPoint,
         include_diagonals: bool,
         include_self: bool,
     ) -> impl Iterator<Item = GridPoint> + 'a {
-        self.all_neighbor_points(
-            Point2::try_point_from(*point).unwrap(),
+        Self::all_neighbor_points(
+            AnyGridPoint::try_point_from(*point).unwrap(),
             include_diagonals,
             include_self,
         )
-        .filter_map(|p| self.valid_point(&p))
+        .filter_map(|p| self.bounded_point(&p))
     }
 
     pub fn sub_grid(&self, point: &GridPoint, size: GridSize) -> Self
@@ -375,7 +442,7 @@ impl<T> Grid<T> {
 }
 // Additional methods for grids with boolean-like elements.
 impl<T: From<bool> + Default + Clone> Grid<T> {
-    pub fn from_coordinates(points: impl Iterator<Item = Point2<isize>> + Clone) -> Self {
+    pub fn from_coordinates(points: impl Iterator<Item = AnyGridPoint> + Clone) -> Self {
         let x_range = points.clone().map(|p| p.x).range().unwrap_or(0..=0);
         let y_range = points.clone().map(|p| p.y).range().unwrap_or(0..=0);
         let size = GridSize::new(

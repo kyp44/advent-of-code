@@ -37,7 +37,10 @@ fold along x=5",
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::{grid::StdBool, parse::trim};
+    use aoc::{
+        grid::{AnyGridPoint, StdBool},
+        parse::trim,
+    };
     use cgmath::Point2;
     use derive_more::{AsRef, Deref};
     use nom::{
@@ -50,7 +53,7 @@ mod solution {
 
     /// A dot location on the transparent page, which can be parsed from text input.
     #[derive(Deref, AsRef, PartialEq, Eq, Hash, Clone)]
-    struct Dot(Point2<isize>);
+    struct Dot(AnyGridPoint);
     impl Parseable<'_> for Dot {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
@@ -66,7 +69,7 @@ mod solution {
     impl Dot {
         /// Creates a new dot based on its coordinates on the page.
         fn new(x: isize, y: isize) -> Self {
-            Self(Point2::new(x, y))
+            Self(AnyGridPoint::new(x, y))
         }
     }
 

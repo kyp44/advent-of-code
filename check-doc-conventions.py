@@ -68,19 +68,20 @@ class RustLine:
             self.doc_line_type = DocLineType.TEXT
             self.comment = True
             self.content = sline[3:].strip()
-            if self.content.startswith("#"):
-                self.doc_line_type = DocLineType.TEXT_HEADER
-                self.content = self.content[1:].strip()
-            elif self.content == "":
-                self.doc_line_type = DocLineType.TEXT_EMPTY
-            elif self.content.startswith("```"):
+            if not in_doctest :
+                if self.content.startswith("#"):
+                    self.doc_line_type = DocLineType.TEXT_HEADER
+                    self.content = self.content[1:].strip()
+                elif self.content == "":
+                    self.doc_line_type = DocLineType.TEXT_EMPTY
+        
+            if self.content.startswith("```"):
                 if in_doctest:
                     self.doc_line_type = DocLineType.CODE_END
                 else:
                     self.doc_line_type = DocLineType.CODE_BEGIN
-            else:
-                if in_doctest:
-                    self.doc_line_type = DocLineType.CODE
+            elif in_doctest :
+                self.doc_line_type = DocLineType.CODE
         elif sline.startswith("//"):
             # A comment but not a doc comment
             self.comment = True
@@ -278,7 +279,7 @@ class CompleteSentencesLint(Lint):
                         break
 
                 # Lastly, ensure that the final sentence does end in period
-                if sentences[-1][-1] not in ".!":
+                if sentences[-1][-1] not in ".!:":
                     # print("LAST PERIOD", sentences[-1])
                     self.alert(source_file, ln)
 
@@ -376,10 +377,33 @@ class SubFunctionReplaceLint(SimpleReplaceLint):
         self.good_term = "internal function"
         super().__init__()
 
+class SectionsLint(Lint):
+    """
+    `Panics` and `Examples` sections must conform to certain conventions pertaining to the text immediately after the headers. Refer to the many examples.
+    """
+
+    def __init__(self):
+        self.name = "sections"
+        self.description = self.__class__.__doc__.strip()
+
+    def check_file(self, source_file: SourceFile):
+        for ln, line in enumerate(source_file.lines) :
+            # Only care about headers
+            if line.doc_line_type is DocLineType.TEXT_HEADER :
+                next_line = source_file.lines[ln+1]
+                next_next_line = source_file.lines[ln+2]
+
+                # Panics sections
+                if line.content.lower().startswith("panic") and (line.content != "Panics" or not next_line.content.startswith("This will panic")) :
+                    self.alert(source_file, ln)
+
+                # Examples section
+                if line.content.lower().startswith("example") and (line.content != "Examples" or next_line.content != "Basic usage:" or next_next_line.doc_line_type is not DocLineType.CODE_BEGIN) :
+                    self.alert(source_file, ln)
 
 # All our lints.
 lints = [IsolatedIntroLint(), CrossRefLint(), CompleteSentencesLint(),
-         FunctionIntroVerbLint(), SubFunctionReplaceLint()]
+         FunctionIntroVerbLint(), SubFunctionReplaceLint(), SectionsLint()]
 
 
 def source_files() -> str:

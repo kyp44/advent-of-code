@@ -53,13 +53,11 @@ mod solution {
         }
     }
 
-    /// That that describes the position of a light.
-    type Point = Point2<usize>;
     /// This is a [`nom`] parser for a [`Point`].
     ///  
     /// NOTE: This cannot be done as a [`Parseable`] implementation due
     /// to a potential conflict.
-    fn point_parser(input: &str) -> NomParseResult<&str, Point> {
+    fn point_parser(input: &str) -> NomParseResult<&str, GridPoint> {
         use nom::character::complete::u64 as cu64;
         map(separated_pair(cu64, tag(","), cu64), |(x, y)| {
             Point2::new(x, y).try_point_into().unwrap()
@@ -69,9 +67,9 @@ mod solution {
     /// A Rectangle of lights that can be parsed from text input.
     struct Rect {
         /// Lower left corner of the rectangle (inclusive).
-        lower_left: Point,
+        lower_left: GridPoint,
         /// Upper right corner of the rectangle (inclusive).
-        upper_right: Point,
+        upper_right: GridPoint,
     }
     impl Parseable<'_> for Rect {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
@@ -96,12 +94,12 @@ mod solution {
     }
     impl Rect {
         /// Returns an [`Iterator`] of points contained in the rectangle.
-        fn iter(&self) -> impl Iterator<Item = Point> {
+        fn iter(&self) -> impl Iterator<Item = GridPoint> {
             iproduct!(
                 self.lower_left.x..=self.upper_right.x,
                 self.lower_left.y..=self.upper_right.y
             )
-            .map(|(x, y)| Point::new(x, y))
+            .map(|(x, y)| GridPoint::new(x, y))
         }
     }
 

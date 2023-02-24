@@ -18,7 +18,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::grid::StdBool;
+    use aoc::grid::{AnyGridPoint, StdBool};
     use cgmath::Point2;
     use derive_new::new;
     use itertools::Itertools;
@@ -71,7 +71,7 @@ mod solution {
                         self.active_cubes
                             .iter()
                             .filter(|pt| pt[2..] == coords)
-                            .map(|v| Point2::new(v[0], v[1])),
+                            .map(|v| AnyGridPoint::new(v[0], v[1])),
                     ));
 
                     writeln!(
@@ -87,7 +87,9 @@ mod solution {
                 }
             } else {
                 let slice = Slice::new(Grid::<StdBool>::from_coordinates(
-                    self.active_cubes.iter().map(|v| Point2::new(v[0], v[1])),
+                    self.active_cubes
+                        .iter()
+                        .map(|v| AnyGridPoint::new(v[0], v[1])),
                 ));
                 Debug::fmt(&slice, f)?;
             }

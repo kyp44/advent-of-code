@@ -27,12 +27,13 @@ pub mod parse;
 // Prelude
 pub mod prelude {
     pub use super::{
-        char_add, evolver::Evolver, grid::FromGridStr, grid::Grid, grid::GridDefault,
-        grid::GridPoint, grid::GridSize, grid::GridSizeExt, iter::IteratorExt, iter::StrExt,
-        parse::BitInput, parse::DiscardInput, parse::NomParseError, parse::NomParseResult,
-        parse::Parseable, parse::Sections, Answer, AnswerVec, AocError, AocResult, ManhattanLen,
-        Origin, PointFrom, PointInto, RangeExt, Solution, SolverInput, TryPointFrom, TryPointInto,
-        YearSolutions,
+        char_add,
+        evolver::Evolver,
+        grid::{AnyGridPoint, FromGridStr, Grid, GridDefault, GridPoint, GridSize, GridSizeExt},
+        iter::{IteratorExt, StrExt},
+        parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parseable, Sections},
+        Answer, AnswerVec, AocError, AocResult, ManhattanLen, Origin, PointFrom, PointInto,
+        RangeExt, Solution, SolverInput, TryPointFrom, TryPointInto, YearSolutions,
     };
 }
 
@@ -375,7 +376,6 @@ macro_rules! year_solutions {
 ///
 /// # Examples
 /// Basic usage:
-/// TODO
 /// ```
 /// /* # #![feature(assert_matches)]
 /// # use std::assert_matches::assert_matches;

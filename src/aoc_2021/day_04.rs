@@ -107,7 +107,7 @@ mod solution {
 
             // Check columns
             for col in 0..self.grid.size().x {
-                if self.grid.col_iter(col).all(|cell| cell.hit) {
+                if self.grid.column_iter(col).all(|cell| cell.hit) {
                     return true;
                 }
             }

@@ -433,8 +433,8 @@ mod solution {
             let edges: EnumMap<_, Vec<bool>> = enum_map! {
                 Edge::Top => full_image.pixels.row_iter(0).map(|sb| **sb).collect(),
                 Edge::Bottom => full_image.pixels.row_iter(full_image.pixels.size().y-1).map(|sb| **sb).collect(),
-                Edge::Left => full_image.pixels.col_iter(0).map(|sb| **sb).collect(),
-                Edge::Right => full_image.pixels.col_iter(full_image.pixels.size().x - 1).map(|sb| **sb).collect(),
+                Edge::Left => full_image.pixels.column_iter(0).map(|sb| **sb).collect(),
+                Edge::Right => full_image.pixels.column_iter(full_image.pixels.size().x - 1).map(|sb| **sb).collect(),
             };
             let mut edges_reversed = EnumMap::default();
             for (k, v) in edges.iter() {
