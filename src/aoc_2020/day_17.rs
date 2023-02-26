@@ -19,7 +19,6 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::grid::{AnyGridPoint, StdBool};
-    use cgmath::Point2;
     use derive_new::new;
     use itertools::Itertools;
     use std::{collections::HashSet, convert::TryInto, fmt::Debug, ops::RangeInclusive};

@@ -29,7 +29,10 @@ pub mod prelude {
     pub use super::{
         char_add,
         evolver::Evolver,
-        grid::{AnyGridPoint, FromGridStr, Grid, GridDefault, GridPoint, GridSize, GridSizeExt},
+        grid::{
+            AnyGridPoint, AnyGridPointExt, FromGridStr, Grid, GridDefault, GridPoint, GridSize,
+            GridSizeExt,
+        },
         iter::{IteratorExt, StrExt},
         parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parseable, Sections},
         Answer, AnswerVec, AocError, AocResult, ManhattanLen, Origin, PointFrom, PointInto,

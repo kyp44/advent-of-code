@@ -11,13 +11,19 @@ use num::FromPrimitive;
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
 /// A point location in a [`Grid`] that should be within the bounds of the grid.
+///
+/// Conceptually, the origin point (0, 0) is in the upper-left corner of the grid
+/// with increasing `x` moving to the right, and increasing `y` moving down.
 pub type GridPoint = Point2<usize>;
-/// The size of a [`Grid`].
-pub type GridSize = Vector2<usize>;
+
 /// A point location in any [`Grid`] regardless of its bounds.
+///
+/// Conceptually, the origin point (0, 0) is in the upper-left corner of the grid
+/// with increasing `x` moving to the right, and increasing `y` moving down.
 pub type AnyGridPoint = Point2<isize>;
 
-// TODO: Extension for GridPoint with moved Grid::all_neighbor_points.
+/// The size of a [`Grid`].
+pub type GridSize = Vector2<usize>;
 
 /// Extension trait for [`GridSize`].
 pub trait GridSizeExt {
@@ -62,7 +68,92 @@ impl GridSizeExt for GridSize {
     }
 }
 
+/// Extension trait for [`AnyGridPoint`].
+pub trait AnyGridPointExt {
+    /// Returns an [`Iterator`] over all the neighboring points around a `point`
+    /// in row-major order.
+    ///
+    /// The set of points may optionally include the four diagonal neighbor points
+    /// as well as this `point` itself. These options will dictate the length of
+    /// the [`Iterator`].
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// assert_eq!(
+    ///     AnyGridPoint::all_neighbor_points(AnyGridPoint::new(0, 0), true, true).collect::<Vec<_>>(),
+    ///     vec![
+    ///         AnyGridPoint::new(-1, -1),
+    ///         AnyGridPoint::new(0, -1),
+    ///         AnyGridPoint::new(1, -1),
+    ///         AnyGridPoint::new(-1, 0),
+    ///         AnyGridPoint::new(0, 0),
+    ///         AnyGridPoint::new(1, 0),
+    ///         AnyGridPoint::new(-1, 1),
+    ///         AnyGridPoint::new(0, 1),
+    ///         AnyGridPoint::new(1, 1),
+    ///     ],
+    /// );
+    /// assert_eq!(
+    ///     AnyGridPoint::all_neighbor_points(AnyGridPoint::new(-4, -2), true, false).collect::<Vec<_>>(),
+    ///     vec![
+    ///         AnyGridPoint::new(-5, -3),
+    ///         AnyGridPoint::new(-4, -3),
+    ///         AnyGridPoint::new(-3, -3),
+    ///         AnyGridPoint::new(-5, -2),
+    ///         AnyGridPoint::new(-3, -2),
+    ///         AnyGridPoint::new(-5, -1),
+    ///         AnyGridPoint::new(-4, -1),
+    ///         AnyGridPoint::new(-3, -1),
+    ///     ],
+    /// );
+    /// assert_eq!(
+    ///     AnyGridPoint::all_neighbor_points(AnyGridPoint::new(5, 6), false, false).collect::<Vec<_>>(),
+    ///     vec![
+    ///         AnyGridPoint::new(5, 5),
+    ///         AnyGridPoint::new(4, 6),
+    ///         AnyGridPoint::new(6, 6),
+    ///         AnyGridPoint::new(5, 7),
+    ///     ],
+    /// );
+    /// ```
+    fn all_neighbor_points(
+        point: AnyGridPoint,
+        include_diagonals: bool,
+        include_self: bool,
+    ) -> Box<dyn Iterator<Item = AnyGridPoint>>;
+}
+impl AnyGridPointExt for AnyGridPoint {
+    fn all_neighbor_points(
+        point: AnyGridPoint,
+        include_diagonals: bool,
+        include_self: bool,
+    ) -> Box<dyn Iterator<Item = AnyGridPoint>> {
+        Box::new(
+            iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
+                let point = point + Vector2::new(dx, dy);
+                if dx == 0 && dy == 0 {
+                    if include_self {
+                        Some(point)
+                    } else {
+                        None
+                    }
+                } else if !include_diagonals && (dx + dy).abs() != 1 {
+                    None
+                } else {
+                    Some(point)
+                }
+            }),
+        )
+    }
+}
+
 /// A 2D grid of values.
+///
+/// The values are addressed by a [`GridPoint`].
+/// Conceptually, the origin point (0, 0) is in the upper-left corner of the grid
+/// with increasing `x` moving to the right, and increasing `y` moving down.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Grid<T> {
     /// The size of the grid.
@@ -84,10 +175,9 @@ impl<T: Default + Clone> Grid<T> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// # use aoc::grid::Digit;
-    /// let grid = Grid::<Digit>::default(GridSize::new(3, 3));
+    /// let grid = Grid::<u8>::default(GridSize::new(3, 3));
     ///
-    /// assert_eq!(format!("{grid:?}"), "000\n000\n000\n");
+    /// assert_eq!(grid, Grid::from_data(vec![vec![0, 0, 0], vec![0, 0, 0], vec![0, 0, 0]]).unwrap());
     /// ```
     pub fn default(size: GridSize) -> Self {
         Self {
@@ -108,13 +198,14 @@ impl<T> Grid<T> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// # use aoc::grid::Digit;
-    /// let grid = Grid::<Digit>::from_data(vec![
-    ///     vec![0.into(), 1.into()],
-    ///     vec![2.into(), 3.into()],
-    ///     vec![4.into(), 5.into()],
-    /// ]).unwrap();
-    /// assert_eq!(format!("{grid:?}"), "01\n23\n45\n");
+    /// // This is a grid with the following values:
+    /// // 0 1
+    /// // 2 3
+    /// // 4 5
+    /// let grid = Grid::<u8>::from_data(vec![vec![0, 1], vec![2, 3], vec![4, 5]]).unwrap();
+    ///
+    /// // This is a grid with a single element.
+    /// let grid = Grid::<u8>::from_data(vec![vec![5]]).unwrap();
     /// ```
     ///
     /// Invalid usage:
@@ -253,10 +344,10 @@ impl<T> Grid<T> {
     /// # use aoc::prelude::*;
     /// let grid = Grid::<bool>::default(GridSize::new(2, 3));
     ///
-    /// assert_eq!(grid.valid_point(&AnyGridPoint::new(0, 1)), Some(GridPoint::new(0, 1)));
-    /// assert_eq!(grid.valid_point(&AnyGridPoint::new(1, 2)), Some(GridPoint::new(1, 2)));
-    /// assert_eq!(grid.valid_point(&AnyGridPoint::new(0, -1)), None);
-    /// assert_eq!(grid.valid_point(&AnyGridPoint::new(2, 0)), None);
+    /// assert_eq!(grid.bounded_point(&AnyGridPoint::new(0, 1)), Some(GridPoint::new(0, 1)));
+    /// assert_eq!(grid.bounded_point(&AnyGridPoint::new(1, 2)), Some(GridPoint::new(1, 2)));
+    /// assert_eq!(grid.bounded_point(&AnyGridPoint::new(0, -1)), None);
+    /// assert_eq!(grid.bounded_point(&AnyGridPoint::new(2, 0)), None);
     /// ```
     pub fn bounded_point(&self, point: &AnyGridPoint) -> Option<GridPoint> {
         if point.x >= 0 && point.y >= 0 {
@@ -363,56 +454,50 @@ impl<T> Grid<T> {
         self.data.iter().map(|row| row.as_slice())
     }
 
-    /// Returns an [`Iterator`] over all the neighboring points around a `point`
-    /// in row-major order.
+    /// Returns an [`Iterator`] over the neighboring points around a `point`
+    /// in row-major order such that all the points are bounded in the grid.
     ///
-    /// Note that this is independent of any particular [`Grid`] instance.
-    /// May optionally include the four diagonal neighbor points as well as this
-    /// `point` itself. These options will dictate the length of the [`Iterator`].
+    /// The length of the [`Iterator`] will depend on the location of the `point`.
+    /// For example, points on the edge of the grid will have fewer neighboring
+    /// points than the points in the middle of the grid. The set of points may
+    /// optionally include the (up to) four diagonal neighbor points as well as
+    /// this `point` itself.
     ///
     /// # Examples
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]).unwrap();
     ///
-    /// assert_eq!(Grid::all_neighbor_points(AnyGridPoint::new()))
-    /// ```
-    pub fn all_neighbor_points(
-        point: AnyGridPoint,
-        include_diagonals: bool,
-        include_self: bool,
-    ) -> impl Iterator<Item = AnyGridPoint> {
-        iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
-            let point = point + Vector2::new(dx, dy);
-            if dx == 0 && dy == 0 {
-                if include_self {
-                    Some(point)
-                } else {
-                    None
-                }
-            } else if !include_diagonals && (dx + dy).abs() != 1 {
-                None
-            } else {
-                Some(point)
-            }
-        })
-    }
-
-    /// Returns an [`Iterator`] over all the neighboring points around a `point`
-    /// in row-major order regardless of whether the neighboring points are
-    /// actually within the bounds of the grid or not.
-    ///
-    /// The length of the [`Iterator`] will depend on the location of the `point`.
-    /// May optionally include the (up to) four diagonal neighbor points as well
-    /// as this `point` itself.
-    ///
-    /// # Examples
-    /// Basic ussage:
-    /// ```
-    /// # use aoc::prelude::*;
-    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 4], vec![5, 6, 7], vec![3, 6]]).unwrap();
-    ///
-    /// dasdas
+    /// assert_eq!(
+    ///     grid.neighbor_points(&GridPoint::new(0, 0), true, true).collect::<Vec<_>>(),
+    ///     vec![
+    ///         GridPoint::new(0, 0),
+    ///         GridPoint::new(1, 0),
+    ///         GridPoint::new(0, 1),
+    ///         GridPoint::new(1, 1),
+    ///     ],    
+    /// );
+    /// assert_eq!(
+    ///     grid.neighbor_points(&GridPoint::new(1, 1), false, true).collect::<Vec<_>>(),
+    ///     vec![
+    ///         GridPoint::new(1, 0),
+    ///         GridPoint::new(0, 1),
+    ///         GridPoint::new(1, 1),
+    ///         GridPoint::new(2, 1),
+    ///         GridPoint::new(1, 2),
+    ///     ],    
+    /// );
+    /// assert_eq!(
+    ///     grid.neighbor_points(&GridPoint::new(1, 2), true, false).collect::<Vec<_>>(),
+    ///     vec![
+    ///         GridPoint::new(0, 1),
+    ///         GridPoint::new(1, 1),
+    ///         GridPoint::new(2, 1),
+    ///         GridPoint::new(0, 2),
+    ///         GridPoint::new(2, 2),
+    ///     ],    
+    /// );
     /// ```
     pub fn neighbor_points<'a>(
         &'a self,
@@ -420,7 +505,7 @@ impl<T> Grid<T> {
         include_diagonals: bool,
         include_self: bool,
     ) -> impl Iterator<Item = GridPoint> + 'a {
-        Self::all_neighbor_points(
+        AnyGridPoint::all_neighbor_points(
             AnyGridPoint::try_point_from(*point).unwrap(),
             include_diagonals,
             include_self,
@@ -428,6 +513,34 @@ impl<T> Grid<T> {
         .filter_map(|p| self.bounded_point(&p))
     }
 
+    /// Creates a sub-grid by cloning the applicable elements of this grid.
+    ///
+    /// The inclusive upper-left corner of the sub-grid is given by `point`, with
+    /// the size of the sub-grid determined by `size`.
+    ///
+    /// # Panics
+    /// This will panic if any part of the sub-grid is out of the bounds of this
+    /// grid.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]).unwrap();
+    ///
+    /// assert_eq!(
+    ///     grid.sub_grid(&GridPoint::new(0, 0), GridSize::new(2, 3)),
+    ///     Grid::from_data(vec![vec![1, 2], vec![4, 5], vec![7, 8]]).unwrap(),
+    /// );
+    /// assert_eq!(
+    ///     grid.sub_grid(&GridPoint::new(1, 0), GridSize::new(2, 2)),
+    ///     Grid::from_data(vec![vec![2, 3], vec![5, 6]]).unwrap(),
+    /// );
+    /// assert_eq!(
+    ///     grid.sub_grid(&GridPoint::new(1, 2), GridSize::new(2, 1)),
+    ///     Grid::from_data(vec![vec![8, 9]]).unwrap(),
+    /// );
+    /// ```
     pub fn sub_grid(&self, point: &GridPoint, size: GridSize) -> Self
     where
         T: Default + Clone,
@@ -435,7 +548,7 @@ impl<T> Grid<T> {
         let point = point.to_vec();
         let mut out = Self::default(size);
         for out_point in out.all_points() {
-            out.set(&out_point, self.get(&(&out_point + point)).clone());
+            out.set(&out_point, self.get(&(out_point + point)).clone());
         }
         out
     }

@@ -28,7 +28,7 @@ L.LLLLL.LL",
 mod solution {
     use super::*;
     use aoc::grid::AnyGridPoint;
-    use cgmath::{Point2, Vector2, Zero};
+    use cgmath::{Vector2, Zero};
     use derive_new::new;
     use itertools::iproduct;
     use std::{collections::HashSet, fmt::Display, hash::Hash, rc::Rc};

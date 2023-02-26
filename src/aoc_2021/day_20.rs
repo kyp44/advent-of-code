@@ -140,7 +140,7 @@ mod solution {
 
             // New grid is offset so need to convert point into current grid space
             let point = point - Vector2::new(1, 1);
-            let bits: Vec<bool> = Grid::all_neighbor_points(point, true, true)
+            let bits: Vec<bool> = AnyGridPoint::all_neighbor_points(point, true, true)
                 .map(|p| self.get_pixel(&p))
                 .collect();
             for b in bits.into_iter().rev() {

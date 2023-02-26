@@ -53,7 +53,7 @@ mod solution {
         }
     }
 
-    /// This is a [`nom`] parser for a [`Point`].
+    /// This is a [`nom`] parser for a [`GridPoint`].
     ///  
     /// NOTE: This cannot be done as a [`Parseable`] implementation due
     /// to a potential conflict.
