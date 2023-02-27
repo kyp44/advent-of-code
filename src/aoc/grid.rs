@@ -555,6 +555,40 @@ impl<T> Grid<T> {
 }
 // Additional methods for grids with boolean-like elements.
 impl<T: From<bool> + Default + Clone> Grid<T> {
+    /// Builds a [`Grid`] from a set of [`AnyGridPoint`]s for any value type that can be
+    /// created from [`bool`] values.
+    ///
+    /// The size of the grid will automatically be determined in order to tightly
+    /// contain all of the elements that correspond to `true`. The order of the points
+    /// in the `points` [`Iterator`] makes no difference.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_coordinates([
+    ///     AnyGridPoint::new(-2, -2),
+    ///     AnyGridPoint::new(-1, -1),
+    ///     AnyGridPoint::new(0, 0),
+    ///     AnyGridPoint::new(1, 0),
+    ///     AnyGridPoint::new(2, -1),
+    ///     AnyGridPoint::new(3, -2),
+    ///     AnyGridPoint::new(-1, 1),
+    ///     AnyGridPoint::new(-2, 2),
+    ///     AnyGridPoint::new(2, 1),
+    ///     AnyGridPoint::new(3, 2),
+    /// ].into_iter());
+    /// let values = vec![
+    ///     vec![1, 0, 0, 0, 0, 1],
+    ///     vec![0, 1, 0, 0, 1, 0],
+    ///     vec![0, 0, 1, 1, 0, 0],
+    ///     vec![0, 1, 0, 0, 1, 0],
+    ///     vec![1, 0, 0, 0, 0, 1],
+    /// ];
+    ///
+    /// assert_eq!(grid.size(), &GridSize::new(6, 5));
+    /// assert_eq!(grid, Grid::from_data(values).unwrap());
+    /// ```
     pub fn from_coordinates(points: impl Iterator<Item = AnyGridPoint> + Clone) -> Self {
         let x_range = points.clone().map(|p| p.x).range().unwrap_or(0..=0);
         let y_range = points.clone().map(|p| p.y).range().unwrap_or(0..=0);
@@ -576,6 +610,40 @@ impl<T: From<bool> + Default + Clone> Grid<T> {
     }
 }
 impl<T: Into<bool> + Clone> Grid<T> {
+    /// Returns a set of grid point coordinates for grid elements corresponding
+    /// to `true` for value types that can be converted to [`bool`].
+    ///
+    /// The grid points will be those with (0, 0) as the upper left element
+    /// such that every [`GridPoint`] is in the bounds of the grid.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let (t, f) = (true, false);
+    /// let values = vec![
+    ///     vec![t, f, f, f, f, t],
+    ///     vec![f, t, f, f, t, f],
+    ///     vec![f, f, t, t, f, f],
+    ///     vec![f, t, f, f, t, f],
+    ///     vec![t, f, f, f, f, t],
+    /// ];
+    /// let grid = Grid::<bool>::from_data(values).unwrap();
+    /// let coordinates = vec![
+    ///     GridPoint::new(0, 0),
+    ///     GridPoint::new(1, 1),
+    ///     GridPoint::new(2, 2),
+    ///     GridPoint::new(3, 2),
+    ///     GridPoint::new(4, 1),
+    ///     GridPoint::new(5, 0),
+    ///     GridPoint::new(1, 3),
+    ///     GridPoint::new(0, 4),
+    ///     GridPoint::new(4, 3),
+    ///     GridPoint::new(5, 4),
+    /// ];
+    ///
+    /// assert_eq!(grid.as_coordinates(), coordinates.into_iter().collect());
+    /// ```
     pub fn as_coordinates(&self) -> HashSet<GridPoint> {
         self.all_points()
             .filter(|p| Into::<bool>::into(self.get(p).clone()))
@@ -583,9 +651,10 @@ impl<T: Into<bool> + Clone> Grid<T> {
     }
 }
 
-/// Parsing a grid from a grid of characters with each row on a separate line.
+/// Parses a grid from a grid of characters with each row on a separate line.
 ///
 /// This can be done for element types that can be fallibly converted from characters.
+/// TODO: Add example since this is very useful.
 impl<T: TryFrom<char>> FromStr for Grid<T> {
     type Err = AocError;
 
