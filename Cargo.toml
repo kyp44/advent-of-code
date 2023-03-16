@@ -30,7 +30,7 @@ cgmath = "0.18"
 clap = {version = "4.1", features = ["derive", "string"]}
 colored = "2.0"
 derive-new = "0.5"
-enum-map = "2.4"
+enum-map = "2.5"
 hex = "0.4"
 # TODO: Change to normal repository once arithmetic is in a new release.
 # See: https://github.com/ObjectBoxPC/rust-infinitable/issues/1

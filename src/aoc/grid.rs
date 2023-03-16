@@ -23,6 +23,8 @@ pub type GridPoint = Point2<usize>;
 pub type AnyGridPoint = Point2<isize>;
 
 /// The size of a [`Grid`].
+///
+/// Sizes in which either element is zero are not valid.
 pub type GridSize = Vector2<usize>;
 
 /// Extension trait for [`GridSize`].
@@ -47,7 +49,7 @@ pub trait GridSizeExt {
     /// ```
     fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>>;
 
-    /// Validates that a size if valid for a grid.
+    /// Validates that a size is valid for a grid.
     ///
     /// Valid sizes are those that are nonzero in both dimensions.
     ///
@@ -213,7 +215,6 @@ impl<T> Grid<T> {
     /// # #![feature(assert_matches)]
     /// # use std::assert_matches::assert_matches;
     /// # use aoc::prelude::*;
-    /// # use aoc::grid::Digit;
     /// assert_matches!(Grid::<u8>::from_data(vec![]), Err(AocError::InvalidInput(_)));
     ///
     /// let result = Grid::from_data(vec![
@@ -651,10 +652,82 @@ impl<T: Into<bool> + Clone> Grid<T> {
     }
 }
 
-/// Parses a grid from a grid of characters with each row on a separate line.
+/// Parses a [`Grid`] from a string of characters with each row on a separate line.
 ///
 /// This can be done for element types that can be fallibly converted from characters.
-/// TODO: Add example since this is very useful.
+/// Note that the error type of the [`FromStr`] implementation for the element type
+/// does not matter so it is recommended just to use the unit type. An [`Err`] will
+/// be returns if not every row has the same number of characters, or if any of the
+/// characters is invalid.
+///
+/// # Examples
+/// Basic usage:
+/// ```
+/// # use aoc::prelude::*;
+/// # use std::str::FromStr;
+/// #[derive(Debug, PartialEq, Eq)]
+/// enum Direction {
+///     Up,
+///     Down,
+///     Left,
+///     Right,
+/// }
+/// use Direction::*;
+/// impl TryFrom<char> for Direction {
+///     type Error = ();
+///     
+///     fn try_from(value: char) -> Result<Self, Self::Error> {
+///         match value {
+///             'U' => Ok(Up),
+///             'D' => Ok(Down),
+///             'L' => Ok(Left),
+///             'R' => Ok(Right),
+///             _ => Err(()),
+///         }
+///     }
+/// }
+///
+/// let string = "UDLRU
+/// DLRUD
+/// LRUDL";
+/// let grid = Grid::from_data(vec![
+///     vec![Up, Down, Left, Right, Up],
+///     vec![Down, Left, Right, Up, Down],
+///     vec![Left, Right, Up, Down, Left],
+/// ]).unwrap();
+///
+/// assert_eq!(Grid::from_str(string).unwrap(), grid);
+/// ```
+///
+/// Invalid usage:
+/// ```
+/// # #![feature(assert_matches)]
+/// # use std::assert_matches::assert_matches;
+/// # use aoc::prelude::*;
+/// # use std::str::FromStr;
+/// #[derive(Debug, PartialEq, Eq)]
+/// enum Correctness {
+///     Wrong,
+///     Right,
+/// }
+/// use Correctness::*;
+/// impl TryFrom<char> for Correctness {
+///     type Error = ();
+///     
+///     fn try_from(value: char) -> Result<Self, Self::Error> {
+///         match value {
+///             'W' => Ok(Wrong),
+///             'R' => Ok(Right),
+///             _ => Err(()),
+///         }
+///     }
+/// }
+///
+/// let string = "WRRW
+/// RWWX";
+///
+/// assert_matches!(Grid::<Correctness>::from_str(string), Err(AocError::InvalidInput(_)));
+/// ```
 impl<T: TryFrom<char>> FromStr for Grid<T> {
     type Err = AocError;
 
@@ -674,7 +747,7 @@ impl<T: TryFrom<char>> FromStr for Grid<T> {
         Self::from_data(data)
     }
 }
-/// Debug display for grid whose elements implement [`Debug`].
+/// Debug display for a [`Grid`] whose elements implement [`Debug`].
 impl<T: fmt::Debug> fmt::Debug for Grid<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let size = self.size();
@@ -690,14 +763,17 @@ impl<T: fmt::Debug> fmt::Debug for Grid<T> {
     }
 }
 
-/// Create an object from a [`GridSize`].
+/// Create an object from default [`Grid`] of a particular size.
 pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
-    /// Returns a default object from particular [`GridSize`].
+    /// Returns a default object from a default [`Grid`] of some `size`.
+    ///
+    /// # Panics
+    /// This will panic if the `size` is invalid, that is either dimension is zero.
     fn default(size: GridSize) -> Self {
         Grid::default(size).into()
     }
 }
-/// Parse objects that can be created from a grid from a grid of characters.
+/// Parse objects that can be created from a [`Grid`] from a grid of characters.
 ///
 /// Note that we cannot just blanket implement [`FromStr`] due to the orphan rule.
 pub trait FromGridStr<T>: Sized {
@@ -705,6 +781,10 @@ pub trait FromGridStr<T>: Sized {
     type Err;
 
     /// Creates an object from a grid of characters.
+    ///
+    /// Refer to [`Grid::from_str`] for examples of how grids can be parsed from
+    /// strings. This returns an [`Err`] under the same conditions as
+    /// [`Grid::from_str`].
     fn from_grid_str(s: &str) -> Result<Self, Self::Err>;
 }
 impl<T: TryFrom<char>, O: From<Grid<T>>> FromGridStr<T> for O {
@@ -715,8 +795,31 @@ impl<T: TryFrom<char>, O: From<Grid<T>>> FromGridStr<T> for O {
     }
 }
 
-/// Standard boolean grid element where '.' is false and '#' is true.
-#[derive(Deref, From, Into, Not, Default, Clone, Copy)]
+/// Standard boolean [`Grid`] element that can be converted from characters,
+/// where '.' is false and '#' is true.
+///
+/// This conversion allows grids of these elements to be parsed from strings using
+/// [`Grid::from_str`].
+///
+/// # Examples
+/// Basic usage:
+/// ```
+/// # use aoc::prelude::*;
+/// # use aoc::grid::StdBool;
+/// # use std::str::FromStr;
+/// let (t, f) = (true.into(), false.into());
+/// let string = ".#..
+/// #.##
+/// .#.#";
+/// let grid = Grid::<StdBool>::from_data(vec![
+///     vec![f, t, f, f],
+///     vec![t, f, t, t],
+///     vec![f, t, f, t],
+/// ]).unwrap();
+///
+/// assert_eq!(Grid::from_str(string).unwrap(), grid);
+/// ```
+#[derive(Deref, From, Into, Not, Default, Clone, Copy, PartialEq, Eq)]
 pub struct StdBool(bool);
 impl TryFrom<char> for StdBool {
     type Error = ();
@@ -735,7 +838,33 @@ impl fmt::Debug for StdBool {
     }
 }
 
-/// Grid of numbers parsed from digit characters.
+/// Standard number digit [`Grid`] element that can be converted from characters,
+/// where the digits can be from `0` to `9`.
+///
+/// This conversion allows grids of these elements to be parsed from strings using
+/// [`Grid::from_str`].
+///
+/// # Examples
+/// Basic usage:
+/// ```
+/// # use aoc::prelude::*;
+/// # use aoc::grid::Digit;
+/// # use std::str::FromStr;
+/// let string = "01
+/// 23
+/// 45
+/// 67
+/// 89";
+/// let grid = Grid::<Digit>::from_data(vec![
+///     vec![0.into(), 1.into()],
+///     vec![2.into(), 3.into()],
+///     vec![4.into(), 5.into()],
+///     vec![6.into(), 7.into()],
+///     vec![8.into(), 9.into()],
+/// ]).unwrap();
+///
+/// assert_eq!(Grid::from_str(string).unwrap(), grid);
+/// ```
 #[derive(
     Deref,
     From,
