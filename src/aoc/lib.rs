@@ -66,6 +66,10 @@ pub type AocResult<T> = Result<T, AocError>;
 
 // TODO: Use some modules here to better organize these items.
 
+// TODO: Should we abstract exhaustively solving game states to achieve some metric?
+// Will need to go through and see where this could be used prior to designing such
+// trait to ensure that all use cases can be satisfied.
+
 // TODO: change. Extension methods for vector types.
 pub trait ManhattanLen<T> {
     /// Calculates the Manhattan length of the vector.
