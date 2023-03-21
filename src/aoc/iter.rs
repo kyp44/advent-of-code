@@ -121,7 +121,7 @@ pub trait StrExt {
     /// Returns an [`Iterator`] over runs of repeated characters in a string.
     ///
     /// The iterator yields substrings of one or more characters that are the same. Only if the
-    /// string is empty will the iterator also me empty.
+    /// string is empty will the iterator also be empty.
     ///
     /// # Examples
     /// Basic usage:
