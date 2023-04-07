@@ -2,7 +2,6 @@
 //!
 //! TODO
 
-use super::{AocError, AocResult};
 use nom::bytes::complete::tag;
 use nom::character::complete::{multispace0, satisfy, space0, space1};
 use nom::character::is_alphanumeric;
@@ -15,6 +14,8 @@ use num::Unsigned;
 use std::fmt;
 use std::ops::RangeFrom;
 use std::str::FromStr;
+
+use crate::prelude::{AocError, AocResult};
 
 // Type of nom input when parsing bits
 pub type BitInput<'a> = (&'a [u8], usize);

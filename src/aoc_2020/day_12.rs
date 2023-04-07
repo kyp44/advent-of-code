@@ -109,7 +109,7 @@ mod solution {
         /// If no initial waypoint is specified the commands always act on the ship,
         /// otherwise most commands act on the waypoint.
         pub fn final_ship_position(&self, initial_waypoint: Option<&Point2<i32>>) -> Point2<i32> {
-            let mut position = Origin::origin();
+            let mut position = PointExt::origin();
             match initial_waypoint {
                 None => {
                     let mut facing = 0;

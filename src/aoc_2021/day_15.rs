@@ -66,7 +66,7 @@ mod solution {
             let mut queue = PriorityQueue::new();
 
             // Add starting point to queue
-            queue.push(Origin::origin(), Reverse(0));
+            queue.push(PointExt::origin(), Reverse(0));
 
             // Destination point
             let dest = GridPoint::from_vec(self.grid.size() - Vector2::new(1, 1));

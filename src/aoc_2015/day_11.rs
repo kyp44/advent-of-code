@@ -23,6 +23,12 @@ mod solution {
     use super::*;
     use std::convert::TryInto;
 
+    /// Increments a character by a certain number in terms of the ASCII code,
+    /// which will simply increment the letter for basic letters.
+    pub fn char_add(c: char, i: u32) -> char {
+        std::char::from_u32((c as u32) + i).unwrap_or(c)
+    }
+
     /// Extension trait to determine if a password is valid.
     trait Password {
         /// Determines if the password is valid according to the security restrictions.
