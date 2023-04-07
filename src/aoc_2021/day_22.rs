@@ -183,7 +183,7 @@ mod solution {
             let ranges = &self.ranges;
             [&ranges.x, &ranges.y, &ranges.z]
                 .into_iter()
-                .map(|r| u64::try_from(r.len()).unwrap())
+                .map(|r| u64::try_from(r.size()).unwrap())
                 .product::<u64>()
         }
     }

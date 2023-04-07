@@ -33,10 +33,10 @@ struct Args {
     list: bool,
     /// Year of the problem solution to run.
     #[arg(name = "YEAR", required_unless_present("list"))]
-    year: Option<u32>,
+    year: Option<u16>,
     /// Day of the problem solution to run (1-25).
     #[arg(name = "DAY", required_unless_present("list"))]
-    day: Option<u32>,
+    day: Option<u8>,
 }
 
 /// Runs the program, of course.

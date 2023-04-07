@@ -7,29 +7,51 @@ mod tests {
     use Answer::Signed;
 
     solution_test! {
-        vec![Signed(74), Signed(1795)],
-        "(())",
-    vec![0i64].answer_vec(),
-    "()()",
-    vec![0i64].answer_vec(),
-    "(((",
-    vec![3i64].answer_vec(),
-    "(()(()(",
-    vec![3i64].answer_vec(),
-    "))(((((",
-    vec![3i64].answer_vec(),
-    "())",
-    vec![-1i64].answer_vec(),
-    "))(",
-    vec![-1i64].answer_vec(),
-    ")))",
-    vec![-3i64].answer_vec(),
-    ")())())",
-    vec![-3i64].answer_vec(),
-    ")",
-    vec![None, Some(Signed(1))],
-    "()())",
-    vec![None, Some(Signed(5))]
+        example = {
+            input = "(())";
+            answers = vec![0i64].answer_vec();
+        }
+        example = {
+            input = "()()";
+            answers = vec![0i64].answer_vec();
+        }
+        example = {
+            input = "(((";
+            answers = vec![3i64].answer_vec();
+        }
+        example = {
+            input = "(()(()(";
+            answers = vec![3i64].answer_vec();
+        }
+        example = {
+            input = "))(((((";
+            answers = vec![3i64].answer_vec();
+        }
+        example = {
+            input = "())";
+            answers = vec![-1i64].answer_vec();
+        }
+        example = {
+            input = "))(";
+            answers = vec![-1i64].answer_vec();
+        }
+        example = {
+            input = ")))";
+            answers = vec![-3i64].answer_vec();
+        }
+        example = {
+            input = ")())())";
+            answers = vec![-3i64].answer_vec();
+        }
+        example = {
+            input = ")";
+            answers = vec![None, Some(Signed(1))];
+        }
+        example = {
+            input = "()())";
+            answers = vec![None, Some(Signed(5))];
+        }
+        actual_answers = vec![Signed(74), Signed(1795)];
     }
 }
 

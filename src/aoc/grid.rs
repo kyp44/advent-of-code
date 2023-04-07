@@ -594,8 +594,8 @@ impl<T: From<bool> + Default + Clone> Grid<T> {
         let x_range = points.clone().map(|p| p.x).range().unwrap_or(0..=0);
         let y_range = points.clone().map(|p| p.y).range().unwrap_or(0..=0);
         let size = GridSize::new(
-            x_range.len().try_into().unwrap(),
-            y_range.len().try_into().unwrap(),
+            x_range.size().try_into().unwrap(),
+            y_range.size().try_into().unwrap(),
         );
         let mut grid = Self::default(size);
 

@@ -8,11 +8,15 @@ mod tests {
     use Answer::Unsigned;
 
     solution_test! {
-        vec![Unsigned(1588178), Unsigned(3783758)],
-        "2x3x4",
-    vec![58u64, 34].answer_vec(),
-    "1x1x10",
-    vec![43u64, 14].answer_vec()
+        example = {
+            input = "2x3x4";
+            answers = vec![58u64, 34].answer_vec();
+        }
+        example = {
+            input = "1x1x10";
+            answers = vec![43u64, 14].answer_vec();
+        }
+        actual_answers = vec![Unsigned(1588178), Unsigned(3783758)];
     }
 }
 

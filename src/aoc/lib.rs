@@ -42,13 +42,13 @@ pub mod error {
     pub enum AocError {
         /// The year has not been solved.
         #[error("Year {0} is not yet solved")]
-        NoYear(u32),
+        NoYear(u16),
         /// The day has not been solved.
         #[error("Day {0} is not yet solved")]
-        NoDay(u32),
+        NoDay(u8),
         /// The day is out of range.
         #[error("Day {0} is not in the range of {} to {}", .1.start(), .1.end())]
-        DayRange(u32, RangeInclusive<u32>),
+        DayRange(u8, RangeInclusive<u8>),
         /// Could not parse the problem input.
         #[error("Could not parse input")]
         NomParse(
@@ -140,17 +140,45 @@ pub mod extension {
         }
     }
 
-    // Extension trait for ranges.
+    /// Extension trait for inclusive ranges.
     pub trait RangeExt<T>: Sized {
-        fn len(&self) -> T;
+        /// Returns the number of discrete elements or steps in the range.
+        ///
+        /// # Examples
+        /// Basic usage:
+        /// ```
+        /// # use aoc::prelude::*;
+        /// assert_eq!((0..=5).size(), 6);
+        /// assert_eq!((-3..=3).size(), 7);
+        /// assert_eq!((4..=-7).size(), 0);
+        /// assert_eq!((6..=6).size(), 1);
+        /// ```
+        fn size(&self) -> T;
+
+        /// Returns the intersection of two ranges if they are not disjoint.
+        ///
+        /// # Examples
+        /// Basic usage:
+        /// ```
+        /// # use aoc::prelude::*;
+        /// assert_eq!((-4..=3).intersection(&(5..=9)), None);
+        /// assert_eq!((0..=5).intersection(&(10..=2)), None);
+        /// assert_eq!((0..=5).intersection(&(2..=10)), Some(2..=5));
+        /// assert_eq!((-5..=10).intersection(&(-19..=-3)), Some(-5..=-3));
+        /// assert_eq!((-5..=10).intersection(&(-2..=1)), Some(-2..=1));
+        /// ```
         fn intersection(&self, other: &Self) -> Option<Self>;
     }
     impl<T> RangeExt<T> for RangeInclusive<T>
     where
         T: Integer + Copy,
     {
-        fn len(&self) -> T {
-            *self.end() - *self.start() + T::one()
+        fn size(&self) -> T {
+            if self.end() >= self.start() {
+                *self.end() - *self.start() + T::one()
+            } else {
+                T::zero()
+            }
         }
 
         fn intersection(&self, other: &Self) -> Option<Self> {
@@ -177,8 +205,11 @@ pub mod solution {
     /// Different types of answers to problems.
     #[derive(Debug, PartialEq, Eq)]
     pub enum Answer {
+        /// Unsigned number.
         Unsigned(u64),
+        /// Signed number.
         Signed(i64),
+        /// Text.
         String(String),
     }
     impl From<u64> for Answer {
@@ -199,10 +230,23 @@ pub mod solution {
 
     /// Represents data that can be passed to a solver function.
     pub enum SolverInput<'a> {
+        /// A string input.
         Text(&'a str),
+        /// Pre-parsed data of some kind.
         Data(Box<dyn Any>),
     }
     impl<'a> SolverInput<'a> {
+        /// Returns the string input if selected, otherwise an [`AocError::InvalidInput`].
+        ///
+        /// # Examples
+        /// Basic usage:
+        /// ```
+        /// # #![feature(assert_matches)]
+        /// # use std::assert_matches::assert_matches;
+        /// # use aoc::prelude::*;
+        /// assert_eq!(SolverInput::Text("test").expect_input().unwrap(), "test");
+        /// assert_matches!(SolverInput::Data(Box::new(7)).expect_input(), Err(AocError::InvalidInput(_)));
+        /// ```
         pub fn expect_input(&self) -> AocResult<&'a str> {
             if let Self::Text(s) = self {
                 Ok(s)
@@ -213,6 +257,19 @@ pub mod solution {
             }
         }
 
+        /// Returns the data input of a particular type if selected and the data is the correct type,
+        /// otherwise an [`AocError::InvalidInput`].
+        ///
+        /// # Examples
+        /// Basic usage:
+        /// ```
+        /// # #![feature(assert_matches)]
+        /// # use std::assert_matches::assert_matches;
+        /// # use aoc::prelude::*;
+        /// assert_eq!(SolverInput::Data(Box::new(6u8)).expect_data::<u8>().unwrap(), &6);
+        /// assert_matches!(SolverInput::Text("text").expect_data::<u8>(), Err(AocError::InvalidInput(_)));
+        /// assert_matches!(SolverInput::Data(Box::new(6u16)).expect_data::<u8>(), Err(AocError::InvalidInput(_)));
+        /// ```
         pub fn expect_data<T: 'static>(&self) -> AocResult<&T> {
             if let Self::Data(obj) = self {
                 obj.downcast_ref::<T>().ok_or(AocError::InvalidInput(
@@ -225,32 +282,49 @@ pub mod solution {
             }
         }
     }
+    /// Converts text to [`SolverInput::Text`].
     impl<'a> From<&'a str> for SolverInput<'a> {
         fn from(value: &'a str) -> Self {
             Self::Text(value)
         }
     }
+    /// Converts boxed data to [`SolverInput::Data`].
     impl<T: Any> From<Box<T>> for SolverInput<'_> {
         fn from(value: Box<T>) -> Self {
             Self::Data(value)
         }
     }
 
-    // Represents the solver for both pars of a day's puzzle.
-    type SolverFunc = fn(&SolverInput) -> AocResult<Answer>;
+    /// A solver function for any parts of a day's problem.
+    ///
+    /// Solvers will either return an [`Answer`] or an [`AocError`] if there is some kind of problem.
+    pub type SolverFunc = fn(&SolverInput) -> AocResult<Answer>;
+
+    /// The solution for a day's problem.
     pub struct Solution {
-        pub day: u32,
+        /// The day of the problem (1 to 25).
+        pub day: u8,
+        /// The name of the day's problem.
         pub name: &'static str,
+        /// An optional preprocessing function to parse the input text and possibly perform
+        /// other preprocessing only once.
+        ///
+        /// The output of this will be passed to all solvers as their input.
+        /// If not preprocessor is set, the raw problem input will be passed to all solvers.
+        /// This may also return an [`AocError`] if a problem is encountered.
         pub preprocessor: Option<fn(&str) -> AocResult<SolverInput>>,
+        /// Solve functions for each part of the day's problem.
         pub solvers: &'static [SolverFunc],
     }
     impl Solution {
-        // Constructs the title.
+        /// Constructs a nice title from the day and name.
         pub fn title(&self) -> String {
             format!("Day {}: {}", self.day, self.name)
         }
 
-        // Run preprocessor if applicable
+        /// Runs the preprocessing function if applicable with the `input` text.
+        ///
+        /// If no preprocessor is set, the `input` is just returned wrapped in a [`SolverInput::Text`].
         pub fn preprocess<'a>(&self, input: &'a str) -> AocResult<SolverInput<'a>> {
             if let Some(pf) = self.preprocessor {
                 pf(input)
@@ -259,8 +333,13 @@ pub mod solution {
             }
         }
 
-        // Reads the input, runs the solvers, and outputs the answer(s).
-        pub fn run_and_print(&self, year: u32) -> anyhow::Result<Vec<Answer>> {
+        /// Reads the input from the text file, runs the preprocessor if set, then runs the solvers
+        /// and prints their answers.
+        ///
+        /// If the preprocessor or any of the solvers return an [`AocError`], further processing will
+        /// stop and this will be returned. Otherwise the list of answers corresponding to each solver
+        /// are returned.
+        pub fn run_and_print(&self, year: u16) -> anyhow::Result<Vec<Answer>> {
             // Read input for the problem
             let input_path = format!("input/{year}/day_{:02}.txt", self.day);
             let input = fs::read_to_string(&input_path)
@@ -293,16 +372,21 @@ pub mod solution {
         }
     }
 
-    // Package of solutions of a year's puzzles.
+    /// Package of solutions for a year's problems.
     pub struct YearSolutions {
-        pub year: u32,
+        /// Year.
+        pub year: u16,
+        /// The solutions for each day's problem for this year.
         pub solutions: &'static [Solution],
     }
     impl YearSolutions {
-        pub fn get_day(&self, day: u32) -> Option<&Solution> {
+        /// Retrieves the [`Solution`] for a day, if it exists.
+        pub fn get_day(&self, day: u8) -> Option<&Solution> {
             self.solutions.iter().find(|s| s.day == day)
         }
 
+        /// Returns the list of the day's title solutions for every day as a newline-delimited
+        /// string.
         pub fn solution_list(&self) -> String {
             self.solutions
                 .iter()
@@ -311,8 +395,39 @@ pub mod solution {
         }
     }
 
-    // Convenience trait to convert a vector of numbers into numeric answers.
+    /// Convenience trait to convert a list of answers types for use in tests
     pub trait AnswerVec {
+        /// Converts a [`Vec`] of answer types into a [`Vec`] of [`Option::Some`] with the [`Answer`].
+        ///
+        /// # Examples
+        /// Basic usage:
+        /// ```
+        /// # use aoc::prelude::*;
+        /// assert_eq!(
+        ///     vec![3u64, 4, 5].answer_vec(),
+        ///     vec![
+        ///         Some(Answer::Unsigned(3)),
+        ///         Some(Answer::Unsigned(4)),
+        ///         Some(Answer::Unsigned(5)),
+        ///     ],
+        /// );
+        /// assert_eq!(
+        ///     vec![-3i64, 4, -5].answer_vec(),
+        ///     vec![
+        ///         Some(Answer::Signed(-3)),
+        ///         Some(Answer::Signed(4)),
+        ///         Some(Answer::Signed(-5)),
+        ///     ],
+        /// );
+        /// assert_eq!(
+        ///     vec!["test1", "test2", "test3"].answer_vec(),
+        ///     vec![
+        ///         Some(Answer::String("test1".to_string())),
+        ///         Some(Answer::String("test2".to_string())),
+        ///         Some(Answer::String("test3".to_string())),
+        ///     ],
+        /// );
+        /// ```
         fn answer_vec(self) -> Vec<Option<Answer>>;
     }
     impl AnswerVec for Vec<u64> {
@@ -335,11 +450,18 @@ pub mod solution {
         }
     }
 
-    // Compares solution results with a vector.
+    /// Compares solution results with a vector.
+    ///
+    /// This typically is not used directly, but rather by the [`solution_test`]
+    /// and [`expensive_test`] macros, and always in the context of a day's solution
+    /// module in which there is a constant [`Solution`] structure called `SOLUTION`
+    /// in the same scope. The `$input` should then be a static `&str` to pass as input
+    /// to the solvers, and the `$answers` should be be a [`Vec<Option<Answer>>`] of the
+    /// answers for each part for that `$input`.
     #[macro_export]
     macro_rules! solution_results {
-        ($input:expr, $exp: expr) => {
-            let vans: Vec<Option<Answer>> = $exp;
+        ($input: expr, $answers: expr) => {
+            let vans: Vec<Option<Answer>> = $answers;
 
             let data = SOLUTION.preprocess($input).unwrap();
 
@@ -355,7 +477,13 @@ pub mod solution {
     // Also creates an ignored test to test the main problem solutions.
     #[macro_export]
     macro_rules! solution_test {
-    ($actual: expr, $($input:expr, $exp: expr), +) => {
+    (
+        $(example = {
+            input = $input: expr;
+            answers = $exp: expr;
+        })+
+        actual_answers = $actual: expr;
+    ) => {
         #[test]
         #[ignore]
         fn actual() {
