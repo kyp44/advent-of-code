@@ -4,39 +4,47 @@ use std::{collections::HashSet, str::FromStr};
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(576), Unsigned(207)],
-    "H => HO
+    solution_tests! {
+        example {
+            input = "H => HO
 H => OH
 O => HH
 
-HOH",
-    vec![4u64].answer_vec(),
-        "H => HO
+HOH";
+            answers = vec![4u64].answer_vec();
+        }
+        example {
+            input = "H => HO
 H => OH
 O => HH
 
-HOHOHO",
-    vec![7u64].answer_vec(),
-    "e => H
+HOHOHO";
+        answers = vec![7u64].answer_vec();
+    }
+        example {
+            input = "e => H
 e => O
 H => HO
 H => OH
 O => HH
 
-HOH",
-    vec![None, Some(Unsigned(3))],
-        "e => H
+HOH";
+            answers = vec![None, Some(Unsigned(3))];
+        }
+        example {
+            input = "e => H
 e => O
 H => HO
 H => OH
 O => HH
 
-HOHOHO",
-    vec![None, Some(Unsigned(6))]
+HOHOHO";
+            answers = vec![None, Some(Unsigned(6))];
+        }
+        actual_answers = vec![Unsigned(576), Unsigned(207)];
     }
 }
 

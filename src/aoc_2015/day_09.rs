@@ -3,15 +3,17 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(251), Unsigned(898)],
-    "London to Dublin = 464
+    solution_tests! {
+        example {
+            input = "London to Dublin = 464
 London to Belfast = 518
-Dublin to Belfast = 141",
-    vec![605u64, 982].answer_vec()
+Dublin to Belfast = 141";
+            answers = vec![605u64, 982].answer_vec();
+        }
+        actual_answers = vec![Unsigned(251), Unsigned(898)];
     }
 }
 

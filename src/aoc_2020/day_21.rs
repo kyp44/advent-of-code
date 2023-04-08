@@ -5,16 +5,18 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(2287), Answer::String("fntg,gtqfrp,xlvrggj,rlsr,xpbxbv,jtjtrd,fvjkp,zhszc".to_string())],
-    "mxmxvkd kfcds sqjhc nhms (contains dairy, fish)
+    solution_tests! {
+        example {
+            input = "mxmxvkd kfcds sqjhc nhms (contains dairy, fish)
 trh fvjkl sbzzf mxmxvkd (contains dairy)
 sqjhc fvjkl (contains soy)
-sqjhc mxmxvkd sbzzf (contains fish)",
-    vec![Some(Unsigned(5)), Some(Answer::String("mxmxvkd,sqjhc,fvjkl".to_string()))]
+sqjhc mxmxvkd sbzzf (contains fish)";
+            answers = vec![Some(Unsigned(5)), Some(Answer::String("mxmxvkd,sqjhc,fvjkl".to_string()))];
+        }
+        actual_answers = vec![Unsigned(2287), Answer::String("fntg,gtqfrp,xlvrggj,rlsr,xpbxbv,jtjtrd,fvjkp,zhszc".to_string())];
     }
 }
 

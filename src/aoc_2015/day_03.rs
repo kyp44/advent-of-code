@@ -3,19 +3,27 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-        vec![Unsigned(2565), Unsigned(2639)],
-    ">",
-    vec![Some(Unsigned(2)), None],
-    "^v",
-    vec![None, Some(Unsigned(3))],
-    "^>v<",
-    vec![4u64, 3].answer_vec(),
-    "^v^v^v^v^v",
-    vec![2u64, 11].answer_vec()
+    solution_tests! {
+        example {
+            input = ">";
+            answers = vec![Some(Unsigned(2)), None];
+        }
+        example {
+            input = "^v";
+            answers = vec![None, Some(Unsigned(3))];
+        }
+        example {
+            input = "^>v<";
+            answers = vec![4u64, 3].answer_vec();
+        }
+        example {
+            input = "^v^v^v^v^v";
+            answers = vec![2u64, 11].answer_vec();
+        }
+        actual_answers = vec![Unsigned(2565), Unsigned(2639)];
     }
 }
 

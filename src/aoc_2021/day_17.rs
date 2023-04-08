@@ -3,13 +3,15 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(3003), Unsigned(940)],
-    "target area: x=20..30, y=-10..-5",
-    vec![45u64, 112].answer_vec()
+    solution_tests! {
+        example {
+            input = "target area: x=20..30, y=-10..-5";
+            answers = vec![45u64, 112].answer_vec();
+        }
+        actual_answers = vec![Unsigned(3003), Unsigned(940)];
     }
 }
 

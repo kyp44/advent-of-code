@@ -3,21 +3,25 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(9967721333886), Unsigned(4355897790573)],
-    "mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
+    solution_tests! {
+        example {
+            input = "mask = XXXXXXXXXXXXXXXXXXXXXXXXXXXXX1XXXX0X
 mem[8] = 11
 mem[7] = 101
-mem[8] = 0",
-        vec![Some(Unsigned(165)), None],
-    "mask = 000000000000000000000000000000X1001X
-        mem[42] = 100
-        mask = 00000000000000000000000000000000X0XX
-        mem[26] = 1",
-    vec![None, Some(Unsigned(208))]
+mem[8] = 0";
+            answers = vec![Some(Unsigned(165)), None];
+        }
+        example {
+            input = "mask = 000000000000000000000000000000X1001X
+mem[42] = 100
+mask = 00000000000000000000000000000000X0XX
+mem[26] = 1";
+            answers = vec![None, Some(Unsigned(208))];
+        }
+        actual_answers = vec![Unsigned(9967721333886), Unsigned(4355897790573)];
     }
 }
 

@@ -3,13 +3,11 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(40), Unsigned(241)],
-    "",
-    Vec::new()
+    solution_tests! {
+        actual_answers = vec![Unsigned(40), Unsigned(241)];
     }
 }
 

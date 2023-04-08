@@ -4,12 +4,12 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-        vec![Unsigned(592), Unsigned(94)],
-    "6,10
+    solution_tests! {
+        example {
+            input = "6,10
 0,14
 9,10
 0,3
@@ -29,8 +29,10 @@ mod tests {
 9,0
 
 fold along y=7
-fold along x=5",
-        vec![17u64, 16].answer_vec()
+fold along x=5";
+            answers = vec![17u64, 16].answer_vec();
+        }
+        actual_answers = vec![Unsigned(592), Unsigned(94)];
     }
 }
 

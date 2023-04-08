@@ -4,20 +4,22 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-        vec![Unsigned(4011), Unsigned(108035)],
-    "start-A
+    solution_tests! {
+        example {
+            input = "start-A
 start-b
 A-c
 A-b
 b-d
 A-end
-b-end",
-        vec![10u64, 36].answer_vec(),
-    "dc-end
+b-end";
+            answers = vec![10u64, 36].answer_vec();
+        }
+        example {
+            input = "dc-end
 HN-start
 start-kj
 dc-start
@@ -26,9 +28,11 @@ LN-dc
 HN-end
 kj-sa
 kj-HN
-kj-dc",
-    vec![19u64, 103].answer_vec(),
-    "fs-end
+kj-dc";
+            answers = vec![19u64, 103].answer_vec();
+        }
+        example {
+            input = "fs-end
 he-DX
 fs-he
 start-DX
@@ -45,9 +49,11 @@ start-pj
 he-WI
 zg-he
 pj-fs
-start-RW",
-    vec![226u64, 3509].answer_vec()
+start-RW";
+            answers = vec![226u64, 3509].answer_vec();
         }
+        actual_answers = vec![Unsigned(4011), Unsigned(108035)];
+    }
 }
 
 /// Contains solution implementation items.

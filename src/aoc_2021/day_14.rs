@@ -4,12 +4,12 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-        vec![Unsigned(2194), Unsigned(2360298895777)],
-    "NNCB
+    solution_tests! {
+        example {
+            input = "NNCB
 
 CH -> B
 HH -> N
@@ -26,8 +26,10 @@ BN -> B
 BB -> N
 BC -> B
 CC -> N
-CN -> C",
-        vec![1588u64, 2188189693529].answer_vec()
+CN -> C";
+            answers = vec![1588u64, 2188189693529].answer_vec();
+        }
+        actual_answers = vec![Unsigned(2194), Unsigned(2360298895777)];
     }
 }
 

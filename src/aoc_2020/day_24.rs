@@ -3,12 +3,12 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-            vec![Unsigned(354), Unsigned(3608)],
-        "sesenwnenenewseeswwswswwnenewsewsw
+    solution_tests! {
+        example {
+            input = "sesenwnenenewseeswwswswwnenewsewsw
 neeenesenwnwwswnenewnwwsewnenwseswesw
 seswneswswsenwwnwse
 nwnwneseeswswnenewneswwnewseswneseene
@@ -27,8 +27,10 @@ wnwnesenesenenwwnenwsewesewsesesew
 nenewswnwewswnenesenwnesewesw
 eneswnwswnwsenenwnwnwwseeswneewsenese
 neswnwewnwnwseenwseesewsenwsweewe
-wseweeenwnesenwwwswnew",
-    vec![10u64, 2208].answer_vec()
+wseweeenwnesenwwwswnew";
+            answers = vec![10u64, 2208].answer_vec();
+        }
+        actual_answers = vec![Unsigned(354), Unsigned(3608)];
     }
 }
 

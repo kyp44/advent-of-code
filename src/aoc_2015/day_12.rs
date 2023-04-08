@@ -4,33 +4,55 @@ use serde_json::Value;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Signed;
 
-    solution_test! {
-    vec![Signed(191164), Signed(87842)],
-    "[1,2,3]",
-    vec![6i64, 6].answer_vec(),
-    r#"{"a":2,"b":4}"#,
-    vec![6i64, 6].answer_vec(),
-    "[[[3]]]",
-    vec![3i64, 3].answer_vec(),
-    r#"{"a":{"b":4},"c":-1}"#,
-    vec![3i64, 3].answer_vec(),
-    r#"{"a":[-1,1]}"#,
-    vec![0i64, 0].answer_vec(),
-    r#"[-1,{"a":1}]"#,
-    vec![0i64, 0].answer_vec(),
-    "[]",
-    vec![0i64, 0].answer_vec(),
-    "{}",
-    vec![0i64, 0].answer_vec(),
-    r#"[1,{"c":"red","b":2},3]"#,
-    vec![6i64, 4].answer_vec(),
-    r#"{"d":"red","e":[1,2,3,4],"f":5}"#,
-    vec![15i64, 0].answer_vec(),
-    r#"[1,"red",5]"#,
-    vec![6i64, 6].answer_vec()
+    solution_tests! {
+        example {
+            input = "[1,2,3]";
+            answers = vec![6i64, 6].answer_vec();
+        }
+        example {
+            input = r#"{"a":2,"b":4}"#;
+            answers = vec![6i64, 6].answer_vec();
+        }
+        example {
+            input = "[[[3]]]";
+            answers = vec![3i64, 3].answer_vec();
+        }
+        example {
+            input = r#"{"a":{"b":4},"c":-1}"#;
+            answers = vec![3i64, 3].answer_vec();
+        }
+        example {
+            input = r#"{"a":[-1,1]}"#;
+            answers = vec![0i64, 0].answer_vec();
+        }
+        example {
+            input = r#"[-1,{"a":1}]"#;
+            answers = vec![0i64, 0].answer_vec();
+        }
+        example {
+            input = "[]";
+            answers = vec![0i64, 0].answer_vec();
+        }
+        example {
+            input = "{}";
+            answers = vec![0i64, 0].answer_vec();
+        }
+        example {
+            input = r#"[1,{"c":"red","b":2},3]"#;
+            answers = vec![6i64, 4].answer_vec();
+        }
+        example {
+            input = r#"{"d":"red","e":[1,2,3,4],"f":5}"#;
+            answers = vec![15i64, 0].answer_vec();
+        }
+        example {
+            input = r#"[1,"red",5]"#;
+            answers = vec![6i64, 6].answer_vec();
+        }
+        actual_answers = vec![Signed(191164), Signed(87842)];
     }
 }
 

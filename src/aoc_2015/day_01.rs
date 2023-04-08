@@ -3,51 +3,51 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Signed;
 
-    solution_test! {
-        example = {
+    solution_tests! {
+        example {
             input = "(())";
             answers = vec![0i64].answer_vec();
         }
-        example = {
+        example {
             input = "()()";
             answers = vec![0i64].answer_vec();
         }
-        example = {
+        example {
             input = "(((";
             answers = vec![3i64].answer_vec();
         }
-        example = {
+        example {
             input = "(()(()(";
             answers = vec![3i64].answer_vec();
         }
-        example = {
+        example {
             input = "))(((((";
             answers = vec![3i64].answer_vec();
         }
-        example = {
+        example {
             input = "())";
             answers = vec![-1i64].answer_vec();
         }
-        example = {
+        example {
             input = "))(";
             answers = vec![-1i64].answer_vec();
         }
-        example = {
+        example {
             input = ")))";
             answers = vec![-3i64].answer_vec();
         }
-        example = {
+        example {
             input = ")())())";
             answers = vec![-3i64].answer_vec();
         }
-        example = {
+        example {
             input = ")";
             answers = vec![None, Some(Signed(1))];
         }
-        example = {
+        example {
             input = "()())";
             answers = vec![None, Some(Signed(5))];
         }

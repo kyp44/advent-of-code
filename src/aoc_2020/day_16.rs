@@ -4,12 +4,12 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(29851), Unsigned(3029180675981)],
-"class: 1-3 or 5-7
+    solution_tests! {
+        example {
+            input = "class: 1-3 or 5-7
 row: 6-11 or 33-44
 seat: 13-40 or 45-50
 
@@ -20,10 +20,12 @@ nearby tickets:
 7,3,47
 40,4,50
 55,2,20
-38,6,12",
-    // Solution: row, class, seat
-    vec![Some(Unsigned(71)), None],
-    "class: 0-1 or 4-19
+38,6,12";
+            // Solution: row, class, seat
+            answers = vec![Some(Unsigned(71)), None];
+        }
+        example {
+            input = "class: 0-1 or 4-19
 row: 0-5 or 8-19
 seat: 0-13 or 16-19
 
@@ -33,9 +35,11 @@ your ticket:
 nearby tickets:
 3,9,18
 15,1,5
-5,14,9",
-    // Solution: row, class, seat
-    vec![None, Some(Unsigned(1))]
+5,14,9";
+            // Solution: row, class, seat
+            answers = vec![None, Some(Unsigned(1))];
+        }
+        actual_answers = vec![Unsigned(29851), Unsigned(3029180675981)];
     }
 }
 

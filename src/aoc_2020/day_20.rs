@@ -5,12 +5,12 @@ use strum::IntoEnumIterator;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(83775126454273), Unsigned(1993)],
-    "Tile 2311:
+    solution_tests! {
+        example {
+            input = "Tile 2311:
 ..##.#..#.
 ##..#.....
 #...##..#.
@@ -116,8 +116,10 @@ Tile 3079:
 #.#####.##
 ..#.###...
 ..#.......
-..#.###...",
-    vec![20899048083289, 273u64].answer_vec()
+..#.###...";
+            answers = vec![20899048083289, 273u64].answer_vec();
+        }
+        actual_answers = vec![Unsigned(83775126454273), Unsigned(1993)];
     }
 }
 

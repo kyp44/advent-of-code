@@ -3,12 +3,12 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-        vec![Unsigned(542529149), Unsigned(75678618)],
-        "previous: 5
+    solution_tests! {
+        example {
+            input = "previous: 5
 35
 20
 15
@@ -28,8 +28,10 @@ mod tests {
 299
 277
 309
-576",
-        vec![127u64, 62].answer_vec()
+576";
+            answers = vec![127u64, 62].answer_vec();
+        }
+        actual_answers = vec![Unsigned(542529149), Unsigned(75678618)];
     }
 }
 

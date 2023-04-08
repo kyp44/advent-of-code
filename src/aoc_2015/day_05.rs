@@ -3,22 +3,26 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(236), Unsigned(51)],
-    "ugknbfddgicrmopn
+    solution_tests! {
+        example {
+            input = "ugknbfddgicrmopn
 aaa
 jchzalrnumimnmhp
 haegwjzuvuyypxyu
-dvszwmarrgswjxmb",
-    vec![Some(Unsigned(2)), None],
-    "qjhvhtzxzqqjkmpb
+dvszwmarrgswjxmb";
+            answers = vec![Some(Unsigned(2)), None];
+        }
+        example {
+            input = "qjhvhtzxzqqjkmpb
 xxyxx
 uurcxstgmygtbstg
-ieodomkazucvgmuy",
-    vec![None, Some(Unsigned(2))]
+ieodomkazucvgmuy";
+            answers = vec![None, Some(Unsigned(2))];
+        }
+        actual_answers = vec![Unsigned(236), Unsigned(51)];
     }
 }
 

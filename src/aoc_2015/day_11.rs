@@ -3,18 +3,19 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::{expensive_test, solution_test};
+    use aoc::solution_tests;
     use Answer::String;
 
-    solution_test! {
-    vec![String("hxbxxyzz".into()), String("hxcaabcc".into())],
-    "abcdefgh",
-    vec!["abcdffaa"].answer_vec()
-    }
-
-    expensive_test! {
-    "ghijklmn",
-    vec!["ghjaabcc"].answer_vec()
+    solution_tests! {
+        example {
+            input = "abcdefgh";
+            answers = vec!["abcdffaa"].answer_vec();
+        }
+        expensive_example {
+            input = "ghijklmn";
+            answers = vec!["ghjaabcc"].answer_vec();
+        }
+        actual_answers = vec![String("hxbxxyzz".into()), String("hxcaabcc".into())];
     }
 }
 

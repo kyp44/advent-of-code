@@ -3,14 +3,16 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(2655), Unsigned(1059)],
-    "Comet can fly 14 km/s for 10 seconds, but then must rest for 127 seconds.
-    Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds.",
-    vec![2660u64, 1564].answer_vec()
+    solution_tests! {
+        example {
+            input = "Comet can fly 14 km/s for 10 seconds, but then must rest for 127 seconds.
+    Dancer can fly 16 km/s for 11 seconds, but then must rest for 162 seconds.";
+            answers = vec![2660u64, 1564].answer_vec();
+        }
+        actual_answers = vec![Unsigned(2655), Unsigned(1059)];
     }
 }
 

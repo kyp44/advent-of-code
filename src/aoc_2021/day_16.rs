@@ -4,41 +4,71 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(963), Unsigned(1549026292886)],
-    "D2FE28",
-    vec![Some(Unsigned(6)), None],
-    "38006F45291200",
-    vec![Some(Unsigned(9)), None],
-    "EE00D40C823060",
-    vec![Some(Unsigned(14)), None],
-    "8A004A801A8002F478",
-    vec![Some(Unsigned(16)), None],
-    "620080001611562C8802118E34",
-    vec![Some(Unsigned(12)), None],
-    "C0015000016115A2E0802F182340",
-    vec![Some(Unsigned(23)), None],
-    "A0016C880162017C3686B18A3D4780",
-    vec![Some(Unsigned(31)), None],
-    "C200B40A82",
-    vec![None, Some(Unsigned(3))],
-    "04005AC33890",
-    vec![None, Some(Unsigned(54))],
-    "880086C3E88112",
-    vec![None, Some(Unsigned(7))],
-    "CE00C43D881120",
-    vec![None, Some(Unsigned(9))],
-    "D8005AC2A8F0",
-    vec![None, Some(Unsigned(1))],
-    "F600BC2D8F",
-    vec![None, Some(Unsigned(0))],
-    "9C005AC2F8F0",
-    vec![None, Some(Unsigned(0))],
-    "9C0141080250320F1802104A08",
-    vec![None, Some(Unsigned(1))]
+    solution_tests! {
+        example {
+            input = "D2FE28";
+            answers = vec![Some(Unsigned(6)), None];
+        }
+        example {
+            input = "38006F45291200";
+            answers = vec![Some(Unsigned(9)), None];
+        }
+        example {
+            input = "EE00D40C823060";
+            answers = vec![Some(Unsigned(14)), None];
+        }
+        example {
+            input = "8A004A801A8002F478";
+            answers = vec![Some(Unsigned(16)), None];
+        }
+        example {
+            input = "620080001611562C8802118E34";
+            answers = vec![Some(Unsigned(12)), None];
+        }
+        example {
+            input = "C0015000016115A2E0802F182340";
+            answers = vec![Some(Unsigned(23)), None];
+        }
+        example {
+            input = "A0016C880162017C3686B18A3D4780";
+            answers = vec![Some(Unsigned(31)), None];
+        }
+        example {
+            input = "C200B40A82";
+            answers = vec![None, Some(Unsigned(3))];
+        }
+        example {
+            input = "04005AC33890";
+            answers = vec![None, Some(Unsigned(54))];
+        }
+        example {
+            input = "880086C3E88112";
+            answers = vec![None, Some(Unsigned(7))];
+        }
+        example {
+            input = "CE00C43D881120";
+            answers = vec![None, Some(Unsigned(9))];
+        }
+        example {
+            input = "D8005AC2A8F0";
+            answers = vec![None, Some(Unsigned(1))];
+        }
+        example {
+            input = "F600BC2D8F";
+            answers = vec![None, Some(Unsigned(0))];
+        }
+        example {
+            input = "9C005AC2F8F0";
+            answers = vec![None, Some(Unsigned(0))];
+        }
+        example {
+            input = "9C0141080250320F1802104A08";
+            answers = vec![None, Some(Unsigned(1))];
+        }
+        actual_answers = vec![Unsigned(963), Unsigned(1549026292886)];
     }
 }
 

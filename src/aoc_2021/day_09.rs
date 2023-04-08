@@ -5,17 +5,19 @@ use std::collections::HashSet;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(512), Unsigned(1600104)],
-    "2199943210
+    solution_tests! {
+        example {
+            input = "2199943210
 3987894921
 9856789892
 8767896789
-9899965678",
-    vec![15u64, 1134].answer_vec()
+9899965678";
+            answers = vec![15u64, 1134].answer_vec();
+        }
+        actual_answers = vec![Unsigned(512), Unsigned(1600104)];
     }
 }
 

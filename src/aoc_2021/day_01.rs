@@ -4,12 +4,12 @@ use itertools::Itertools;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(1696), Unsigned(1737)],
-    "199
+    solution_tests! {
+        example {
+            input = "199
 200
 208
 210
@@ -18,8 +18,10 @@ mod tests {
 240
 269
 260
-263",
-    vec![7u64, 5].answer_vec()
+263";
+            answers = vec![7u64, 5].answer_vec();
+        }
+        actual_answers = vec![Unsigned(1696), Unsigned(1737)];
     }
 }
 

@@ -3,15 +3,17 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-            vec![Unsigned(378), Unsigned(280)],
-        "1-3 a: abcde
+    solution_tests! {
+        example {
+            input = "1-3 a: abcde
 1-3 b: cdefg
-2-9 c: ccccccccc",
-        vec![2u64, 1].answer_vec()
+2-9 c: ccccccccc";
+            answers = vec![2u64, 1].answer_vec();
+        }
+        actual_answers = vec![Unsigned(378), Unsigned(280)];
     }
 }
 

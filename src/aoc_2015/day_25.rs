@@ -3,13 +3,15 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(19980801)],
-    "To continue, please consult the code grid in the manual.  Enter the code at row 6, column 6.",
-    vec![27995004u64].answer_vec()
+    solution_tests! {
+        example {
+            input = "To continue, please consult the code grid in the manual.  Enter the code at row 6, column 6.";
+            answers = vec![27995004u64].answer_vec();
+        }
+        actual_answers = vec![Unsigned(19980801)];
     }
 }
 

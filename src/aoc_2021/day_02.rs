@@ -4,18 +4,20 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Signed;
 
-    solution_test! {
-    vec![Signed(2102357), Signed(2101031224)],
-    "forward 5
+    solution_tests! {
+        example {
+            input = "forward 5
 down 5
 forward 8
 up 3
 down 8
-forward 2",
-    vec![150i64, 900].answer_vec()
+forward 2";
+            answers = vec![150i64, 900].answer_vec();
+        }
+        actual_answers = vec![Signed(2102357), Signed(2101031224)];
     }
 }
 

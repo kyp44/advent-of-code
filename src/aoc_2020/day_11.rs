@@ -5,12 +5,12 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(2483), Unsigned(2285)],
-    "L.LL.LL.LL
+    solution_tests! {
+        example {
+            input = "L.LL.LL.LL
 LLLLLLL.LL
 L.L.L..L..
 LLLL.LL.LL
@@ -19,8 +19,10 @@ L.LLLLL.LL
 ..L.L.....
 LLLLLLLLLL
 L.LLLLLL.L
-L.LLLLL.LL",
-        vec![37u64, 26].answer_vec()
+L.LLLLL.LL";
+            answers = vec![37u64, 26].answer_vec();
+        }
+        actual_answers = vec![Unsigned(2483), Unsigned(2285)];
     }
 }
 

@@ -452,8 +452,8 @@ pub mod solution {
 
     /// Compares solution results with a vector.
     ///
-    /// This typically is not used directly, but rather by the [`solution_test`]
-    /// and [`expensive_test`] macros, and always in the context of a day's solution
+    /// This typically is not used directly, but rather by the [`solution_tests`]
+    /// macro, and always in the context of a day's solution
     /// module in which there is a constant [`Solution`] structure called `SOLUTION`
     /// in the same scope. The `$input` should then be a static `&str` to pass as input
     /// to the solvers, and the `$answers` should be be a [`Vec<Option<Answer>>`] of the
@@ -473,55 +473,68 @@ pub mod solution {
         };
     }
 
-    // Convenience macro to build the example test for a solution.
-    // Also creates an ignored test to test the main problem solutions.
+    /// Macro to build the tests for a solution.
+    ///
+    /// Creates zero or more example tests and also creates an ignored
+    /// test to verify the solution with the actual input. Optionally,
+    /// computationally expensive example tests can be created that are
+    /// only executed when the `expensive` feature is enabled.
+    ///
+    /// Refer to the many implemented solutions for how to use this.
+    /// For example, the 2015 Day 10 solution features all of these
+    /// tests.
     #[macro_export]
-    macro_rules! solution_test {
-    (
-        $(example = {
-            input = $input: expr;
-            answers = $exp: expr;
-        })+
-        actual_answers = $actual: expr;
-    ) => {
-        #[test]
-        #[ignore]
-        fn actual() {
-            assert_eq!(
-                SOLUTION.run_and_print(super::super::YEAR_SOLUTIONS.year).unwrap(),
-                $actual
-            );
-        }
-
-        #[test]
-        fn example() {
-            use $crate::solution_results;
-            $(
-            solution_results!($input, $exp);
-            )+
-        }
-    };
-}
-
-    // Builds expensive tests that take a while to run.
-    #[macro_export]
-    macro_rules! expensive_test {
-    ($($input:expr, $exp: expr), +) => {
-        #[test]
-	    #[cfg(feature = "expensive")]
-        fn expensive() {
-            use $crate::solution_results;
+    macro_rules! solution_tests {
+        (
+            $(example {
+                input = $input: expr;
+                answers = $answers: expr;
+            })*
+            $(expensive_example {
+                input = $exp_input: expr;
+                answers = $exp_answers: expr;
+            })*
+            actual_answers = $actual: expr;
+        ) => {
+            #[test]
+            fn examples() {
+                use $crate::solution_results;
                 $(
-            solution_results!($input, $exp);
-                )+
-        }
-    };
-}
+                solution_results!($input, $answers);
+                )*
+            }
 
-    // Convenience macro to construct the solutions for a year.
+            #[test]
+            #[cfg(feature = "expensive")]
+            fn expensive_examples() {
+                use $crate::solution_results;
+                $(
+                solution_results!($exp_input, $exp_answers);
+                )*
+            }
+
+            #[test]
+            #[ignore]
+            fn actual() {
+                assert_eq!(
+                    SOLUTION.run_and_print(super::super::YEAR_SOLUTIONS.year).unwrap(),
+                    $actual
+                );
+            }
+        };
+    }
+
+    /// Macro to construct the solution table for a year.
+    ///
+    /// See an implemented year for usage example.
     #[macro_export]
     macro_rules! year_solutions {
-        (year = $year: expr, days =  {$($day: ident,)* }) => {
+        (
+            year = $year: expr;
+            days = [
+                $($day: ident,)*
+            ];
+        ) => {
             $(
                 pub mod $day;
             )*

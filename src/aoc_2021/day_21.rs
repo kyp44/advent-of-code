@@ -4,21 +4,22 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::{expensive_test, solution_test};
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
     const INPUT: &str = "Player 1 starting position: 4
 Player 2 starting position: 8";
 
-    solution_test! {
-    vec![Unsigned(864900), Unsigned(575111835924670)],
-    INPUT,
-    vec![739785u64].answer_vec()
-    }
-
-    expensive_test! {
-    INPUT,
-    vec![None, Some(Unsigned(444356092776315))]
+    solution_tests! {
+        example {
+            input = INPUT;
+            answers = vec![739785u64].answer_vec();
+        }
+        expensive_example {
+            input = INPUT;
+            answers = vec![None, Some(Unsigned(444356092776315))];
+        }
+        actual_answers = vec![Unsigned(864900), Unsigned(575111835924670)];
     }
 }
 

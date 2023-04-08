@@ -4,23 +4,35 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(464478013511), Unsigned(85660197232452)],
-    "1 + 2 * 3 + 4 * 5 + 6",
-    vec![71u64, 231].answer_vec(),
-    "1 + (2 * 3) + (4 * (5 + 6))",
-    vec![51u64, 51].answer_vec(),
-    "2 * 3 + (4 * 5)",
-    vec![26u64, 46].answer_vec(),
-    "5 + (8 * 3 + 9 + 3 * 4 * 3)",
-    vec![437u64, 1445].answer_vec(),
-    "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))",
-    vec![12240u64, 669060].answer_vec(),
-    "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2",
-    vec![13632u64, 23340].answer_vec()
+    solution_tests! {
+        example {
+            input = "1 + 2 * 3 + 4 * 5 + 6";
+            answers = vec![71u64, 231].answer_vec();
+        }
+        example {
+            input = "1 + (2 * 3) + (4 * (5 + 6))";
+            answers = vec![51u64, 51].answer_vec();
+        }
+        example {
+            input = "2 * 3 + (4 * 5)";
+            answers = vec![26u64, 46].answer_vec();
+        }
+        example {
+            input = "5 + (8 * 3 + 9 + 3 * 4 * 3)";
+            answers = vec![437u64, 1445].answer_vec();
+        }
+        example {
+            input = "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))";
+            answers = vec![12240u64, 669060].answer_vec();
+        }
+        example {
+            input = "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2";
+            answers = vec![13632u64, 23340].answer_vec();
+        }
+        actual_answers = vec![Unsigned(464478013511), Unsigned(85660197232452)];
     }
 }
 

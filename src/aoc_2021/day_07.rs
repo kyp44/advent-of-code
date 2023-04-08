@@ -4,13 +4,15 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(341534), Unsigned(93397632)],
-    "16,1,2,0,4,2,7,1,2,14",
-    vec![37u64, 168].answer_vec()
+    solution_tests! {
+        example {
+            input = "16,1,2,0,4,2,7,1,2,14";
+            answers = vec![37u64, 168].answer_vec();
+        }
+        actual_answers = vec![Unsigned(341534), Unsigned(93397632)];
     }
 }
 

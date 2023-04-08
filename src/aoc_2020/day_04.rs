@@ -3,12 +3,12 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(202), Unsigned(137)],
-    "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd
+    solution_tests! {
+        example {
+            input = "ecl:gry pid:860033327 eyr:2020 hcl:#fffffd
 byr:1937 iyr:2017 cid:147 hgt:183cm
 
 iyr:2013 ecl:amb cid:350 eyr:2023 pid:028048884
@@ -20,9 +20,11 @@ ecl:brn pid:760753108 byr:1931
 hgt:179cm
 
 hcl:#cfa07d eyr:2025 pid:166559648
-iyr:2011 ecl:brn hgt:59in",
-    vec![Some(Unsigned(2)), None],
-    "eyr:1972 cid:100
+iyr:2011 ecl:brn hgt:59in";
+            answers = vec![Some(Unsigned(2)), None];
+        }
+        example {
+            input = "eyr:1972 cid:100
 hcl:#18171d ecl:amb hgt:170 pid:186cm iyr:2018 byr:1926
 
 iyr:2019
@@ -34,9 +36,11 @@ ecl:brn hgt:182cm pid:021572410 eyr:2020 byr:1992 cid:277
 
 hgt:59cm ecl:zzz
 eyr:2038 hcl:74454a iyr:2023
-pid:3556412378 byr:2007",
-    vec![None, Some(Unsigned(0))],
-    "pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980
+pid:3556412378 byr:2007";
+            answers = vec![None, Some(Unsigned(0))];
+        }
+        example {
+            input = "pid:087499704 hgt:74in ecl:grn iyr:2012 eyr:2030 byr:1980
 hcl:#623a2f
 
 eyr:2029 ecl:blu cid:129 byr:1989
@@ -47,8 +51,10 @@ hgt:164cm byr:2001 iyr:2015 cid:88
 pid:545766238 ecl:hzl
 eyr:2022
 
-iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719",
-    vec![None, Some(Unsigned(4))]
+iyr:2010 hgt:158cm hcl:#b6652a ecl:blu byr:1944 eyr:2021 pid:093154719";
+            answers = vec![None, Some(Unsigned(4))];
+        }
+        actual_answers = vec![Unsigned(202), Unsigned(137)];
     }
 }
 

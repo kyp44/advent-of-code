@@ -3,28 +3,39 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::{expensive_test, solution_test};
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(1428), Unsigned(3718541)],
-    "0,3,6",
-    vec![436u64, 175594].answer_vec()
-    }
-
-    expensive_test! {
-    "1,3,2",
-    vec![1u64, 2578].answer_vec(),
-    "2,1,3",
-    vec![10u64, 3544142].answer_vec(),
-    "1,2,3",
-    vec![27u64, 261214].answer_vec(),
-    "2,3,1",
-    vec![78u64, 6895259].answer_vec(),
-    "3,2,1",
-    vec![438u64, 18].answer_vec(),
-    "3,1,2",
-    vec![1836u64, 362].answer_vec()
+    solution_tests! {
+        example {
+            input = "0,3,6";
+            answers = vec![436u64, 175594].answer_vec();
+        }
+        expensive_example {
+            input = "1,3,2";
+            answers = vec![1u64, 2578].answer_vec();
+        }
+        expensive_example {
+            input = "2,1,3";
+            answers = vec![10u64, 3544142].answer_vec();
+        }
+        expensive_example {
+            input = "1,2,3";
+            answers = vec![27u64, 261214].answer_vec();
+        }
+        expensive_example {
+            input = "2,3,1";
+            answers = vec![78u64, 6895259].answer_vec();
+        }
+        expensive_example {
+            input = "3,2,1";
+            answers = vec![438u64, 18].answer_vec();
+        }
+        expensive_example {
+            input = "3,1,2";
+            answers = vec![1836u64, 362].answer_vec();
+        }
+        actual_answers = vec![Unsigned(1428), Unsigned(3718541)];
     }
 }
 

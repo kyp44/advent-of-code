@@ -3,18 +3,20 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(170), Unsigned(247)],
-    "inc a
+    solution_tests! {
+        example {
+            input = "inc a
 inc b
 tpl b
 jio a, +2
 tpl b
-inc b",
-    vec![4u64, 10].answer_vec()
+inc b";
+            answers = vec![4u64, 10].answer_vec();
+        }
+        actual_answers = vec![Unsigned(170), Unsigned(247)];
     }
 }
 

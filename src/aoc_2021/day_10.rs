@@ -4,12 +4,12 @@ use itertools::Itertools;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(266301), Unsigned(3404870164)],
-    "[({(<(())[]>[[{[]{<()<>>
+    solution_tests! {
+        example {
+            input = "[({(<(())[]>[[{[]{<()<>>
 [(()[<>])]({[<{<<[]>>(
 {([(<{}[<>[]}>{[]{[(<()>
 (((({<>}<{<{<>}{[]{[]{}
@@ -18,8 +18,10 @@ mod tests {
 {<[[]]>}<{[{[{[]{()[[[]
 [<(<(<(<{}))><([]([]()
 <{([([[(<>()){}]>(<<{{
-<{([{{}}[<[[[<>{}]]]>[]]",
-    vec![26397u64, 288957].answer_vec()
+<{([{{}}[<[[[<>{}]]]>[]]";
+            answers = vec![26397u64, 288957].answer_vec();
+        }
+        actual_answers = vec![Unsigned(266301), Unsigned(3404870164)];
     }
 }
 

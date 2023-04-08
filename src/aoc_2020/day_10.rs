@@ -5,12 +5,12 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(2100), Unsigned(16198260678656)],
-    "16
+    solution_tests! {
+        example {
+            input = "16
 10
 15
 5
@@ -20,9 +20,11 @@ mod tests {
 19
 6
 12
-4",
-    vec![35u64, 8].answer_vec(),
-"28
+4";
+            answers = vec![35u64, 8].answer_vec();
+        }
+        example {
+            input = "28
 33
 18
 42
@@ -52,8 +54,10 @@ mod tests {
 2
 34
 10
-3",
-    vec![220u64, 19208].answer_vec()
+3";
+            answers = vec![220u64, 19208].answer_vec();
+        }
+        actual_answers = vec![Unsigned(2100), Unsigned(16198260678656)];
     }
 }
 

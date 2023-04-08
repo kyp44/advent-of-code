@@ -3,26 +3,36 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(1895), Unsigned(840493039281088)],
-    "939
-    7,13,x,x,59,x,31,19",
-        vec![295u64, 1068781].answer_vec(),
-        "0
-    67,7,59,61",
-        vec![None, Some(Unsigned(754018))],
-        "0
-    67,x,7,59,61",
-        vec![None, Some(Unsigned(779210))],
-        "0
-    67,7,x,59,61",
-        vec![None, Some(Unsigned(1261476))],
-        "0
-    1789,37,47,1889",
-        vec![None, Some(Unsigned(1202161486))]
+    solution_tests! {
+        example {
+            input = "939
+    7,13,x,x,59,x,31,19";
+            answers = vec![295u64, 1068781].answer_vec();
+        }
+        example {
+            input = "0
+    67,7,59,61";
+            answers = vec![None, Some(Unsigned(754018))];
+        }
+        example {
+            input = "0
+    67,x,7,59,61";
+            answers = vec![None, Some(Unsigned(779210))];
+        }
+        example {
+            input = "0
+    67,7,x,59,61";
+            answers = vec![None, Some(Unsigned(1261476))];
+        }
+        example {
+            input = "0
+    1789,37,47,1889";
+            answers = vec![None, Some(Unsigned(1202161486))];
+        }
+        actual_answers = vec![Unsigned(1895), Unsigned(840493039281088)];
     }
 }
 

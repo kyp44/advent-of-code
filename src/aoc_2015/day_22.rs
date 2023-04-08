@@ -3,14 +3,16 @@ use aoc::prelude::*;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(1269), Unsigned(1309)],
-    "Hit Points: 40
-    Damage: 9",
-    vec![734u64, 754].answer_vec()
+    solution_tests! {
+        example {
+            input = "Hit Points: 40
+    Damage: 9";
+            answers = vec![734u64, 754].answer_vec();
+        }
+        actual_answers = vec![Unsigned(1269), Unsigned(1309)];
     }
 }
 

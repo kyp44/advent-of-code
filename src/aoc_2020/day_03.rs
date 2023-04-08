@@ -4,12 +4,12 @@ use cgmath::Vector2;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aoc::solution_test;
+    use aoc::solution_tests;
     use Answer::Unsigned;
 
-    solution_test! {
-    vec![Unsigned(225), Unsigned(1115775000)],
-        "..##.......
+    solution_tests! {
+        example {
+            input = "..##.......
 #...#...#..
 .#....#..#.
 ..#.#...#.#
@@ -20,8 +20,10 @@ mod tests {
 #.##...#...
 #...##....#
 .#..#...#.#
-",
-        vec![7u64, 336].answer_vec()
+";
+            answers = vec![7u64, 336].answer_vec();
+        }
+        actual_answers = vec![Unsigned(225), Unsigned(1115775000)];
     }
 }
 
