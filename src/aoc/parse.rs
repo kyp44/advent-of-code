@@ -31,6 +31,12 @@ pub struct NomParseError {
     /// The corresponding [`VerboseError`] with an owned string.
     verbose_error: VerboseError<String>,
 }
+impl PartialEq for NomParseError {
+    fn eq(&self, other: &Self) -> bool {
+        self.verbose_error.errors == other.verbose_error.errors
+    }
+}
+impl Eq for NomParseError {}
 impl nom::error::ParseError<&str> for NomParseError {
     fn from_error_kind(input: &str, kind: ErrorKind) -> Self {
         Self {
@@ -86,8 +92,8 @@ pub type NomParseResult<I, U> = IResult<I, U, NomParseError>;
 ///
 /// This should be a part of the nom library in my opinion.
 pub trait DiscardInput<U, E> {
-    /// Discards the input of a [`nom`] result and returns a [`Result`] without
-    /// the input.
+    /// Discards the input portion of a [`nom`] result and returns a [`Result`] without
+    /// the input such that an [`Ok`] variant will contain only the parsed value.
     fn discard_input(self) -> Result<U, E>;
 }
 impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
@@ -98,7 +104,7 @@ impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
 
 /// Trait for types that can be parsed from text with [`nom`].
 pub trait Parseable<'a> {
-    /// Needs to parse the text using [`nom`] and return the result.
+    /// Needs to parse the text using [`nom`] and return the parsed item.
     fn parser(input: &'a str) -> NomParseResult<&str, Self>
     where
         Self: Sized;
@@ -115,28 +121,46 @@ pub trait Parseable<'a> {
         Self::parser(input).finish().discard_input()
     }
 
-    /// Gathers a vector of items from an iterator with each item being a string to parse.
-    // TODO: Can we and should we change this it return an iterator instead? I have
-    // noticed numerous places where a vector is immediately transformed into an
-    // iterator and so this would be more efficient instead of allocating.
-    fn gather<I>(strs: I) -> Result<impl Iterator<Item = Self>, NomParseError>
+    /// Gathers a [`Vec`] of items from an iterator with each item being a string
+    /// from which to parse the item.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # #![feature(assert_matches)]
+    /// # use std::assert_matches::assert_matches;
+    /// # use aoc::prelude::*;
+    /// assert_eq!(u8::gather(vec!["43", "22", "5", "8"].into_iter()), Ok(vec![43, 22, 5, 8]));
+    /// assert_matches!(u8::gather(vec!["43", "22", "5", "text"].into_iter()), Err(_));
+    /// ```
+    fn gather(strs: impl Iterator<Item = &'a str>) -> Result<Vec<Self>, NomParseError>
     where
         Self: Sized,
-        I: Iterator<Item = &'a str>,
     {
-        strs.map(|l| Self::from_str(l))
-            .collect::<Result<Vec<Self>, NomParseError>>()
+        strs.map(|l| Self::from_str(l)).collect()
     }
 
+    /// Gathers a [`Vec`] of items from a single string in which each item string
+    /// is separated by commas.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # #![feature(assert_matches)]
+    /// # use std::assert_matches::assert_matches;
+    /// # use aoc::prelude::*;
+    /// assert_eq!(u8::from_csv("21,27,82,7"), Ok(vec![21, 27, 82, 7]));
+    /// assert_matches!(u8::from_csv("21,-56,82,7"), Err(_));
+    /// ```
     fn from_csv(input: &'a str) -> Result<Vec<Self>, NomParseError>
     where
         Self: Sized,
     {
-        input.split(',').map(|s| Self::from_str(s)).collect()
+        Self::gather(input.split(','))
     }
 }
 
-// Parseable for simple numbers.
+/// [`Parseable`] implementation for simple numbers.
 impl<T: Unsigned + FromStr> Parseable<'_> for T {
     fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(digit1, |ns: &str| match ns.parse() {
@@ -146,7 +170,41 @@ impl<T: Unsigned + FromStr> Parseable<'_> for T {
     }
 }
 
-// A nom combinator that trims whitespace surrounding a parser, with or without including newline characters.
+/// Trims whitespace surrounding a parser.
+///
+/// This is a [`nom`] combinator.
+///
+/// # Examples
+/// Basic usage:
+/// ```
+/// # #![feature(assert_matches)]
+/// # use std::assert_matches::assert_matches;
+/// # use aoc::prelude::*;
+/// # use aoc::parse::trim;
+/// assert_matches!(
+///     nom::character::complete::i32::<_, NomParseError>("   -45   ").discard_input(),
+///     Err(_)
+/// );
+/// assert_eq!(
+///     trim::<_, _, _, NomParseError>(false, nom::character::complete::i32)("   -45   ")
+///         .discard_input(),
+///     Ok(-45)
+/// );
+/// assert_matches!(
+///     nom::character::complete::u8::<_, NomParseError>("\n67\n").discard_input(),
+///     Err(_)
+/// );
+/// assert_matches!(
+///     trim::<_, _, _, NomParseError>(false, nom::character::complete::i32)("\n67\n")
+///         .discard_input(),
+///     Err(_)
+/// );
+/// assert_eq!(
+///     trim::<_, _, _, NomParseError>(true, nom::character::complete::i32)("\n67\n")
+///         .discard_input(),
+///     Ok(67)
+/// );
+/// ```
 pub fn trim<I, F, O, E>(include_newlines: bool, inner: F) -> impl FnMut(I) -> IResult<I, O, E>
 where
     I: InputTakeAtPosition,
@@ -163,8 +221,23 @@ where
     delimited(space_parser, inner, space_parser)
 }
 
-// A nom parser that takes a single alphanumberic character, which
-// somehow is not built into nom
+/// Parses only a single alphanumeric character from a string.
+///
+/// This is a [`nom`] parser, which somehow is not included in [`nom`] itself.
+///
+/// # Examples
+/// Basic usage:
+/// ```
+/// # #![feature(assert_matches)]
+/// # use std::assert_matches::assert_matches;
+/// # use aoc::prelude::*;
+/// # use aoc::parse::single_alphanumeric;
+/// assert_eq!(single_alphanumeric::<_, NomParseError>("test").discard_input(), Ok('t'));
+/// assert_eq!(single_alphanumeric::<_, NomParseError>("67").discard_input(), Ok('6'));
+/// assert_eq!(single_alphanumeric::<_, NomParseError>("TEST").discard_input(), Ok('T'));
+/// assert_matches!(single_alphanumeric::<_, NomParseError>("-67").discard_input(), Err(_));
+/// assert_matches!(single_alphanumeric::<_, NomParseError>("&").discard_input(), Err(_));
+/// ```
 pub fn single_alphanumeric<I, E>(input: I) -> IResult<I, char, E>
 where
     I: Slice<RangeFrom<usize>> + InputIter,
