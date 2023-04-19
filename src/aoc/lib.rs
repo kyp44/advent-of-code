@@ -6,8 +6,6 @@
 #![warn(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
 
-use cgmath::{Point2, Point3, Vector2, Vector3};
-
 pub mod evolver;
 pub mod grid;
 pub mod iter;
@@ -18,7 +16,9 @@ pub mod prelude {
     pub use super::{
         error::{AocError, AocResult},
         evolver::Evolver,
-        extension::{PointExt, RangeExt, VectorExt},
+        extension::{
+            PointExt, PointFrom, PointInto, RangeExt, TryPointFrom, TryPointInto, VectorExt,
+        },
         grid::{
             AnyGridPoint, AnyGridPointExt, FromGridStr, Grid, GridDefault, GridPoint, GridSize,
             GridSizeExt,
@@ -26,7 +26,6 @@ pub mod prelude {
         iter::{IteratorExt, StrExt},
         parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parseable, Sections},
         solution::{Answer, AnswerVec, Solution, SolverInput, YearSolutions},
-        PointFrom, PointInto, TryPointFrom, TryPointInto,
     };
 }
 
@@ -75,7 +74,7 @@ pub mod error {
 // Will need to go through and see where this could be used prior to designing such
 // trait to ensure that all use cases can be satisfied.
 
-/// Extension traits.
+/// Collection of general extension traits.
 pub mod extension {
     use std::ops::RangeInclusive;
 
@@ -139,6 +138,160 @@ pub mod extension {
             Self::new(T::zero(), T::zero(), T::zero())
         }
     }
+
+    /// Extension trait to convert between [`cgmath`] vector component types more easily.
+    ///
+    /// Together with [`PointInto`], these are analogous to the [`From`] and [`Into`] traits
+    /// and the interaction between them. Note that we cannot implement these [`std`]
+    /// conversion traits due to the orphan rule.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// # use cgmath::{Vector2, Vector3, Point2, Point3};
+    /// let v: Vector2<i64> = Vector2::<u32>::new(3, 4).point_into();
+    /// assert_eq!(v, Vector2::<i64>::new(3, 4));
+    /// assert_eq!(
+    ///     Vector3::<u16>::point_from(Vector3::<u8>::new(7, 14, 21)),
+    ///     Vector3::<u16>::new(7, 14, 21)
+    /// );
+    /// let v: Point2<i32> = Point2::<i16>::new(-4, 9).point_into();
+    /// assert_eq!(v, Point2::<i32>::new(-4, 9));
+    /// assert_eq!(
+    ///     Point3::<usize>::point_from(Point3::<u8>::new(6, 5, 4)),
+    ///     Point3::<usize>::new(6, 5, 4)
+    /// );
+    /// ```
+    pub trait PointFrom<T> {
+        /// Converts the point into another point with a different component type.
+        ///
+        /// Refer to [`PointFrom`].
+        fn point_from(value: T) -> Self;
+    }
+
+    /// Extension trait to convert between [`cgmath`] vector component types more easily.
+    ///
+    /// Refer to [`PointFrom`].
+    pub trait PointInto<T> {
+        /// Converts the point into another point with a different component type.
+        ///
+        /// Refer to [`PointFrom`].
+        fn point_into(self) -> T;
+    }
+
+    impl<T, S: PointFrom<T>> PointInto<S> for T {
+        /// Converts the point into another point with a different component type.
+        ///
+        /// Refer to [`PointFrom`].
+        fn point_into(self) -> S {
+            S::point_from(self)
+        }
+    }
+
+    /// Extension trait to convert between [`cgmath`] vector component types more easily.
+    ///
+    /// Together with [`TryPointInto`], these are analogous to the [`TryFrom`] and [`TryInto`]
+    /// traits and the interaction between them. Note that we cannot implement these [`std`]
+    /// conversion traits due to the orphan rule.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # #![feature(assert_matches)]
+    /// # use std::assert_matches::assert_matches;
+    /// # use aoc::prelude::*;
+    /// # use cgmath::{Vector2, Vector3, Point2, Point3};
+    /// assert_eq!(
+    ///     Vector2::<isize>::new(3, 4).try_point_into(),
+    ///     Ok(Vector2::<usize>::new(3, 4))
+    /// );
+    /// assert_matches!(
+    ///     Vector2::<usize>::try_point_from(Vector2::<isize>::new(3, -4)),
+    ///     Err(_),
+    /// );
+    /// assert_eq!(
+    ///     Vector3::<u64>::new(23, 255, 78).try_point_into(),
+    ///     Ok(Vector3::<u8>::new(23, 255, 78)),
+    /// );
+    /// assert_matches!(
+    ///     Vector3::<u8>::try_point_from(Vector3::<u64>::new(45, 2, 256)),
+    ///     Err(_),
+    /// );
+    /// assert_eq!(
+    ///     Point2::<i16>::new(-9, 5).try_point_into(),
+    ///     Ok(Point2::<i8>::new(-9, 5)),
+    /// );
+    /// assert_matches!(
+    ///     Point2::<i8>::try_point_from(Point2::<i16>::new(-1000, 4)),
+    ///     Err(_),
+    /// );
+    /// assert_eq!(
+    ///     Point3::<usize>::new(1000, 2000, 3000).try_point_into(),
+    ///     Ok(Point3::<u16>::new(1000, 2000, 3000)),
+    /// );
+    /// assert_matches!(
+    ///     Point3::<u8>::try_point_from(Point3::<usize>::new(0, 1, usize::MAX)),
+    ///     Err(_),
+    /// );
+    /// ```
+    pub trait TryPointFrom<T>: Sized {
+        /// Error type, the same type as the [`TryFrom::Error`] for the component type.
+        type Error;
+
+        /// Tries to convert the point into another point with a different component type.
+        ///
+        /// Refer to [`TryPointFrom`].
+        fn try_point_from(value: T) -> Result<Self, Self::Error>;
+    }
+
+    /// Extension trait to convert between [`cgmath`] vector component types more easily.
+    ///
+    /// Refer to [`TryPointFrom`].
+    pub trait TryPointInto<T> {
+        /// Error type, the same type as the [`TryInto::Error`] for the component type.
+        type Error;
+
+        /// Tries to convert the point into another point with a different component type.
+        ///
+        /// Refer to [`TryPointFrom`].
+        fn try_point_into(self) -> Result<T, Self::Error>;
+    }
+
+    impl<T, S: TryPointFrom<T>> TryPointInto<S> for T {
+        type Error = S::Error;
+
+        /// Tries to convert the point into another point with a different component type.
+        ///
+        /// Refer to [`TryPointFrom`].
+        fn try_point_into(self) -> Result<S, Self::Error> {
+            S::try_point_from(self)
+        }
+    }
+
+    /// Implements the [`PointFrom`] and [`TryPointFrom`] traits for a vector type.
+    macro_rules! impl_point_conversions {
+        ($ArrayN:ident <$S:ident> {$($field:ident),+}) => {
+            impl<T, $S: From<T>> PointFrom<$ArrayN<T>> for $ArrayN<$S> {
+                fn point_from(value: $ArrayN<T>) -> Self {
+                    $ArrayN::new($(value.$field.into()),+)
+                }
+            }
+
+            impl<T, $S: TryFrom<T>> TryPointFrom<$ArrayN<T>> for $ArrayN<$S> {
+                type Error = S::Error;
+
+                fn try_point_from(value: $ArrayN<T>) -> Result<Self, Self::Error> {
+                    Ok($ArrayN::new($(value.$field.try_into()?),+))
+                }
+            }
+        };
+    }
+
+    impl_point_conversions!(Point2<S> {x, y});
+    impl_point_conversions!(Point3<S> {x, y, z});
+    impl_point_conversions!(Vector2<S> {x, y});
+    impl_point_conversions!(Vector3<S> {x, y, z});
 
     /// Extension trait for inclusive ranges.
     pub trait RangeExt<T>: Sized {
@@ -395,7 +548,7 @@ pub mod solution {
         }
     }
 
-    /// Convenience trait to convert a list of answers types for use in tests
+    /// Convenience trait to convert a list of answers types for use in tests.
     pub trait AnswerVec {
         /// Converts a [`Vec`] of answer types into a [`Vec`] of [`Option::Some`] with the [`Answer`].
         ///
@@ -452,7 +605,7 @@ pub mod solution {
 
     /// Compares solution results with a vector.
     ///
-    /// This typically is not used directly, but rather by the [`solution_tests`]
+    /// This typically is not used directly, but rather by the [`solution_tests`](crate::solution_tests)
     /// macro, and always in the context of a day's solution
     /// module in which there is a constant [`Solution`] structure called `SOLUTION`
     /// in the same scope. The `$input` should then be a static `&str` to pass as input
@@ -553,92 +706,3 @@ pub mod solution {
          }
     }
 }
-
-// TODO: Also need to try and look for cases where this might be useful, since it was largely forgotten about.
-// TODO: Move this to a module maybe?
-// convert module
-// Cannot use std traits because of blanket conflicts.
-
-/// Extension trait to convert between [`cgmath`] vector component types more easily.
-///
-/// Note that we cannot implement the [`std`] conversion traits due to the orphan rule.
-///
-/// # Examples
-/// Basic usage:
-/// ```
-/// /* # #![feature(assert_matches)]
-/// # use std::assert_matches::assert_matches;
-/// # use aoc::prelude::*;
-/// # use cgmath::{Vector2, Vector3};
-/// // Some 2D vector conversions
-/// assert_matches!(Vector2::<isize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<usize>::new(3, 4));
-/// assert_matches!(Vector2::<isize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<u8>::new(3, 4));
-/// assert_matches!(Vector2::<isize>::new(-3, 4).try_point_into(), Ok(v) if v == Vector2::<i8>::new(-3, 4));
-/// assert_matches!(Vector2::<usize>::new(3, 4).try_point_into(), Ok(v) if v == Vector2::<u8>::new(3, 4));
-/// assert_matches!(<Vector2<isize> as aoc::grid::PointTryInto<Vector2<usize>>>::try_point_into(Vector2::new(3, -4)), Err(_));
-/// assert_matches!(<Vector2<isize> as aoc::grid::PointTryInto<Vector2<u8>>>::try_point_into(Vector2::new(3, -4)), Err(_));
-/// assert_matches!(<Vector2<u16> as aoc::grid::PointTryInto<Vector2<u8>>>::try_point_into(Vector2::new(1000, 4)), Err(_));
-/// assert_matches!(<Vector2<i64> as aoc::grid::PointTryInto<Vector2<i32>>>::try_point_into(Vector2::new(3, 4294967296)), Err(_));
-///
-/// // Some 3D vector conversions
-/// assert_matches!(Vector3::<isize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<usize>::new(3, 4, 5));
-/// assert_matches!(Vector3::<isize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<u8>::new(3, 4, 5));
-/// assert_matches!(Vector3::<isize>::new(-3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<i8>::new(-3, 4, 5));
-/// assert_matches!(Vector3::<usize>::new(3, 4, 5).try_point_into(), Ok(v) if v == Vector3::<u8>::new(3, 4, 5));
-/// assert_matches!(<Vector3<isize> as aoc::grid::PointTryInto<Vector3<usize>>>::try_point_into(Vector3::new(3, -4, 5)), Err(_));
-/// assert_matches!(<Vector3<isize> as aoc::grid::PointTryInto<Vector3<u8>>>::try_point_into(Vector3::new(3, -4, 5)), Err(_));
-/// assert_matches!(<Vector3<u16> as aoc::grid::PointTryInto<Vector3<u8>>>::try_point_into(Vector3::new(1000, 4, 5)), Err(_));
-/// assert_matches!(<Vector3<i64> as aoc::grid::PointTryInto<Vector3<i32>>>::try_point_into(Vector3::new(3, 4294967296, 5)), Err(_)); */
-/// ```
-pub trait PointFrom<T> {
-    fn point_from(value: T) -> Self;
-}
-pub trait PointInto<T> {
-    fn point_into(self) -> T;
-}
-impl<T, S: PointFrom<T>> PointInto<S> for T {
-    fn point_into(self) -> S {
-        S::point_from(self)
-    }
-}
-
-pub trait TryPointFrom<T>: Sized {
-    type Error;
-
-    fn try_point_from(value: T) -> Result<Self, Self::Error>;
-}
-pub trait TryPointInto<T> {
-    type Error;
-
-    fn try_point_into(self) -> Result<T, Self::Error>;
-}
-impl<T, S: TryPointFrom<T>> TryPointInto<S> for T {
-    type Error = S::Error;
-
-    fn try_point_into(self) -> Result<S, Self::Error> {
-        S::try_point_from(self)
-    }
-}
-
-macro_rules! impl_point_conversions {
-    ($ArrayN:ident <$S:ident> {$($field:ident),+}) => {
-        impl<T, $S: From<T>> PointFrom<$ArrayN<T>> for $ArrayN<$S> {
-            fn point_from(value: $ArrayN<T>) -> Self {
-                $ArrayN::new($(value.$field.into()),+)
-            }
-        }
-
-        impl<T, $S: TryFrom<T>> TryPointFrom<$ArrayN<T>> for $ArrayN<$S> {
-            type Error = S::Error;
-
-            fn try_point_from(value: $ArrayN<T>) -> Result<Self, Self::Error> {
-                Ok($ArrayN::new($(value.$field.try_into()?),+))
-            }
-        }
-    };
-}
-
-impl_point_conversions!(Point2<S> {x, y});
-impl_point_conversions!(Point3<S> {x, y, z});
-impl_point_conversions!(Vector2<S> {x, y});
-impl_point_conversions!(Vector3<S> {x, y, z});

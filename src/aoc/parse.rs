@@ -1,6 +1,6 @@
-//! TODO
+//! Collection of items related to parsing using [`nom`].
 //!
-//! TODO
+//! Contains some extension traits and useful [`nom`] parsers.
 
 use nom::bytes::complete::tag;
 use nom::character::complete::{multispace0, satisfy, space0, space1};
@@ -17,15 +17,18 @@ use std::str::FromStr;
 
 use crate::prelude::{AocError, AocResult};
 
-// Type of nom input when parsing bits
+/// Type of nom input when parsing bits.
 pub type BitInput<'a> = (&'a [u8], usize);
 
-// This custom parse error type is needed because the desired Nom VerboseError
-// keeps references to the input string where that could not be parsed.
-// This does not play well with anyhow, which requires that its errors have
-// static lifetime since the error chain is passed out of main().
+/// Custom error type for [`nom`] parsing errors.
+///
+/// This is needed because the desired nom [`VerboseError`]
+/// keeps references to the input string where that could not be parsed.
+/// This does not play well with [`anyhow`], which requires that its errors have
+/// static lifetime since the error chain is passed out of the main function.
 #[derive(Debug, Clone)]
 pub struct NomParseError {
+    /// The corresponding [`VerboseError`] with an owned string.
     verbose_error: VerboseError<String>,
 }
 impl nom::error::ParseError<&str> for NomParseError {
@@ -41,6 +44,7 @@ impl nom::error::ParseError<&str> for NomParseError {
         }
     }
 }
+/// A static string when displaying errors innvolving parsing bits.
 const BITS_STR: &str = "(bits)";
 impl nom::error::ParseError<BitInput<'_>> for NomParseError {
     fn from_error_kind(_input: BitInput, kind: ErrorKind) -> Self {
@@ -63,6 +67,7 @@ impl fmt::Display for NomParseError {
     }
 }
 impl NomParseError {
+    /// Creates a parse error with a context string when parsing bits.
     pub fn nom_err_for_bits(msg: &'static str) -> nom::Err<Self> {
         nom::Err::Failure(NomParseError {
             verbose_error: VerboseError {
@@ -73,11 +78,16 @@ impl NomParseError {
 }
 impl std::error::Error for NomParseError {}
 
-// Type containing the result of a nom parsing.
+/// Type containing the result of a [`nom`] parsing.
 pub type NomParseResult<I, U> = IResult<I, U, NomParseError>;
 
-// This should be a part of the nom library in my opinion.
+/// Extension trait that simply discards the input portion of a [`nom`]
+/// result.
+///
+/// This should be a part of the nom library in my opinion.
 pub trait DiscardInput<U, E> {
+    /// Discards the input of a [`nom`] result and returns a [`Result`] without
+    /// the input.
     fn discard_input(self) -> Result<U, E>;
 }
 impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
@@ -86,18 +96,18 @@ impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
     }
 }
 
-// Trait for types to be parsable with Nom.
-// Note that we cannot simply implement FromStr for types that implement this trait
-// because this breaks the potential foreign trait on a foreign type rules.
-// See here: <https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299>
+/// Trait for types that can be parsed from text with [`nom`].
 pub trait Parseable<'a> {
-    // Parser function for nom.
+    /// Needs to parse the text using [`nom`] and return the result.
     fn parser(input: &'a str) -> NomParseResult<&str, Self>
     where
         Self: Sized;
 
-    // Runs the parser and gets the result, stripping out the input from the nom parser.
-    // Note that we cannot blanket implement FromStr because of the orphan rule.
+    /// Runs the parser and gets the result, stripping out the input from the nom parser.
+    ///
+    /// Note that we cannot blanket implement [`FromStr`] for types that implement this trait
+    /// because this potentially breaks the orphan rule.
+    /// See [here](https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299).
     fn from_str(input: &'a str) -> Result<Self, NomParseError>
     where
         Self: Sized,
@@ -105,11 +115,11 @@ pub trait Parseable<'a> {
         Self::parser(input).finish().discard_input()
     }
 
-    // Gathers a vector of items from an iterator with each item being a string to parse.
+    /// Gathers a vector of items from an iterator with each item being a string to parse.
     // TODO: Can we and should we change this it return an iterator instead? I have
     // noticed numerous places where a vector is immediately transformed into an
     // iterator and so this would be more efficient instead of allocating.
-    fn gather<I>(strs: I) -> Result<Vec<Self>, NomParseError>
+    fn gather<I>(strs: I) -> Result<impl Iterator<Item = Self>, NomParseError>
     where
         Self: Sized,
         I: Iterator<Item = &'a str>,
