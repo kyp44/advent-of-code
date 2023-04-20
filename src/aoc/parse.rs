@@ -84,7 +84,7 @@ impl NomParseError {
 }
 impl std::error::Error for NomParseError {}
 
-/// Type containing the result of a [`nom`] parsing.
+/// Type representing the result of a [`nom`] parsing.
 pub type NomParseResult<I, U> = IResult<I, U, NomParseError>;
 
 /// Extension trait that simply discards the input portion of a [`nom`]
@@ -223,7 +223,7 @@ where
 
 /// Parses only a single alphanumeric character from a string.
 ///
-/// This is a [`nom`] parser, which somehow is not included in [`nom`] itself.
+/// This is a [`nom`] parser that is somehow not included in [`nom`] itself.
 ///
 /// # Examples
 /// Basic usage:
@@ -253,7 +253,48 @@ where
     })(input)
 }
 
-// A nom combinator that requires some whitespace around a parser.
+/// Requires whitespace around a parser.
+///
+/// This is [`nom`] combinator that requires at least some whitespace before
+/// and after another parser in order to succeed. The whitespace does not
+/// include newlines.
+///
+/// # Examples
+/// Basic usage:
+/// ```
+/// # #![feature(assert_matches)]
+/// # use std::assert_matches::assert_matches;
+/// # use aoc::prelude::*;
+/// # use aoc::parse::separated;
+/// assert_matches!(
+///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)("64").discard_input(),
+///     Err(_)
+/// );
+/// assert_eq!(
+///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)(" 64 ").discard_input(),
+///     Ok(64)
+/// );
+/// assert_eq!(
+///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)("    64  ")
+///         .discard_input(),
+///     Ok(64)
+/// );
+/// assert_matches!(
+///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)("\n64\n")
+///         .discard_input(),
+///     Err(_)
+/// );
+/// assert_matches!(
+///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)("\n  64  \n")
+///         .discard_input(),
+///     Err(_)
+/// );
+/// assert_matches!(
+///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)("   \n64\n  ")
+///         .discard_input(),
+///     Err(_)
+/// );
+/// ```
 pub fn separated<I, F, O, E>(inner: F) -> impl FnMut(I) -> IResult<I, O, E>
 where
     I: InputTakeAtPosition,
@@ -264,8 +305,35 @@ where
     delimited(space1, inner, space1)
 }
 
-// A nom parser that takes a single decimal digit.
-pub fn single_digit<I, E>(input: I) -> IResult<I, u32, E>
+/// Parses a single decimal digit.
+///
+/// This is a [`nom`] parser.
+///
+/// # Examples
+/// Basic usage:
+/// ```
+/// # #![feature(assert_matches)]
+/// # use std::assert_matches::assert_matches;
+/// # use aoc::prelude::*;
+/// # use aoc::parse::single_digit;
+/// assert_eq!(
+///     single_digit::<_, NomParseError>("76").discard_input(),
+///     Ok(7)
+/// );
+/// assert_eq!(
+///     single_digit::<_, NomParseError>("0text").discard_input(),
+///     Ok(0)
+/// );
+/// assert_matches!(
+///     single_digit::<_, NomParseError>("text").discard_input(),
+///     Err(_)
+/// );
+/// assert_matches!(
+///     single_digit::<_, NomParseError>("-9").discard_input(),
+///     Err(_)
+/// );
+/// ```
+pub fn single_digit<I, E>(input: I) -> IResult<I, u8, E>
 where
     I: Slice<RangeFrom<usize>> + InputIter,
     <I as InputIter>::Item: AsChar + Copy,
@@ -276,7 +344,7 @@ where
         .next()
         .map(|c| (c, c.as_char().to_digit(10)))
     {
-        Some((c, Some(d))) => Ok((input.slice(c.len()..), d)),
+        Some((c, Some(d))) => Ok((input.slice(c.len()..), d.try_into().unwrap())),
         _ => Err(nom::Err::Error(E::from_error_kind(
             input,
             ErrorKind::NoneOf,
@@ -284,8 +352,39 @@ where
     }
 }
 
-// Parses a label followed by another parser with potential whitespace in between
-// on a single line.
+/// Parses a label followed by another parser with potential whitespace in between.
+///
+/// This is a [`nom`] parser that will also consume any whitespace (including newlines)
+/// after the `inner` parser.
+///
+/// # Examples
+/// Basic usage:
+/// ```
+/// # #![feature(assert_matches)]
+/// # use std::assert_matches::assert_matches;
+/// # use aoc::prelude::*;
+/// # use aoc::parse::field_line_parser;
+/// assert_eq!(
+///     field_line_parser::<_, _, NomParseError>("name:", nom::character::complete::u8)(
+///         "name:        47"
+///     )
+///     .discard_input(),
+///     Ok(47)
+/// );
+/// assert_eq!(
+///     field_line_parser::<_, _, NomParseError>("job =", nom::character::complete::alpha1)(
+///         "job =electrician"
+///     )
+///     .discard_input(),
+///     Ok("electrician")
+/// );
+/// assert_matches!(
+///     field_line_parser::<_, _, NomParseError>("class:", nom::character::complete::alpha1)(
+///         "class = mage"
+///     ),
+///     Err(_)
+/// );
+/// ```
 pub fn field_line_parser<'a, F, O, E>(
     label: &'static str,
     inner: F,
@@ -297,7 +396,35 @@ where
     delimited(tag(label), trim(false, inner), multispace0)
 }
 
+/// Extension trait to break a string into some number of section substrings.
 pub trait Sections {
+    /// Breaks the string into `num` sections.
+    ///
+    /// Each section is separated by a double newline. This will fail if
+    /// the input string does not contain exactly the correct number of
+    /// sections.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # #![feature(assert_matches)]
+    /// # use std::assert_matches::assert_matches;
+    /// # use aoc::prelude::*;
+    /// assert_eq!(
+    ///     "section 1\n\nsection 2\n\nsection 3".sections(3),
+    ///     Ok(vec!["section 1", "section 2", "section 3"])
+    /// );
+    /// assert_eq!(
+    ///     "section\n1\n\nsection\n2\n\nsection\n3".sections(3),
+    ///     Ok(vec!["section\n1", "section\n2", "section\n3"])
+    /// );
+    /// assert_matches!("section 1\n\nsection 2".sections(3), Err(_));
+    /// assert_matches!(
+    ///     "section 1\n\nsection 2\n\nsection 3\n\nsection 4".sections(3),
+    ///     Err(_)
+    /// );
+    /// assert_matches!("section 1\nsection 2\nsection 3".sections(3), Err(_));
+    /// ```
     fn sections(&self, num: usize) -> AocResult<Vec<&str>>;
 }
 impl Sections for str {

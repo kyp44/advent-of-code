@@ -37,7 +37,7 @@ pub mod error {
     use thiserror::Error;
 
     /// Errors that can occur in general and solution functions.
-    #[derive(Debug, Clone, Error)]
+    #[derive(Debug, Clone, Error, PartialEq, Eq)]
     pub enum AocError {
         /// The year has not been solved.
         #[error("Year {0} is not yet solved")]

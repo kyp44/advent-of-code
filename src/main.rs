@@ -9,7 +9,6 @@
 #![feature(hash_set_entry)]
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
-#![feature(is_some_and)]
 #![feature(step_trait)]
 #![warn(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]

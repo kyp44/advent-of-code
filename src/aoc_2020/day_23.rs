@@ -211,9 +211,12 @@ mod solution {
     impl Cups {
         /// Parses the cups from text input.
         pub fn from_str(s: &str, part: &dyn Part) -> AocResult<Self> {
-            let mut cups = many1::<_, _, NomParseError, _>(single_digit)(s)
+            let mut cups: Vec<u32> = many1::<_, _, NomParseError, _>(single_digit)(s)
                 .finish()
-                .discard_input()?;
+                .discard_input()?
+                .into_iter()
+                .map(|x| x.into())
+                .collect();
 
             // Verify that we have enough cups
             if cups.len() < 4 {

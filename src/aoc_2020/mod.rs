@@ -1,3 +1,4 @@
+//! Solutions for the 2020 problem set.
 use aoc::year_solutions;
 
 year_solutions! {

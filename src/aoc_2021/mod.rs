@@ -1,3 +1,4 @@
+//! Solutions for the 2021 problem set.
 use aoc::year_solutions;
 
 year_solutions! {
