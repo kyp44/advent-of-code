@@ -404,23 +404,19 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 24,
     name: "Arithmetic Logic Unit",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Program::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let program = Program::from_str(input.expect_input()?)?;
-
             // Process
-            find_solution(&program, (1..=9).rev()).map(|n| Answer::Unsigned(n.try_into().unwrap()))
+            find_solution(input.expect_data::<Program>()?, (1..=9).rev())
+                .map(|n| Answer::Unsigned(n.try_into().unwrap()))
         },
         // Part one
         |input| {
-            // Generation
-            let program = Program::from_str(input.expect_input()?)?;
-
             // Process
-            find_solution(&program, 1..=9).map(|n| Answer::Unsigned(n.try_into().unwrap()))
+            find_solution(input.expect_data::<Program>()?, 1..=9)
+                .map(|n| Answer::Unsigned(n.try_into().unwrap()))
         },
     ],
 };

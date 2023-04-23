@@ -71,10 +71,6 @@ pub mod error {
     pub type AocResult<T> = Result<T, AocError>;
 }
 
-// TODO: Should we abstract exhaustively solving game states to achieve some metric?
-// Will need to go through and see where this could be used prior to designing such
-// trait to ensure that all use cases can be satisfied.
-
 /// Collection of general extension traits.
 pub mod extension {
     use std::ops::RangeInclusive;

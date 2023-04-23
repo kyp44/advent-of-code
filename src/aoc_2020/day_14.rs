@@ -261,23 +261,20 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 14,
     name: "Docking Data",
-    preprocessor: None,
+    preprocessor: Some(|input| {
+        let program: Program = input.parse()?;
+        Ok(Box::new(program).into())
+    }),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let program: Program = input.expect_input()?.parse()?;
-
             // Process
-            Ok(program.execute::<MaskV1>().into())
+            Ok(input.expect_data::<Program>()?.execute::<MaskV1>().into())
         },
         // Part two
         |input| {
-            // Generation
-            let program: Program = input.expect_input()?.parse()?;
-
             // Process
-            Ok(program.execute::<MaskV2>().into())
+            Ok(input.expect_data::<Program>()?.execute::<MaskV2>().into())
         },
     ],
 };

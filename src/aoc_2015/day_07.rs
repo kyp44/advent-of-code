@@ -270,6 +270,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 7,
     name: "Some Assembly Required",
+    // NOTE: Circuit keeps references to input, so we cannot use a pre-processor.
     preprocessor: None,
     solvers: &[
         // Part one

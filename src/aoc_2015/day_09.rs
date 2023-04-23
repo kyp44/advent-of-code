@@ -140,6 +140,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 9,
     name: "All in a Single Night",
+    // NOTE: Problem keeps references to input, so we cannot use a pre-processor.
     preprocessor: None,
     solvers: &[
         // Part one

@@ -336,7 +336,6 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 16,
     name: "Packet Decoder",
-    // TODO: Look for `preprocessor: None` so see if any preprocessing opportunities were missed.
     preprocessor: Some(|input| Ok(Box::new(Packet::from_str(input)?).into())),
     solvers: &[
         // Part one

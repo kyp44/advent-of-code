@@ -16,7 +16,7 @@ trait GameSolver: Sized + Eq {
 
     fn compare_metric(better: &Self::Metric, than: &Self::Metric) -> bool;
 
-    fn solve(&self) {
+    /* fn solve(&self) {
         fn rec<S: GameSolver>(
             state: S,
             seen: &mut HashSet<S>,
@@ -64,5 +64,12 @@ trait GameSolver: Sized + Eq {
         }
 
         rec(self, &mut HashMap::new(), None, 0, 0).ok_or(AocError::NoSolution)
-    }
+    } */
 }
+
+// TODO: Potential uses
+// 2015 - 22 - RPG with spells
+// 2020 - 10 - Part 2, Joltage adapters
+// 2020 - 20 - Part 1, Lining up images
+// 2021 - 20 - Part 2, Dirac die
+// 2021 - 23 - Amphipods

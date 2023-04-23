@@ -176,6 +176,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 13,
     name: "Knights of the Dinner Table",
+    // NOTE: Problem keeps references to input, so we cannot use a pre-processor.
     preprocessor: None,
     solvers: &[
         // Part one

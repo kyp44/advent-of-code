@@ -106,6 +106,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 8,
     name: "Matchsticks",
+    // NOTE: List keeps references to input, so we cannot use a pre-processor.
     preprocessor: None,
     solvers: &[
         // Part one

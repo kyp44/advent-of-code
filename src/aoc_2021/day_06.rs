@@ -79,6 +79,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 6,
     name: "Lanternfish",
+    // NOTE: Simulation is an iterator so needs mutated, so we just parse it in each part.
     preprocessor: None,
     solvers: &[
         // Part one

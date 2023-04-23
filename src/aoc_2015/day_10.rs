@@ -61,6 +61,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 10,
     name: "Elves Look, Elves Say",
+    // NOTE: Sequence is an iterator so needs mutated, so we just parse it in each part.
     preprocessor: None,
     solvers: &[
         // Part one
