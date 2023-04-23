@@ -7,6 +7,7 @@
 #![warn(clippy::missing_docs_in_private_items)]
 
 pub mod evolver;
+pub mod game_solver;
 pub mod grid;
 pub mod iter;
 pub mod parse;
