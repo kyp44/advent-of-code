@@ -4,26 +4,65 @@
 
 use derive_new::new;
 
-use super::prelude::*;
-use std::{
-    collections::{HashMap, HashSet},
-    hash::Hash,
-    ops::Add,
-};
+use std::{collections::HashMap, hash::Hash, ops::Add};
 
-// TODO: Do we need this or can we accomplish this with clever metrics?
-pub enum SearchMethod<M> {
-    FirstSolution,
-    BestMetric {
-        initial: M,
-        initial_best: M,
-        solved: M,
-    },
-}
 // TODO: Ideas for versatility (Metric, Count, First solution, etc.):
 // Some kind of general state trait that we implement for each
 // Different overall TreeSearch traits for each of these
 // How do we handle special case, e.g. counting wins for each player?
+
+#[derive(new)]
+pub struct Child<N: TreeSearch> {
+    node: N,
+    state: N::DownwardState,
+}
+
+pub trait TreeSearch: Sized + Eq + Hash {
+    type DownwardState: DownwardTreeState<Self::UpwardState>;
+    type UpwardState: UpwardTreeState;
+
+    fn stop(&self) -> Option<Self::UpwardState>;
+
+    fn children(&self) -> Vec<Child<Self>>;
+
+    fn search_tree(self) -> Self::UpwardState {
+        fn rec<N: TreeSearch>(
+            child: Child<N>,
+            seen: &mut HashMap<N, N::UpwardState>,
+        ) -> N::UpwardState {
+            // Are we in a finished state?
+            if let Some(state) = child.node.stop() {
+                return state;
+            }
+
+            // Have we seen this state before?
+            if let Some(state) = seen.get(&child.node) {
+                return state.clone();
+            }
+
+            // Check if we are in a state that should stop us
+            if let Some(state) = child.state.stop() {
+                return state;
+            }
+
+            // Recurse for each leaf
+            let mut state = child.state.new_upward_state();
+            for child in child.node.children() {
+                state.incorporate_child(&rec(child, seen));
+            }
+
+            // Mark this position as seen
+            seen.insert(child.node, state.clone());
+
+            state
+        }
+
+        rec(
+            Child::new(self, Self::DownwardState::default()),
+            &mut HashMap::new(),
+        )
+    }
+}
 
 trait Metric: Add<Output = Self> + Copy {
     const initial_best: Self;
@@ -38,108 +77,59 @@ trait Metric: Add<Output = Self> + Copy {
     }
 }
 
-trait DownwardTreeState: Sized + Default {
-    type UpwardState: UpwardTreeState<Self>;
-
+pub trait DownwardTreeState<U>: Sized + Default {
     // Whether the state is such that we do not need to expand the associated node, and instead
     // just return the returned state.
-    fn stop(&self) -> Option<Self::UpwardState>;
-    fn new_upward_state(&self) -> Self::UpwardState;
+    fn stop(&self) -> Option<U>;
+    fn new_upward_state(&self) -> U;
 }
 
-trait UpwardTreeState<T> {
-    fn incorporate_child(&mut self, child_state: &T);
+pub trait UpwardTreeState: Clone {
+    fn incorporate_child(&mut self, child_upward_state: &Self);
 }
 
-/* struct MetricTreeState<M: Metric> {
-    // The global best metric to get to a terminating leaf so far.
+struct MetricDownwardState<M: Metric> {
     global_best_cost: M,
-    // The best metric to get to a terminating leaf when returned from a node recursion.
-    best_cost: M,
-    // The metric cost so far to get to this node.
-    current_cost: M,
+    cumulative_cost: M,
+    cost: M,
 }
-impl<M: Metric> Default for MetricTreeState<M> {
+impl<M: Metric> Default for MetricDownwardState<M> {
     fn default() -> Self {
         Self {
             global_best_cost: M::initial_best,
-            best_cost: M::initial_best,
-            current_cost: M::initial_cost,
+            cumulative_cost: M::initial_cost,
+            cost: M::initial_cost,
         }
     }
 }
-impl<M: Metric> TreeState for MetricTreeState<M> {
-    fn stop(&self) -> Option<Self> {
-        if self.best_cost.is_better(&self.global_best_cost) {
-            Some(Self {
-                global_best_cost: self.best_cost,
-                best_cost: todo!(),
-                current_cost: todo!(),
-            })
+impl<M: Metric> DownwardTreeState<MetricUpwardState<M>> for MetricDownwardState<M> {
+    fn stop(&self) -> Option<MetricUpwardState<M>> {
+        if self.global_best_cost.is_better(&self.cumulative_cost) {
+            Some(MetricUpwardState::new(
+                self.global_best_cost,
+                M::initial_best,
+            ))
         } else {
             None
         }
     }
 
-    fn new_for_children(&self) -> Self {
-        Self {
-            global_best_cost: self.global_best_cost,
-            best_cost: M::initial_best,
-            current_cost: M::initial_cost,
-        }
+    fn new_upward_state(&self) -> MetricUpwardState<M> {
+        MetricUpwardState::new(self.global_best_cost, M::initial_best)
     }
-
-    fn incorporate_child(&mut self, child_state: &Self) {
-        todo!()
-    }
-} */
-
-#[derive(new)]
-pub struct Child<N: TreeSearch> {
-    node: N,
-    state: N::DownwardState,
 }
 
-pub trait TreeSearch: Sized + Eq + Hash {
-    type DownwardState: DownwardTreeState;
-
-    fn stop(&self) -> Option<Self::DownwardState::UpwardState>;
-
-    fn children(&self) -> Vec<Child<Self>>;
-
-    fn search_tree(self) -> Self::State {
-        fn rec<N: TreeSearch>(child: Child<N>, seen: &mut HashMap<N, N::State>) -> S::Metric {
-            // Are we in a finished state?
-            if let Some(state) = child.node.stop() {
-                return state;
-            }
-
-            // Have we seen this state before?
-            if let Some(state) = seen.get(&child.node) {
-                return *state;
-            }
-
-            // Check if we are in a state that should stop us
-            if let Some(state) = child.state.stop() {
-                return state;
-            }
-
-            // Recurse for each leaf
-            let mut state = child.state.new_for_children();
-            for child in child.node.children() {
-                state.incorporate_child(rec(child, seen));
-            }
-
-            // Mark this position as seen
-            seen.insert(child.node, state);
-
-            state
-        }
-
-        rec(
-            Child::new(self, Self::State::default()),
-            &mut HashMap::new(),
-        )
+#[derive(Clone, new)]
+struct MetricUpwardState<M: Metric> {
+    global_best_cost: M,
+    best_cost: M,
+}
+impl<M: Metric> UpwardTreeState for MetricUpwardState<M> {
+    fn incorporate_child(&mut self, child_upward_state: &Self) {
+        let x = self
+            .self
+            .best_cost
+            .update_if_better(child_upward_state.best_cost);
     }
 }
 
