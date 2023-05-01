@@ -22,7 +22,10 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::parse::trim;
+    use aoc::{
+        parse::trim,
+        tree_search::{BestMetricTreeNode, Metric, MetricChild},
+    };
     use derive_more::{Add, Deref, From};
     use enum_map::{Enum, EnumMap};
     use infinitable::Infinitable;
@@ -39,12 +42,7 @@ mod solution {
         graph::NodeIndex,
         prelude::StableUnGraph,
     };
-    use std::{
-        collections::{BTreeSet, HashMap},
-        fmt,
-        iter::repeat_with,
-        marker::PhantomData,
-    };
+    use std::{collections::BTreeSet, fmt, iter::repeat_with, marker::PhantomData};
     use strum::IntoEnumIterator;
     use strum_macros::EnumIter;
 
@@ -280,15 +278,6 @@ mod solution {
     /// Character to use for displaying an empty space on the board.
     const EMPTY_DISP: &str = ".";
 
-    /// A move that an amphipod can make.
-    #[derive(Debug)]
-    struct Move<P: Part + 'static> {
-        /// Energy required to make the move.
-        energy: u64,
-        /// The resulting amphipod positions after the move is made.
-        new_position: Position<P>,
-    }
-
     /// Map of amphipod types to the nodes occupied by those amphipods.
     type PositionMap = EnumMap<Amphipod, BTreeSet<NodeIndex>>;
 
@@ -431,15 +420,6 @@ mod solution {
             })
         }
 
-        /// Tests whether or not the position is the solved position with every amphipod in their home room.
-        fn solved(&self) -> bool {
-            Amphipod::iter().all(|a| {
-                P::board().room_spaces[a]
-                    .iter()
-                    .all(|n| self.positions[a].contains(n))
-            })
-        }
-
         /// Moves an amphipod from one space to another.
         fn move_amphipod(&mut self, amphipod: Amphipod, old: &NodeIndex, new: NodeIndex) {
             let nodes = &mut self.positions[amphipod];
@@ -448,9 +428,48 @@ mod solution {
             nodes.insert(new);
         }
 
-        /// Returns a vector of all possible moves for all amphipods.
-        fn moves(&self) -> Vec<Move<P>> {
-            // NOTE: One principle we follow that is not a rule we never move an amphipod only partially into
+        /// Runs the tree search and returns the minimum energy needed
+        /// to solve from this position, that is to return all amphipods to their
+        /// home rooms.
+        pub fn minimal_energy(self) -> AocResult<u64> {
+            match self.minimal_cost().0 {
+                Infinitable::Finite(e) => Ok(e),
+                _ => Err(AocError::NoSolution),
+            }
+        }
+    }
+
+    #[derive(Clone, Copy, Add, Debug)]
+    pub struct Cost(Infinitable<u64>);
+    impl Metric for Cost {
+        const INITIAL_BEST: Self = Cost(Infinitable::Infinity);
+        const INITIAL_COST: Self = Cost(Infinitable::Finite(0));
+
+        fn is_better(&self, other: &Self) -> bool {
+            self.0 < other.0
+        }
+    }
+    impl From<u64> for Cost {
+        fn from(value: u64) -> Self {
+            Self(value.into())
+        }
+    }
+    impl<P: Part + 'static> BestMetricTreeNode for Position<P> {
+        type Metric = Cost;
+
+        fn end_state(&self) -> bool {
+            Amphipod::iter().all(|a| {
+                P::board().room_spaces[a]
+                    .iter()
+                    .all(|n| self.positions[a].contains(n))
+            })
+        }
+
+        fn children(
+            &self,
+            _cumulative_cost: &Self::Metric,
+        ) -> Vec<aoc::tree_search::MetricChild<Self>> {
+            // NOTE: One principle we follow that is not a rule, we never move an amphipod only partially into
             // a room, we always go as deep as possible. Likewise we never move an amphipod to a different space
             // in the same room.
             let mut moves = Vec::new();
@@ -538,86 +557,15 @@ mod solution {
                         let mut new_position = self.clone();
                         new_position.move_amphipod(own_amph, own_space_node, node);
 
-                        moves.push(Move {
-                            energy: own_amph.required_energy() * u64::from(distance),
+                        moves.push(MetricChild::new(
                             new_position,
-                        })
+                            (own_amph.required_energy() * u64::from(distance)).into(),
+                        ))
                     }
                 }
             }
 
             moves
-        }
-
-        /// Runs a recursive algorithm to determine the minimum energy needed
-        /// to solve from this position, that is to return all amphipods to their
-        /// home rooms.
-        pub fn minimal_energy(self) -> AocResult<u64> {
-            /// Internal trait for [`Position::minimal_energy`] that updates a minimum
-            /// value.
-            trait Min<T> {
-                /// Updates with a new minimum if it is less than the current minimum.
-                fn update_min(&mut self, v: T);
-            }
-            impl Min<u64> for Option<u64> {
-                fn update_min(&mut self, v: u64) {
-                    *self = match self {
-                        Some(mv) => Some((*mv).min(v)),
-                        None => Some(v),
-                    };
-                }
-            }
-
-            /// This is a recursive internal function for [`Position::minimal_energy`].
-            fn rec<P: Part + 'static>(
-                position: Position<P>,
-                seen: &mut HashMap<Position<P>, Option<u64>>,
-                mut global_min_energy: Option<u64>,
-                current_energy: u64,
-                _level: u16,
-            ) -> Option<u64> {
-                // Are we in a solved position?
-                if position.solved() {
-                    //println!("Level {_level}: Solved!");
-                    return Some(0);
-                }
-
-                // Have we seen this state before?
-                if let Some(e) = seen.get(&position) {
-                    return *e;
-                }
-
-                // Are we already a larger energy than the global minimum?
-                if let Some(e) = global_min_energy && current_energy >= e {
-                    return None;
-                }
-
-                //println!("Level {_level}:\n{}", position);
-
-                // Recurse for each possible move
-                let mut min_energy: Option<u64> = None;
-                for mv in position.moves() {
-                    if let Some(e) = rec(
-                        mv.new_position,
-                        seen,
-                        global_min_energy,
-                        current_energy + mv.energy,
-                        _level + 1,
-                    ) {
-                        min_energy.update_min(e + mv.energy);
-                        if let Some(me) = min_energy {
-                            global_min_energy.update_min(me);
-                        }
-                    }
-                }
-
-                // Mark this position as seen
-                seen.insert(position, min_energy);
-
-                min_energy
-            }
-
-            rec(self, &mut HashMap::new(), None, 0, 0).ok_or(AocError::NoSolution)
         }
     }
 }
@@ -628,6 +576,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 23,
     name: "Amphipod",
+    // TODO clone instead of parse twice, or else just clone in minimal_energy
     preprocessor: None,
     solvers: &[
         // Part one

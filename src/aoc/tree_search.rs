@@ -3,6 +3,7 @@
 //! TODO
 
 use derive_new::new;
+use num::PrimInt;
 
 use std::{collections::HashMap, hash::Hash, ops::Add};
 
@@ -57,6 +58,7 @@ pub trait Metric: Add<Output = Self> + Copy {
     }
 }
 
+#[derive(new)]
 pub struct MetricChild<N: BestMetricTreeNode> {
     node: N,
     cost: N::Metric,
@@ -75,11 +77,15 @@ impl<M: Metric> Default for MetricBest<M> {
 }
 
 pub trait BestMetricTreeNode: Sized {
-    type Metric: Metric;
+    type Metric: Metric + std::fmt::Debug;
 
     fn end_state(&self) -> bool;
 
     fn children(&self, cumulative_cost: &Self::Metric) -> Vec<MetricChild<Self>>;
+
+    fn minimal_cost(self) -> Self::Metric {
+        self.search_tree().0
+    }
 }
 impl<N: BestMetricTreeNode> TreeNode for N {
     type DownwardState = MetricCost<N::Metric>;
@@ -95,9 +101,14 @@ impl<N: BestMetricTreeNode> TreeNode for N {
         if self.end_state() {
             // We are at an end node so update global best if we beat it
             global_state.0.update_if_better(downward_state.0);
+            //println!("TODO End node! {:?}", global_state.0);
             vec![]
         } else if global_state.0.is_better(&downward_state.0) {
             // Our cost is already too high so just stop
+            /* println!(
+                "TODO Stopped early {:?} {:?}!",
+                global_state.0, downward_state.0,
+            ); */
             vec![]
         } else {
             self.children(&downward_state.0)
