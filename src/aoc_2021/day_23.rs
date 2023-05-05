@@ -465,10 +465,7 @@ mod solution {
             })
         }
 
-        fn children(
-            &self,
-            _cumulative_cost: &Self::Metric,
-        ) -> Vec<aoc::tree_search::MetricChild<Self>> {
+        fn children(&self, _cumulative_cost: &Self::Metric) -> Vec<MetricChild<Self>> {
             // NOTE: One principle we follow that is not a rule, we never move an amphipod only partially into
             // a room, we always go as deep as possible. Likewise we never move an amphipod to a different space
             // in the same room.
