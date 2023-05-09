@@ -63,8 +63,13 @@ mod tests {
 
 /// Contains solution implementation items.
 mod solution {
-    use std::collections::HashMap;
-    use std::ops::{Add, Sub};
+    use std::{
+        fmt,
+        ops::{Add, Sub},
+    };
+
+    use aoc::tree_search::{CountLeaves, GlobalStateTreeNode};
+    use derive_new::new;
 
     use super::*;
 
@@ -73,6 +78,11 @@ mod solution {
     struct Adapter {
         /// The output joltage of the adapter.
         output_joltage: u32,
+    }
+    impl fmt::Debug for Adapter {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            self.output_joltage.fmt(f)
+        }
     }
     impl From<u32> for Adapter {
         fn from(value: u32) -> Self {
@@ -90,6 +100,7 @@ mod solution {
     }
 
     /// Difference between two adapters.
+    #[derive(Debug)]
     enum AdapterDifference {
         /// Output joltage difference between adapters is too large.
         Incompatible,
@@ -113,6 +124,52 @@ mod solution {
             } else {
                 AdapterDifference::Compatible(diff)
             }
+        }
+    }
+
+    // TODO DELETE
+    #[derive(new)]
+    struct AdapterNode<'a> {
+        #[new(value = "&set.adapters[0]")]
+        adapter: &'a Adapter,
+        set: &'a AdapterSet,
+    }
+    impl<'a> AdapterNode<'a> {
+        fn children(&self) -> &'a [Adapter] {
+            // Find the index of the adapter just after this one.
+            let start = self
+                .set
+                .adapters
+                .iter()
+                .position(|a| a == self.adapter)
+                .unwrap()
+                + 1;
+            // Find index of the first adapter after this one that's not compatible.
+            let len = self
+                .set
+                .adapters
+                .iter()
+                .skip(start)
+                .position(|a| !(*a - *self.adapter).is_compatible())
+                .unwrap_or(0);
+            &self.set.adapters[start..(start + len)]
+        }
+    }
+    impl GlobalStateTreeNode for AdapterNode<'_> {
+        type GlobalState = CountLeaves;
+
+        fn apply_to_state(&self) -> bool {
+            self.children().is_empty()
+        }
+
+        fn node_children(&self) -> Vec<Self> {
+            self.children()
+                .into_iter()
+                .map(|a| Self {
+                    adapter: a,
+                    set: self.set,
+                })
+                .collect()
         }
     }
 
@@ -171,9 +228,17 @@ mod solution {
 
         /// Counts the number of possible arrangements of the adapters.
         pub fn count_arrangements(&self) -> usize {
+            // TODO DELETE
+            //AdapterNode::new(self).traversal_state().count()
+
+            // NOTE: We could theoretically use aoc::tree_search::GlobalStateTreeNode along with
+            // the CountLeaves global state, but the tree is far to large so that the below special
+            // algorithm is needed to solve in a reasonable time.
+
             // For each adapter we store the number of variations between it and the device
             // if we were to keep the adapter chain between it and the outlet.
-            let mut variations: HashMap<Adapter, usize> = HashMap::new();
+            let mut variations: std::collections::HashMap<Adapter, usize> =
+                std::collections::HashMap::new();
             // The previous recent number of variations
             let mut last_var = 1;
 

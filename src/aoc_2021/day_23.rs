@@ -432,7 +432,7 @@ mod solution {
         /// to solve from this position, that is to return all amphipods to their
         /// home rooms.
         pub fn minimal_energy(self) -> AocResult<u64> {
-            match self.minimal_cost().0 {
+            match self.best_metric().0 {
                 Infinitable::Finite(e) => Ok(e),
                 _ => Err(AocError::NoSolution),
             }
@@ -573,14 +573,13 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 23,
     name: "Amphipod",
-    // TODO clone instead of parse twice, or else just clone in minimal_energy
+    // NOTE: Cannot pre-parse because each Position has a generic part.
     preprocessor: None,
     solvers: &[
         // Part one
         |input| {
             // Generation
-            let pos: solution::Position<PartOne> =
-                solution::Position::from_str(input.expect_input()?)?;
+            let pos: Position<PartOne> = Position::from_str(input.expect_input()?)?;
 
             // Process
             Ok(pos.minimal_energy()?.into())
@@ -588,8 +587,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let pos: solution::Position<PartTwo> =
-                solution::Position::from_str(input.expect_input()?)?;
+            let pos: Position<PartTwo> = Position::from_str(input.expect_input()?)?;
 
             // Process
             Ok(pos.minimal_energy()?.into())

@@ -3,9 +3,8 @@
 //! TODO
 
 use derive_new::new;
-use itertools::Itertools;
 
-use std::{cell::RefCell, collections::HashMap, ops::Add, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, fmt, ops::Add, rc::Rc};
 
 // TODO: Can we make the general stuff private if we can cover all use cases with more specific implementations?
 
@@ -20,7 +19,7 @@ trait TreeUpwardState<N: TreeNode>: Sized {
 
     fn stop(&self, current: &Child<N>) -> Option<Self>;
 
-    fn incorporate_child(&mut self, current: &Child<N>, child_state: Self);
+    fn incorporate_child(&mut self, current: &Child<N>, child_upward_state: Self);
 
     fn finalize(&mut self, current: Child<N>);
 }
@@ -112,12 +111,7 @@ impl<N: BestMetricTreeNode> Default for MetricDownwardState<N> {
 
 fn level_spaces(level: usize) -> String {
     let mut id = ID_COUNTER.write().unwrap();
-    let s = format!(
-        "{}ID_{} {}:",
-        (0..level).map(|_| "    ").join(""),
-        id,
-        level,
-    );
+    let s = format!("{}ID_{} {}:", "    ".repeat(level), id, level,);
     *id += 1;
     s
 }
@@ -196,13 +190,13 @@ impl<N: BestMetricTreeNode + std::fmt::Debug> TreeUpwardState<N> for BestMetric<
         })
     }
 
-    fn incorporate_child(&mut self, current: &Child<N>, child: Self) {
-        self.0.update_if_better(child.0);
+    fn incorporate_child(&mut self, current: &Child<N>, child_upward_state: Self) {
+        self.0.update_if_better(child_upward_state.0);
         if TODO {
             println!(
                 "{} TODO Incorporated child: best for child + this {:?} updated best: {:?}",
                 level_spaces(current.state._level),
-                child.0,
+                child_upward_state.0,
                 self.0
             )
         }
@@ -240,7 +234,7 @@ pub trait BestMetricTreeNode: Sized + Eq + std::hash::Hash + std::fmt::Debug {
 
     fn children(&self, cumulative_cost: &Self::Metric) -> Vec<MetricChild<Self>>;
 
-    fn minimal_cost(self) -> Self::Metric {
+    fn best_metric(self) -> Self::Metric {
         self.search_tree().0
     }
 }
@@ -276,15 +270,99 @@ impl<N: BestMetricTreeNode + std::fmt::Debug> TreeNode for N {
     }
 }
 
+mod private {
+    use super::*;
+
+    pub struct GlobalUpwardState<N: GlobalStateTreeNode>(pub Rc<RefCell<N::GlobalState>>);
+    impl<N: GlobalStateTreeNode> TreeUpwardState<GlobalStateNode<N>> for GlobalUpwardState<N> {
+        fn new(current: &Child<GlobalStateNode<N>>) -> Self {
+            Self(current.state.clone())
+        }
+
+        fn stop(&self, current: &Child<GlobalStateNode<N>>) -> Option<Self> {
+            // Never return early
+            None
+        }
+
+        fn incorporate_child(
+            &mut self,
+            current: &Child<GlobalStateNode<N>>,
+            child_upward_state: Self,
+        ) {
+            // Do nothing
+        }
+
+        fn finalize(&mut self, current: Child<GlobalStateNode<N>>) {
+            if current.node.0.apply_to_state() {
+                self.0
+                    .as_ref()
+                    .borrow_mut()
+                    .update_with_node(&current.node.0)
+            }
+        }
+    }
+
+    pub struct GlobalStateNode<N: GlobalStateTreeNode>(pub N);
+    impl<N: GlobalStateTreeNode> TreeNode for GlobalStateNode<N> {
+        type DownwardState = Rc<RefCell<N::GlobalState>>;
+        type UpwardState = GlobalUpwardState<N>;
+
+        fn node_children(&self, downward_state: &Self::DownwardState) -> Vec<Child<Self>> {
+            self.0
+                .node_children()
+                .into_iter()
+                .map(|node| Child::new(Self(node), downward_state.clone()))
+                .collect()
+        }
+    }
+}
+
+pub trait GlobalState<N>: Default + fmt::Debug {
+    fn update_with_node(&mut self, node: &N);
+}
+
+pub trait GlobalStateTreeNode: Sized {
+    type GlobalState: GlobalState<Self>;
+
+    fn node_children(&self) -> Vec<Self>;
+
+    fn apply_to_state(&self) -> bool {
+        true
+    }
+
+    fn traversal_state(self) -> Self::GlobalState {
+        Rc::try_unwrap(private::GlobalStateNode(self).search_tree().0)
+            .unwrap()
+            .into_inner()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct CountLeaves {
+    leaves: usize,
+}
+impl CountLeaves {
+    pub fn count(&self) -> usize {
+        self.leaves
+    }
+}
+impl<N: GlobalStateTreeNode> GlobalState<N> for CountLeaves {
+    fn update_with_node(&mut self, node: &N) {
+        self.leaves += 1;
+    }
+}
+
 // TODO: Potential uses
-// 2015 - 22 - RPG with spells (min MP used)
-// 2021 - 23 - Amphipods (Min energy)
+// X 2015 - 22 - RPG with spells (min MP used)
+// X 2021 - 23 - Amphipods (Min energy)
 //
 // 2020 - 10 - Part 2, Joltage adapters (Count solutions)
 // 2021 - 21 - Part 2, Dirac die (count of universes in which each player wins)
 //
 // 2020 - 20 - Part 1, Lining up images (Only care about first final solution)
 
+// TODO
+/*
 #[cfg(test)]
 mod tests {
     use infinitable::Infinitable;
@@ -432,4 +510,4 @@ mod tests {
     fn best_metric() {
         assert_eq!(NimState::default().minimal_cost(), 10.into());
     }
-}
+} */
