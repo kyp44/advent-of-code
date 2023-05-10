@@ -127,52 +127,6 @@ mod solution {
         }
     }
 
-    // TODO DELETE
-    #[derive(new)]
-    struct AdapterNode<'a> {
-        #[new(value = "&set.adapters[0]")]
-        adapter: &'a Adapter,
-        set: &'a AdapterSet,
-    }
-    impl<'a> AdapterNode<'a> {
-        fn children(&self) -> &'a [Adapter] {
-            // Find the index of the adapter just after this one.
-            let start = self
-                .set
-                .adapters
-                .iter()
-                .position(|a| a == self.adapter)
-                .unwrap()
-                + 1;
-            // Find index of the first adapter after this one that's not compatible.
-            let len = self
-                .set
-                .adapters
-                .iter()
-                .skip(start)
-                .position(|a| !(*a - *self.adapter).is_compatible())
-                .unwrap_or(0);
-            &self.set.adapters[start..(start + len)]
-        }
-    }
-    impl GlobalStateTreeNode for AdapterNode<'_> {
-        type GlobalState = CountLeaves;
-
-        fn apply_to_state(&self) -> bool {
-            self.children().is_empty()
-        }
-
-        fn node_children(&self) -> Vec<Self> {
-            self.children()
-                .into_iter()
-                .map(|a| Self {
-                    adapter: a,
-                    set: self.set,
-                })
-                .collect()
-        }
-    }
-
     /// The complete set of adapters, which can be parsed from text input.
     pub struct AdapterSet {
         /// The set of adapters in order of increasing output joltage.
@@ -228,9 +182,6 @@ mod solution {
 
         /// Counts the number of possible arrangements of the adapters.
         pub fn count_arrangements(&self) -> usize {
-            // TODO DELETE
-            //AdapterNode::new(self).traversal_state().count()
-
             // NOTE: We could theoretically use aoc::tree_search::GlobalStateTreeNode along with
             // the CountLeaves global state, but the tree is far to large so that the below special
             // algorithm is needed to solve in a reasonable time.
