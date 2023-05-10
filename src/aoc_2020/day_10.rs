@@ -68,9 +68,6 @@ mod solution {
         ops::{Add, Sub},
     };
 
-    use aoc::tree_search::{CountLeaves, GlobalStateTreeNode};
-    use derive_new::new;
-
     use super::*;
 
     /// An adapter with a particular output voltage.

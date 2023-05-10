@@ -99,7 +99,7 @@ mod metric {
     // Represent the best metric needed to solve from the associated position.
     pub struct BestMetric<N: BestMetricTreeNode>(pub N::Metric);
     impl<N: BestMetricTreeNode> TreeUpwardState<BestMetricNode<N>> for BestMetric<N> {
-        fn new(current: &Child<BestMetricNode<N>>) -> Self {
+        fn new(_current: &Child<BestMetricNode<N>>) -> Self {
             Self(N::Metric::INITIAL_BEST)
         }
 
@@ -134,7 +134,7 @@ mod metric {
 
         fn incorporate_child(
             &mut self,
-            current: &Child<BestMetricNode<N>>,
+            _current: &Child<BestMetricNode<N>>,
             child_upward_state: Self,
         ) {
             self.0.update_if_better(child_upward_state.0);
@@ -255,7 +255,7 @@ mod global {
 
         fn node_children(&self, downward_state: &Self::DownwardState) -> Vec<Child<Self>> {
             self.0
-                .node_children()
+                .node_children(&downward_state.as_ref().borrow())
                 .into_iter()
                 .map(|node| Child::new(Self(node), downward_state.clone()))
                 .collect()
@@ -270,31 +270,14 @@ pub trait GlobalState<N>: Default + fmt::Debug {
 pub trait GlobalStateTreeNode: Sized {
     type GlobalState: GlobalState<Self>;
 
-    fn node_children(&self) -> Vec<Self>;
+    fn node_children(&self, state: &Self::GlobalState) -> Vec<Self>;
 
-    fn apply_to_state(&self) -> bool {
-        true
-    }
+    fn apply_to_state(&self) -> bool;
 
     fn traversal_state(self) -> Self::GlobalState {
         Rc::try_unwrap(global::GlobalStateNode(self).search_tree().0)
             .unwrap()
             .into_inner()
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct CountLeaves {
-    leaves: usize,
-}
-impl CountLeaves {
-    pub fn count(&self) -> usize {
-        self.leaves
-    }
-}
-impl<N: GlobalStateTreeNode> GlobalState<N> for CountLeaves {
-    fn update_with_node(&mut self, node: &N) {
-        self.leaves += 1;
     }
 }
 

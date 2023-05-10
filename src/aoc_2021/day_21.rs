@@ -26,7 +26,10 @@ Player 2 starting position: 8";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::parse::field_line_parser;
+    use aoc::{
+        parse::field_line_parser,
+        tree_search::{GlobalState, GlobalStateTreeNode},
+    };
     use bare_metal_modulo::{MNum, OffsetNumC};
     use cgmath::{Vector2, Zero};
     use derive_new::new;
@@ -56,7 +59,7 @@ mod solution {
 
     /// The quantum Dirac die used in part two.
     #[derive(new)]
-    struct DiracDie {}
+    struct DiracDie;
     impl DiracDie {
         /// Rolls the die some number of times and returns a multi-set of the sums of the rolls.
         fn roll(&self, num_rolls: usize) -> HashMultiSet<u32> {
@@ -155,30 +158,108 @@ mod solution {
 
         /// Plays the game with Dirac die and return the number of universes in which the winning player wins.
         pub fn play_dirac(&self) -> u64 {
-            let rolls = DiracDie::new().roll(NUM_ROLLS_PER_TURN);
-
-            /// This is a recursive internal function of [`Game::play_dirac`] that takes the current game and returns
-            /// the number of universes in which each player wins the game.
-            fn play_dirac_rec(game: &Game, rolls: &HashMultiSet<u32>, turn: usize) -> Vector2<u64> {
-                let mut universes = Vector2::zero();
-                for r in rolls.distinct_elements() {
-                    let num_universes = u64::try_from(rolls.count_of(r)).unwrap();
-                    let mut game = game.clone();
-                    let player = &mut game.players[turn];
-                    player.move_player(*r);
-                    if player.score >= 21 {
-                        // This player has won in these universes
-                        universes[turn] += num_universes;
-                    } else {
-                        // Need to recurse
-                        universes += num_universes * play_dirac_rec(&game, rolls, 1 - turn);
-                    }
+            if false {
+                let state = GameNode {
+                    game: self.clone(),
+                    turn: 0,
+                    num_universes: 0,
                 }
-                universes
+                .traversal_state();
+                state.wins[0].max(state.wins[1])
+            } else {
+                let rolls = DiracDie::new().roll(NUM_ROLLS_PER_TURN);
+
+                /// This is a recursive internal function of [`Game::play_dirac`] that takes the current game and returns
+                /// the number of universes in which each player wins the game.
+                fn play_dirac_rec(
+                    game: &Game,
+                    rolls: &HashMultiSet<u32>,
+                    turn: usize,
+                ) -> Vector2<u64> {
+                    let mut universes = Vector2::zero();
+                    for r in rolls.distinct_elements() {
+                        let num_universes = u64::try_from(rolls.count_of(r)).unwrap();
+                        let mut game = game.clone();
+                        let player = &mut game.players[turn];
+                        player.move_player(*r);
+                        if player.score >= 21 {
+                            // This player has won in these universes
+                            universes[turn] += num_universes;
+                        } else {
+                            // Need to recurse
+                            universes += num_universes * play_dirac_rec(&game, rolls, 1 - turn);
+                        }
+                    }
+                    universes
+                }
+
+                let universes = play_dirac_rec(self, &rolls, 0);
+                universes[0].max(universes[1])
+            }
+        }
+    }
+
+    #[derive(Debug)]
+    struct GameGlobalState {
+        wins: [u64; 2],
+        rolls: HashMultiSet<u32>,
+    }
+    impl Default for GameGlobalState {
+        fn default() -> Self {
+            Self {
+                wins: [0; 2],
+                rolls: DiracDie::new().roll(NUM_ROLLS_PER_TURN),
+            }
+        }
+    }
+    impl GlobalState<GameNode> for GameGlobalState {
+        fn update_with_node(&mut self, node: &GameNode) {
+            self.wins[node.turn] += node.num_universes;
+        }
+    }
+
+    struct GameNode {
+        /// The current state of players.
+        game: Game,
+        // The player number that just moved to arrive at this state.
+        turn: usize,
+        // The total number of universes in which the current state occurs in this branch
+        num_universes: u64,
+    }
+    impl GameNode {
+        // Whether the current previously moved player won.
+        fn win(&self) -> bool {
+            self.game.players[self.turn].score >= 21
+        }
+    }
+    impl GlobalStateTreeNode for GameNode {
+        type GlobalState = GameGlobalState;
+
+        fn apply_to_state(&self) -> bool {
+            self.win()
+        }
+
+        fn node_children(&self, state: &Self::GlobalState) -> Vec<Self> {
+            if self.win() {
+                return vec![];
             }
 
-            let universes = play_dirac_rec(self, &rolls, 0);
-            universes[0].max(universes[1])
+            state
+                .rolls
+                .distinct_elements()
+                .map(|r| {
+                    let num_universes = u64::try_from(state.rolls.count_of(r)).unwrap();
+                    let turn = 1 - self.turn;
+                    let mut game = self.game.clone();
+                    game.players[self.turn].move_player(*r);
+
+                    Self {
+                        game,
+                        turn,
+                        num_universes: self.num_universes + num_universes,
+                    }
+                })
+                .collect()
         }
     }
 }
