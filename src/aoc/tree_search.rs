@@ -286,6 +286,6 @@ pub trait GlobalStateTreeNode: Sized {
 // X 2021 - 23 - Amphipods (Min energy)
 //
 // X 2020 - 10 - Part 2, Joltage adapters (Count solutions)
-// 2021 - 21 - Part 2, Dirac die (count of universes in which each player wins)
+// X 2021 - 21 - Part 2, Dirac die (count of universes in which each player wins)
 //
 // 2020 - 20 - Part 1, Lining up images (Only care about first final solution)

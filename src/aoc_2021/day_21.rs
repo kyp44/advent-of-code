@@ -174,19 +174,15 @@ mod solution {
                     rolls: &HashMultiSet<u32>,
                     turn: usize,
                 ) -> Vector2<u64> {
-                    giggles(game, turn);
                     let mut universes = Vector2::zero();
                     for r in rolls.distinct_elements().sorted() {
-                        gaggles(r);
                         let num_universes = u64::try_from(rolls.count_of(r)).unwrap();
                         let mut game = game.clone();
                         let player = &mut game.players[turn];
                         player.move_player(*r);
                         if player.score >= DIRAC_WINNING_SCORE {
                             // This player has won in these universes
-                            giggles(&game, 1 - turn);
                             universes[turn] += num_universes;
-                            terminus(turn, universes[turn]);
                         } else {
                             // Need to recurse
                             universes += num_universes * play_dirac_rec(&game, rolls, 1 - turn);
@@ -217,7 +213,6 @@ mod solution {
     impl GlobalState<GameNode> for GameGlobalState {
         fn update_with_node(&mut self, node: &GameNode) {
             self.num_universes_wins[node.turn] += node.num_universes;
-            terminus(node.turn, self.num_universes_wins[node.turn]);
         }
     }
 
@@ -226,8 +221,6 @@ mod solution {
         game: Game,
         // The player number that just moved to arrive at this state.
         turn: usize,
-        // TODO
-        roll: u32,
         // The total number of universes in which the current state occurs in this branch
         num_universes: u64,
     }
@@ -242,7 +235,6 @@ mod solution {
             Self {
                 game: value,
                 turn: 1,
-                roll: 0,
                 num_universes: 1,
             }
         }
@@ -255,9 +247,6 @@ mod solution {
         }
 
         fn node_children(&self, state: &Self::GlobalState) -> Vec<Self> {
-            gaggles(&self.roll);
-            giggles(&self.game, 1 - self.turn);
-
             if self.win() {
                 return vec![];
             }
@@ -275,32 +264,11 @@ mod solution {
                     Self {
                         game,
                         turn,
-                        roll: *r,
                         num_universes: self.num_universes * num_universes,
                     }
                 })
                 .collect()
         }
-    }
-
-    use std::cell::RefCell;
-    thread_local! {
-        static NUM: RefCell<u64> = RefCell::new(0);
-    }
-
-    fn giggles(game: &Game, turn: usize) {
-        /* NUM.with(|rn| {
-            let mut rn = rn.borrow_mut();
-            *rn += 1;
-            println!("TODO Recursion {}", rn);
-            println!("Turn {turn}, Game: {game:?}");
-        }); */
-    }
-    fn gaggles(roll: &u32) {
-        // println!("Roll: {roll}");
-    }
-    fn terminus(winner: usize, universes: u64) {
-        //println!("Player {winner} won in a total of {universes} universes!");
     }
 }
 
