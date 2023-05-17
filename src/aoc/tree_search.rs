@@ -158,14 +158,17 @@ mod metric {
                 return TreeAction::Stop(BestMetric(bm.clone() + downward_state.node_cost));
             }
 
-            match self.0.children(&downward_state.cumulative_cost) {
-                BestMetricAction::Stop => {
+            match self.0.recurse_action(&downward_state.cumulative_cost) {
+                BestMetricAction::StopSuccess => {
                     // Update global if better.
                     global_state
                         .best_metric
                         .update_if_better(downward_state.cumulative_cost);
 
-                    return TreeAction::Stop(BestMetric(downward_state.node_cost));
+                    TreeAction::Stop(BestMetric(downward_state.node_cost))
+                }
+                BestMetricAction::StopFailure => {
+                    TreeAction::Stop(BestMetric(N::Metric::INITIAL_BEST))
                 }
                 BestMetricAction::Continue(children) => TreeAction::Continue(
                     children
@@ -210,14 +213,15 @@ pub struct MetricChild<N: BestMetricTreeNode> {
 }
 
 pub enum BestMetricAction<N: BestMetricTreeNode> {
-    Stop,
+    StopSuccess,
+    StopFailure,
     Continue(Vec<MetricChild<N>>),
 }
 
 pub trait BestMetricTreeNode: Sized + Eq + std::hash::Hash {
     type Metric: Metric;
 
-    fn children(&self, cumulative_cost: &Self::Metric) -> BestMetricAction<Self>;
+    fn recurse_action(&self, cumulative_cost: &Self::Metric) -> BestMetricAction<Self>;
 
     fn best_metric(self) -> Self::Metric {
         metric::BestMetricNode(self).traverse_tree().0
@@ -254,13 +258,19 @@ mod global {
 
         fn recurse_action(&self, downward_state: &Self::DownwardState) -> TreeAction<Self> {
             let mut global_state = downward_state.as_ref().borrow_mut();
+            let done_action = TreeAction::Stop(GlobalUpwardState(downward_state.clone()));
 
-            match self.0.node_children(&global_state) {
+            // Have we completed traversal?
+            if global_state.complete() {
+                return done_action;
+            }
+
+            match self.0.recurse_action(&global_state) {
                 GlobalAction::Apply => {
                     global_state.update_with_node(&self.0);
-                    TreeAction::Stop(GlobalUpwardState(downward_state.clone()))
+                    done_action
                 }
-                GlobalAction::Stop => TreeAction::Stop(GlobalUpwardState(downward_state.clone())),
+                GlobalAction::Stop => done_action,
                 GlobalAction::Continue(children) => TreeAction::Continue(
                     children
                         .into_iter()
@@ -274,6 +284,8 @@ mod global {
 
 pub trait GlobalState<N>: Default + fmt::Debug {
     fn update_with_node(&mut self, node: &N);
+
+    fn complete(&self) -> bool;
 }
 
 pub enum GlobalAction<N: GlobalStateTreeNode> {
@@ -285,12 +297,42 @@ pub enum GlobalAction<N: GlobalStateTreeNode> {
 pub trait GlobalStateTreeNode: Sized {
     type GlobalState: GlobalState<Self>;
 
-    fn node_children(&self, state: &Self::GlobalState) -> GlobalAction<Self>;
+    fn recurse_action(&self, state: &Self::GlobalState) -> GlobalAction<Self>;
 
     fn traverse_tree(self) -> Self::GlobalState {
         Rc::try_unwrap(global::GlobalStateNode(self).traverse_tree().0)
             .unwrap()
             .into_inner()
+    }
+}
+
+#[derive(Debug)]
+pub struct FirstSolutionGlobalState<N, S> {
+    state: S,
+    solution: Option<N>,
+}
+impl<N, S> FirstSolutionGlobalState<N, S> {
+    pub fn state(&mut self) -> &mut S {
+        &mut self.state
+    }
+}
+impl<N, S: Default> Default for FirstSolutionGlobalState<N, S> {
+    fn default() -> Self {
+        Self {
+            state: S::default(),
+            solution: None,
+        }
+    }
+}
+impl<N: GlobalStateTreeNode + Clone + fmt::Debug, S: Default + fmt::Debug> GlobalState<N>
+    for FirstSolutionGlobalState<N, S>
+{
+    fn update_with_node(&mut self, node: &N) {
+        self.solution = Some(node.clone());
+    }
+
+    fn complete(&self) -> bool {
+        self.solution.is_some()
     }
 }
 

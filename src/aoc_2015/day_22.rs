@@ -21,7 +21,7 @@ mod solution {
     use super::*;
     use aoc::{
         parse::field_line_parser,
-        tree_search::{BestMetricTreeNode, Metric, MetricChild},
+        tree_search::{BestMetricAction, BestMetricTreeNode, Metric, MetricChild},
     };
     use derive_more::Add;
     use derive_new::new;
@@ -304,8 +304,7 @@ mod solution {
     }
 
     /// The characters involved in a battle.
-    /// TODO: Remove Debug once not needed.
-    #[derive(Clone, new, PartialEq, Eq, Hash, Debug)]
+    #[derive(Clone, new, PartialEq, Eq, Hash)]
     pub struct Characters {
         // Whether or not we are in hard mode (Part two).
         #[new(value = "false")]
@@ -343,15 +342,12 @@ mod solution {
     impl BestMetricTreeNode for Characters {
         type Metric = Mana;
 
-        fn end_state(&self) -> bool {
+        fn recurse_action(&self, _cumulative_cost: &Self::Metric) -> BestMetricAction<Self> {
             // Only count victory if the boss is dead
-            self.boss.dead()
-        }
+            if self.boss.dead() {
+                return BestMetricAction::StopSuccess;
+            }
 
-        fn children(
-            &self,
-            _cumulative_cost: &Self::Metric,
-        ) -> Vec<aoc::tree_search::MetricChild<Self>> {
             let mut player = self.player.clone();
 
             // If in hard mode the player takes damage no matter.
@@ -361,31 +357,33 @@ mod solution {
 
             // If the player is dead than we are done and we lost.
             if player.dead() {
-                return vec![];
+                return BestMetricAction::StopFailure;
             }
 
-            Spell::iter()
-                .filter_map(|spell| {
-                    let mut player = player.clone();
-                    let mut boss = self.boss.clone();
-                    let cost = spell.cost();
+            BestMetricAction::Continue(
+                Spell::iter()
+                    .filter_map(|spell| {
+                        let mut player = player.clone();
+                        let mut boss = self.boss.clone();
+                        let cost = spell.cost();
 
-                    if player.turn_cast(spell, &mut boss) {
-                        boss.turn_attack(&mut player);
+                        if player.turn_cast(spell, &mut boss) {
+                            boss.turn_attack(&mut player);
 
-                        Some(MetricChild::new(
-                            Characters {
-                                hard_mode: self.hard_mode,
-                                player,
-                                boss,
-                            },
-                            cost.into(),
-                        ))
-                    } else {
-                        None
-                    }
-                })
-                .collect()
+                            Some(MetricChild::new(
+                                Characters {
+                                    hard_mode: self.hard_mode,
+                                    player,
+                                    boss,
+                                },
+                                cost.into(),
+                            ))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect(),
+            )
         }
     }
 }

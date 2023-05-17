@@ -28,10 +28,9 @@ mod solution {
     use super::*;
     use aoc::{
         parse::field_line_parser,
-        tree_search::{GlobalState, GlobalStateTreeNode},
+        tree_search::{GlobalAction, GlobalState, GlobalStateTreeNode},
     };
     use bare_metal_modulo::{MNum, OffsetNumC};
-    use cgmath::{Vector2, Zero};
     use derive_new::new;
     use itertools::Itertools;
     use multiset::HashMultiSet;
@@ -161,39 +160,8 @@ mod solution {
 
         /// Plays the game with Dirac die and return the number of universes in which the winning player wins.
         pub fn play_dirac(&self) -> u64 {
-            if true {
-                let state = GameNode::from(self.clone()).traversal_state();
-                state.num_universes_wins[0].max(state.num_universes_wins[1])
-            } else {
-                let rolls = DiracDie::new().roll(NUM_ROLLS_PER_TURN);
-
-                /// This is a recursive internal function of [`Game::play_dirac`] that takes the current game and returns
-                /// the number of universes in which each player wins the game.
-                fn play_dirac_rec(
-                    game: &Game,
-                    rolls: &HashMultiSet<u32>,
-                    turn: usize,
-                ) -> Vector2<u64> {
-                    let mut universes = Vector2::zero();
-                    for r in rolls.distinct_elements().sorted() {
-                        let num_universes = u64::try_from(rolls.count_of(r)).unwrap();
-                        let mut game = game.clone();
-                        let player = &mut game.players[turn];
-                        player.move_player(*r);
-                        if player.score >= DIRAC_WINNING_SCORE {
-                            // This player has won in these universes
-                            universes[turn] += num_universes;
-                        } else {
-                            // Need to recurse
-                            universes += num_universes * play_dirac_rec(&game, rolls, 1 - turn);
-                        }
-                    }
-                    universes
-                }
-
-                let universes = play_dirac_rec(self, &rolls, 0);
-                universes[0].max(universes[1])
-            }
+            let state = GameNode::from(self.clone()).traverse_tree();
+            state.num_universes_wins[0].max(state.num_universes_wins[1])
         }
     }
 
@@ -213,6 +181,11 @@ mod solution {
     impl GlobalState<GameNode> for GameGlobalState {
         fn update_with_node(&mut self, node: &GameNode) {
             self.num_universes_wins[node.turn] += node.num_universes;
+        }
+
+        fn complete(&self) -> bool {
+            // Always traverse the entire tree
+            false
         }
     }
 
@@ -242,32 +215,30 @@ mod solution {
     impl GlobalStateTreeNode for GameNode {
         type GlobalState = GameGlobalState;
 
-        fn apply_to_state(&self) -> bool {
-            self.win()
-        }
-
-        fn node_children(&self, state: &Self::GlobalState) -> Vec<Self> {
+        fn recurse_action(&self, state: &Self::GlobalState) -> GlobalAction<Self> {
             if self.win() {
-                return vec![];
+                return GlobalAction::Apply;
             }
 
-            state
-                .rolls
-                .distinct_elements()
-                .sorted()
-                .map(|r| {
-                    let num_universes = u64::try_from(state.rolls.count_of(r)).unwrap();
-                    let turn = 1 - self.turn;
-                    let mut game = self.game.clone();
-                    game.players[turn].move_player(*r);
+            GlobalAction::Continue(
+                state
+                    .rolls
+                    .distinct_elements()
+                    .sorted()
+                    .map(|r| {
+                        let num_universes = u64::try_from(state.rolls.count_of(r)).unwrap();
+                        let turn = 1 - self.turn;
+                        let mut game = self.game.clone();
+                        game.players[turn].move_player(*r);
 
-                    Self {
-                        game,
-                        turn,
-                        num_universes: self.num_universes * num_universes,
-                    }
-                })
-                .collect()
+                        Self {
+                            game,
+                            turn,
+                            num_universes: self.num_universes * num_universes,
+                        }
+                    })
+                    .collect(),
+            )
         }
     }
 }

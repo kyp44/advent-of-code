@@ -24,7 +24,7 @@ mod solution {
     use super::*;
     use aoc::{
         parse::trim,
-        tree_search::{BestMetricTreeNode, Metric, MetricChild},
+        tree_search::{BestMetricAction, BestMetricTreeNode, Metric, MetricChild},
     };
     use derive_more::{Add, Deref, From};
     use enum_map::{Enum, EnumMap};
@@ -457,18 +457,19 @@ mod solution {
     impl<P: Part + 'static> BestMetricTreeNode for Position<P> {
         type Metric = Cost;
 
-        fn end_state(&self) -> bool {
-            Amphipod::iter().all(|a| {
-                P::board().room_spaces[a]
-                    .iter()
-                    .all(|n| self.positions[a].contains(n))
-            })
-        }
-
-        fn children(&self, _cumulative_cost: &Self::Metric) -> Vec<MetricChild<Self>> {
+        fn recurse_action(&self, _cumulative_cost: &Self::Metric) -> BestMetricAction<Self> {
             // NOTE: One principle we follow that is not a rule, we never move an amphipod only partially into
             // a room, we always go as deep as possible. Likewise we never move an amphipod to a different space
             // in the same room.
+
+            if Amphipod::iter().all(|a| {
+                P::board().room_spaces[a]
+                    .iter()
+                    .all(|n| self.positions[a].contains(n))
+            }) {
+                return BestMetricAction::StopSuccess;
+            }
+
             let mut moves = Vec::new();
 
             // Go through all amphipods at all (occupied) spaces
@@ -562,7 +563,7 @@ mod solution {
                 }
             }
 
-            moves
+            BestMetricAction::Continue(moves)
         }
     }
 }

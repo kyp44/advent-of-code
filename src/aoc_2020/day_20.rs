@@ -126,6 +126,7 @@ Tile 3079:
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use aoc::tree_search::{FirstSolutionGlobalState, GlobalAction, GlobalStateTreeNode};
     use cgmath::EuclideanSpace;
     use derive_more::{Deref, From, Into};
     use derive_new::new;
@@ -657,6 +658,75 @@ mod solution {
             Ok(iproduct!([0, size - 1], [0, size - 1])
                 .map(|(x, y)| self.get(&GridPoint::new(x, y)).unwrap().tile.id)
                 .product::<u64>())
+        }
+    }
+
+    #[derive(Default, Debug)]
+    struct TileMapState {
+        x: usize,
+        y: usize,
+    }
+    impl GlobalStateTreeNode for TileMap {
+        type GlobalState = FirstSolutionGlobalState<Self, TileMapState>;
+
+        fn recurse_action(
+            &self,
+            state: &Self::GlobalState,
+        ) -> aoc::tree_search::GlobalAction<Self> {
+            if self.remaining.is_empty() {
+                return GlobalAction::Apply;
+            }
+            //println!("Have :\n {:?}", map);
+
+            let (x, y) = (state.state().x, state.state().y);
+
+            for (tile_idx, tile) in self.remaining.iter().enumerate() {
+                for transform in Transform::iter() {
+                    /*println!(
+                        "Trying tile {} with transform {} at ({}, {})",
+                        tile.id, transform, x, y
+                    );*/
+                    let mut fits = true;
+                    // Do we need to match to the right side of the tile to the left?
+                    if x > 0 {
+                        let left_slot = self.get(&GridPoint::new(x - 1, y)).unwrap();
+                        if tile.get_edge(Edge::Left, transform)
+                            != left_slot.tile.get_edge(Edge::Right, left_slot.transform)
+                        {
+                            fits = false;
+                        }
+                    }
+                    // Do we need to match the top side of the tile with the bottom
+                    // side of the tile above?
+                    if y > 0 {
+                        let above_slot = self.get(&GridPoint::new(x, y - 1)).unwrap();
+                        if tile.get_edge(Edge::Top, transform)
+                            != above_slot.tile.get_edge(Edge::Bottom, above_slot.transform)
+                        {
+                            fits = false;
+                        }
+                    }
+
+                    if fits {
+                        // The tile fits, so place it and work on the next tile
+                        //println!("It fit!");
+                        let mut map = self.clone();
+                        map.set(&GridPoint::new(x, y), tile.clone(), transform);
+                        map.remaining.remove(tile_idx);
+                        let (x, y) = if x == map.size() - 1 {
+                            (0, y + 1)
+                        } else {
+                            (x + 1, y)
+                        };
+                        if let Some(map) = solve_slot(x, y, map) {
+                            return Some(map);
+                        }
+                    }
+                }
+            }
+
+            // Could not complete the map
+            None
         }
     }
 
