@@ -307,26 +307,20 @@ pub trait GlobalStateTreeNode: Sized {
 }
 
 #[derive(Debug)]
-pub struct FirstSolutionGlobalState<N, S> {
-    state: S,
+pub struct FirstSolutionGlobalState<N> {
     solution: Option<N>,
 }
-impl<N, S> FirstSolutionGlobalState<N, S> {
-    pub fn state(&mut self) -> &mut S {
-        &mut self.state
-    }
-}
-impl<N, S: Default> Default for FirstSolutionGlobalState<N, S> {
+impl<N> Default for FirstSolutionGlobalState<N> {
     fn default() -> Self {
-        Self {
-            state: S::default(),
-            solution: None,
-        }
+        Self { solution: None }
     }
 }
-impl<N: GlobalStateTreeNode + Clone + fmt::Debug, S: Default + fmt::Debug> GlobalState<N>
-    for FirstSolutionGlobalState<N, S>
-{
+impl<N> FirstSolutionGlobalState<N> {
+    pub fn solution(self) -> Option<N> {
+        self.solution
+    }
+}
+impl<N: GlobalStateTreeNode + Clone + fmt::Debug> GlobalState<N> for FirstSolutionGlobalState<N> {
     fn update_with_node(&mut self, node: &N) {
         self.solution = Some(node.clone());
     }
@@ -337,10 +331,17 @@ impl<N: GlobalStateTreeNode + Clone + fmt::Debug, S: Default + fmt::Debug> Globa
 }
 
 // TODO: Potential uses
+// 2015 - 19 - Part 2, making a medicine (Maybe can use best metric or global, otherwise custom or new)
 // X 2015 - 22 - RPG with spells (min MP used)
-// X 2021 - 23 - Amphipods (Min energy)
+// 2015 - 24 - ???
 //
-// X 2020 - 10 - Part 2, Joltage adapters (Count solutions)
+// 2020 - 07 - ???
+// X 2020 - 10 - Part 2, Joltage adapters (Cannot use due to optimization)
+// 2020 - 19 - ???
+// X 2020 - 20 - Part 1, Lining up images (Only care about first final solution)
+//
+// 2021 - 09 - ???
+// 2021 - 12 - ???
+// 2021 - 19 - ???
 // X 2021 - 21 - Part 2, Dirac die (count of universes in which each player wins)
-//
-// 2020 - 20 - Part 1, Lining up images (Only care about first final solution)
+// X 2021 - 23 - Amphipods (Min energy)

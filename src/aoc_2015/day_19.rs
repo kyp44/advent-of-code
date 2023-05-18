@@ -183,6 +183,11 @@ mod solution {
                 target: &str,
                 input: String,
             ) -> Option<u64> {
+                // TODO tree search notes:
+                // Constant: replacements, target
+                // Global state: bad_strs
+                // Upstream: Number of steps from this input to target
+                // Node: input
                 if input == target {
                     return Some(0);
                 } else if bad_strs.contains(&input) || input.contains(target) {

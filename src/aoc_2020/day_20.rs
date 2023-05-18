@@ -573,6 +573,8 @@ mod solution {
         remaining: Vec<Rc<Tile>>,
         /// The square grid of tile slots, which may be empty.
         slots: Grid<Option<TileSlot>>,
+        /// Current tile that needs to be placed when solving.
+        placement_tile: GridPoint,
     }
     impl fmt::Debug for TileMap {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -599,6 +601,7 @@ mod solution {
             TileMap {
                 remaining: tile_set.tiles.into_iter().map(Rc::new).collect(),
                 slots: Grid::default(GridSize::new(size, size)),
+                placement_tile: GridPoint::new(0, 0),
             }
         }
 
@@ -661,27 +664,26 @@ mod solution {
         }
     }
 
-    #[derive(Default, Debug)]
-    struct TileMapState {
-        x: usize,
-        y: usize,
-    }
     impl GlobalStateTreeNode for TileMap {
-        type GlobalState = FirstSolutionGlobalState<Self, TileMapState>;
+        type GlobalState = FirstSolutionGlobalState<Self>;
 
         fn recurse_action(
             &self,
-            state: &Self::GlobalState,
+            _state: &Self::GlobalState,
         ) -> aoc::tree_search::GlobalAction<Self> {
             if self.remaining.is_empty() {
                 return GlobalAction::Apply;
             }
             //println!("Have :\n {:?}", map);
 
-            let (x, y) = (state.state().x, state.state().y);
+            let (x, y) = (self.placement_tile.x, self.placement_tile.y);
 
-            for (tile_idx, tile) in self.remaining.iter().enumerate() {
-                for transform in Transform::iter() {
+            let children: Vec<Self> = self
+                .remaining
+                .iter()
+                .enumerate()
+                .cartesian_product(Transform::iter())
+                .filter_map(|((tile_idx, tile), transform)| {
                     /*println!(
                         "Trying tile {} with transform {} at ({}, {})",
                         tile.id, transform, x, y
@@ -718,15 +720,19 @@ mod solution {
                         } else {
                             (x + 1, y)
                         };
-                        if let Some(map) = solve_slot(x, y, map) {
-                            return Some(map);
-                        }
+                        map.placement_tile = GridPoint::new(x, y);
+                        Some(map)
+                    } else {
+                        None
                     }
-                }
-            }
+                })
+                .collect();
 
-            // Could not complete the map
-            None
+            if children.is_empty() {
+                GlobalAction::Stop
+            } else {
+                GlobalAction::Continue(children)
+            }
         }
     }
 
@@ -751,65 +757,10 @@ mod solution {
         ///
         /// Note that this is correct only up to rotations of the entire map.
         pub fn solve(self) -> AocResult<TileMap> {
-            let map = TileMap::new(self.tile_set);
-
-            /// This is a recursive internal function of [`Solver::solve`].
-            fn solve_slot(x: usize, y: usize, map: TileMap) -> Option<TileMap> {
-                if map.remaining.is_empty() {
-                    return Some(map);
-                }
-                //println!("Have :\n {:?}", map);
-
-                for (tile_idx, tile) in map.remaining.iter().enumerate() {
-                    for transform in Transform::iter() {
-                        /*println!(
-                            "Trying tile {} with transform {} at ({}, {})",
-                            tile.id, transform, x, y
-                        );*/
-                        let mut fits = true;
-                        // Do we need to match to the right side of the tile to the left?
-                        if x > 0 {
-                            let left_slot = map.get(&GridPoint::new(x - 1, y)).unwrap();
-                            if tile.get_edge(Edge::Left, transform)
-                                != left_slot.tile.get_edge(Edge::Right, left_slot.transform)
-                            {
-                                fits = false;
-                            }
-                        }
-                        // Do we need to match the top side of the tile with the bottom
-                        // side of the tile above?
-                        if y > 0 {
-                            let above_slot = map.get(&GridPoint::new(x, y - 1)).unwrap();
-                            if tile.get_edge(Edge::Top, transform)
-                                != above_slot.tile.get_edge(Edge::Bottom, above_slot.transform)
-                            {
-                                fits = false;
-                            }
-                        }
-
-                        if fits {
-                            // The tile fits, so place it and work on the next tile
-                            //println!("It fit!");
-                            let mut map = map.clone();
-                            map.set(&GridPoint::new(x, y), tile.clone(), transform);
-                            map.remaining.remove(tile_idx);
-                            let (x, y) = if x == map.size() - 1 {
-                                (0, y + 1)
-                            } else {
-                                (x + 1, y)
-                            };
-                            if let Some(map) = solve_slot(x, y, map) {
-                                return Some(map);
-                            }
-                        }
-                    }
-                }
-
-                // Could not complete the map
-                None
-            }
-
-            solve_slot(0, 0, map).ok_or(AocError::NoSolution)
+            TileMap::new(self.tile_set)
+                .traverse_tree()
+                .solution()
+                .ok_or(AocError::NoSolution)
         }
     }
 }
