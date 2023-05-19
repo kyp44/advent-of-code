@@ -59,7 +59,10 @@ HOHOHO";
 /// [this reddit post](https://www.reddit.com/r/adventofcode/comments/3xflz8/day_19_solutions/).
 mod solution {
     use super::*;
-    use aoc::parse::trim;
+    use aoc::{
+        parse::trim,
+        tree_search::{LeastStepsAction, LeastStepsTreeNode},
+    };
     use derive_new::new;
     use nom::{
         bytes::complete::tag, character::complete::alpha1, combinator::map,
@@ -98,6 +101,60 @@ mod solution {
         /// Creates a replacement from string slices.
         fn from_strs(from: &str, to: &str) -> Self {
             Self::new(from.to_string(), to.to_string())
+        }
+    }
+
+    #[derive(Debug)]
+    struct Molecule<'a> {
+        machine: &'a Machine,
+        current: String,
+        target: &'static str,
+    }
+    impl<'a> Molecule<'a> {
+        fn start(start_molecule: &'static str, machine: &'a Machine) -> Self {
+            Molecule {
+                machine,
+                current: machine.medicine.to_string(),
+                target: start_molecule,
+            }
+        }
+    }
+    impl PartialEq for Molecule<'_> {
+        fn eq(&self, other: &Self) -> bool {
+            self.current == other.current
+        }
+    }
+    impl Eq for Molecule<'_> {}
+    impl std::hash::Hash for Molecule<'_> {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+            self.current.hash(state);
+        }
+    }
+    impl LeastStepsTreeNode for Molecule<'_> {
+        fn recurse_action(&self) -> aoc::tree_search::LeastStepsAction<Self> {
+            if self.current == self.target {
+                return LeastStepsAction::StopSuccess;
+            } else if self.current.contains(self.target) {
+                // An assumption here is that the target string is not a part
+                // of any replacement to string, i.e. it cannot be further transformed.
+                // Thus, if it is in any non-equal string, this branch can be abandoned.
+                return LeastStepsAction::StopFailure;
+            }
+            //println!("{}", input);
+
+            // All replacements in the current string
+            LeastStepsAction::Continue(
+                self.machine
+                    .replacements
+                    .iter()
+                    .flat_map(|rep| self.current.individual_replacements(&rep.to, &rep.from))
+                    .map(|rep| Self {
+                        machine: self.machine,
+                        current: rep,
+                        target: self.target,
+                    })
+                    .collect(),
+            )
         }
     }
 
@@ -175,49 +232,52 @@ mod solution {
 
         /// Counts the number of replacement steps required to create a target molecule
         /// from a starting molecule.
-        pub fn number_of_steps(&self, target: &str, input: &str) -> Option<u64> {
-            /// This is a recursive internal function of [`Machine::number_of_steps`].
-            fn number_of_steps_rec(
-                replacements: &[Replacement],
-                bad_strs: &mut HashSet<String>,
-                target: &str,
-                input: String,
-            ) -> Option<u64> {
-                // TODO tree search notes:
-                // Constant: replacements, target
-                // Global state: bad_strs
-                // Upstream: Number of steps from this input to target
-                // Node: input
-                if input == target {
-                    return Some(0);
-                } else if bad_strs.contains(&input) || input.contains(target) {
-                    // An assumption here is that the target string is not a part
-                    // of any replacement to string, i.e. it cannot be further transformed.
-                    // Thus, if it is in any non-equal string, this branch can be abandoned.
-                    return None;
-                }
-                //println!("{}", input);
+        pub fn number_of_steps(&self, target: &'static str, input: &str) -> Option<u64> {
+            if false {
+                Molecule::start(target, self)
+                    .least_steps()
+                    .map(|steps| steps.try_into().unwrap())
+            } else {
+                // TODO: This branch needs to go away.
+                // This is a recursive internal function of [`Machine::number_of_steps`].
+                fn number_of_steps_rec(
+                    replacements: &[Replacement],
+                    bad_strs: &mut HashSet<String>,
+                    target: &str,
+                    input: String,
+                ) -> Option<u64> {
+                    if input == target {
+                        return Some(0);
+                    } else if bad_strs.contains(&input) || input.contains(target) {
+                        // An assumption here is that the target string is not a part
+                        // of any replacement to string, i.e. it cannot be further transformed.
+                        // Thus, if it is in any non-equal string, this branch can be abandoned.
+                        return None;
+                    }
+                    //println!("{}", input);
 
-                // Try replacements recursively
-                for rep in replacements.iter() {
-                    for rs in input.individual_replacements(&rep.to, &rep.from) {
-                        if let Some(i) = number_of_steps_rec(replacements, bad_strs, target, rs) {
-                            return Some(i + 1);
+                    // Try replacements recursively
+                    for rep in replacements.iter() {
+                        for rs in input.individual_replacements(&rep.to, &rep.from) {
+                            if let Some(i) = number_of_steps_rec(replacements, bad_strs, target, rs)
+                            {
+                                return Some(i + 1);
+                            }
                         }
                     }
+
+                    // This string cannot be turned into the target.
+                    bad_strs.insert(input);
+                    None
                 }
 
-                // This string cannot be turned into the target.
-                bad_strs.insert(input);
-                None
+                number_of_steps_rec(
+                    &self.replacements,
+                    &mut HashSet::new(),
+                    target,
+                    input.to_string(),
+                )
             }
-
-            number_of_steps_rec(
-                &self.replacements,
-                &mut HashSet::new(),
-                target,
-                input.to_string(),
-            )
         }
     }
 }

@@ -189,6 +189,7 @@ mod solution {
         }
     }
 
+    #[derive(Debug)]
     struct GameNode {
         /// The current state of players.
         game: Game,

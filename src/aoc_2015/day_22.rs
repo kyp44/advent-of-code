@@ -304,7 +304,7 @@ mod solution {
     }
 
     /// The characters involved in a battle.
-    #[derive(Clone, new, PartialEq, Eq, Hash)]
+    #[derive(Clone, Debug, new, PartialEq, Eq, Hash)]
     pub struct Characters {
         // Whether or not we are in hard mode (Part two).
         #[new(value = "false")]

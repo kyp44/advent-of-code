@@ -18,6 +18,7 @@ mod general {
     pub trait TreeUpwardState<N: TreeNode>: Sized {
         fn new(current: &Child<N>) -> Self;
 
+        // Return whether or not to stop and return the current upward state.
         fn incorporate_child(&mut self, current: &Child<N>, child_upward_state: Self);
 
         fn finalize(&mut self, current: Child<N>);
@@ -30,7 +31,7 @@ mod general {
 
     pub trait TreeNode: Sized {
         type DownwardState: Default;
-        type UpwardState: TreeUpwardState<Self>;
+        type UpwardState: TreeUpwardState<Self> + fmt::Debug;
 
         fn recurse_action(&self, downward_state: &Self::DownwardState) -> TreeAction<Self>;
 
@@ -41,16 +42,17 @@ mod general {
                 match current.node.recurse_action(&current.state) {
                     TreeAction::Stop(child_upward_state) => {
                         upward_state.incorporate_child(&current, child_upward_state);
+                        //println!("TODO WTF {:?}", upward_state);
                     }
                     TreeAction::Continue(children) => {
                         // Recurse for each leaf
                         for child in children {
                             upward_state.incorporate_child(&current, rec(child));
                         }
-                        upward_state.finalize(current);
                     }
                 }
 
+                upward_state.finalize(current);
                 upward_state
             }
 
@@ -104,6 +106,7 @@ mod metric {
     }
 
     // Represent the best metric needed to solve from the associated position.
+    #[derive(Debug)]
     pub struct BestMetric<N: BestMetricTreeNode>(pub N::Metric);
     impl<N: BestMetricTreeNode> TreeUpwardState<BestMetricNode<N>> for BestMetric<N> {
         fn new(_current: &Child<BestMetricNode<N>>) -> Self {
@@ -121,7 +124,8 @@ mod metric {
         fn finalize(&mut self, current: Child<BestMetricNode<N>>) {
             let mut global_state = current.state.global_state.as_ref().borrow_mut();
 
-            // Mark the seen metric as the best cost to solve from here
+            // Mark the seen metric as the best cost to solve from here, only if we haven't seen it before
+            let x = sdsdsglobal_state.seen.get(&current.node.0);
             global_state.seen.insert(current.node.0, self.0.clone());
 
             // Pass the best to solve from the previous position up
@@ -218,8 +222,8 @@ pub enum BestMetricAction<N: BestMetricTreeNode> {
     Continue(Vec<MetricChild<N>>),
 }
 
-pub trait BestMetricTreeNode: Sized + Eq + std::hash::Hash {
-    type Metric: Metric;
+pub trait BestMetricTreeNode: Sized + Eq + std::hash::Hash + fmt::Debug {
+    type Metric: Metric + fmt::Debug;
 
     fn recurse_action(&self, cumulative_cost: &Self::Metric) -> BestMetricAction<Self>;
 
@@ -232,6 +236,7 @@ mod global {
     use super::general::*;
     use super::*;
 
+    #[derive(Debug)]
     pub struct GlobalUpwardState<N: GlobalStateTreeNode>(pub Rc<RefCell<N::GlobalState>>);
     impl<N: GlobalStateTreeNode> TreeUpwardState<GlobalStateNode<N>> for GlobalUpwardState<N> {
         fn new(current: &Child<GlobalStateNode<N>>) -> Self {
@@ -294,7 +299,7 @@ pub enum GlobalAction<N: GlobalStateTreeNode> {
     Continue(Vec<N>),
 }
 
-pub trait GlobalStateTreeNode: Sized {
+pub trait GlobalStateTreeNode: Sized + fmt::Debug {
     type GlobalState: GlobalState<Self>;
 
     fn recurse_action(&self, state: &Self::GlobalState) -> GlobalAction<Self>;
@@ -327,6 +332,57 @@ impl<N: GlobalStateTreeNode + Clone + fmt::Debug> GlobalState<N> for FirstSoluti
 
     fn complete(&self) -> bool {
         self.solution.is_some()
+    }
+}
+
+mod least_steps {
+    use super::*;
+    use infinitable::Infinitable;
+
+    type LeastStepsMetric = Infinitable<usize>;
+    impl Metric for LeastStepsMetric {
+        const INITIAL_BEST: Self = Infinitable::Infinity;
+        const INITIAL_COST: Self = Infinitable::Finite(0);
+
+        fn is_better(&self, other: &Self) -> bool {
+            *self < *other
+        }
+    }
+
+    #[derive(Debug, Hash, PartialEq, Eq)]
+    pub struct LeastStepsNode<N: LeastStepsTreeNode>(pub N);
+    impl<N: LeastStepsTreeNode> BestMetricTreeNode for LeastStepsNode<N> {
+        type Metric = LeastStepsMetric;
+
+        fn recurse_action(&self, cumulative_cost: &Self::Metric) -> BestMetricAction<Self> {
+            match self.0.recurse_action() {
+                LeastStepsAction::StopSuccess => BestMetricAction::StopSuccess,
+                LeastStepsAction::StopFailure => BestMetricAction::StopFailure,
+                LeastStepsAction::Continue(children) => BestMetricAction::Continue(
+                    children
+                        .into_iter()
+                        .map(|child| MetricChild::new(Self(child), 1.into()))
+                        .collect(),
+                ),
+            }
+        }
+    }
+}
+
+pub enum LeastStepsAction<N> {
+    StopSuccess,
+    StopFailure,
+    Continue(Vec<N>),
+}
+
+pub trait LeastStepsTreeNode: Sized + fmt::Debug + Eq + std::hash::Hash {
+    fn recurse_action(&self) -> LeastStepsAction<Self>;
+
+    fn least_steps(self) -> Option<usize> {
+        match least_steps::LeastStepsNode(self).best_metric() {
+            infinitable::Infinitable::Finite(steps) => Some(steps),
+            _ => None,
+        }
     }
 }
 
