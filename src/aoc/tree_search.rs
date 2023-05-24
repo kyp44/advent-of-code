@@ -42,7 +42,6 @@ mod general {
                 match current.node.recurse_action(&current.state) {
                     TreeAction::Stop(child_upward_state) => {
                         upward_state.incorporate_child(&current, child_upward_state);
-                        //println!("TODO WTF {:?}", upward_state);
                     }
                     TreeAction::Continue(children) => {
                         // Recurse for each leaf
@@ -62,6 +61,8 @@ mod general {
 }
 
 mod metric {
+    use std::collections::hash_map::Entry;
+
     use super::general::*;
     use super::*;
 
@@ -81,6 +82,15 @@ mod metric {
             Self {
                 best_metric: N::Metric::INITIAL_BEST,
                 seen: HashMap::new(),
+            }
+        }
+    }
+    impl<N: BestMetricTreeNode> MetricGlobalState<N> {
+        fn solution_found(&self) -> Option<&N::Metric> {
+            if self.best_metric.is_better(&N::Metric::INITIAL_BEST) {
+                Some(&self.best_metric)
+            } else {
+                None
             }
         }
     }
@@ -124,18 +134,27 @@ mod metric {
         fn finalize(&mut self, current: Child<BestMetricNode<N>>) {
             let mut global_state = current.state.global_state.as_ref().borrow_mut();
 
-            // Mark the seen metric as the best cost to solve from here, only if we haven't seen it before
-            let x = sdsdsglobal_state.seen.get(&current.node.0);
-            global_state.seen.insert(current.node.0, self.0.clone());
+            // Mark the seen metric as the best cost to solve from here.
+            match global_state.seen.entry(current.node.0) {
+                Entry::Occupied(mut entry) => entry.get_mut().update_if_better(self.0),
+                Entry::Vacant(entry) => {
+                    entry.insert(self.0.clone());
+                }
+            }
 
-            // Pass the best to solve from the previous position up
-            self.0 = self.0 + current.state.node_cost;
+            // If selected and we already have a solution, just pass that up
+            if N::STOP_AT_FIRST && let Some(bm) = global_state.solution_found() {
+                self.0 = bm.clone();
+            } else {
+                // Update the global best cost if better for the total cost whose solution passes
+                // through this node.
+                global_state
+                    .best_metric
+                    .update_if_better(current.state.cumulative_cost + self.0);
 
-            // Update the global best cost if better for the total cost whose solution passes
-            // through this node.
-            global_state
-                .best_metric
-                .update_if_better(current.state.cumulative_cost + self.0)
+                // Pass up the best cost to solve from the previous position
+                self.0 = self.0 + current.state.node_cost;
+            }
         }
     }
 
@@ -144,8 +163,14 @@ mod metric {
         type DownwardState = MetricDownwardState<N>;
         type UpwardState = BestMetric<N>;
 
+        // The action should contain the best metric to solve from this node.
         fn recurse_action(&self, downward_state: &Self::DownwardState) -> TreeAction<Self> {
-            let mut global_state = downward_state.global_state.as_ref().borrow_mut();
+            let global_state = downward_state.global_state.as_ref().borrow_mut();
+
+            // If selected and we have already found a solution, then just stop
+            if N::STOP_AT_FIRST && global_state.solution_found().is_some() {
+                return TreeAction::Stop(BestMetric(N::Metric::INITIAL_BEST));
+            }
 
             // Is our cost already too high?
             if global_state
@@ -157,19 +182,13 @@ mod metric {
 
             // Have we seen this node already?
             if let Some(bm) = global_state.seen.get(&self.0) {
-                // Pass the best to solve from this node plus this node's cost, which is the best to solve
-                // from the parent
-                return TreeAction::Stop(BestMetric(bm.clone() + downward_state.node_cost));
+                // Pass the best to solve from this node
+                return TreeAction::Stop(BestMetric(bm.clone()));
             }
 
             match self.0.recurse_action(&downward_state.cumulative_cost) {
                 BestMetricAction::StopSuccess => {
-                    // Update global if better.
-                    global_state
-                        .best_metric
-                        .update_if_better(downward_state.cumulative_cost);
-
-                    TreeAction::Stop(BestMetric(downward_state.node_cost))
+                    TreeAction::Stop(BestMetric(N::Metric::INITIAL_COST))
                 }
                 BestMetricAction::StopFailure => {
                     TreeAction::Stop(BestMetric(N::Metric::INITIAL_BEST))
@@ -224,6 +243,7 @@ pub enum BestMetricAction<N: BestMetricTreeNode> {
 
 pub trait BestMetricTreeNode: Sized + Eq + std::hash::Hash + fmt::Debug {
     type Metric: Metric + fmt::Debug;
+    const STOP_AT_FIRST: bool = false;
 
     fn recurse_action(&self, cumulative_cost: &Self::Metric) -> BestMetricAction<Self>;
 
@@ -353,8 +373,9 @@ mod least_steps {
     pub struct LeastStepsNode<N: LeastStepsTreeNode>(pub N);
     impl<N: LeastStepsTreeNode> BestMetricTreeNode for LeastStepsNode<N> {
         type Metric = LeastStepsMetric;
+        const STOP_AT_FIRST: bool = N::STOP_AT_FIRST;
 
-        fn recurse_action(&self, cumulative_cost: &Self::Metric) -> BestMetricAction<Self> {
+        fn recurse_action(&self, _cumulative_cost: &Self::Metric) -> BestMetricAction<Self> {
             match self.0.recurse_action() {
                 LeastStepsAction::StopSuccess => BestMetricAction::StopSuccess,
                 LeastStepsAction::StopFailure => BestMetricAction::StopFailure,
@@ -376,6 +397,8 @@ pub enum LeastStepsAction<N> {
 }
 
 pub trait LeastStepsTreeNode: Sized + fmt::Debug + Eq + std::hash::Hash {
+    const STOP_AT_FIRST: bool = false;
+
     fn recurse_action(&self) -> LeastStepsAction<Self>;
 
     fn least_steps(self) -> Option<usize> {
@@ -387,16 +410,16 @@ pub trait LeastStepsTreeNode: Sized + fmt::Debug + Eq + std::hash::Hash {
 }
 
 // TODO: Potential uses
-// 2015 - 19 - Part 2, making a medicine (Maybe can use best metric or global, otherwise custom or new)
+// X 2015 - 19 - Part 2, making a medicine (New LeastStepsTreeNode)
 // X 2015 - 22 - RPG with spells (min MP used)
-// 2015 - 24 - ???
+// X 2015 - 24 - Sleight compartment packages (cannot use because recursive but not a tree)
 //
-// 2020 - 07 - ???
+// X 2020 - 07 - Recursive bags (recursive but not a tree)
 // X 2020 - 10 - Part 2, Joltage adapters (Cannot use due to optimization)
-// 2020 - 19 - ???
+// X 2020 - 19 - Recursive rule validation (Recursive but not easily a tree)
 // X 2020 - 20 - Part 1, Lining up images (Only care about first final solution)
 //
-// 2021 - 09 - ???
+// 2021 - 09 - Regions sizes in caves (recursive but not a tree)
 // 2021 - 12 - ???
 // 2021 - 19 - ???
 // X 2021 - 21 - Part 2, Dirac die (count of universes in which each player wins)

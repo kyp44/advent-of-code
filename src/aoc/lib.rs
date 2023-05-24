@@ -4,6 +4,7 @@
 #![feature(slice_pattern)]
 #![feature(assert_matches)]
 #![warn(missing_docs)]
+#![feature(let_chains)]
 #![warn(clippy::missing_docs_in_private_items)]
 
 pub mod evolver;

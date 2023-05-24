@@ -215,7 +215,7 @@ mod solution {
                             for nrn in mv.iter() {
                                 // Have we run out of string?
                                 if seq_rem.is_empty() {
-                                    // Apparently we disallow partial pattern mattern unless
+                                    // Apparently we disallow a partial pattern pattern unless
                                     // the partial match ended on a looped rule
                                     matched = last_rn == rule_num;
                                     break;

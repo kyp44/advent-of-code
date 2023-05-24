@@ -99,16 +99,20 @@ mod solution {
     }
     impl Replacement {
         /// Creates a replacement from string slices.
-        fn from_strs(from: &str, to: &str) -> Self {
+        fn from_strings(from: &str, to: &str) -> Self {
             Self::new(from.to_string(), to.to_string())
         }
     }
 
-    #[derive(Debug)]
     struct Molecule<'a> {
         machine: &'a Machine,
         current: String,
         target: &'static str,
+    }
+    impl fmt::Debug for Molecule<'_> {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "{}", self.current)
+        }
     }
     impl<'a> Molecule<'a> {
         fn start(start_molecule: &'static str, machine: &'a Machine) -> Self {
@@ -131,6 +135,8 @@ mod solution {
         }
     }
     impl LeastStepsTreeNode for Molecule<'_> {
+        const STOP_AT_FIRST: bool = true;
+
         fn recurse_action(&self) -> aoc::tree_search::LeastStepsAction<Self> {
             if self.current == self.target {
                 return LeastStepsAction::StopSuccess;
@@ -140,7 +146,6 @@ mod solution {
                 // Thus, if it is in any non-equal string, this branch can be abandoned.
                 return LeastStepsAction::StopFailure;
             }
-            //println!("{}", input);
 
             // All replacements in the current string
             LeastStepsAction::Continue(
@@ -192,9 +197,9 @@ mod solution {
 
             // Add meta-replacements for two-letter elements and special elements
             let mut meta_replacements = vec![
-                Replacement::from_strs("Rn", "("),
-                Replacement::from_strs("Y", ","),
-                Replacement::from_strs("Ar", ")"),
+                Replacement::from_strings("Rn", "("),
+                Replacement::from_strings("Y", ","),
+                Replacement::from_strings("Ar", ")"),
             ];
             for symbol in replacements.iter().map(|r| &r.from) {
                 if symbol.len() > 1 && meta_replacements.iter().all(|r| r.from != *symbol) {
@@ -232,52 +237,10 @@ mod solution {
 
         /// Counts the number of replacement steps required to create a target molecule
         /// from a starting molecule.
-        pub fn number_of_steps(&self, target: &'static str, input: &str) -> Option<u64> {
-            if false {
-                Molecule::start(target, self)
-                    .least_steps()
-                    .map(|steps| steps.try_into().unwrap())
-            } else {
-                // TODO: This branch needs to go away.
-                // This is a recursive internal function of [`Machine::number_of_steps`].
-                fn number_of_steps_rec(
-                    replacements: &[Replacement],
-                    bad_strs: &mut HashSet<String>,
-                    target: &str,
-                    input: String,
-                ) -> Option<u64> {
-                    if input == target {
-                        return Some(0);
-                    } else if bad_strs.contains(&input) || input.contains(target) {
-                        // An assumption here is that the target string is not a part
-                        // of any replacement to string, i.e. it cannot be further transformed.
-                        // Thus, if it is in any non-equal string, this branch can be abandoned.
-                        return None;
-                    }
-                    //println!("{}", input);
-
-                    // Try replacements recursively
-                    for rep in replacements.iter() {
-                        for rs in input.individual_replacements(&rep.to, &rep.from) {
-                            if let Some(i) = number_of_steps_rec(replacements, bad_strs, target, rs)
-                            {
-                                return Some(i + 1);
-                            }
-                        }
-                    }
-
-                    // This string cannot be turned into the target.
-                    bad_strs.insert(input);
-                    None
-                }
-
-                number_of_steps_rec(
-                    &self.replacements,
-                    &mut HashSet::new(),
-                    target,
-                    input.to_string(),
-                )
-            }
+        pub fn number_of_steps(&self, starting_molecule: &'static str) -> Option<u64> {
+            Molecule::start(starting_molecule, self)
+                .least_steps()
+                .map(|steps| steps.try_into().unwrap())
         }
     }
 }
@@ -302,7 +265,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             let machine = input.expect_data::<Machine>()?;
             Ok(machine
-                .number_of_steps("e", &machine.medicine)
+                .number_of_steps("e")
                 .ok_or(AocError::NoSolution)?
                 .into())
         },

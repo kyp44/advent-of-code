@@ -28,7 +28,7 @@ bare_metal_modulo = "1.2"
 bimap = "0.6"
 bitbuffer = "0.10"
 cgmath = "0.18"
-clap = {version = "4.2", features = ["derive", "string"]}
+clap = {version = "4.3", features = ["derive", "string"]}
 colored = "2.0"
 derive-new = "0.5"
 derive_more = "0.99"
