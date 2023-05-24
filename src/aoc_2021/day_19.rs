@@ -382,7 +382,7 @@ mod solution {
         /// The scanner number.
         number: u8,
         /// The beacon locations relative to this scanner.
-        points: Box<[Point]>,
+        beacon_points: Box<[Point]>,
     }
     impl FromStr for Scanner {
         type Err = AocError;
@@ -401,7 +401,10 @@ mod solution {
 
             let points = Point::gather(s.trim().lines())?.into_boxed_slice();
 
-            Ok(Self { number, points })
+            Ok(Self {
+                number,
+                beacon_points: points,
+            })
         }
     }
     impl PartialEq for Scanner {
@@ -424,14 +427,14 @@ mod solution {
             for rotation in RotationQuaternion::orientations() {
                 // Try every pairing of points to find the relative difference
                 let other_points: HashSet<Point> = other
-                    .points
+                    .beacon_points
                     .iter()
                     .map(|p| rotation.rotate_point(*p))
                     .collect();
-                for (ps, po) in iproduct!(self.points.iter(), other_points.iter()) {
+                for (ps, po) in iproduct!(self.beacon_points.iter(), other_points.iter()) {
                     let delta = *ps - *po;
                     if self
-                        .points
+                        .beacon_points
                         .iter()
                         .filter(|p| other_points.contains(&(**p - delta)))
                         .count()
@@ -478,20 +481,24 @@ mod solution {
             fn correlate_rec(
                 from: Rc<Scanner>,
                 scanners: &[Rc<Scanner>],
-                correlated: HashSet<Rc<Scanner>>,
+                correlated: &mut HashSet<Rc<Scanner>>,
             ) -> CorrelationMap {
                 // Try every scanner that is not already correlated
                 let mut correlations = CorrelationMap::new();
-                for to in scanners.iter().filter(|s| !correlated.contains(*s)) {
+                for to in scanners.iter() {
+                    // If we've already correlated this one then move on.
+                    if correlated.contains(to) {
+                        continue;
+                    }
+
                     if let Some(transposer) = from.try_to_correlate(to) {
                         // Add this to the list of correlated scanners
-                        let mut new_correlated = correlated.clone();
-                        new_correlated.insert(to.clone());
+                        correlated.insert(to.clone());
 
                         // Now recurse to get with which uncorrelated scanners this is also correlated
                         // and map these additional sub-correlations back to the original scanner.
                         correlations.extend(
-                            correlate_rec(to.clone(), scanners, new_correlated)
+                            correlate_rec(to.clone(), scanners, correlated)
                                 .into_iter()
                                 .map(|(s, t)| (s, transposer.clone().compose(t))),
                         );
@@ -507,7 +514,7 @@ mod solution {
             let mut correlations = correlate_rec(
                 self.scanners[0].clone(),
                 &self.scanners,
-                hashset![self.scanners[0].clone()],
+                &mut hashset![self.scanners[0].clone()],
             );
 
             // Add an identity correlation
@@ -530,7 +537,7 @@ mod solution {
                 .iter()
                 .flat_map(|(scanner, transposer)| {
                     scanner
-                        .points
+                        .beacon_points
                         .iter()
                         .map(|p| transposer.transpose_point(*p))
                 })

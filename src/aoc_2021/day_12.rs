@@ -59,6 +59,7 @@ start-RW";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use aoc::tree_search::{GlobalAction, GlobalState, GlobalStateTreeNode};
     use infinitable::Infinitable;
     use nom::{
         bytes::complete::tag, character::complete::alphanumeric1, combinator::map,
@@ -198,46 +199,15 @@ mod solution {
                 );
             }
 
-            /// This is a recursive internal function of [`CaveSystem::paths`].
-            ///
-            /// Given the cave system graph, a current cave node, and the remaining visits
-            /// for every cave, returns the set of possible paths from the current cave
-            /// to the ending cave.
-            fn paths_rec<'a>(
-                graph: &'a UnGraph<Cave, ()>,
-                index: NodeIndex,
-                visits_left: &HashMap<NodeIndex, Infinitable<usize>>,
-            ) -> HashSet<Vec<&'a Cave>> {
-                let mut paths = HashSet::new();
-                let cave = graph.node_weight(index).unwrap();
-
-                if cave.cave_type == CaveType::End {
-                    // We've reached the end so this is the only path
-                    paths.insert(vec![cave]);
-                } else {
-                    let num_visits = *visits_left.get(&index).unwrap();
-                    if num_visits > 0.into() {
-                        // We can visit this cave again, so first mark that it was visited.
-                        let mut visits_left = visits_left.clone();
-                        *visits_left.get_mut(&index).unwrap() = num_visits - 1.into();
-
-                        // Now go through connecting caves and recurse
-                        for next_cave in graph.neighbors(index).filter(|nc| {
-                            graph.node_weight(*nc).unwrap().cave_type != CaveType::Start
-                        }) {
-                            for mut path in paths_rec(graph, next_cave, &visits_left).into_iter() {
-                                // Prepend current cave to path and add the path.
-                                path.insert(0, cave);
-                                paths.insert(path);
-                            }
-                        }
-                    }
-                }
-
-                paths
+            // Perform the tree search.
+            PathTip {
+                graph: &self.graph,
+                tip: self.start,
+                visits_left,
+                path: vec![self.graph.node_weight(self.start).unwrap()],
             }
-
-            paths_rec(&self.graph, self.start, &visits_left)
+            .traverse_tree()
+            .paths
         }
 
         /// Determines and returns the set of all possible paths through the cave system,
@@ -254,6 +224,75 @@ mod solution {
             }
 
             paths
+        }
+    }
+
+    #[derive(Debug, Default)]
+    struct PathGlobalState<'a> {
+        paths: HashSet<Vec<&'a Cave>>,
+    }
+    impl<'a> GlobalState<PathTip<'a>> for PathGlobalState<'a> {
+        fn update_with_node(&mut self, node: &PathTip<'a>) {
+            self.paths.insert(node.path.clone());
+        }
+
+        fn complete(&self) -> bool {
+            // Never want the state to terminate recursion
+            false
+        }
+    }
+
+    #[derive(Debug)]
+    struct PathTip<'a> {
+        graph: &'a UnGraph<Cave, ()>,
+        tip: NodeIndex,
+        visits_left: HashMap<NodeIndex, Infinitable<usize>>,
+        // The path includes the current tip cave.
+        path: Vec<&'a Cave>,
+    }
+    impl<'a> GlobalStateTreeNode for PathTip<'a> {
+        type GlobalState = PathGlobalState<'a>;
+
+        fn recurse_action(
+            &self,
+            _state: &Self::GlobalState,
+        ) -> aoc::tree_search::GlobalAction<Self> {
+            let cave = self.graph.node_weight(self.tip).unwrap();
+
+            if cave.cave_type == CaveType::End {
+                // We've reached the end so add this path to the list.
+                GlobalAction::Apply
+            } else {
+                let num_visits = *self.visits_left.get(&self.tip).unwrap();
+                if num_visits > 0.into() {
+                    // We can visit this cave again, so first mark that it was visited.
+                    let mut visits_left = self.visits_left.clone();
+                    *visits_left.get_mut(&self.tip).unwrap() = num_visits - 1.into();
+
+                    // Now go through connecting caves and recurse
+                    GlobalAction::Continue(
+                        self.graph
+                            .neighbors(self.tip)
+                            .filter(|nc| {
+                                self.graph.node_weight(*nc).unwrap().cave_type != CaveType::Start
+                            })
+                            .map(|next_cave| Self {
+                                graph: self.graph,
+                                tip: next_cave,
+                                visits_left: visits_left.clone(),
+                                path: {
+                                    let mut path = self.path.clone();
+                                    path.push(cave);
+                                    path
+                                },
+                            })
+                            .collect(),
+                    )
+                } else {
+                    // Cannot visit this cave again so we're done
+                    GlobalAction::Stop
+                }
+            }
         }
     }
 }

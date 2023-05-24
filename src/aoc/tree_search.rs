@@ -419,8 +419,8 @@ pub trait LeastStepsTreeNode: Sized + fmt::Debug + Eq + std::hash::Hash {
 // X 2020 - 19 - Recursive rule validation (Recursive but not easily a tree)
 // X 2020 - 20 - Part 1, Lining up images (Only care about first final solution)
 //
-// 2021 - 09 - Regions sizes in caves (recursive but not a tree)
-// 2021 - 12 - ???
-// 2021 - 19 - ???
+// X 2021 - 09 - Regions sizes in caves (recursive but not a tree)
+// X 2021 - 12 - Paths through a cave system (uses GlobalStateTree)
+// X 2021 - 19 - Correlating scanners (recursive, but not easy to solve using tree, was able to optimize though)
 // X 2021 - 21 - Part 2, Dirac die (count of universes in which each player wins)
 // X 2021 - 23 - Amphipods (Min energy)
