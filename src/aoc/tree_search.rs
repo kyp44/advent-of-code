@@ -1,6 +1,12 @@
-//! Potentially exhaustive search of a tree.
+//! Potentially exhaustive search of a tree structure.
 //!
-//! TODO
+//! Provides traits that can be implemented by tree nodes to enable recursive searches
+//! of the tree. The different traits have different goals and provide different results when
+//! searching the tree.
+//!
+//! Examples of problems amenable to tree structures including one or multiplayer game trees,
+//! optimally solving a problem with a particular goal using a brute force search, etc.
+//! Refer to AOC problem solutions that utilize this module for more examples.
 
 use derive_new::new;
 
@@ -216,12 +222,24 @@ mod metric {
 
 use general::TreeNode;
 
+/// A metric for use with a [`BestMetricTreeNode`].
+///
+/// Typically metrics are numeric, often utilizing [`Infinitable`](infinitable::Infinitable) to have an
+/// initial infinite value denoting that no metric has yet been set. This works
+/// out based on the intuitive ordering of [`Infinitable`](infinitable::Infinitable) in that, for example,
+/// any finite number is always less than (i.e. a better metric if minimizing) than the initial infinite value.
 pub trait Metric: Add<Output = Self> + Copy {
+    /// The initial metric to set as the best when the tree search starts.
     const INITIAL_BEST: Self;
+    /// The initial cost when calculating cumulative costs of children at each step in a path.
+    ///
+    /// Typically this will be zero when the metric is numeric.
     const INITIAL_COST: Self;
 
+    /// Returns whether this metric is better than some `other` metric.
     fn is_better(&self, other: &Self) -> bool;
 
+    /// Sets this metric value to some other metric if the other is better.
     fn update_if_better(&mut self, other: Self) {
         if other.is_better(self) {
             *self = other;
@@ -229,24 +247,48 @@ pub trait Metric: Add<Output = Self> + Copy {
     }
 }
 
+/// A child of a [`BestMetricTreeNode`] for use with [`BestMetricAction::Continue`].
 #[derive(new)]
 pub struct MetricChild<N: BestMetricTreeNode> {
+    /// The node of the child.
     node: N,
+    /// The relative cost to go from the current node to the child node.
     cost: N::Metric,
 }
 
+/// An action to be returned by [`BestMetricTreeNode::recurse_action`].
 pub enum BestMetricAction<N: BestMetricTreeNode> {
+    /// This node is a successful terminal node in which the cumulative cost to get here is valid.
     StopSuccess,
+    /// This node is a failure terminal node in which the cumulative cost to get here should be disregarded.
     StopFailure,
+    /// This node has children into which the algorithm should recurse.
     Continue(Vec<MetricChild<N>>),
 }
 
+/// Implemented by a tree node, for which the tree search optimizes some [`Metric`].
+///
+/// Eeach transition from parent to child has an associated relative cost. Each path
+/// from the root node to each successful terminal node then has a total cost. It
+/// is this total cost that the tree search will optimize over the entire tree.
 pub trait BestMetricTreeNode: Sized + Eq + std::hash::Hash + fmt::Debug {
+    /// The [`Metric`] to use for costs and optimization.
     type Metric: Metric + fmt::Debug;
+    /// Instead of searching the entire tree, this will stop the algorithm early, returning
+    /// the total cost to the first success terminal node encountered.
     const STOP_AT_FIRST: bool = false;
 
+    /// Determines the action to take by the algorithm from the current node.
+    ///
+    /// The `cumulative_cost` of the current path is available, which includes the cost to
+    /// get to the current node.
     fn recurse_action(&self, cumulative_cost: &Self::Metric) -> BestMetricAction<Self>;
 
+    /// Searches the tree to find the optimal [`Metric`].
+    ///
+    /// The algorithm includes optimizations such as keeping a global best metric and aborting
+    /// a path if its cumulative cost becomes worse than the current best metric. The
+    /// optimal/best metric is returned after the search is complete.
     fn best_metric(self) -> Self::Metric {
         metric::BestMetricNode(self).traverse_tree().0
     }
@@ -265,13 +307,13 @@ mod global {
 
         fn incorporate_child(
             &mut self,
-            current: &Child<GlobalStateNode<N>>,
-            child_upward_state: Self,
+            _current: &Child<GlobalStateNode<N>>,
+            _child_upward_state: Self,
         ) {
             // Do nothing
         }
 
-        fn finalize(&mut self, current: Child<GlobalStateNode<N>>) {
+        fn finalize(&mut self, _current: Child<GlobalStateNode<N>>) {
             // Do nothing
         }
     }
