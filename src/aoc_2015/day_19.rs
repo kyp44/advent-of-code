@@ -104,9 +104,16 @@ mod solution {
         }
     }
 
+    /// A molecule, which is a node in the tree search.
+    ///
+    /// The tree search works backwards, from the molecule we are trying to make
+    /// to the starting molecule.
     struct Molecule<'a> {
+        /// The molecule making machine.
         machine: &'a Machine,
+        /// The current molecule string.
         current: String,
+        /// The target molecule, which is the starting molecule.
         target: &'static str,
     }
     impl fmt::Debug for Molecule<'_> {
@@ -115,6 +122,8 @@ mod solution {
         }
     }
     impl<'a> Molecule<'a> {
+        /// Returns the initial molecule, which is the molecule we want to make, for a given
+        /// `start_molecule` and molecule making `machine`.
         fn start(start_molecule: &'static str, machine: &'a Machine) -> Self {
             Molecule {
                 machine,
@@ -179,7 +188,7 @@ mod solution {
             let mut replacements = Replacement::gather(secs[0].lines())?;
 
             // For simplicity we replace all two-letter chemical names with a single
-            // and the special demarker chemicals (see notes above) with their characters,
+            // and the special marker chemicals (see notes above) with their characters,
             // making it so that every symbol is only a single character.
             let mut symbols = 'A'..'z';
             // Gets a new, unused single-letter symbol.

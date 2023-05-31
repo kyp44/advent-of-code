@@ -439,6 +439,7 @@ mod solution {
         }
     }
 
+    /// Wrapper structure that represents a relative or total cost to move amphipods.
     #[derive(Clone, Copy, Add, Debug)]
     pub struct Cost(Infinitable<u64>);
     impl Metric for Cost {

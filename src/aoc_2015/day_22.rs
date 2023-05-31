@@ -183,6 +183,7 @@ mod solution {
         }
     }
 
+    /// Possible spells the player can cast.
     #[enum_dispatch(SpellEffect)]
     #[derive(Clone, PartialEq, Eq, Hash)]
     enum Spell {
@@ -198,6 +199,7 @@ mod solution {
         }
     }
     impl Spell {
+        /// Returns an iterator over all spells in their default state.
         pub fn iter() -> impl Iterator<Item = Self> {
             [
                 MagicMissile::default().into(),
@@ -306,7 +308,7 @@ mod solution {
     /// The characters involved in a battle.
     #[derive(Clone, Debug, new, PartialEq, Eq, Hash)]
     pub struct Characters {
-        // Whether or not we are in hard mode (Part two).
+        /// Whether or not we are in hard mode (Part two).
         #[new(value = "false")]
         hard_mode: bool,
         /// The player.
@@ -315,6 +317,7 @@ mod solution {
         boss: Character,
     }
     impl Characters {
+        /// Searches the game tree to determine the minimal mana cost in which the player wins.
         pub fn minimal_mana_cost(mut self, hard_mode: bool) -> AocResult<u64> {
             self.hard_mode = hard_mode;
             match self.best_metric().0 {
@@ -324,6 +327,7 @@ mod solution {
         }
     }
 
+    /// Relative or cumulative mana cost for spells.
     #[derive(Clone, Copy, Debug, Add)]
     pub struct Mana(Infinitable<u32>);
     impl Metric for Mana {

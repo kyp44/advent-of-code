@@ -36,7 +36,9 @@ mod solution {
     use multiset::HashMultiSet;
     use nom::{combinator::map, sequence::pair};
 
+    /// The winning score needed to end a the game using the deterministic die.
     const DETERMINISTIC_WINNING_SCORE: u32 = 1000;
+    /// The winning score needed to end a the game using the Dirac die.
     const DIRAC_WINNING_SCORE: u32 = 21;
 
     /// The deterministic die used in part one.
@@ -165,9 +167,13 @@ mod solution {
         }
     }
 
+    /// Global state when searching the game tree.
     #[derive(Debug)]
     struct GameGlobalState {
+        /// Number of universes in which each player wins.
         num_universes_wins: [u64; 2],
+        /// Constant multi set in which the elements are each die roll value, and the number of elements is
+        /// the number of universes in which that roll occurs.
         rolls: HashMultiSet<u32>,
     }
     impl Default for GameGlobalState {
@@ -189,17 +195,18 @@ mod solution {
         }
     }
 
+    /// A node in the game tree that represents a turn that just happened.
     #[derive(Debug)]
     struct GameNode {
         /// The current state of players.
         game: Game,
-        // The player number that just moved to arrive at this state.
+        /// The player number that just moved to arrive at this state.
         turn: usize,
-        // The total number of universes in which the current state occurs in this branch
+        /// The total number of universes in which the current state occurs in this branch.
         num_universes: u64,
     }
     impl GameNode {
-        // Whether the current previously moved player won.
+        /// Returns whether the previously moved player won.
         fn win(&self) -> bool {
             self.game.players[self.turn].score >= DIRAC_WINNING_SCORE
         }

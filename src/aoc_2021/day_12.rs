@@ -227,8 +227,10 @@ mod solution {
         }
     }
 
+    /// Global state used for the path tree search.
     #[derive(Debug, Default)]
     struct PathGlobalState<'a> {
+        /// Set of complete paths through the cave from the start cave to the end cave.
         paths: HashSet<Vec<&'a Cave>>,
     }
     impl<'a> GlobalState<PathTip<'a>> for PathGlobalState<'a> {
@@ -242,12 +244,17 @@ mod solution {
         }
     }
 
+    /// The end of a path through the cave system, which is a node in the tree search.
     #[derive(Debug)]
     struct PathTip<'a> {
+        /// The graph of the cave system.
         graph: &'a UnGraph<Cave, ()>,
+        /// The graph node of the cave the ends the current path.
         tip: NodeIndex,
+        /// Maps the cave graph node to the number of visits remaining for that cave.
         visits_left: HashMap<NodeIndex, Infinitable<usize>>,
-        // The path includes the current tip cave.
+        /// The path through the cave system, which includes the current cave as the
+        /// last element.
         path: Vec<&'a Cave>,
     }
     impl<'a> GlobalStateTreeNode for PathTip<'a> {
