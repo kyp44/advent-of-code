@@ -153,9 +153,11 @@ mod solution {
                     .into(),
                 ));
             }
+
+            // Map from the actual segment to the mixed up signal.
             let mut map = HashMap::new();
 
-            // Some known digits based on their lengths
+            // This closure takes a number of signals and returns the first [`Digit`] with this number of signals.
             let get_len = |len: usize| {
                 self.digits
                     .iter()
@@ -164,12 +166,14 @@ mod solution {
                         AocError::Process(format!("No sets of length {len} found").into())
                     })
             };
-            let d1 = get_len(2)?;
-            let d4 = get_len(4)?;
-            let d7 = get_len(3)?;
-            let d8 = get_len(7)?;
+            let w1 = get_len(2)?;
+            let w4 = get_len(4)?;
+            let w7 = get_len(3)?;
+            let w8 = get_len(7)?;
 
-            let mut map_add = |c: char, set: Vec<&char>| -> AocResult<char> {
+            // This closure takes the actual segment `c` and a set of signals that only has a single element.
+            // This element is the signal to which the segment will be mapped, and the single element is returned.
+            let mut map_add = |c: char, set: HashSet<&char>| -> AocResult<char> {
                 /// This is an internal function of [`Entry::solve`] that creates an error given a signal name
                 /// and message string.
                 fn err(c: char, msg: &str) -> AocError {
@@ -178,12 +182,13 @@ mod solution {
                 if set.len() != 1 {
                     return Err(err(c, "set does not have exactly one element"));
                 }
-                let mc = *set[0];
+                let mc = *set.into_iter().next().unwrap();
                 match map.insert(mc, c) {
                     Some(_) => Err(err(c, "map already exists")),
                     None => Ok(mc),
                 }
             };
+            // This closure returns the intersection of all the [`Digit`] sets with a particular length.
             let length_intersection = |len: usize| -> HashSet<char> {
                 self.digits
                     .iter()
@@ -199,24 +204,24 @@ mod solution {
             };
 
             // Deduce which character corresponds to the variable name characters
-            // This procedure was derived ahead of time using interactive Python
-            // experimentation.
-            // TODO: Should we document the solution process in the notes? Probably should.
-            let a = map_add('a', d7.segments.difference(&d1.segments).collect())?;
-            let is5 = length_intersection(5);
-            let is6 = length_intersection(6);
-            let g = map_add('g', is5.intersection(&is6).filter(|c| **c != a).collect())?;
-            let d = map_add('d', is5.difference(&HashSet::from([a, g])).collect())?;
-            let f = map_add('f', is6.intersection(&d1.segments).collect())?;
-            let c = map_add('c', d1.segments.iter().filter(|c| **c != f).collect())?;
-            let b = map_add(
+            // The derivation of this is described in the notes.
+            let wa = map_add('a', w7.segments.difference(&w1.segments).collect())?;
+            let i5 = length_intersection(5);
+            let i6 = length_intersection(6);
+            let wg = map_add('g', i5.intersection(&i6).filter(|c| **c != wa).collect())?;
+            let wd = map_add('d', i5.difference(&HashSet::from([wa, wg])).collect())?;
+            let wf = map_add('f', i6.intersection(&w1.segments).collect())?;
+            let wc = map_add('c', w1.segments.iter().filter(|c| **c != wf).collect())?;
+            let wb = map_add(
                 'b',
-                d4.segments.difference(&HashSet::from([c, d, f])).collect(),
+                w4.segments
+                    .difference(&HashSet::from([wc, wd, wf]))
+                    .collect(),
             )?;
             map_add(
                 'e',
-                d8.segments
-                    .difference(&HashSet::from([a, b, c, d, f, g]))
+                w8.segments
+                    .difference(&HashSet::from([wa, wb, wc, wd, wf, wg]))
                     .collect(),
             )?;
 

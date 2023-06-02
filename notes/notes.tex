@@ -75,6 +75,83 @@
     when $m = 1$ as we would like according to this convention.
 }
 
+\notes{2021}{8}{https://adventofcode.com/2021/day/8}{
+    \def\WW{\mathbb{W}}
+    \def\SS{\mathbb{S}}
+    There are a total of seven segments, namely $\braces{a, b, c, d, e, f, g}$.
+    For the digit $0 \leq n \leq 9$, let $S_n$ be the set of segments used to create the digit $n$, and let $\SS = \braces{S_n \mid 0 \leq n \leq 9}$ be the set of these digit sets.
+    Therefore, from what we are given, we have
+    \ali{
+        S_0 &= \braces{a, b, c, e, f, g} & S_5 &= \braces{a, b, d, f, g} \non
+        S_1 &= \braces{c, f} & S_6 &= \braces{a, b, d, e, f, g} \non
+        S_2 &= \braces{a, c, d, e, g} & S_7 &= \braces{a, c, f} \non
+        S_3 &= \braces{a, c, d, f, g} & S_8 &= \braces{a, b, c, d, e, f, g} \non
+        S_4 &= \braces{b, c, d, f} & S_9 &= \braces{a, b, c, d, f, g} \nonumber
+    }
+    For a given entry, we must find the one-to-one map of the wire letters to the segment letters, as this allows us to determine which digits are being displayed.
+    Note that this is only needed for part two of the problem.
+    Denote these wire letters with $w_x$ where $x \in \braces{a, b, c, d, e, f, g}$ so that $w_x$ maps to segment $x$.
+    For the entry, we are given a set of sets $\WW = \braces{W_n \mid 0 \leq n \leq 9}$, where each $W_n$ corresponds to $S_n$ and contains exactly those wires that correspond to the segments in $S_n$.
+    So, for example, $W_7 = \braces{w_a, w_c, w_f}$.
+    However, we initially do not know which $W_n \in \WW$ is which.
+
+    The following algorithm was developed by experimentation with the sets in Python, and is implemented by the code to solve the problem.
+    First, we \emph{do} know how many elements each $W_n \in \WW$ has, and as discussed in part one of the problem description, some sets $S_n \in \SS$ have a unique number of elements.
+    In particular, $S_1$ is the only set with only two elements, $S_4$ is the only set with four elements, $S_7$ is the only set with three elements, and $S_8$ is the only set with all seven elements.
+    All the other sets have either five or six elements.
+    Hence, we know right away exactly which sets in $\WW$ are $W_1$, $W_4$, $W_7$, and $W_8$.
+
+    Next, it was noticed that $S_7 - S_1 = \braces{a}$, and so
+    \gath{
+        \braces{w_a} = W_7 - W_1. \label{eqn:2021:8:wa}
+    }
+    Now note that $S_2$, $S_3$, and $S_5$ are the sets in $\SS$ with five elements.
+    Similarly, $S_0$, $S_6$, and $S_9$ are the sets in $\SS$ with six elements.
+    So let
+    \gath{
+        J_5 = \bigcap \braces{S_2, S_3, S_5} = \braces{a, d, g} \\
+        J_6 = \bigcap \braces{S_0, S_6, S_9} = \braces{a, b, f, g}
+    }
+    and, analogously,
+    \gath{
+        I_5 = \bigcap \braces{W \in \WW \mid \abs{W} = 5} \\
+        I_6 = \bigcap \braces{W \in \WW \mid \abs{W} = 6}
+    }
+    so that $I_5$ and $I_6$ are fully defined from our given entry data since we know how many elements each $W \in \WW$ has.
+    It then follows that $J_5 \cap J_6 = \braces{a, g}$, and hence
+    \gath{
+        \braces{w_g} = \parens{I_5 \cap I_6} - \braces{w_a}
+    }
+    since we have already determined $w_a$ in \eqref{eqn:2021:8:wa}.
+    Next we have that clearly $J_5 - \braces{a, g} = \braces{d}$ so that
+    \gath{
+        \braces{w_d} = I_5 - \braces{w_a, w_g}.
+    }
+    At this point we have determined three of the seven wire mappings.
+
+    The next step is to notice that $J_6 \cap S_1 = \braces{f}$, and thus
+    \gath{
+        \braces{w_f} = I_6 \cap W_1.
+    }
+    From this it immediately follows that $S_1 - \braces{f} = \braces{c}$ so that
+    \gath{
+        \braces{w_c} = W_1 - \braces{w_f}.
+    }
+    The remaining two mappings are easily found at this point as we first have $S_4 - \braces{c, d, f} = \braces{b}$ so that
+    \gath{
+        \braces{w_b} = W_4 - \braces{w_c, w_d, w_f},
+    }
+    and $S_8 - \braces{a, b, c, d, f, g} = \braces{e}$ so that
+    \gath{
+        \braces{w_e} = W_8 - \braces{w_a, w_b, w_c, w_d, w_f, w_g}.
+    }
+    At this point we know the complete mapping from wires to segments and so can determine which digits are displayed.
+}
+
+\notes{2021}{17}{https://adventofcode.com/2021/day/17}{
+    TODO
+}
+
 \notes{2021}{24}{https://adventofcode.com/2021/day/24}{
     This problem involved quite a bit of analytical work to reverse engineer the MONAD program (i.e. the puzzle input).
     This was necessary to determine the properties of valid model numbers since the search space of the $14$-digit model numbers is too large to exhaustively search.

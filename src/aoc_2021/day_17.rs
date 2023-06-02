@@ -73,6 +73,7 @@ mod solution {
         /// for which the probe hits the target.
         pub fn peaks(&self) -> impl Iterator<Item = i32> + '_ {
             // TODO: Derive in the notes document.
+            println!("TODO {:?}", self);
             // These were derived analytically
             let vyi_max = -(*self.range_y.start() + 1);
             let vxi_min =
