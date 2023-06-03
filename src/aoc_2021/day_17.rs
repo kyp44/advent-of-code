@@ -72,9 +72,8 @@ mod solution {
         /// Returns an [`Iterator`] over the peak `y` positions of the probe for each trajectory
         /// for which the probe hits the target.
         pub fn peaks(&self) -> impl Iterator<Item = i32> + '_ {
-            // TODO: Derive in the notes document.
-            println!("TODO {:?}", self);
             // These were derived analytically
+            // TODO
             let vyi_max = -(*self.range_y.start() + 1);
             let vxi_min =
                 ((f32::sqrt((1 + *self.range_x.start() * 8) as f32) - 1f32) / 2f32).ceil() as i32;
@@ -85,12 +84,10 @@ mod solution {
                 *self.range_y.start()..=vyi_max
             )
             .filter_map(|velocity| {
-                let mut peak = 0;
                 for point in Trajectory::new(velocity.into()) {
-                    peak = peak.max(point.y);
-
                     if self.range_x.contains(&point.x) && self.range_y.contains(&point.y) {
-                        return Some(peak);
+                        // This is the peak value, derived analytically
+                        return Some((velocity.1 * (velocity.1 + 1)) / 2);
                     } else if point.y < *self.range_y.start() {
                         return None;
                     }

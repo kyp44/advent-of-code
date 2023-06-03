@@ -149,7 +149,90 @@
 }
 
 \notes{2021}{17}{https://adventofcode.com/2021/day/17}{
-    TODO
+    \def\vyo{v_{y0}}
+    \def\vxo{v_{x0}}
+
+    This problem involved simulating probe trajectories for many initial velocities to see whether it hits the target.
+    It is of course easy and computationally inexpensive to simulate trajectories, but we must bound the problem, so that we have a finite set of initial velocities to simulate.
+    
+    First let us focus on the $y$ dimension.
+    We assume that $x$ is constant and within the target so that we can determine the possible range of initial $y$ velocities $\vyo$ for which it is possible to hit the target regardless of the initial $x$ velocity $\vxo$.
+    Denote the discrete steps by integers $n$, so that at $n = 0$ is when the probe is at its initial position of $(0, 0)$.
+    Let $v_y(n)$ and $y(n)$ the be the probe velocity and position in $y$ at step $n$.
+    By what is given, we then clearly have the following recursive relationships:
+    \ali{
+        v_y(0) &= \vyo & y(0) &= 0 \label{eqn:2021:17:yinit} \\
+        v_y(n) &= v_y(n-1) - 1 & y(n) &= y(n-1) + v_y(n-1). \label{eqn:2021:17:yrec}
+    }
+    It was then reasoned that, in general,
+    \gath{
+        v_y(n) = \vyo - n, \label{eqn:2021:17:vyn}
+    }
+    which is easy to prove by induction.
+    First, clearly \eqref{eqn:2021:17:vyn} is true for $n = 0$ from \eqref{eqn:2021:17:yinit}.
+    Next, assume that \eqref{eqn:2021:17:vyn} is true for $n$ so that we have
+    \gath{
+        v_y(n+1) = v_y(n) - 1 = \vyo - n - 1 = \vyo - (n+1),
+    }
+    which proves that \eqref{eqn:2021:17:vyn} holds for $n+1$ as well, completing the induction step.
+
+    Similarly, it was also reasoned that
+    \gath{
+        y(n) = n\vyo - \sum_{i=1}^{n-1} i = n\vyo - \frac{(n-1)n}{2} \label{eqn:2021:17:yn}
+    }
+    in general.
+    This is also easy to prove by induction.
+    As in \eqref{eqn:2021:17:yinit}, clearly $y(0) = 0$ by \eqref{eqn:2021:17:yn} as well, showing the base case.
+    Now assume that \eqref{eqn:2021:17:yn} holds for $n$ so that, by \eqref{eqn:2021:17:yrec}, we have
+    \ali{
+        y(n+1) &= y(n) + v_y(n) = \squares{n\vyo - \frac{(n-1)n}{2}} + \parens{\vyo - n} \non
+        &= (n+1) \vyo - \squares{\frac{(n-1)n}{2} + n} = (n+1)\vyo - \frac{n^2 - n + 2n}{2} \non
+        &= (n+1) \vyo - \frac{n^2+n}{2} = (n+1) \vyo - \frac{n(n+1)}{2},
+    }
+    which shows the induction step since this is just $y(n+1)$ by \eqref{eqn:2021:17:yn}.
+
+    Let the target zone (with respect to $y$) be defined by $a_y$ and $b_y$ where the probe is in the zone only when $a_y \leq y \leq b_y$.
+    We note a couple of properties of which we take advantage:
+    \begin{enumerate}
+        \item It is the case that $a_y < b_y < 0$ for both the example and the actual problem inputs.
+        \item Once the probe is entirely below the target zone, that is once $y(n) < a_y$, the probe will only fall further down forever (or until it hits the ocean floor as the case may be) and can never hit the target after this.
+        This provides a terminating condition for the simulation of trajectories for a given $\vyo$.
+        This is true since (by 1) the target is below the starting position so that the $v_y(n)$ must already be negative by the time the target is encountered.
+    \end{enumerate}
+    Observation 1 provides a lower bound on possible values of $\vyo$.
+    For, if the probe is shot straight down with some $\vyo < 0$, then clearly, after a single step, $y(1) = \vyo$.
+    As this cannot be below the target, it must be that
+    \gath{
+        \vyo = y(1) \geq a_y.
+    }
+    
+    The probe can of course be thrown up and then fall back down into the target, so we assume that the upper bound is positive.
+    Hence, in what follows, assume that $\vyo > 0$.
+    As what goes up must come down, let us see when the probe will fall back down to its starting depth, that is when
+    \gath{
+        y(n) =  n \vyo - \frac{(n-1)n}{2} = 0 \non
+        n\vyo = \frac{(n-1)n}{2}.
+    }
+    Clearly this is true when $n = 0$, which is of course our starting position.
+    As we are interested in other solutions, let $n \neq 0$ so that we can divide both sides by $n$:
+    \gath{
+        \vyo = \frac{n-1}{2} \non
+        n = 2\vyo + 1.
+    }
+    Thus, at this step, the probe will reach our starting position again.
+    At the next step the position will of course be
+    \ali{
+        y(2\vyo + 2) &= (2\vyo + 2)\vyo - \frac{(2\vyo + 1)(2\vyo + 2)}{2} = 2\vyo^2 + 2\vyo - \frac{4\vyo^2 + 6\vyo + 2}{2} \non
+        &= 2\vyo^2 + 2\vyo - 2 \vyo^2 - 3 \vyo - 1 = -(\vyo + 1)
+    }
+    Clearly if this position is below the target zone, then the probe will have completely missed the target since it was above it (at zero) in the previous step!
+    Thus, it must be that
+    \gath{
+        y(2\vyo + 2) = -(\vyo + 1) \geq a_y \non
+        \vyo + 1 \leq -a_y \non
+        \vyo \leq -(a_y + 1),
+    }
+    which is of course an upper bound on $\vyo$.
 }
 
 \notes{2021}{24}{https://adventofcode.com/2021/day/24}{
