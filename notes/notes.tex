@@ -152,7 +152,7 @@
     \def\vyo{v_{y0}}
     \def\vxo{v_{x0}}
 
-    This problem involved simulating probe trajectories for many initial velocities to see whether it hits the target.
+    This problem involves simulating probe trajectories for many initial velocities to see whether it hits the target.
     It is of course easy and computationally inexpensive to simulate trajectories, but we must bound the problem, so that we have a finite set of initial velocities to simulate.
     
     First let us focus on the $y$ dimension.
@@ -206,7 +206,7 @@
         \vyo = y(1) \geq a_y.
     }
     
-    The probe can of course be thrown up and then fall back down into the target, so we assume that the upper bound is positive.
+    The probe can of course be launched up and then fall back down into the target, so we assume that the upper bound is positive.
     Hence, in what follows, assume that $\vyo > 0$.
     As what goes up must come down, let us see when the probe will fall back down to its starting depth, that is when
     \gath{
@@ -233,6 +233,55 @@
         \vyo \leq -(a_y + 1),
     }
     which is of course an upper bound on $\vyo$.
+    Thus, we need consider only
+    \gath{
+        \vyo \in I_y = \braces{k \in \ints \mid a_y \leq k \leq -(a_y + 1)},
+    }
+    noting that of course $I_y$ is a finite set.
+
+    Lastly, we note that, just like in continuous calculus, if the probe is launched up then the maximum position will be that when $v_y(n) = 0$ since, after this the velocity will become negative, and it will start falling back down.
+    This of course occurs when
+    \gath{
+        v_y(n) = \vyo - n = 0 \non
+        n = \vyo.
+    }
+    Hence, the maximum position in this case is
+    \gath{
+        y(\vyo) = \vyo^2 - \frac{(\vyo - 1)\vyo}{2} = \frac{2 \vyo^2 - \vyo^2 + \vyo}{2} = \frac{1}{2}\vyo(\vyo + 1).
+    }
+    Now, if the probe is just let go or launched downward, then clearly it will never go above its starting position.
+    Therefore, the universal maximum $y$ position is
+    \gath{
+        y_\mathrm{max} = \begin{cases}
+            0 & \vyo \leq 0 \\
+            \frac{1}{2}\vyo(\vyo + 1) & \vyo > 0.
+        \end{cases}
+    }
+
+    Turning our attention to the $x$ dimension, again define the target area by $a_x$ and $b_x$ where the probe can only be in the area when $a_x \leq x(n) \leq b_x$.
+    We note the following observations:
+    \begin{enumerate}
+        \item In both the example and actual input, the target area is to the right of the starting position, that is $0 < a_x < b_x$.
+        Because of this, we need only consider positive initial velocities so that $\vxo > 0$.
+        \item This situation is directly analogous to the $y$ situation when the probe is launched up in that it moves upward (i.e. rightward here), slowing down until the velocity reaches zero.
+        At this point the situations diverge as the in the $y$ dimension the probe then begins falling downward, whereas in the $x$ dimension it does not now ``fall back'' (i.e. begin moving to the left), but instead stays where it is once the velocity reaches zero.
+        Because of this the probe can never move left if it is thrown right (and vice versa in fact) so that its position is non-decreasing.
+    \end{enumerate}
+    Analogously to the $y$ dimension, these observations provide a simple upper bound on $\vxo$.
+    For, if the probe is launched with such a $\vxo$ such that is completely bypasses the target area in a single step, then it can never return to it.
+    Therefore,
+    \gath{
+        \vxo \leq b_x.
+    }
+    For the lower bound we can simply use 1 since we know the probe must be launched with a positive velocity.
+    By considering the $x$ position where the probe will ultimately stop moving in $x$ (namely that this must not be to the left of the entire target zone), this bound can be tightened, but the result is messy, and using 1 instead has a negligible effect on the computation time.
+    Thus, it must be that
+    \gath{
+        \vxo \in I_x = \braces{k \in \ints \mid 1 \leq k \leq b_x},
+    }
+    noting that again $I_x$ is clearly finite.
+    Therefore, $I_x \times I_y$ is our finite set of initial velocities such that any initial velocity outside this set is guaranteed to never hit the target zone.
+    However, not every $(\vxo, \vyo) \in I_x \times I_y$ will necessarily hit the target, so these trajectories must all be simulated to see which do and which do not.
 }
 
 \notes{2021}{24}{https://adventofcode.com/2021/day/24}{
