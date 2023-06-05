@@ -391,7 +391,6 @@ mod solution {
             Self::new(value)
         }
     }
-    impl GridDefault<Pixel> for Image {}
 
     /// A tile (an image from the satellite camera array), which can be parsed from text input.
     #[derive(Debug)]

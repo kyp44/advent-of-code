@@ -154,7 +154,6 @@ mod solution {
             Self { grid: value }
         }
     }
-    impl GridDefault<Digit> for FloorMap {}
     impl FloorMap {
         /// Increments the number for a point.
         fn increment_point(&mut self, point: &GridPoint) {

@@ -74,6 +74,36 @@ impl GridSizeExt for GridSize {
 
 /// Extension trait for [`AnyGridPoint`].
 pub trait AnyGridPointExt {
+    /// Unwraps an infinitely repeating grid point into the actual addressable point
+    /// for a given grid size.
+    ///
+    /// This is effectively just a modulo operation in both dimensions using the `size`
+    /// values as the modulo.
+    ///
+    /// # Panics
+    /// This will panic if any of the conversions fail from signed to unsigned types
+    /// and vice versa.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let size = GridSize::new(5, 4);
+    /// assert_eq!(
+    ///     AnyGridPoint::new(1, 2).unwrap_point(&size),
+    ///     GridPoint::new(1, 2),
+    /// );
+    /// assert_eq!(
+    ///     AnyGridPoint::new(-1, -2).unwrap_point(&size),
+    ///     GridPoint::new(4, 2),
+    /// );
+    /// assert_eq!(
+    ///     AnyGridPoint::new(-789, 27615).unwrap_point(&size),
+    ///     GridPoint::new(1, 3),
+    /// );
+    /// ```
+    fn unwrap_point(&self, size: &GridSize) -> GridPoint;
+
     /// Returns an [`Iterator`] over all the neighboring points around a `point`
     /// in row-major order.
     ///
@@ -123,17 +153,25 @@ pub trait AnyGridPointExt {
     /// );
     /// ```
     fn all_neighbor_points(
-        point: AnyGridPoint,
+        &self,
         include_diagonals: bool,
         include_self: bool,
     ) -> Box<dyn Iterator<Item = AnyGridPoint>>;
 }
 impl AnyGridPointExt for AnyGridPoint {
+    fn unwrap_point(&self, size: &GridSize) -> GridPoint {
+        let any_size = AnyGridPoint::try_point_from(Point2::from_vec(*size)).unwrap();
+        AnyGridPoint::new(self.x.rem_euclid(any_size.x), self.y.rem_euclid(any_size.y))
+            .try_point_into()
+            .unwrap()
+    }
+
     fn all_neighbor_points(
-        point: AnyGridPoint,
+        &self,
         include_diagonals: bool,
         include_self: bool,
     ) -> Box<dyn Iterator<Item = AnyGridPoint>> {
+        let point = self.clone();
         Box::new(
             iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
                 let point = point + Vector2::new(dx, dy);
@@ -508,12 +546,10 @@ impl<T> Grid<T> {
         include_diagonals: bool,
         include_self: bool,
     ) -> impl Iterator<Item = GridPoint> + 'a {
-        AnyGridPoint::all_neighbor_points(
-            AnyGridPoint::try_point_from(*point).unwrap(),
-            include_diagonals,
-            include_self,
-        )
-        .filter_map(|p| self.bounded_point(&p))
+        AnyGridPoint::try_point_from(*point)
+            .unwrap()
+            .all_neighbor_points(include_diagonals, include_self)
+            .filter_map(|p| self.bounded_point(&p))
     }
 
     /// Creates a sub-grid by cloning the applicable elements of this grid.
@@ -766,6 +802,9 @@ impl<T: fmt::Debug> fmt::Debug for Grid<T> {
 }
 
 /// Create an object from default [`Grid`] of a particular size.
+///
+/// Automatically implemented for types that implement `From<Grid<T>>` for some
+/// appropriate `T` that itself implements [`Default`].
 pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
     /// Returns a default object from a default [`Grid`] of some `size`.
     ///
@@ -775,8 +814,15 @@ pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
         Grid::default(size).into()
     }
 }
+impl<T: Default + Clone, O: From<Grid<T>>> GridDefault<T> for O {
+    fn default(size: GridSize) -> Self {
+        Self::from(Grid::default(size))
+    }
+}
+
 /// Parse objects that can be created from a [`Grid`] from a grid of characters.
 ///
+/// This is a blanket implementation on implementors of `From<Grid<T>>` for some `T`.
 /// Note that we cannot just blanket implement [`FromStr`] due to the orphan rule.
 pub trait FromGridStr<T>: Sized {
     /// The error type if the conversion fails.
