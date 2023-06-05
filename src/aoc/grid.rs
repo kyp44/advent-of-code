@@ -116,7 +116,7 @@ pub trait AnyGridPointExt {
     /// ```
     /// # use aoc::prelude::*;
     /// assert_eq!(
-    ///     AnyGridPoint::all_neighbor_points(AnyGridPoint::new(0, 0), true, true).collect::<Vec<_>>(),
+    ///     AnyGridPoint::new(0, 0).all_neighbor_points(true, true).collect::<Vec<_>>(),
     ///     vec![
     ///         AnyGridPoint::new(-1, -1),
     ///         AnyGridPoint::new(0, -1),
@@ -130,7 +130,7 @@ pub trait AnyGridPointExt {
     ///     ],
     /// );
     /// assert_eq!(
-    ///     AnyGridPoint::all_neighbor_points(AnyGridPoint::new(-4, -2), true, false).collect::<Vec<_>>(),
+    ///     AnyGridPoint::new(-4, -2).all_neighbor_points(true, false).collect::<Vec<_>>(),
     ///     vec![
     ///         AnyGridPoint::new(-5, -3),
     ///         AnyGridPoint::new(-4, -3),
@@ -143,7 +143,7 @@ pub trait AnyGridPointExt {
     ///     ],
     /// );
     /// assert_eq!(
-    ///     AnyGridPoint::all_neighbor_points(AnyGridPoint::new(5, 6), false, false).collect::<Vec<_>>(),
+    ///     AnyGridPoint::new(5, 6).all_neighbor_points(false, false).collect::<Vec<_>>(),
     ///     vec![
     ///         AnyGridPoint::new(5, 5),
     ///         AnyGridPoint::new(4, 6),
@@ -171,7 +171,7 @@ impl AnyGridPointExt for AnyGridPoint {
         include_diagonals: bool,
         include_self: bool,
     ) -> Box<dyn Iterator<Item = AnyGridPoint>> {
-        let point = self.clone();
+        let point = *self;
         Box::new(
             iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
                 let point = point + Vector2::new(dx, dy);

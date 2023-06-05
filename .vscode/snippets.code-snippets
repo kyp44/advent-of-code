@@ -27,6 +27,7 @@
 			"",
 			"use solution::*;",
 			"",
+			"/// Solution struct.",
 			"pub const SOLUTION: Solution = Solution {",
 			"day: $1,",
 			"name: \"$2\",",
