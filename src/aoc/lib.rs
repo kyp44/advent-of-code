@@ -57,6 +57,9 @@ pub mod error {
             #[from]
             NomParseError,
         ),
+        /// Could not parse the problem input.
+        #[error("Could not parse input:\n{}", .0)]
+        PestParse(String),
         /// Invalid problem input.
         #[error("Invalid input: {0}")]
         InvalidInput(Cow<'static, str>),

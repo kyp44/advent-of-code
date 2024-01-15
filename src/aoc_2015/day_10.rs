@@ -43,13 +43,13 @@ mod solution {
         type Item = String;
 
         fn next(&mut self) -> Option<Self::Item> {
+            use std::fmt::Write;
             let next = self.current.take();
 
-            self.current = Takeable::new(
-                next.split_runs()
-                    .map(|s| format!("{}{}", s.len(), s.chars().next().unwrap()))
-                    .collect(),
-            );
+            self.current = Takeable::new(next.split_runs().fold(String::new(), |mut out, s| {
+                let _ = write!(out, "{}{}", s.len(), s.chars().next().unwrap());
+                out
+            }));
             Some(next)
         }
     }

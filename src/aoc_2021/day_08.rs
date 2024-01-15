@@ -249,7 +249,7 @@ mod solution {
                                     .into(),
                                 )
                             })
-                            .map(|v| *v)
+                            .copied()
                     })
                     .collect::<AocResult<_>>()?,
             })

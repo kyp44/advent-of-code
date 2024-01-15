@@ -90,7 +90,7 @@ pub const SOLUTION: Solution = Solution {
                 input
                     .expect_input()?
                     .lines()
-                    .filter_count(|s| Nice::<PartOne>::is_nice(s)),
+                    .filter_count(Nice::<PartOne>::is_nice),
             ))
         },
         // Part two
@@ -100,7 +100,7 @@ pub const SOLUTION: Solution = Solution {
                 input
                     .expect_input()?
                     .lines()
-                    .filter_count(|s| Nice::<PartTwo>::is_nice(s)),
+                    .filter_count(Nice::<PartTwo>::is_nice),
             ))
         },
     ],

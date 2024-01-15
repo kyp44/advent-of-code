@@ -10,12 +10,16 @@
 #![feature(type_alias_impl_trait)]
 #![feature(let_chains)]
 #![feature(step_trait)]
+#![feature(ascii_char)]
+#![feature(ascii_char_variants)]
+#![feature(iter_array_chunks)]
 #![warn(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
 
 mod aoc_2015;
 mod aoc_2020;
 mod aoc_2021;
+mod aoc_2022;
 
 use aoc::error::AocError;
 use clap::Parser;
@@ -46,6 +50,7 @@ fn main() -> anyhow::Result<()> {
         &aoc_2015::YEAR_SOLUTIONS,
         &aoc_2020::YEAR_SOLUTIONS,
         &aoc_2021::YEAR_SOLUTIONS,
+        &aoc_2022::YEAR_SOLUTIONS,
     ];
 
     if cli.list {

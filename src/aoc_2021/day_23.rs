@@ -151,9 +151,8 @@ mod solution {
     enum SpaceType {
         /// A hall space.
         Hall,
-        /// A room space with the home amphipod type, and the position of the space,
-        /// with 0 being adjacent to the hall and highest number being the deepest.
-        Room(Amphipod, usize),
+        /// A room space with the home amphipod type.
+        Room(Amphipod),
     }
 
     /// The distance between two graph nodes.
@@ -214,7 +213,7 @@ mod solution {
                     // Add the room nodes
                     let mut rooms = Vec::with_capacity(P::DEPTH);
                     for ri in 0..P::DEPTH {
-                        rooms.push(graph.add_node(SpaceType::Room(amph, ri)));
+                        rooms.push(graph.add_node(SpaceType::Room(amph)));
                         if ri == 0 {
                             graph.add_edge(hall_spaces[ai + 1], rooms[0], inf_two);
                             graph.add_edge(hall_spaces[ai + 2], rooms[0], inf_two);
@@ -488,7 +487,10 @@ mod solution {
                     let own_space_type = P::board().graph.node_weight(*own_space_node).unwrap();
 
                     // If we are already home (and it's filled with like amphipods) then we do not want to move
-                    if let SpaceType::Room(own_space_amph, _) = own_space_type && *own_space_amph == own_amph && home_good {
+                    if let SpaceType::Room(own_space_amph) = own_space_type
+                        && *own_space_amph == own_amph
+                        && home_good
+                    {
                         continue;
                     }
 
@@ -507,7 +509,7 @@ mod solution {
                             // If in the hall, we only want to keep our own room but only if it's filled with our kind
                             SpaceType::Hall => room_amph == own_amph && home_good,
                             // Need to keep only the room we are in or our home room if it's filled with our kind
-                            SpaceType::Room(own_space_amph, _) => {
+                            SpaceType::Room(own_space_amph) => {
                                 room_amph == *own_space_amph || (room_amph == own_amph && home_good)
                             }
                         } {
@@ -541,7 +543,7 @@ mod solution {
                             // to keep hall spaces if we are in a room.
                             SpaceType::Hall => matches!(own_space_type, SpaceType::Hall),
                             // We only want to move into the deepest free space in our home room.
-                            SpaceType::Room(room, _) => {
+                            SpaceType::Room(room) => {
                                 !(home_good
                                     && *room == own_amph
                                     && self.deepest_free_space(own_amph).is_some_and(|n| n == node))

@@ -166,11 +166,13 @@ mod solution {
         fn split(&mut self) -> bool {
             // Look for the first candidate element
             if let Some((i, n)) = self.stack.iter().enumerate().find_map(|(i, e)| {
-                if let Element::Num(n) = e && *n >= 10 {
-                Some((i, *n))
-            } else {
-                None
-            }
+                if let Element::Num(n) = e
+                    && *n >= 10
+                {
+                    Some((i, *n))
+                } else {
+                    None
+                }
             }) {
                 // Now split
                 let (a, b) = if n.is_even() {

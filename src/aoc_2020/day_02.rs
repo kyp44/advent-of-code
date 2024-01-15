@@ -20,6 +20,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use aoc::parse::inclusive_range;
     use nom::{
         bytes::complete::tag,
         character::complete::anychar,
@@ -32,17 +33,20 @@ mod solution {
     /// General password policy, which can be parsed from text input.
     pub trait PasswordPolicy: Sized {
         /// Creates the policy from the parameters.
-        fn new(a: u32, b: u32, character: char) -> Self;
+        fn new(occurrence_range: RangeInclusive<u32>, character: char) -> Self;
         /// Validates a string according to the policy.
         fn validate(&self, password: &str) -> bool;
         /// This is a [`nom`] parser.
         fn parser(input: &str) -> NomParseResult<&str, Self> {
-            use nom::character::complete::u32 as cu32;
             context(
                 "password policy",
                 map(
-                    separated_pair(separated_pair(cu32, tag("-"), cu32), tag(" "), anychar),
-                    |((a, b), s): ((u32, u32), char)| Self::new(a, b, s),
+                    separated_pair(
+                        inclusive_range(nom::character::complete::u32),
+                        tag(" "),
+                        anychar,
+                    ),
+                    |(r, s)| Self::new(r, s),
                 ),
             )(input.trim())
         }
@@ -56,9 +60,9 @@ mod solution {
         character: char,
     }
     impl PasswordPolicy for PartOnePolicy {
-        fn new(a: u32, b: u32, character: char) -> Self {
+        fn new(occurrence_range: RangeInclusive<u32>, character: char) -> Self {
             Self {
-                occurrence_range: a..=b,
+                occurrence_range,
                 character,
             }
         }
@@ -77,9 +81,12 @@ mod solution {
         character: char,
     }
     impl PasswordPolicy for PartTwoPolicy {
-        fn new(a: u32, b: u32, character: char) -> Self {
+        fn new(occurrence_range: RangeInclusive<u32>, character: char) -> Self {
             Self {
-                positions: [a.try_into().unwrap(), b.try_into().unwrap()],
+                positions: [
+                    (*occurrence_range.start()).try_into().unwrap(),
+                    (*occurrence_range.end()).try_into().unwrap(),
+                ],
                 character,
             }
         }

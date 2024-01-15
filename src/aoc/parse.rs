@@ -6,13 +6,13 @@ use nom::bytes::complete::tag;
 use nom::character::complete::{multispace0, satisfy, space0, space1};
 use nom::character::is_alphanumeric;
 use nom::error::VerboseErrorKind;
-use nom::sequence::delimited;
+use nom::sequence::{delimited, separated_pair};
 use nom::{character::complete::digit1, combinator::map};
 use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
 use nom::{AsChar, InputIter, InputTakeAtPosition, Slice};
 use num::Unsigned;
 use std::fmt;
-use std::ops::RangeFrom;
+use std::ops::{RangeFrom, RangeInclusive};
 use std::str::FromStr;
 
 use crate::prelude::{AocError, AocResult};
@@ -394,6 +394,45 @@ where
     F: FnMut(&'a str) -> IResult<&'a str, O, E>,
 {
     delimited(tag(label), trim(false, inner), multispace0)
+}
+
+/// Parses an inclusive range.
+///
+/// This is a [`nom`] parser parses two numbers with a dash in between as
+/// an inclusive range.
+/// The numeric type is determined from the `inner` parser output type.
+/// Whitespace is allowed between the dash and the numbers, but not newlines.
+///
+/// # Examples
+/// Basic usage:
+/// ```
+/// # #![feature(assert_matches)]
+/// # use std::assert_matches::assert_matches;
+/// # use aoc::prelude::*;
+/// # use aoc::parse::inclusive_range;
+/// assert_eq!(
+///     inclusive_range::<_, NomParseError>(nom::character::complete::u8)("4-13").discard_input(),
+///     Ok(4..=13)
+/// );
+/// assert_eq!(
+///     inclusive_range::<_, NomParseError>(nom::character::complete::i32)("-89765 - -1234").discard_input(),
+///     Ok(-89765..=-1234)
+/// );
+/// assert_matches!(
+///     inclusive_range::<_, NomParseError>(nom::character::complete::u16)("1-xyz"),
+///     Err(_)
+/// );
+/// ```
+pub fn inclusive_range<'a, O, E>(
+    inner: fn(&'a str) -> IResult<&'a str, O, E>,
+) -> impl FnMut(&'a str) -> IResult<&'a str, RangeInclusive<O>, E>
+where
+    E: nom::error::ParseError<&'a str>,
+{
+    map(
+        separated_pair(inner, delimited(space0, tag("-"), space0), inner),
+        |(a, b)| a..=b,
+    )
 }
 
 /// Extension trait to break a string into some number of section substrings.

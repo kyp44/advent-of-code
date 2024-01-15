@@ -8,7 +8,7 @@ use super::prelude::*;
 use cgmath::{EuclideanSpace, Point2, Vector2};
 use core::slice::SlicePattern;
 use derive_more::{Add, AddAssign, Deref, From, Into, Not, Sub, SubAssign};
-use itertools::{iproduct, process_results, Itertools};
+use itertools::{iproduct, process_results};
 use num::FromPrimitive;
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
@@ -789,15 +789,13 @@ impl<T: TryFrom<char>> FromStr for Grid<T> {
 impl<T: fmt::Debug> fmt::Debug for Grid<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let size = self.size();
-        writeln!(
-            f,
-            "{}",
-            (0..size.y)
-                .map(|y| (0..size.x)
-                    .map(|x| format!("{:?}", self.get(&GridPoint::new(x, y))))
-                    .collect::<String>())
-                .join("\n")
-        )
+        for y in 0..size.y {
+            for x in 0..size.x {
+                write!(f, "{:?}", self.get(&GridPoint::new(x, y)))?;
+            }
+            writeln!(f)?;
+        }
+        Ok(())
     }
 }
 
