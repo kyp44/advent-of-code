@@ -322,6 +322,19 @@ pub mod extension {
         /// assert_eq!((-5..=10).intersection(&(-2..=1)), Some(-2..=1));
         /// ```
         fn intersection(&self, other: &Self) -> Option<Self>;
+
+        /// Returns whether this range totally contains another range.
+        ///
+        /// # Examples
+        /// Basic usage:
+        /// ```
+        /// # use aoc::prelude::*;
+        /// assert_eq!((-4..=3).contains_range(&(-2..=3)), true);
+        /// assert_eq!((-4..=3).contains_range(&(-5..=2)), false);
+        /// assert_eq!((-4..=3).contains_range(&(-2..=7)), false);
+        /// assert_eq!((0..=8).contains_range(&(0..=8)), true);
+        /// ```
+        fn contains_range(&self, other: &Self) -> bool;
     }
     impl<T> RangeExt<T> for RangeInclusive<T>
     where
@@ -342,6 +355,10 @@ pub mod extension {
             } else {
                 Some(range)
             }
+        }
+
+        fn contains_range(&self, other: &Self) -> bool {
+            self.start() <= other.start() && other.end() <= self.end()
         }
     }
 }
