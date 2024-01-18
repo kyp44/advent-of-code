@@ -3,9 +3,7 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -28,9 +26,9 @@ mod tests {
 18  8 23 26 20
 22 11 13  6  5
  2  0 12  3  7";
-            answers = vec![4512u64, 1924].answer_vec();
+            answers = unsigned![4512, 1924];
         }
-        actual_answers = vec![Unsigned(12796), Unsigned(18063)];
+        actual_answers = unsigned![12796, 18063];
     }
 }
 

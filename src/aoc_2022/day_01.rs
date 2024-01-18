@@ -2,13 +2,11 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
-    example {
-    input = "1000
+        example {
+            input = "1000
 2000
 3000
 
@@ -22,9 +20,9 @@ mod tests {
 9000
 
 10000";
-    answers = vec![24000u64, 45000].answer_vec();
-    }
-    actual_answers = vec![Unsigned(72718), Unsigned(213089)];
+            answers = unsigned![24000, 45000];
+        }
+        actual_answers = unsigned![72718, 213089];
     }
 }
 

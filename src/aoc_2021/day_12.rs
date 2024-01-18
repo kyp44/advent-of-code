@@ -3,9 +3,7 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -16,7 +14,7 @@ A-b
 b-d
 A-end
 b-end";
-            answers = vec![10u64, 36].answer_vec();
+            answers = unsigned![10, 36];
         }
         example {
             input = "dc-end
@@ -29,7 +27,7 @@ HN-end
 kj-sa
 kj-HN
 kj-dc";
-            answers = vec![19u64, 103].answer_vec();
+            answers = unsigned![19, 103];
         }
         example {
             input = "fs-end
@@ -50,9 +48,9 @@ he-WI
 zg-he
 pj-fs
 start-RW";
-            answers = vec![226u64, 3509].answer_vec();
+            answers = unsigned![226, 3509];
         }
-        actual_answers = vec![Unsigned(4011), Unsigned(108035)];
+        actual_answers = unsigned![4011, 108035];
     }
 }
 
@@ -194,7 +192,15 @@ mod solution {
                     index,
                     match cave.cave_type {
                         CaveType::Big => Infinitable::Infinity,
-                        _ => Infinitable::Finite(if let Some(idx) = special_cave && idx == index { 2 } else { 1 }),
+                        _ => Infinitable::Finite(
+                            if let Some(idx) = special_cave
+                                && idx == index
+                            {
+                                2
+                            } else {
+                                1
+                            },
+                        ),
                     },
                 );
             }

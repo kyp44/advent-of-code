@@ -2,9 +2,7 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -18,9 +16,9 @@ mod tests {
 3125421639
 1293138521
 2311944581";
-            answers = vec![40u64, 315].answer_vec();
+            answers = unsigned![40, 315];
         }
-        actual_answers = vec![Unsigned(398), Unsigned(2817)];
+        actual_answers = unsigned![398, 2817];
     }
 }
 

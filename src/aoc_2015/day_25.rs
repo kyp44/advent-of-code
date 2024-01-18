@@ -2,16 +2,14 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
             input = "To continue, please consult the code grid in the manual.  Enter the code at row 6, column 6.";
-            answers = vec![27995004u64].answer_vec();
+            answers = unsigned![27995004];
         }
-        actual_answers = vec![Unsigned(19980801)];
+        actual_answers = unsigned![19980801];
     }
 }
 

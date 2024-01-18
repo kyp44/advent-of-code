@@ -2,17 +2,15 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
             input = "Butterscotch: capacity -1, durability -2, flavor 6, texture 3, calories 8
     Cinnamon: capacity 2, durability 3, flavor -2, texture -1, calories 3";
-            answers = vec![62842880u64, 57600000].answer_vec();
+            answers = unsigned![62842880, 57600000];
         }
-        actual_answers = vec![Unsigned(222870), Unsigned(117936)];
+        actual_answers = unsigned![222870, 117936];
     }
 }
 

@@ -3,17 +3,15 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
             input = "5764801
     17807724";
-            answers = vec![14897079u64].answer_vec();
+            answers = unsigned![14897079];
         }
-        actual_answers = vec![Unsigned(6421487)];
+        actual_answers = unsigned![6421487];
     }
 }
 

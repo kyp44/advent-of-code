@@ -4,9 +4,8 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
+    use Answer::{String, Unsigned};
 
     solution_tests! {
         example {
@@ -14,9 +13,9 @@ mod tests {
 trh fvjkl sbzzf mxmxvkd (contains dairy)
 sqjhc fvjkl (contains soy)
 sqjhc mxmxvkd sbzzf (contains fish)";
-            answers = vec![Some(Unsigned(5)), Some(Answer::String("mxmxvkd,sqjhc,fvjkl".to_string()))];
+            answers = answers![Unsigned(5), String("mxmxvkd,sqjhc,fvjkl".into())];
         }
-        actual_answers = vec![Unsigned(2287), Answer::String("fntg,gtqfrp,xlvrggj,rlsr,xpbxbv,jtjtrd,fvjkp,zhszc".to_string())];
+        actual_answers = answers![Unsigned(2287), String("fntg,gtqfrp,xlvrggj,rlsr,xpbxbv,jtjtrd,fvjkp,zhszc".into())];
     }
 }
 

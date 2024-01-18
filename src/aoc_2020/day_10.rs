@@ -4,9 +4,7 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -21,7 +19,7 @@ mod tests {
 6
 12
 4";
-            answers = vec![35u64, 8].answer_vec();
+            answers = unsigned![35, 8];
         }
         example {
             input = "28
@@ -55,9 +53,9 @@ mod tests {
 34
 10
 3";
-            answers = vec![220u64, 19208].answer_vec();
+            answers = unsigned![220, 19208];
         }
-        actual_answers = vec![Unsigned(2100), Unsigned(16198260678656)];
+        actual_answers = unsigned![2100, 16198260678656];
     }
 }
 

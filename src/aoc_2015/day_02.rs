@@ -3,20 +3,18 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
             input = "2x3x4";
-            answers = vec![58u64, 34].answer_vec();
+            answers = unsigned![58, 34];
         }
         example {
             input = "1x1x10";
-            answers = vec![43u64, 14].answer_vec();
+            answers = unsigned![43, 14];
         }
-        actual_answers = vec![Unsigned(1588178), Unsigned(3783758)];
+        actual_answers = unsigned![1588178, 3783758];
     }
 }
 

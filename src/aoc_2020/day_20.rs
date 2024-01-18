@@ -4,9 +4,7 @@ use strum::IntoEnumIterator;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -117,9 +115,9 @@ Tile 3079:
 ..#.###...
 ..#.......
 ..#.###...";
-            answers = vec![20899048083289, 273u64].answer_vec();
+            answers = unsigned![20899048083289, 273];
         }
-        actual_answers = vec![Unsigned(83775126454273), Unsigned(1993)];
+        actual_answers = unsigned![83775126454273, 1993];
     }
 }
 

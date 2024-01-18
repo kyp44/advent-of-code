@@ -2,8 +2,7 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
+    use aoc::prelude_test::*;
     use Answer::Unsigned;
 
     solution_tests! {
@@ -20,7 +19,7 @@ bababa
 abbbab
 aaabbb
 aaaabbb";
-            answers = vec![Some(Unsigned(2)), None];
+            answers = &[Some(Unsigned(2)), None];
         }
         example {
             input = "42: 9 14 | 10 1
@@ -70,9 +69,9 @@ aaaabbaaaabbaaa
 aaaabbaabbaaaaaaabbbabbbaaabbaabaaa
 babaaabbbaaabaababbaabababaaab
 aabbbbbaabbbaaaaaabbbbbababaaaaabbaaabba";
-            answers = vec![3u64, 12].answer_vec();
+            answers = unsigned![3, 12];
         }
-        actual_answers = vec![Unsigned(149), Unsigned(332)];
+        actual_answers = unsigned![149, 332];
     }
 }
 

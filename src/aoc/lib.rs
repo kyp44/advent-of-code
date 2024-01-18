@@ -27,7 +27,14 @@ pub mod prelude {
         },
         iter::{IteratorExt, StrExt},
         parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parseable, Sections},
-        solution::{Answer, AnswerVec, Solution, SolverInput, YearSolutions},
+        solution::{Answer, Solution, SolverInput, YearSolutions},
+    };
+}
+
+/// Prelude for the tests, mainly when using [`solution_tests`].
+pub mod prelude_test {
+    pub use super::{
+        answers, signed, solution::Answer, solution_results, solution_tests, string, unsigned,
     };
 }
 
@@ -57,9 +64,6 @@ pub mod error {
             #[from]
             NomParseError,
         ),
-        /// Could not parse the problem input.
-        #[error("Could not parse input:\n{}", .0)]
-        PestParse(String),
         /// Invalid problem input.
         #[error("Invalid input: {0}")]
         InvalidInput(Cow<'static, str>),
@@ -365,7 +369,7 @@ pub mod extension {
 
 /// Types and utilities for implementing problem solutions.
 pub mod solution {
-    use std::{any::Any, fs};
+    use std::{any::Any, borrow::Cow, fs};
 
     use anyhow::Context;
     use colored::Colorize;
@@ -381,7 +385,7 @@ pub mod solution {
         /// Signed number.
         Signed(i64),
         /// Text.
-        String(String),
+        String(Cow<'static, str>),
     }
     impl From<u64> for Answer {
         fn from(n: u64) -> Self {
@@ -393,9 +397,23 @@ pub mod solution {
             Answer::Signed(n)
         }
     }
+    impl From<&'static str> for Answer {
+        fn from(s: &'static str) -> Self {
+            Answer::String(s.into())
+        }
+    }
     impl From<String> for Answer {
         fn from(s: String) -> Self {
-            Answer::String(s)
+            Answer::String(s.into())
+        }
+    }
+    impl std::fmt::Display for Answer {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Answer::Unsigned(n) => n.fmt(f),
+                Answer::Signed(n) => n.fmt(f),
+                Answer::String(s) => s.fmt(f),
+            }
         }
     }
 
@@ -510,7 +528,7 @@ pub mod solution {
         /// If the preprocessor or any of the solvers return an [`AocError`], further processing will
         /// stop and this will be returned. Otherwise the list of answers corresponding to each solver
         /// are returned.
-        pub fn run_and_print(&self, year: u16) -> anyhow::Result<Vec<Answer>> {
+        pub fn run_and_print(&self, year: u16) -> anyhow::Result<Vec<Option<Answer>>> {
             // Read input for the problem
             let input_path = format!("input/{year}/day_{:02}.txt", self.day);
             let input = fs::read_to_string(&input_path)
@@ -521,22 +539,15 @@ pub mod solution {
             let results = self
                 .solvers
                 .iter()
-                .map(|s| s(&data))
-                .collect::<AocResult<Vec<Answer>>>()?;
+                .map(|s| Ok(Some(s(&data)?)))
+                .collect::<AocResult<Vec<_>>>()?;
 
             println!("{}", format!("Year {} {}", year, self.title()).yellow());
             for (part, result) in ["one", "two"].into_iter().zip(results.iter()) {
                 if results.len() > 1 {
                     println!("{}", format!("Part {part}:").bold().underline());
                 }
-                println!(
-                    "Answer: {}",
-                    match result {
-                        Answer::Unsigned(n) => n.to_string(),
-                        Answer::Signed(n) => n.to_string(),
-                        Answer::String(s) => s.to_string(),
-                    }
-                );
+                println!("Answer: {}", result.as_ref().unwrap());
             }
 
             Ok(results)
@@ -566,59 +577,67 @@ pub mod solution {
         }
     }
 
-    /// Convenience trait to convert a list of answers types for use in tests.
-    pub trait AnswerVec {
-        /// Converts a [`Vec`] of answer types into a [`Vec`] of [`Option::Some`] with the [`Answer`].
-        ///
-        /// # Examples
-        /// Basic usage:
-        /// ```
-        /// # use aoc::prelude::*;
-        /// assert_eq!(
-        ///     vec![3u64, 4, 5].answer_vec(),
-        ///     vec![
-        ///         Some(Answer::Unsigned(3)),
-        ///         Some(Answer::Unsigned(4)),
-        ///         Some(Answer::Unsigned(5)),
-        ///     ],
-        /// );
-        /// assert_eq!(
-        ///     vec![-3i64, 4, -5].answer_vec(),
-        ///     vec![
-        ///         Some(Answer::Signed(-3)),
-        ///         Some(Answer::Signed(4)),
-        ///         Some(Answer::Signed(-5)),
-        ///     ],
-        /// );
-        /// assert_eq!(
-        ///     vec!["test1", "test2", "test3"].answer_vec(),
-        ///     vec![
-        ///         Some(Answer::String("test1".to_string())),
-        ///         Some(Answer::String("test2".to_string())),
-        ///         Some(Answer::String("test3".to_string())),
-        ///     ],
-        /// );
-        /// ```
-        fn answer_vec(self) -> Vec<Option<Answer>>;
+    /// Macro to construct the solution table for a year.
+    ///
+    /// See an implemented year for usage example.
+    #[macro_export]
+    macro_rules! year_solutions {
+        (
+            year = $year: expr;
+            days = [
+                $($day: ident,)*
+            ];
+        ) => {
+            $(
+                pub mod $day;
+            )*
+
+            use aoc::solution::YearSolutions;
+
+            // All of the solutions.
+            pub const YEAR_SOLUTIONS: YearSolutions = YearSolutions {
+                year: $year,
+                solutions: &[
+                $(
+                    $day::SOLUTION,
+                )*
+                ],
+            };
+         }
     }
-    impl AnswerVec for Vec<u64> {
-        fn answer_vec(self) -> Vec<Option<Answer>> {
-            self.into_iter()
-                .map(|n| Some(Answer::Unsigned(n)))
-                .collect()
-        }
+
+    /// Wraps elements in [`Option::Some`] and evaluates to an answer slice.
+    ///
+    /// This is mainly for use with the [`solution_results`](crate::solution_results) macro.
+    #[macro_export]
+    macro_rules! answers {
+        [$($val: expr),+] => {
+            &[$(Some($val),)+]
+        };
     }
-    impl AnswerVec for Vec<i64> {
-        fn answer_vec(self) -> Vec<Option<Answer>> {
-            self.into_iter().map(|n| Some(Answer::Signed(n))).collect()
-        }
+
+    /// Wraps elements in [`Answer::Unsigned`] and evaluates to answer slice.
+    #[macro_export]
+    macro_rules! unsigned {
+        [$($val: expr),+] => {
+            answers![$(Answer::Unsigned($val)),+]
+        };
     }
-    impl AnswerVec for Vec<&str> {
-        fn answer_vec(self) -> Vec<Option<Answer>> {
-            self.into_iter()
-                .map(|s| Some(Answer::String(s.into())))
-                .collect()
-        }
+
+    /// Wraps elements in [`Answer::Signed`] and evaluates to answer slice.
+    #[macro_export]
+    macro_rules! signed {
+        [$($val: expr),+] => {
+            answers![$(Answer::Signed($val)),+]
+        };
+    }
+
+    /// Wraps elements in [`Answer::String`] and evaluates to answer slice.
+    #[macro_export]
+    macro_rules! string {
+        [$($val: expr),+] => {
+            answers![$(Answer::String($val.into())),+]
+        };
     }
 
     /// Compares solution results with a vector.
@@ -632,13 +651,12 @@ pub mod solution {
     #[macro_export]
     macro_rules! solution_results {
         ($input: expr, $answers: expr) => {
-            let vans: Vec<Option<Answer>> = $answers;
-
+            let vans: &[Option<Answer>] = $answers;
             let data = SOLUTION.preprocess($input).unwrap();
 
-            for (solver, ans) in SOLUTION.solvers.iter().zip(vans.into_iter()) {
+            for (solver, ans) in SOLUTION.solvers.iter().zip(vans.iter()) {
                 if let Some(a) = ans {
-                    assert_eq!(solver(&data).unwrap(), a);
+                    assert_eq!(solver(&data).unwrap(), *a);
                 }
             }
         };
@@ -669,7 +687,7 @@ pub mod solution {
         ) => {
             #[test]
             fn examples() {
-                use $crate::solution_results;
+                use super::SOLUTION;
                 $(
                 solution_results!($input, $answers);
                 )*
@@ -678,7 +696,7 @@ pub mod solution {
             #[test]
             #[cfg(feature = "expensive")]
             fn expensive_examples() {
-                use $crate::solution_results;
+                use super::SOLUTION;
                 $(
                 solution_results!($exp_input, $exp_answers);
                 )*
@@ -687,40 +705,9 @@ pub mod solution {
             #[test]
             #[ignore]
             fn actual() {
-                assert_eq!(
-                    SOLUTION.run_and_print(super::super::YEAR_SOLUTIONS.year).unwrap(),
-                    $actual
-                );
+                use super::SOLUTION;
+                assert_eq!(&SOLUTION.run_and_print(super::super::YEAR_SOLUTIONS.year).unwrap(), $actual);
             }
         };
-    }
-
-    /// Macro to construct the solution table for a year.
-    ///
-    /// See an implemented year for usage example.
-    #[macro_export]
-    macro_rules! year_solutions {
-        (
-            year = $year: expr;
-            days = [
-                $($day: ident,)*
-            ];
-        ) => {
-            $(
-                pub mod $day;
-            )*
-
-            use aoc::solution::YearSolutions;
-
-            // All of the solutions.
-            pub const YEAR_SOLUTIONS: YearSolutions = YearSolutions {
-                year: $year,
-                solutions: &[
-                $(
-                    $day::SOLUTION,
-                )*
-                ],
-            };
-         }
     }
 }

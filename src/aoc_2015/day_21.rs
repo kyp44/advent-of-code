@@ -2,18 +2,16 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
             input = "Hit Points: 90
 Damage: 3
 Armor: 3";
-            answers = vec![23u64, 33].answer_vec();
+            answers = unsigned![23, 33];
         }
-        actual_answers = vec![Unsigned(111), Unsigned(188)];
+        actual_answers = unsigned![111, 188];
     }
 }
 

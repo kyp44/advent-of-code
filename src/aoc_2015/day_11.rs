@@ -2,20 +2,18 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::String;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
             input = "abcdefgh";
-            answers = vec!["abcdffaa"].answer_vec();
+            answers = string!["abcdffaa"];
         }
         expensive_example {
             input = "ghijklmn";
-            answers = vec!["ghjaabcc"].answer_vec();
+            answers = string!["ghjaabcc"];
         }
-        actual_answers = vec![String("hxbxxyzz".into()), String("hxcaabcc".into())];
+        actual_answers = string!["hxbxxyzz", "hxcaabcc"];
     }
 }
 

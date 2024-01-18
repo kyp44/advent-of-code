@@ -2,40 +2,38 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
             input = "0,3,6";
-            answers = vec![436u64, 175594].answer_vec();
+            answers = unsigned![436, 175594];
         }
         expensive_example {
             input = "1,3,2";
-            answers = vec![1u64, 2578].answer_vec();
+            answers = unsigned![1, 2578];
         }
         expensive_example {
             input = "2,1,3";
-            answers = vec![10u64, 3544142].answer_vec();
+            answers = unsigned![10, 3544142];
         }
         expensive_example {
             input = "1,2,3";
-            answers = vec![27u64, 261214].answer_vec();
+            answers = unsigned![27, 261214];
         }
         expensive_example {
             input = "2,3,1";
-            answers = vec![78u64, 6895259].answer_vec();
+            answers = unsigned![78, 6895259];
         }
         expensive_example {
             input = "3,2,1";
-            answers = vec![438u64, 18].answer_vec();
+            answers = unsigned![438, 18];
         }
         expensive_example {
             input = "3,1,2";
-            answers = vec![1836u64, 362].answer_vec();
+            answers = unsigned![1836, 362];
         }
-        actual_answers = vec![Unsigned(1428), Unsigned(3718541)];
+        actual_answers = unsigned![1428, 3718541];
     }
 }
 

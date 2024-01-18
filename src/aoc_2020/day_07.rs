@@ -3,8 +3,7 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
+    use aoc::prelude_test::*;
     use Answer::Unsigned;
 
     solution_tests! {
@@ -18,7 +17,7 @@ dark olive bags contain 3 faded blue bags, 4 dotted black bags.
 vibrant plum bags contain 5 faded blue bags, 6 dotted black bags.
 faded blue bags contain no other bags.
 dotted black bags contain no other bags.";
-            answers = vec![4u64, 32].answer_vec();
+            answers = unsigned![4, 32];
         }
         example {
             input = "shiny gold bags contain 2 dark red bags.
@@ -28,9 +27,9 @@ dark yellow bags contain 2 dark green bags.
 dark green bags contain 2 dark blue bags.
 dark blue bags contain 2 dark violet bags.
 dark violet bags contain no other bags.";
-            answers = vec![None, Some(Unsigned(126))];
+            answers = &[None, Some(Unsigned(126))];
         }
-        actual_answers = vec![Unsigned(316), Unsigned(11310)];
+        actual_answers = unsigned![316, 11310];
     }
 }
 

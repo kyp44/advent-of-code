@@ -3,56 +3,54 @@ use serde_json::Value;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Signed;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
             input = "[1,2,3]";
-            answers = vec![6i64, 6].answer_vec();
+            answers = signed![6, 6];
         }
         example {
             input = r#"{"a":2,"b":4}"#;
-            answers = vec![6i64, 6].answer_vec();
+            answers = signed![6, 6];
         }
         example {
             input = "[[[3]]]";
-            answers = vec![3i64, 3].answer_vec();
+            answers = signed![3, 3];
         }
         example {
             input = r#"{"a":{"b":4},"c":-1}"#;
-            answers = vec![3i64, 3].answer_vec();
+            answers = signed![3, 3];
         }
         example {
             input = r#"{"a":[-1,1]}"#;
-            answers = vec![0i64, 0].answer_vec();
+            answers = signed![0, 0];
         }
         example {
             input = r#"[-1,{"a":1}]"#;
-            answers = vec![0i64, 0].answer_vec();
+            answers = signed![0, 0];
         }
         example {
             input = "[]";
-            answers = vec![0i64, 0].answer_vec();
+            answers = signed![0, 0];
         }
         example {
             input = "{}";
-            answers = vec![0i64, 0].answer_vec();
+            answers = signed![0, 0];
         }
         example {
             input = r#"[1,{"c":"red","b":2},3]"#;
-            answers = vec![6i64, 4].answer_vec();
+            answers = signed![6, 4];
         }
         example {
             input = r#"{"d":"red","e":[1,2,3,4],"f":5}"#;
-            answers = vec![15i64, 0].answer_vec();
+            answers = signed![15, 0];
         }
         example {
             input = r#"[1,"red",5]"#;
-            answers = vec![6i64, 6].answer_vec();
+            answers = signed![6, 6];
         }
-        actual_answers = vec![Signed(191164), Signed(87842)];
+        actual_answers = signed![191164, 87842];
     }
 }
 

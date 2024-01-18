@@ -3,8 +3,7 @@ use std::{collections::HashSet, str::FromStr};
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
+    use aoc::prelude_test::*;
     use Answer::Unsigned;
 
     solution_tests! {
@@ -14,7 +13,7 @@ H => OH
 O => HH
 
 HOH";
-            answers = vec![4u64].answer_vec();
+            answers = unsigned![4];
         }
         example {
             input = "H => HO
@@ -22,7 +21,7 @@ H => OH
 O => HH
 
 HOHOHO";
-        answers = vec![7u64].answer_vec();
+        answers = unsigned![7];
     }
         example {
             input = "e => H
@@ -32,7 +31,7 @@ H => OH
 O => HH
 
 HOH";
-            answers = vec![None, Some(Unsigned(3))];
+            answers = &[None, Some(Unsigned(3))];
         }
         example {
             input = "e => H
@@ -42,9 +41,9 @@ H => OH
 O => HH
 
 HOHOHO";
-            answers = vec![None, Some(Unsigned(6))];
+            answers = &[None, Some(Unsigned(6))];
         }
-        actual_answers = vec![Unsigned(576), Unsigned(207)];
+        actual_answers = unsigned![576, 207];
     }
 }
 

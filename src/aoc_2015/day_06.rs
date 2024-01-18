@@ -2,8 +2,7 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
+    use aoc::prelude_test::*;
     use Answer::Unsigned;
 
     solution_tests! {
@@ -11,14 +10,14 @@ mod tests {
             input = "turn on 0,0 through 999,999
 toggle 0,0 through 999,0
 turn off 499,499 through 500,500";
-            answers = vec![Some(Unsigned(998996)), None];
+            answers = &[Some(Unsigned(998996)), None];
         }
         example {
             input = "turn on 0,0 through 0,0
     toggle 0,0 through 999,999";
-            answers = vec![None, Some(Unsigned(2000001))];
+            answers = &[None, Some(Unsigned(2000001))];
         }
-        actual_answers = vec![Unsigned(543903), Unsigned(14687245)];
+        actual_answers = unsigned![543903, 14687245];
     }
 }
 

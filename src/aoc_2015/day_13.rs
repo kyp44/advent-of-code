@@ -2,9 +2,7 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Signed;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -20,9 +18,9 @@ Carol would gain 55 happiness units by sitting next to David.
 David would gain 46 happiness units by sitting next to Alice.
 David would lose 7 happiness units by sitting next to Bob.
 David would gain 41 happiness units by sitting next to Carol.";
-            answers = vec![330i64, 286].answer_vec();
+            answers = signed![330, 286];
         }
-        actual_answers = vec![Signed(664), Signed(640)];
+        actual_answers = signed![664, 640];
     }
 }
 

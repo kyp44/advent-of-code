@@ -3,36 +3,34 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
             input = "1 + 2 * 3 + 4 * 5 + 6";
-            answers = vec![71u64, 231].answer_vec();
+            answers = unsigned![71, 231];
         }
         example {
             input = "1 + (2 * 3) + (4 * (5 + 6))";
-            answers = vec![51u64, 51].answer_vec();
+            answers = unsigned![51, 51];
         }
         example {
             input = "2 * 3 + (4 * 5)";
-            answers = vec![26u64, 46].answer_vec();
+            answers = unsigned![26, 46];
         }
         example {
             input = "5 + (8 * 3 + 9 + 3 * 4 * 3)";
-            answers = vec![437u64, 1445].answer_vec();
+            answers = unsigned![437, 1445];
         }
         example {
             input = "5 * 9 * (7 * 3 * 3 + 9 * 3 + (8 + 6 * 4))";
-            answers = vec![12240u64, 669060].answer_vec();
+            answers = unsigned![12240, 669060];
         }
         example {
             input = "((2 + 4 * 9) * (6 + 9 * 8 + 6) + 6) + 2 + 4 * 2";
-            answers = vec![13632u64, 23340].answer_vec();
+            answers = unsigned![13632, 23340];
         }
-        actual_answers = vec![Unsigned(464478013511), Unsigned(85660197232452)];
+        actual_answers = unsigned![464478013511, 85660197232452];
     }
 }
 

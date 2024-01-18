@@ -2,20 +2,19 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
+    use aoc::prelude_test::*;
     use Answer::Unsigned;
 
     solution_tests! {
         example {
             input = "389125467";
-            answers = vec![Some(Unsigned(67384529)), None];
+            answers = &[Some(Unsigned(67384529)), None];
         }
         expensive_example {
             input = "389125467";
-            answers = vec![None, Some(Unsigned(149245887792))];
+            answers = &[None, Some(Unsigned(149245887792))];
         }
-        actual_answers = vec![Unsigned(98645732), Unsigned(689500518476)];
+        actual_answers = unsigned![98645732, 689500518476];
     }
 }
 

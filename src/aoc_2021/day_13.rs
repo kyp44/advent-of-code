@@ -3,9 +3,7 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -30,9 +28,9 @@ mod tests {
 
 fold along y=7
 fold along x=5";
-            answers = vec![17u64, 16].answer_vec();
+            answers = unsigned![17, 16];
         }
-        actual_answers = vec![Unsigned(592), Unsigned(94)];
+        actual_answers = unsigned![592, 94];
     }
 }
 

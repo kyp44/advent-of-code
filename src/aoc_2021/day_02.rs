@@ -3,9 +3,7 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Signed;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -15,9 +13,9 @@ forward 8
 up 3
 down 8
 forward 2";
-            answers = vec![150i64, 900].answer_vec();
+            answers = signed![150, 900];
         }
-        actual_answers = vec![Signed(2102357), Signed(2101031224)];
+        actual_answers = signed![2102357, 2101031224];
     }
 }
 

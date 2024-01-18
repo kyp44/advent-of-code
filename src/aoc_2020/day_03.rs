@@ -3,9 +3,7 @@ use cgmath::Vector2;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -21,9 +19,9 @@ mod tests {
 #...##....#
 .#..#...#.#
 ";
-            answers = vec![7u64, 336].answer_vec();
+            answers = unsigned![7, 336];
         }
-        actual_answers = vec![Unsigned(225), Unsigned(1115775000)];
+        actual_answers = unsigned![225, 1115775000];
     }
 }
 

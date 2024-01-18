@@ -2,8 +2,7 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
+    use aoc::prelude_test::*;
     use Answer::Unsigned;
 
     solution_tests! {
@@ -11,9 +10,9 @@ mod tests {
             input = "BFFFBBFRRR
 FFFBBBFRRR
 BBFFBBFRLL";
-            answers = vec![Some(Unsigned(820)), None];
+            answers = &[Some(Unsigned(820)), None];
         }
-        actual_answers = vec![Unsigned(970), Unsigned(587)];
+        actual_answers = unsigned![970, 587];
     }
 }
 

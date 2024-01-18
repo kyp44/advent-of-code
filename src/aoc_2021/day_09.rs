@@ -4,9 +4,7 @@ use std::collections::HashSet;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -15,9 +13,9 @@ mod tests {
 9856789892
 8767896789
 9899965678";
-            answers = vec![15u64, 1134].answer_vec();
+            answers = unsigned![15, 1134];
         }
-        actual_answers = vec![Unsigned(512), Unsigned(1600104)];
+        actual_answers = unsigned![512, 1600104];
     }
 }
 

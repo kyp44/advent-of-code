@@ -4,21 +4,19 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
-    example {
-    input = "vJrwpWtwJgWrhcsFMMfFFhFp
+        example {
+            input = "vJrwpWtwJgWrhcsFMMfFFhFp
 jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
 PmmdzqPrVvPwwTWBwg
 wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
 ttgJtRGJQctTZtZT
 CrZsJsPPZsGzwwsLwLmpwMDw";
-    answers = vec![157u64, 70].answer_vec();
-    }
-    actual_answers = vec![Unsigned(7691), Unsigned(2508)];
+            answers = unsigned![157, 70];
+        }
+        actual_answers = unsigned![7691, 2508];
     }
 }
 

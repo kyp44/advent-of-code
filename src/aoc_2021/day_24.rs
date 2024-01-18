@@ -4,16 +4,16 @@ use std::str::FromStr;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     #[test]
     #[ignore]
     fn actual() {
         assert_eq!(
-            SOLUTION
+            &SOLUTION
                 .run_and_print(super::super::YEAR_SOLUTIONS.year)
                 .unwrap(),
-            vec![Unsigned(92967699949891), Unsigned(91411143612181)],
+            unsigned![92967699949891, 91411143612181]
         );
     }
 

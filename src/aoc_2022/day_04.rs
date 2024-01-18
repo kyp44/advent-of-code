@@ -2,21 +2,19 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
-    example {
-    input = "2-4,6-8
+        example {
+            input = "2-4,6-8
 2-3,4-5
 5-7,7-9
 2-8,3-7
 6-6,4-6
 2-6,4-8";
-    answers = vec![2u64, 4].answer_vec();
-    }
-    actual_answers = vec![Unsigned(595), Unsigned(952)];
+            answers = unsigned![2, 4];
+        }
+        actual_answers = unsigned![595, 952];
     }
 }
 

@@ -2,12 +2,10 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
-        actual_answers = vec![Unsigned(40), Unsigned(241)];
+        actual_answers = unsigned![40, 241];
     }
 }
 

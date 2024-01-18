@@ -3,9 +3,7 @@ use itertools::Itertools;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -19,9 +17,9 @@ mod tests {
 [[9,3],[[9,9],[6,[4,9]]]]
 [[2,[[7,7],7]],[[5,8],[[9,3],[0,2]]]]
 [[[[5,2],5],[8,[3,7]]],[[5,[7,5]],[4,4]]]";
-            answers = vec![4140u64, 3993].answer_vec();
+            answers = unsigned![4140, 3993];
         }
-        actual_answers = vec![Unsigned(4207), Unsigned(4635)];
+        actual_answers = unsigned![4207, 4635];
     }
 }
 

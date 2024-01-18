@@ -2,8 +2,7 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
+    use aoc::prelude_test::*;
     use Answer::Unsigned;
 
     solution_tests! {
@@ -12,7 +11,7 @@ mod tests {
 on x=11..13,y=11..13,z=11..13
 off x=9..11,y=9..11,z=9..11
 on x=10..10,y=10..10,z=10..10";
-            answers = vec![39u64].answer_vec();
+            answers = unsigned![39];
         }
         example {
             input = "on x=-20..26,y=-36..17,z=-47..7
@@ -37,7 +36,7 @@ off x=18..30,y=-20..-8,z=-3..13
 on x=-41..9,y=-7..43,z=-33..15
 on x=-54112..-39298,y=-85059..-49293,z=-27449..7877
 on x=967..23432,y=45373..81175,z=27513..53682";
-            answers = vec![590784u64].answer_vec();
+            answers = unsigned![590784];
         }
         example {
             input = "on x=-5..47,y=-31..22,z=-19..33
@@ -100,9 +99,9 @@ off x=-27365..46395,y=31009..98017,z=15428..76570
 off x=-70369..-16548,y=22648..78696,z=-1892..86821
 on x=-53470..21291,y=-120233..-33476,z=-44150..38147
 off x=-93533..-4276,y=-16170..68771,z=-104985..-24507";
-            answers = vec![None, Some(Unsigned(2758514936282235))];
+            answers = &[None, Some(Unsigned(2758514936282235))];
         }
-        actual_answers = vec![Unsigned(546724), Unsigned(1346544039176841)];
+        actual_answers = unsigned![546724, 1346544039176841];
     }
 }
 

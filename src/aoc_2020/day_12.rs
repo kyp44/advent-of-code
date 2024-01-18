@@ -6,9 +6,7 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use aoc::solution_tests;
-    use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -17,9 +15,9 @@ N3
 F7
 R90
 F11";
-            answers = vec![25u64, 286].answer_vec();
+            answers = unsigned![25, 286];
         }
-        actual_answers = vec![Unsigned(2228), Unsigned(42908)];
+        actual_answers = unsigned![2228, 42908];
     }
 }
 
