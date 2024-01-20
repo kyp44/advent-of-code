@@ -34,7 +34,7 @@ mod solution {
         /// The section range for the second elf.
         elf_2: RangeInclusive<u8>,
     }
-    impl Parseable<'_> for Assignment {
+    impl Parsable<'_> for Assignment {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_pair(

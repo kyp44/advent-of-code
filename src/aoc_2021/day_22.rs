@@ -130,7 +130,7 @@ mod solution {
         /// Inclusive ranges for each dimension.
         ranges: Vector3<CuboidRange>,
     }
-    impl Parseable<'_> for Cuboid {
+    impl Parsable<'_> for Cuboid {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             /// This is a [`nom`] parser that parses an inclusive range.
             ///
@@ -201,7 +201,7 @@ mod solution {
         /// Turn a cuboid region off.
         Off(Cuboid),
     }
-    impl Parseable<'_> for RebootStep {
+    impl Parsable<'_> for RebootStep {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_pair(alt((tag("on"), tag("off"))), space1, Cuboid::parser),

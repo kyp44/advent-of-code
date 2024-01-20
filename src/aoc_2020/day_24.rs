@@ -76,7 +76,7 @@ mod solution {
         /// The tile to the right and below.
         NorthWest,
     }
-    impl Parseable<'_> for Direction {
+    impl Parsable<'_> for Direction {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             use Direction::*;
             map(
@@ -120,7 +120,7 @@ mod solution {
         /// Ordered list of directions to take from some starting tile.
         directions: Box<[Direction]>,
     }
-    impl Parseable<'_> for Route {
+    impl Parsable<'_> for Route {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(all_consuming(many1(Direction::parser)), |vec| Route {
                 directions: vec.into_boxed_slice(),

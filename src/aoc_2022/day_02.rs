@@ -66,7 +66,7 @@ mod solution {
         /// Scissors.
         Scissors,
     }
-    impl Parseable<'_> for HandShape {
+    impl Parsable<'_> for HandShape {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             let (out, c) = anychar(input)?;
             Ok((
@@ -145,7 +145,7 @@ mod solution {
         /// Your shape (or the [`Outcome`] for part two).
         your_shape: HandShape,
     }
-    impl Parseable<'_> for Round {
+    impl Parsable<'_> for Round {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_pair(HandShape::parser, space1, HandShape::parser),

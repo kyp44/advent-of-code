@@ -286,7 +286,7 @@ mod solution {
         /// Phantom data for the part of the problem.
         _phantom: PhantomData<P>,
     }
-    impl<P: Part + 'static> Parseable<'_> for Position<P> {
+    impl<P: Part + 'static> Parsable<'_> for Position<P> {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             let amphipod_line = move |input| -> NomParseResult<&str, Vec<Amphipod>> {
                 terminated(

@@ -112,7 +112,7 @@ mod solution {
         /// Starting stats.
         stats: Stats,
     }
-    impl Parseable<'_> for Character {
+    impl Parsable<'_> for Character {
         fn parser(input: &str) -> NomParseResult<&str, Self>
         where
             Self: Sized,

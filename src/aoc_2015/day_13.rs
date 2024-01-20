@@ -48,7 +48,7 @@ mod solution {
         /// Amount of happiness change.
         change: i64,
     }
-    impl<'a> Parseable<'a> for SeatingPreference<'a> {
+    impl<'a> Parsable<'a> for SeatingPreference<'a> {
         fn parser(input: &'a str) -> NomParseResult<&str, Self> {
             map(
                 tuple((

@@ -51,7 +51,7 @@ mod solution {
         /// West (left).
         West,
     }
-    impl Parseable<'_> for Direction {
+    impl Parsable<'_> for Direction {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             use Direction::*;
             map(one_of("^>v<"), |s| match s {
@@ -126,7 +126,7 @@ mod solution {
         /// The list of directions.
         directions: Vec<Direction>,
     }
-    impl Parseable<'_> for Directions {
+    impl Parsable<'_> for Directions {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(many1(Direction::parser), |directions| Directions {
                 directions,

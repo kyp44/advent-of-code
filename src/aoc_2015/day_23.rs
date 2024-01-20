@@ -41,7 +41,7 @@ mod solution {
         /// Register `b`.
         B,
     }
-    impl Parseable<'_> for Register {
+    impl Parsable<'_> for Register {
         fn parser(input: &str) -> NomParseResult<&str, Self>
         where
             Self: Sized,
@@ -69,7 +69,7 @@ mod solution {
         /// The conditional `jio` instruction with the register to check and relative offset.
         JumpIfOne(Register, i32),
     }
-    impl Parseable<'_> for Instruction {
+    impl Parsable<'_> for Instruction {
         fn parser(input: &str) -> NomParseResult<&str, Self>
         where
             Self: Sized,

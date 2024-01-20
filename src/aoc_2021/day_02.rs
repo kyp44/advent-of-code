@@ -36,7 +36,7 @@ mod solution {
         /// Decrease depth (part one) or aim (part two) by some amount.
         Up(u8),
     }
-    impl Parseable<'_> for Direction {
+    impl Parsable<'_> for Direction {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             alt((
                 map(

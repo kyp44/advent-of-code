@@ -48,7 +48,7 @@ mod solution {
         /// A numerical stack label.
         Label(u8),
     }
-    impl Parseable<'_> for StackCell {
+    impl Parsable<'_> for StackCell {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             alt((
                 map(tag("   "), |_| StackCell::Space),
@@ -146,7 +146,7 @@ mod solution {
         /// The stack label to which to move the crates.
         to: u8,
     }
-    impl Parseable<'_> for Move {
+    impl Parsable<'_> for Move {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 tuple((

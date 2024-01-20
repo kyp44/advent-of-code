@@ -57,7 +57,7 @@ mod solution {
         /// Card values in order from bottom to top.
         cards: Vec<u8>,
     }
-    impl Parseable<'_> for Deck {
+    impl Parsable<'_> for Deck {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 pair(

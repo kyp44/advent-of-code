@@ -180,7 +180,7 @@ mod solution {
     /// A 3D point in our coordinate system, which can be parsed from text input.
     #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, From)]
     pub struct Point(Point3<i32>);
-    impl Parseable<'_> for Point {
+    impl Parsable<'_> for Point {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_list1(tag(","), trim(false, nom::character::complete::i32)),

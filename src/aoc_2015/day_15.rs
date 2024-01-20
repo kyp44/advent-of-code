@@ -87,7 +87,7 @@ mod solution {
         /// How many calories it adds to the cookie.
         calories: i64,
     }
-    impl Parseable<'_> for Ingredient {
+    impl Parsable<'_> for Ingredient {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 tuple((

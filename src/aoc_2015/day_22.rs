@@ -288,7 +288,7 @@ mod solution {
                 .extend(spells.into_iter().filter(|s| !s.expired()))
         }
     }
-    impl Parseable<'_> for Character {
+    impl Parsable<'_> for Character {
         fn parser(input: &str) -> NomParseResult<&str, Self>
         where
             Self: Sized,

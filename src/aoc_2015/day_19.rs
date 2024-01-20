@@ -77,7 +77,7 @@ mod solution {
         /// Element with which to replace.
         to: String,
     }
-    impl Parseable<'_> for Replacement {
+    impl Parsable<'_> for Replacement {
         fn parser(input: &str) -> NomParseResult<&str, Self>
         where
             Self: Sized,

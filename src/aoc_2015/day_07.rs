@@ -44,7 +44,7 @@ mod solution {
         /// A wire with a name.
         Wire(&'a str),
     }
-    impl<'a> Parseable<'a> for Input<'a> {
+    impl<'a> Parsable<'a> for Input<'a> {
         fn parser(input: &'a str) -> NomParseResult<&str, Self> {
             alt((
                 map(nom::character::complete::u16, Input::Value),
@@ -89,7 +89,7 @@ mod solution {
         /// Bitwise OR gate.
         Or(Binary<'a>),
     }
-    impl<'a> Parseable<'a> for Element<'a> {
+    impl<'a> Parsable<'a> for Element<'a> {
         fn parser(input: &'a str) -> NomParseResult<&str, Self> {
             /// This is a [`nom`] parser for the input/output separator.
             fn io_sep<'a, E>(input: &'a str) -> IResult<&str, (), E>

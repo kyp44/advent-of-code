@@ -103,7 +103,7 @@ impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
 }
 
 /// Trait for types that can be parsed from text with [`nom`].
-pub trait Parseable<'a> {
+pub trait Parsable<'a> {
     /// Needs to parse the text using [`nom`] and return the parsed item.
     fn parser(input: &'a str) -> NomParseResult<&str, Self>
     where
@@ -160,8 +160,8 @@ pub trait Parseable<'a> {
     }
 }
 
-/// [`Parseable`] implementation for simple numbers.
-impl<T: Unsigned + FromStr> Parseable<'_> for T {
+/// [`Parsable`] implementation for simple numbers.
+impl<T: Unsigned + FromStr> Parsable<'_> for T {
     fn parser(input: &str) -> NomParseResult<&str, Self> {
         map(digit1, |ns: &str| match ns.parse() {
             Ok(v) => v,

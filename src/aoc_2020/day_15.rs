@@ -51,7 +51,7 @@ mod solution {
         /// List of starting numbers.
         starting: Vec<u64>,
     }
-    impl Parseable<'_> for Game {
+    impl Parsable<'_> for Game {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_list1(

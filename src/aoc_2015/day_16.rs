@@ -31,7 +31,7 @@ mod solution {
         /// The values of the compounds that you remember for this Aunt Sue.
         compounds: HashMap<&'a str, u8>,
     }
-    impl<'a> Parseable<'a> for Sue<'a> {
+    impl<'a> Parsable<'a> for Sue<'a> {
         fn parser(input: &'a str) -> NomParseResult<&str, Self> {
             map(
                 separated_pair(

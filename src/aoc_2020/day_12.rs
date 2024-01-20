@@ -37,7 +37,7 @@ mod solution {
         /// Move forward in the currently facing direction or to the waypoint.
         Forward(i32),
     }
-    impl Parseable<'_> for Instruction {
+    impl Parsable<'_> for Instruction {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 pair(one_of("NSEWLRF"), nom::character::complete::i32),

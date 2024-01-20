@@ -81,7 +81,7 @@ mod solution {
         /// The `z` register.
         Z,
     }
-    impl<'a> Parseable<'a> for Register {
+    impl<'a> Parsable<'a> for Register {
         fn parser(input: &'a str) -> NomParseResult<&str, Self>
         where
             Self: Sized,
@@ -104,7 +104,7 @@ mod solution {
         /// A number literal.
         Number(Number),
     }
-    impl<'a> Parseable<'a> for Operand {
+    impl<'a> Parsable<'a> for Operand {
         fn parser(input: &'a str) -> NomParseResult<&str, Self>
         where
             Self: Sized,
@@ -132,7 +132,7 @@ mod solution {
         /// `equ` equality test instruction.
         Equal(Register, Operand),
     }
-    impl<'a> Parseable<'a> for Instruction {
+    impl<'a> Parsable<'a> for Instruction {
         fn parser(input: &'a str) -> NomParseResult<&str, Self>
         where
             Self: Sized,

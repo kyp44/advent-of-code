@@ -128,7 +128,7 @@ mod solution {
         /// The list of parsed elements.
         elements: Vec<Element>,
     }
-    impl Parseable<'_> for Expression {
+    impl Parsable<'_> for Expression {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             all_consuming(map(
                 many1(alt((

@@ -44,7 +44,7 @@ mod solution {
         /// The table of enhanced pixel values.
         table: [bool; ALG_SIZE],
     }
-    impl Parseable<'_> for Algorithm {
+    impl Parsable<'_> for Algorithm {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 many_m_n(

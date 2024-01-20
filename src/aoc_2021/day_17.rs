@@ -31,7 +31,7 @@ mod solution {
         /// Inclusive range of `y` values included in the target area.
         range_y: RangeInclusive<i32>,
     }
-    impl Parseable<'_> for TargetArea {
+    impl Parsable<'_> for TargetArea {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             /// This is a [`nom`] parser that parses a single inclusive range.
             ///

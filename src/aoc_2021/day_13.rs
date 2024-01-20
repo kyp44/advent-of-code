@@ -54,7 +54,7 @@ mod solution {
     /// A dot location on the transparent page, which can be parsed from text input.
     #[derive(Deref, AsRef, PartialEq, Eq, Hash, Clone)]
     struct Dot(AnyGridPoint);
-    impl Parseable<'_> for Dot {
+    impl Parsable<'_> for Dot {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_pair(
@@ -136,7 +136,7 @@ mod solution {
         /// Horizontal fold at the `y` coordinate of the horizontal line.
         Horizontal(isize),
     }
-    impl Parseable<'_> for Fold {
+    impl Parsable<'_> for Fold {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 preceded(

@@ -44,7 +44,7 @@ mod solution {
         /// The other end of the segment.
         to: GridPoint,
     }
-    impl Parseable<'_> for Line {
+    impl Parsable<'_> for Line {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             /// This is an internal function of [`Line::parser`], which is a [`nom`] parser for
             /// a single point on the 2D grid.

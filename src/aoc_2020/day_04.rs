@@ -158,7 +158,7 @@ mod solution {
             }
         }
     }
-    impl Parseable<'_> for PassportField {
+    impl Parsable<'_> for PassportField {
         fn parser(input: &str) -> NomParseResult<&str, Self>
         where
             Self: Sized,
@@ -204,7 +204,7 @@ mod solution {
         /// Map from fields to their values.
         field_map: PassportFieldMap,
     }
-    impl Parseable<'_> for Passport {
+    impl Parsable<'_> for Passport {
         fn parser(input: &str) -> NomParseResult<&str, Self>
         where
             Self: Sized,

@@ -40,7 +40,7 @@ mod solution {
         /// Distance between the two cities.
         distance: u64,
     }
-    impl<'a> Parseable<'a> for Distance<'a> {
+    impl<'a> Parsable<'a> for Distance<'a> {
         fn parser(input: &'a str) -> NomParseResult<&str, Self> {
             map(
                 separated_pair(

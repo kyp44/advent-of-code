@@ -68,7 +68,7 @@ mod solution {
         /// List of bus IDs (`Some`), including buses that are not running (`None`).
         bus_ids: Vec<Option<ModNum<u64>>>,
     }
-    impl Parseable<'_> for Schedule {
+    impl Parsable<'_> for Schedule {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_pair(

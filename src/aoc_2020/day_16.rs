@@ -63,7 +63,7 @@ mod solution {
         /// Valid inclusive ranges of the field value.
         valid_ranges: Vec<RangeInclusive<u32>>,
     }
-    impl Parseable<'_> for Field {
+    impl Parsable<'_> for Field {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             use nom::character::complete::u32 as cu32;
             map(
@@ -102,7 +102,7 @@ mod solution {
         /// List of field values in order.
         field_values: Vec<u32>,
     }
-    impl Parseable<'_> for Ticket {
+    impl Parsable<'_> for Ticket {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             Ok((
                 "",

@@ -30,7 +30,7 @@ mod solution {
         /// Sequence for the next iteration.
         current: Takeable<String>,
     }
-    impl Parseable<'_> for Sequence {
+    impl Parsable<'_> for Sequence {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(digit1, |ds: &str| Sequence {
                 current: ds.to_string().into(),

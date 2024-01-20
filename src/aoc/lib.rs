@@ -26,7 +26,7 @@ pub mod prelude {
             GridSizeExt,
         },
         iter::{IteratorExt, StrExt},
-        parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parseable, Sections},
+        parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parsable, Sections},
         solution::{Answer, Solution, SolverInput, YearSolutions},
     };
 }

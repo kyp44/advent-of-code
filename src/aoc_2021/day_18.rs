@@ -56,7 +56,7 @@ mod solution {
         /// Ordered list of the elements of the number.
         stack: Vec<Element>,
     }
-    impl Parseable<'_> for SnailfishNumber {
+    impl Parsable<'_> for SnailfishNumber {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             alt((
                 map(nom::character::complete::u8, |n| SnailfishNumber {

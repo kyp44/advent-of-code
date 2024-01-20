@@ -110,7 +110,7 @@ mod solution {
         /// The actual password.
         password: &'a str,
     }
-    impl<'a, P: PasswordPolicy> Parseable<'a> for Password<'a, P> {
+    impl<'a, P: PasswordPolicy> Parsable<'a> for Password<'a, P> {
         fn parser(input: &'a str) -> NomParseResult<&str, Self> {
             context("password", separated_pair(P::parser, tag(": "), rest))(input.trim()).map(
                 |(next, res)| {

@@ -46,7 +46,7 @@ mod solution {
             self.bit_vec.iter().fold(0, |a, b| 2 * a + u64::from(*b))
         }
     }
-    impl Parseable<'_> for ReportLine {
+    impl Parsable<'_> for ReportLine {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(many1(one_of("01")), |v| Self {
                 bit_vec: v.into_iter().map(|b| b == '1').collect(),

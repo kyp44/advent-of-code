@@ -66,7 +66,7 @@ mod solution {
         /// Down a floor.
         Down,
     }
-    impl Parseable<'_> for Direction {
+    impl Parsable<'_> for Direction {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(one_of("()"), |c| match c {
                 '(' => Direction::Up,
@@ -90,7 +90,7 @@ mod solution {
         /// The list of directions.
         directions: Box<[Direction]>,
     }
-    impl Parseable<'_> for Directions {
+    impl Parsable<'_> for Directions {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(many1(Direction::parser), |v| Directions {
                 directions: v.into_boxed_slice(),

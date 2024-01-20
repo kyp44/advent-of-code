@@ -96,7 +96,7 @@ mod solution {
         /// Sets a memory location.
         SetMemory(Assignment),
     }
-    impl Parseable<'_> for Operation {
+    impl Parsable<'_> for Operation {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             use nom::character::complete::u64 as cu64;
             alt((

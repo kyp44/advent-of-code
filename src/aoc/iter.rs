@@ -6,6 +6,8 @@
 use itertools::{Itertools, MinMaxResult};
 use std::{fmt::Debug, ops::RangeInclusive};
 
+use crate::prelude::{AocError, AocResult};
+
 /// Extension methods for [`Iterator`]s.
 pub trait IteratorExt<T> {
     /// This is a convenience method to count the elements of an iterator after filtering by
@@ -61,6 +63,8 @@ pub trait IteratorExt<T> {
     /// assert_eq!([0, 1, 2, 3, 4, 5, 6].into_iter().iterations(4), Some(3));
     /// ```
     fn iterations(&mut self, n: usize) -> Option<T>;
+
+    fn expect_next(&mut self) -> AocResult<T>;
 }
 impl<T, I: Iterator<Item = T>> IteratorExt<T> for I {
     fn filter_count<O: TryFrom<usize>>(self, f: impl Fn(&T) -> bool) -> O
@@ -87,6 +91,12 @@ impl<T, I: Iterator<Item = T>> IteratorExt<T> for I {
         } else {
             None
         }
+    }
+
+    fn expect_next(&mut self) -> AocResult<T> {
+        self.next().ok_or(AocError::Process(
+            "Expected another item but there was none!".into(),
+        ))
     }
 }
 

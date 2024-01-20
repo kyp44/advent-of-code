@@ -101,7 +101,7 @@ mod solution {
             self.position.a()
         }
     }
-    impl Parseable<'_> for Player {
+    impl Parsable<'_> for Player {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 pair(

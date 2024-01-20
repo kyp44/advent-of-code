@@ -43,7 +43,7 @@ mod solution {
         /// `jmp` instruction, which jumps to a relative instruction.
         Jmp(i32),
     }
-    impl Parseable<'_> for Instruction {
+    impl Parsable<'_> for Instruction {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             context(
                 "instruction",

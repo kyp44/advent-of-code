@@ -149,7 +149,7 @@ mod solution {
                 /// Cave name at the other end of passage.
                 cave2: &'a str,
             }
-            impl<'a> Parseable<'a> for RawPassage<'a> {
+            impl<'a> Parsable<'a> for RawPassage<'a> {
                 fn parser(input: &'a str) -> NomParseResult<&str, Self> {
                     map(
                         separated_pair(alphanumeric1, tag("-"), alphanumeric1),

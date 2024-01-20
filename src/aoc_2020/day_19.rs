@@ -100,7 +100,7 @@ mod solution {
         /// Rule in which the portion must match one of a list sequences of other rules.
         Seq(Vec<Vec<usize>>),
     }
-    impl<'a> Parseable<'a> for Rule<'a> {
+    impl<'a> Parsable<'a> for Rule<'a> {
         fn parser(input: &'a str) -> NomParseResult<&str, Self> {
             let quote = "\"";
             alt((

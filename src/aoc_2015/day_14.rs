@@ -37,7 +37,7 @@ mod solution {
         /// Time for which the reindeer must rest after flying before flying again in seconds.
         rest_time: u64,
     }
-    impl Parseable<'_> for Reindeer {
+    impl Parsable<'_> for Reindeer {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 tuple((

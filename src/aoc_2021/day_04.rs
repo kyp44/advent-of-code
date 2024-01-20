@@ -56,7 +56,7 @@ mod solution {
             BoardCell { number, hit: false }
         }
     }
-    impl Parseable<'_> for BoardCell {
+    impl Parsable<'_> for BoardCell {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(nom::character::complete::u8, Self::from)(input)
         }
@@ -68,7 +68,7 @@ mod solution {
         /// The grid of board cells.
         grid: Grid<BoardCell>,
     }
-    impl Parseable<'_> for BingoBoard {
+    impl Parsable<'_> for BingoBoard {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             let (input, rows) = separated_list1(
                 line_ending,

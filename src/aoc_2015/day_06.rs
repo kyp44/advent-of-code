@@ -45,7 +45,7 @@ mod solution {
         /// Turn the light off.
         TurnOff,
     }
-    impl Parseable<'_> for Action {
+    impl Parsable<'_> for Action {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             use Action::*;
             alt((
@@ -58,7 +58,7 @@ mod solution {
 
     /// This is a [`nom`] parser for a [`GridPoint`].
     ///  
-    /// NOTE: This cannot be done as a [`Parseable`] implementation due
+    /// NOTE: This cannot be done as a [`Parsable`] implementation due
     /// to a potential conflict.
     fn point_parser(input: &str) -> NomParseResult<&str, GridPoint> {
         use nom::character::complete::u64 as cu64;
@@ -74,7 +74,7 @@ mod solution {
         /// Upper right corner of the rectangle (inclusive).
         upper_right: GridPoint,
     }
-    impl Parseable<'_> for Rect {
+    impl Parsable<'_> for Rect {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map_opt(
                 separated_pair(
@@ -115,7 +115,7 @@ mod solution {
         /// Rectangle of lights over which to perform the action.
         rect: Rect,
     }
-    impl Parseable<'_> for Instruction {
+    impl Parsable<'_> for Instruction {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_pair(Action::parser, space1, Rect::parser),

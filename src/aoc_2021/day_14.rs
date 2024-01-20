@@ -54,7 +54,7 @@ mod solution {
         /// The ordered list of elements in the formula.
         elements: Vec<char>,
     }
-    impl Parseable<'_> for Formula {
+    impl Parsable<'_> for Formula {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(alphanumeric1, |s: &str| Self {
                 elements: s.chars().collect(),
@@ -86,7 +86,7 @@ mod solution {
         /// Element to insert between the pair.
         insert: char,
     }
-    impl Parseable<'_> for PairInsertion {
+    impl Parsable<'_> for PairInsertion {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_pair(

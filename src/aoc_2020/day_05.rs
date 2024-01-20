@@ -34,7 +34,7 @@ mod solution {
         /// Seat column.
         column: u32,
     }
-    impl Parseable<'_> for Seat {
+    impl Parsable<'_> for Seat {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             /// This is an internal function of [`Seat::parser`].
             ///

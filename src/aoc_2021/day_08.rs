@@ -49,7 +49,7 @@ mod solution {
         /// The set of signal names asserted to create this digit on the display.
         segments: HashSet<char>,
     }
-    impl Parseable<'_> for Digit {
+    impl Parsable<'_> for Digit {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(many1(one_of("abcdefg")), |chars| Digit {
                 segments: chars.into_iter().collect(),
@@ -122,7 +122,7 @@ mod solution {
         /// The four output display digits.
         output: Box<[Digit]>,
     }
-    impl Parseable<'_> for Entry {
+    impl Parsable<'_> for Entry {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_pair(

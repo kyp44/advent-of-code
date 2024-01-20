@@ -43,7 +43,7 @@ mod solution {
         /// List of allergens contained in any of the ingredients for this food.
         allergens: StrSet,
     }
-    impl Parseable<'_> for Food {
+    impl Parsable<'_> for Food {
         fn parser(input: &str) -> NomParseResult<&str, Self>
         where
             Self: Sized,
