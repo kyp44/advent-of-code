@@ -32,6 +32,7 @@ clap = {version = "4.4", features = ["derive", "string"]}
 colored = "2.1"
 derive-new = "0.6"
 derive_more = "0.99"
+enum-as-inner = "0.6"
 enum-map = "2.7"
 enum_dispatch = "0.3"
 hex = "0.4"

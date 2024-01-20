@@ -1,6 +1,5 @@
-use std::str::FromStr;
-
 use aoc::prelude::*;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -31,18 +30,17 @@ $ ls
 8033020 d.log
 5626152 d.ext
 7214296 k";
-            answers = unsigned![123];
+            answers = unsigned![95437, 24933642];
         }
-        actual_answers = unsigned![123];
+        actual_answers = unsigned![1583951, 214171];
     }
 }
 
 /// Contains solution implementation items.
 mod solution {
-    use std::{iter::Peekable, str::FromStr};
-
     use super::*;
     use aoc::parse::trim;
+    use enum_as_inner::EnumAsInner;
     use nom::{
         branch::alt,
         bytes::complete::{tag, take_till},
@@ -50,10 +48,15 @@ mod solution {
         combinator::map,
         sequence::separated_pair,
     };
+    use std::iter::{FusedIterator, Peekable};
+    use takeable::Takeable;
 
-    #[derive(Debug)]
+    /// A command item from the terminal output.
+    #[derive(Debug, EnumAsInner)]
     enum CommandItem {
+        /// Change the current directory with the directory name to which to change.
         ChangeDir(String),
+        /// List the contents of the current directory.
         List,
     }
     impl Parsable<'_> for CommandItem {
@@ -68,9 +71,12 @@ mod solution {
         }
     }
 
+    /// A listing output item from the terminal output.
     #[derive(Debug)]
     enum ListingItem {
+        /// A sub directory with its name.
         Directory(String),
+        /// A file with its size.
         File(u64),
     }
     impl Parsable<'_> for ListingItem {
@@ -96,9 +102,12 @@ mod solution {
         }
     }
 
-    #[derive(Debug)]
+    /// An item parsed from the terminal output.
+    #[derive(Debug, EnumAsInner)]
     enum TerminalItem {
+        /// A command item.
         Command(CommandItem),
+        /// A listing output item.
         Listing(ListingItem),
     }
     impl Parsable<'_> for TerminalItem {
@@ -113,76 +122,203 @@ mod solution {
         }
     }
 
-    #[derive(Debug)]
-    pub enum FileSystem {
-        Directory {
-            name: String,
-            contents: Vec<FileSystem>,
-        },
+    /// A recursive file system item.
+    #[derive(Debug, EnumAsInner)]
+    enum FileSystem {
+        /// This is a directory with its [`Directory`].
+        Directory(Directory),
+        /// This is a file with its size.
         File(u64),
     }
-    impl FromStr for FileSystem {
+
+    /// A directory in the file system.
+    #[derive(Debug)]
+    pub struct Directory {
+        /// The name of the directory.
+        pub name: String,
+        /// The contents of the directory.
+        contents: Vec<FileSystem>,
+    }
+    impl FromStr for Directory {
         type Err = AocError;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
+            /// Builds a directory from the parsed terminal output.
+            ///
+            /// This is a recursive internal function of [`Directory::from_str`].
             fn build(
                 item_iter: &mut Peekable<impl Iterator<Item = TerminalItem>>,
-                expected_dirs: Vec<String>,
-            ) -> AocResult<FileSystem> {
-                Err(AocError::Process(
-                    if let TerminalItem::Command(CommandItem::ChangeDir(d)) =
-                        item_iter.expect_next()?
-                    {
-                        if expected_dirs.contains(&d) {
-                            // The next command should be a list
-                            if let TerminalItem::Command(CommandItem::List) =
-                                item_iter.expect_next()?
-                            {
-                                let mut contents = Vec::new();
-                                let mut dir_names = Vec::new();
+            ) -> AocResult<Directory> {
+                // First, we expect a change directory command
+                let dir_name = item_iter
+                    .expect_next()?
+                    .into_command()
+                    .ok()
+                    .and_then(|ci| ci.into_change_dir().ok())
+                    .ok_or(AocError::Process(
+                        "The next command is not to change directories".into(),
+                    ))?;
 
-                                // Now go through listed items
-                                loop {
-                                    if let Some(_) = item_iter.peek().and_then(|x| match x {
-                                        TerminalItem::Command(_) => None,
-                                        TerminalItem::Listing(_) => Some(()),
-                                    }) {
-                                        match {
-                                            if let TerminalItem::Listing(li) =
-                                                item_iter.next().unwrap()
-                                            {
-                                                li
-                                            } else {
-                                                panic!();
-                                            }
-                                        } {
-                                            ListingItem::Directory(d) => dir_names.push(d),
-                                            ListingItem::File(s) => {
-                                                contents.push(FileSystem::File(s))
-                                            }
-                                        }
-                                    } else {
-                                        // We are done with the listing
-                                        break;
-                                    }
-                                }
+                // The next command should be a list
+                if !item_iter
+                    .expect_next()?
+                    .into_command()
+                    .ok()
+                    .map(|ci| ci.is_list())
+                    .unwrap_or(false)
+                {
+                    return Err(AocError::Process(
+                        format!("After changing to '{dir_name}', the next command was not a list")
+                            .into(),
+                    ));
+                }
 
-                                return Ok(FileSystem::Directory { name: d, contents });
-                            } else {
-                                format!("After changing to '{d}'").into()
-                            }
-                        } else {
-                            format!("Directory '{d}' was not previously listed").into()
-                        }
-                    } else {
-                        "The next command is not to change directories".into()
-                    },
-                ))
+                let mut contents = Vec::new();
+                let mut dir_names = Vec::new();
+
+                // Now go through listed items
+                loop {
+                    // We are done if no more items are listed
+                    if !item_iter.peek().map(|x| x.is_listing()).unwrap_or(false) {
+                        break;
+                    }
+
+                    match item_iter.next().unwrap().into_listing().unwrap() {
+                        ListingItem::Directory(d) => dir_names.push(d),
+                        ListingItem::File(s) => contents.push(FileSystem::File(s)),
+                    }
+                }
+
+                // Now that we have everything, we expect that each directory to be listed recursively
+                loop {
+                    if dir_names.is_empty() {
+                        break;
+                    }
+
+                    let sub_dir = build(item_iter)?;
+
+                    // Remove this sub directory from our list
+                    dir_names.swap_remove(
+                        dir_names
+                            .iter()
+                            .position(|d| *d == sub_dir.name)
+                            .ok_or_else(|| {
+                                AocError::Process(
+                                    format!(
+                                        "Directory '{}' was not previously listed",
+                                        sub_dir.name
+                                    )
+                                    .into(),
+                                )
+                            })?,
+                    );
+
+                    // Now add the sub directory to our contents
+                    contents.push(FileSystem::Directory(sub_dir));
+                }
+
+                // Finally, we should have a cd back to the parent unless we are at the very end
+                if !item_iter
+                    .next()
+                    .map(|ti| {
+                        ti.into_command()
+                            .ok()
+                            .and_then(|ci| ci.into_change_dir().ok().map(|d| d == ".."))
+                            .unwrap_or(false)
+                    })
+                    .unwrap_or(true)
+                {
+                    return Err(AocError::Process(
+                        "The sub directory listing was not followed by a change to the parent"
+                            .into(),
+                    ));
+                }
+
+                Ok(Directory {
+                    name: dir_name,
+                    contents,
+                })
             }
 
-            todo!()
+            let mut iterm_iter = TerminalItem::gather(s.lines())?.into_iter().peekable();
+            let root_dir = build(&mut iterm_iter)?;
+
+            if root_dir.name != "/" {
+                return Err(AocError::Process(
+                    "The initial listed directory is not root!".into(),
+                ));
+            }
+
+            Ok(root_dir)
         }
     }
+    impl Directory {
+        /// Returns a recursive [`Iterator`] over all directories, starting with this one.
+        pub fn all_directories(&self) -> DirectoryTraversal {
+            DirectoryTraversal {
+                current: Takeable::new(self),
+                contents: self.contents.iter(),
+                sub_iter: None,
+            }
+        }
+
+        /// Returns the total size contained within this directory recursively.
+        pub fn size(&self) -> u64 {
+            self.contents
+                .iter()
+                .map(|fs| match fs {
+                    FileSystem::Directory(d) => d.size(),
+                    FileSystem::File(s) => *s,
+                })
+                .sum()
+        }
+    }
+
+    /// A recursive [`Iterator`] over the directories within a [`Directory`].
+    ///
+    /// This should only ever be returned from [`Directory::all_directories`].
+    pub struct DirectoryTraversal<'a> {
+        /// The current [`Directory`], indicating whether it has been emitted yet.
+        current: Takeable<&'a Directory>,
+        /// The contents of the current directory as an [`Iterator`].
+        contents: std::slice::Iter<'a, FileSystem>,
+        /// The [`Iterator`] over the current sub-directory.
+        ///
+        /// This will be set only if we are currently iterating over a sub-directory.
+        sub_iter: Option<Box<DirectoryTraversal<'a>>>,
+    }
+    impl<'a> Iterator for DirectoryTraversal<'a> {
+        type Item = &'a Directory;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            // Return ourself if have not already done so
+            if self.current.is_usable() {
+                return Some(self.current.take());
+            }
+
+            if let Some(iter) = self.sub_iter.as_deref_mut()
+                && let Some(fs) = iter.next()
+            {
+                // Return the next sub-directory item if there is any
+                Some(fs)
+            } else {
+                // Otherwise, we need to advance to the next item within this directory
+                self.contents.find_map(|fs| {
+                    match fs {
+                        FileSystem::Directory(d) => {
+                            // Create iterator over the contents
+                            let mut sub = d.all_directories();
+                            let next = sub.next().unwrap();
+                            self.sub_iter = Some(sub.into());
+                            Some(next)
+                        }
+                        FileSystem::File(_) => None,
+                    }
+                })
+            }
+        }
+    }
+    impl FusedIterator for DirectoryTraversal<'_> {}
 }
 
 use solution::*;
@@ -191,16 +327,55 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 7,
     name: "No Space Left On Device",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Directory::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
+            // Process
+            Ok(Answer::Unsigned(
+                input
+                    .expect_data::<Directory>()?
+                    .all_directories()
+                    .filter_map(|d| {
+                        let ds = d.size();
+
+                        if ds <= 100000 {
+                            Some(ds)
+                        } else {
+                            None
+                        }
+                    })
+                    .sum(),
+            ))
+        },
+        // Part two
+        |input| {
             // Generation
-            let x = FileSystem::from_str(input.expect_input()?)?;
-            println!("TODO {x:?}");
+            let root = input.expect_data::<Directory>()?;
 
             // Process
-            Ok(0u64.into())
+            /// The total disk space of the root file system.
+            const TOTAL_SPACE: u64 = 70000000;
+            /// The minimum space we need to perform the update.
+            const NEEDED_SPACE: u64 = 30000000;
+
+            let free_space = TOTAL_SPACE - root.size();
+            let need_to_free = NEEDED_SPACE - free_space;
+
+            Ok(Answer::Unsigned(
+                root.all_directories()
+                    .filter_map(|d| {
+                        let ds = d.size();
+
+                        if ds >= need_to_free {
+                            Some(ds)
+                        } else {
+                            None
+                        }
+                    })
+                    .min()
+                    .ok_or(AocError::NoSolution)?,
+            ))
         },
     ],
 };

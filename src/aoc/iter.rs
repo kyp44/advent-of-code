@@ -64,6 +64,22 @@ pub trait IteratorExt<T> {
     /// ```
     fn iterations(&mut self, n: usize) -> Option<T>;
 
+    /// Advances the [`Iterator`], returning the next item, or an error if there is none.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # #![feature(assert_matches)]
+    /// # use std::assert_matches::assert_matches;
+    /// # use aoc::prelude::*;
+    /// let mut iter = (1..=5).into_iter();
+    /// assert_matches!(iter.expect_next(), Ok(1));
+    /// assert_matches!(iter.expect_next(), Ok(2));
+    /// assert_matches!(iter.expect_next(), Ok(3));
+    /// assert_matches!(iter.expect_next(), Ok(4));
+    /// assert_matches!(iter.expect_next(), Ok(5));
+    /// assert_matches!(iter.expect_next(), Err(AocError::Process(_)));
+    /// ```
     fn expect_next(&mut self) -> AocResult<T>;
 }
 impl<T, I: Iterator<Item = T>> IteratorExt<T> for I {
