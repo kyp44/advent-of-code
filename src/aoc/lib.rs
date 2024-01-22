@@ -25,7 +25,7 @@ pub mod prelude {
             AnyGridPoint, AnyGridPointExt, FromGridStr, Grid, GridDefault, GridPoint, GridSize,
             GridSizeExt,
         },
-        iter::{IteratorExt, StrExt},
+        iter::{AdjacentDiff, IteratorExt, StrExt},
         parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parsable, Sections},
         solution::{Answer, Solution, SolverInput, YearSolutions},
     };
