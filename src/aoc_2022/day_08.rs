@@ -7,25 +7,30 @@ mod tests {
 
     solution_tests! {
         example {
-            input = "";
-            answers = unsigned![123];
+            input = "30373
+25512
+65332
+33549
+35390";
+            answers = unsigned![21, 8];
         }
-        actual_answers = unsigned![123];
+        actual_answers = unsigned![1782];
     }
 }
 
 /// Contains solution implementation items.
 mod solution {
-    use std::ops::Deref;
-
     use super::*;
     use aoc::grid::Digit;
+    use strum::IntoEnumIterator;
+    use strum_macros::EnumIter;
 
+    #[derive(Debug, Clone, Copy, EnumIter)]
     enum LookDirection {
-        FromLeft(usize),
-        FromRight(usize),
-        FromTop(usize),
-        FromBottom(usize),
+        FromLeft,
+        FromRight,
+        FromTop,
+        FromBottom,
     }
 
     pub struct TreePatch {
@@ -41,37 +46,60 @@ mod solution {
         }
     }
     impl TreePatch {
-        // The index of the furthest visible tree looking from a particular direction.
-        // Index is always relative to the grid regardless of look direction.
-        fn visible_distance(&self, look_dir: LookDirection) -> usize {
-            fn distance(trees: Vec<Digit>) -> Option<usize> {
-                trees
-                    .into_iter()
-                    .adjacent_diff()
-                    .position(|d| d <= 0.into())
+        fn visible(&self, look_dir: LookDirection, tree: &GridPoint) -> bool {
+            struct Line {
+                trees: Vec<Digit>,
+                idx: usize,
             }
 
-            let trees = match look_dir {
-                LookDirection::FromLeft(r) => self.grid.row_iter(r).copied().collect(),
-                LookDirection::FromRight(r) => {
-                    let mut v: Vec<_> = self.grid.row_iter(r).copied().collect();
-                    v.reverse();
-                    v
+            let size = self.grid.size();
+            let line = match look_dir {
+                LookDirection::FromLeft => Line {
+                    trees: self.grid.row_iter(tree.y).copied().collect(),
+                    idx: tree.x,
+                },
+                LookDirection::FromRight => {
+                    let mut trees: Vec<_> = self.grid.row_iter(tree.y).copied().collect();
+                    trees.reverse();
+
+                    Line {
+                        trees,
+                        idx: size.x - 1 - tree.x,
+                    }
                 }
-                LookDirection::FromTop(c) => self.grid.column_iter(c).copied().collect(),
-                LookDirection::FromBottom(c) => {
-                    let mut v: Vec<_> = self.grid.column_iter(c).copied().collect();
-                    v.reverse();
-                    v
+                LookDirection::FromTop => Line {
+                    trees: self.grid.column_iter(tree.x).copied().collect(),
+                    idx: tree.y,
+                },
+                LookDirection::FromBottom => {
+                    let mut trees: Vec<_> = self.grid.column_iter(tree.x).copied().collect();
+                    trees.reverse();
+
+                    Line {
+                        trees,
+                        idx: size.y - 1 - tree.y,
+                    }
                 }
             };
 
-            iter.deref().copied().adjacent_diff();
+            let mut visible = true;
+            let mut max_height = line.trees[0];
+            for tree in line.trees.into_iter().skip(1).take(line.idx) {
+                if tree > max_height {
+                    max_height = tree;
+                    visible = true;
+                } else {
+                    visible = false;
+                }
+            }
 
-            todo!()
+            visible
         }
+
         pub fn num_visible(&self) -> u64 {
-            0
+            self.grid.all_points().filter_count(|tree| {
+                LookDirection::iter().any(|look_dir| self.visible(look_dir, tree))
+            })
         }
     }
 }
@@ -82,15 +110,17 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 8,
     name: "Treetop Tree House",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(TreePatch::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let tree_patch = TreePatch::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(tree_patch.num_visible().into())
+            Ok(input.expect_data::<TreePatch>()?.num_visible().into())
+        },
+        // Part two
+        |input| {
+            // Process
+            Ok(input.expect_data::<TreePatch>()?.num_visible().into())
         },
     ],
 };
