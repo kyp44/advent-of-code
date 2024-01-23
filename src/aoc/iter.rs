@@ -116,16 +116,6 @@ impl<T, I: Iterator<Item = T>> IteratorExt<T> for I {
     }
 }
 
-pub trait AdjacentDiff<T> {
-    fn adjacent_diff(self) -> impl Iterator<Item = T>;
-}
-impl<I: Iterator<Item = T> + Clone, T: std::ops::Sub<Output = T>> AdjacentDiff<T> for I {
-    fn adjacent_diff(self) -> impl Iterator<Item = T> {
-        let iter = self.clone();
-        self.zip(iter.skip(1)).map(|(a, b)| b - a)
-    }
-}
-
 /// Extension methods for iteration over strings.
 pub trait StrExt {
     /// Returns an [`Iterator`] the performs substring replacements on a string, one replacement
