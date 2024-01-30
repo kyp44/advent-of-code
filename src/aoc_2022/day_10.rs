@@ -213,7 +213,7 @@ mod solution {
         }
     }
     impl Program {
-        /// Returns an [Executor] iterator to execute the program.
+        /// Returns an [`Executor`] iterator to execute the program.
         pub fn execute(&self) -> Executor {
             Executor {
                 instructions: self.instructions.iter(),
@@ -231,7 +231,7 @@ mod solution {
         cycles_left: usize,
     }
     impl AddInstruction {
-        /// Initialize a new instruction state `to_add` a particular number.
+        /// Initializes a new instruction state `to_add` a particular number.
         pub fn new(to_add: i64) -> Self {
             Self {
                 to_add,
@@ -274,9 +274,9 @@ mod solution {
         }
     }
 
-    /// An [Iterator] over the CPU states after each cycle as a program is executed.
+    /// An [`Iterator`] over the CPU states after each cycle as a program is executed.
     ///
-    /// This should only be created using [Program::execute].
+    /// This should only be created using [`Program::execute`].
     /// Note that the first state will be after the first cycle, not the initial state.
     pub struct Executor<'a> {
         /// The list of instructions to execute.
@@ -315,7 +315,7 @@ mod solution {
         }
     }
 
-    /// Renders the CRT pixels generated from executing a given [Program].
+    /// Renders the CRT pixels generated from executing a given [`Program`].
     pub fn render_crt(program: &Program) -> Grid<StdBool> {
         let size = GridSize::new(40, 6);
         let mut pixels = Grid::default(size);

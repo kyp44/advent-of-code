@@ -110,7 +110,7 @@ mod solution {
         knots: Vec<Coords>,
     }
     impl Rope {
-        /// Create a new rope with a particular number of knots.
+        /// Creates a new rope with a particular number of knots.
         ///
         /// All of the knots will start in the same space.
         pub fn new(num_knots: usize) -> AocResult<Self> {
@@ -168,7 +168,7 @@ mod solution {
         }
     }
     impl MoveSet {
-        /// Creates an [Executor] for this move set using a [Rope] with the specified number of knots.
+        /// Creates an [`Executor`] for this move set using a [`Rope`] with the specified number of knots.
         pub fn execute(
             &self,
             num_knots: usize,
@@ -182,17 +182,17 @@ mod solution {
         }
     }
 
-    /// An [Iterator] for executing a [MoveSet], that emits the last tail knot coordinates
+    /// An [`Iterator`] for executing a [`MoveSet`], that emits the last tail knot coordinates
     /// after each singular move.
     ///
     /// The first element emitted is the starting coordinates of the last tail knot.
-    /// This can only be created by calling [MoveSet::execute].
+    /// This can only be created by calling [`MoveSet::execute`].
     pub struct Executor<I> {
         /// Whether the initial tail coordinates have already been emitted.
         first_emitted: bool,
         /// The current state of the rope.
         rope: Rope,
-        /// The iterator over each [Move].
+        /// The iterator over each [`Move`].
         moves_iter: I,
         /// The move that is currently executing, if any.
         current_move: Option<Move>,

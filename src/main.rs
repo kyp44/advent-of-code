@@ -4,7 +4,7 @@
 //! All the code is documented to some extent, including general utilities in the [`aoc`] module
 //! that are used in multiple solutions.
 //!
-//! Also see the LaTeX notes for problems that required more analysis.
+//! Also see the LaTeX notes for problems that required more analysis or warranted further explanation.
 //! The document is in the `notes` directory and includes a `Makefile`.
 #![feature(hash_set_entry)]
 #![feature(type_alias_impl_trait)]

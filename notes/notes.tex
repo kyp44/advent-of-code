@@ -154,7 +154,7 @@
 
     This problem involves simulating probe trajectories for many initial velocities to see whether it hits the target.
     It is of course easy and computationally inexpensive to simulate trajectories, but we must bound the problem, so that we have a finite set of initial velocities to simulate.
-    
+
     First let us focus on the $y$ dimension.
     We assume that $x$ is constant and within the target so that we can determine the possible range of initial $y$ velocities $\vyo$ for which it is possible to hit the target regardless of the initial $x$ velocity $\vxo$.
     Denote the discrete steps by integers $n$, so that at $n = 0$ is when the probe is at its initial position of $(0, 0)$.
@@ -196,8 +196,8 @@
     \begin{enumerate}
         \item It is the case that $a_y < b_y < 0$ for both the example and the actual problem inputs.
         \item Once the probe is entirely below the target zone, that is once $y(n) < a_y$, the probe will only fall further down forever (or until it hits the ocean floor as the case may be) and can never hit the target after this.
-        This provides a terminating condition for the simulation of trajectories for a given $\vyo$.
-        This is true since (by 1) the target is below the starting position so that the $v_y(n)$ must already be negative by the time the target is encountered.
+              This provides a terminating condition for the simulation of trajectories for a given $\vyo$.
+              This is true since (by 1) the target is below the starting position so that the $v_y(n)$ must already be negative by the time the target is encountered.
     \end{enumerate}
     Observation 1 provides a lower bound on possible values of $\vyo$.
     For, if the probe is shot straight down with some $\vyo < 0$, then clearly, after a single step, $y(1) = \vyo$.
@@ -205,7 +205,7 @@
     \gath{
         \vyo = y(1) \geq a_y.
     }
-    
+
     The probe can of course be launched up and then fall back down into the target, so we assume that the upper bound is positive.
     Hence, in what follows, assume that $\vyo > 0$.
     As what goes up must come down, let us see when the probe will fall back down to its starting depth, that is when
@@ -253,7 +253,7 @@
     Therefore, the universal maximum $y$ position is
     \gath{
         y_\mathrm{max} = \begin{cases}
-            0 & \vyo \leq 0 \\
+            0                         & \vyo \leq 0 \\
             \frac{1}{2}\vyo(\vyo + 1) & \vyo > 0.
         \end{cases}
     }
@@ -262,10 +262,10 @@
     We note the following observations:
     \begin{enumerate}
         \item In both the example and actual input, the target area is to the right of the starting position, that is $0 < a_x < b_x$.
-        Because of this, we need only consider positive initial velocities so that $\vxo > 0$.
+              Because of this, we need only consider positive initial velocities so that $\vxo > 0$.
         \item This situation is directly analogous to the $y$ situation when the probe is launched up in that it moves upward (i.e. rightward here), slowing down until the velocity reaches zero.
-        At this point the situations diverge as the in the $y$ dimension the probe then begins falling downward, whereas in the $x$ dimension it does not now ``fall back'' (i.e. begin moving to the left), but instead stays where it is once the velocity reaches zero.
-        Because of this the probe can never move left if it is thrown right (and vice versa in fact) so that its position is non-decreasing.
+              At this point the situations diverge as the in the $y$ dimension the probe then begins falling downward, whereas in the $x$ dimension it does not now ``fall back'' (i.e. begin moving to the left), but instead stays where it is once the velocity reaches zero.
+              Because of this the probe can never move left if it is thrown right (and vice versa in fact) so that its position is non-decreasing.
     \end{enumerate}
     Analogously to the $y$ dimension, these observations provide a simple upper bound on $\vxo$.
     For, if the probe is launched with such a $\vxo$ such that is completely bypasses the target area in a single step, then it can never return to it.
@@ -388,5 +388,31 @@
     Given our search order, the first model number that meets all of these conditions is our answer in either part.
     Finally, the first valid model digits are passed as input to the interpreted MONAD program to verify its validity.
 }
+
+\notes{2022}{11}{https://adventofcode.com/2022/day/11}{
+    Implementing part two of this problem naively results in overflows even when using 64-bit integers.
+    This is because:
+    \begin{enumerate}
+        \item We are no longer dividing the worry levels by 3 (floor division) at every inspection to reduce them.
+        \item One of the monkeys is squaring the worry level.
+        \item We need to compute this after $10000$ turns instead of the $20$ in part one.
+    \end{enumerate}
+    However, there is a trick we can use that will prevent these overflows without affecting the results.
+    After each worry level is inspected, it is also tested by seeing whether it is divisible by some integer $m_k$ for monkey $k$, i.e. the test is whether
+    \gath{
+        x \equiv 0 \pmod{m_k},
+    }
+    where $x$ is the worry level.
+    If there are $N$ monkeys, then let
+    \gath{
+        m = \prod_{k=1}^N m_k
+    }
+    be the product of these test modulo numbers.
+    It is trivial to show that, if $x \equiv b \pmod{m_k}$ and $x \equiv a \pmod{m}$, then $a \equiv b \mod{m_k}$.
+    This enables us to do all of our worry level arithmetic in modulo $m$ and have all the monkey's tests give the same results as though we were not restricting the arithmetic at all.
+    The difference, of course, is that doing arithmetic modulo $m$ keeps the worry levels bounded in the interval $[0, m-1]$ instead of becoming arbitrarily large and overflowing our variables.
+    This of course will change the actual worry levels being thrown around, but our answer is invariant to this change.
+}
+
 
 \end{document}
