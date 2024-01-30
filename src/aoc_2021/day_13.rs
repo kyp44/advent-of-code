@@ -235,7 +235,7 @@ pub const SOLUTION: Solution = Solution {
                 .last()
                 .unwrap();
 
-            // This is a little annoying because it requires looking at letters in the folded image,
+            // This requires looking at letters in the folded image,
             // which cannot really be done in automated way easily.
             println!("Part two folded image:\n");
             println!("{last_page:?}");
