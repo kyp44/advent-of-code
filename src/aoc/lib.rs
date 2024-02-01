@@ -81,10 +81,9 @@ pub mod error {
 
 /// Collection of general extension traits.
 pub mod extension {
-    use std::ops::RangeInclusive;
-
     use cgmath::{Point2, Point3, Vector2, Vector3, Zero};
     use num::{Integer, Signed};
+    use std::ops::RangeInclusive;
 
     /// Extension trait for mathematical vectors from [`cgmath`].
     pub trait VectorExt<T> {

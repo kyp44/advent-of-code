@@ -28,23 +28,32 @@ mod solution {
     use aoc::grid::Digit;
     use bare_metal_modulo::{MNum, OffsetNumC};
     use cgmath::{EuclideanSpace, Vector2};
-    use derive_more::{Add, Deref, From, Into};
-    use priority_queue::PriorityQueue;
-    use std::{cmp::Reverse, collections::HashMap};
+    use derive_more::{Add, Deref};
+    use petgraph::{
+        algo::dijkstra,
+        graph::{DiGraph, NodeIndex},
+    };
 
     /// A risk level, which is a single digit with modular arithmetic.
-    #[derive(Clone, Copy, Deref, From, Into, Add)]
+    ///
+    /// The modulo arithmetic is needed when building the actual full grid in part two.
+    #[derive(Clone, Copy, Deref, Add)]
     pub struct RiskLevel(OffsetNumC<u8, 9, 1>);
     impl TryFrom<char> for RiskLevel {
         type Error = ();
 
         fn try_from(value: char) -> Result<Self, Self::Error> {
-            Ok(OffsetNumC::new(*Digit::try_from(value)?).into())
+            Ok((*Digit::try_from(value)?).into())
         }
     }
     impl From<u8> for RiskLevel {
         fn from(value: u8) -> Self {
-            OffsetNumC::new(value).into()
+            Self(OffsetNumC::new(value))
+        }
+    }
+    impl From<RiskLevel> for u64 {
+        fn from(value: RiskLevel) -> Self {
+            value.a().into()
         }
     }
 
@@ -52,46 +61,36 @@ mod solution {
     pub struct RiskLevels {
         /// The grid of risk levels.
         grid: Grid<RiskLevel>,
+        node_grid: Grid<NodeIndex>,
+        graph: DiGraph<RiskLevel, u64>,
     }
     impl From<Grid<RiskLevel>> for RiskLevels {
         fn from(value: Grid<RiskLevel>) -> Self {
-            Self { grid: value }
+            let (graph, node_grid) = value.as_graph(false, |_, d| Some(u64::from(*d)));
+
+            Self {
+                grid: value,
+                node_grid,
+                graph,
+            }
         }
     }
     impl RiskLevels {
         /// Implements [Dijkstra's algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
         /// to find the path with minimal total risk and returns the total minimal risk.
         pub fn min_risk(&self) -> u64 {
-            let mut visited = HashMap::new();
-            let mut queue = PriorityQueue::new();
+            let end = *self.node_grid.get(&GridPoint::from_vec(
+                self.node_grid.size() - Vector2::new(1, 1),
+            ));
 
-            // Add starting point to queue
-            queue.push(PointExt::origin(), Reverse(0));
+            let map = dijkstra(
+                &self.graph,
+                *self.node_grid.get(&GridPoint::new(0, 0)),
+                Some(end),
+                |e| *e.weight(),
+            );
 
-            // Destination point
-            let dest = GridPoint::from_vec(self.grid.size() - Vector2::new(1, 1));
-
-            // Fan out the visited nodes
-            loop {
-                let (current, dist) = queue.pop().unwrap();
-                for neighbor in self.grid.neighbor_points(&current, false, false) {
-                    let alt_dist = dist.0 + u64::from(self.grid.get(&neighbor).a());
-                    match queue.get_priority(&neighbor) {
-                        Some(d) => {
-                            if alt_dist < d.0 {
-                                queue.change_priority(&neighbor, Reverse(alt_dist));
-                            }
-                        }
-                        None => {
-                            queue.push(neighbor, Reverse(alt_dist));
-                        }
-                    }
-                }
-                if current == dest {
-                    break dist.0;
-                }
-                visited.insert(current, dist);
-            }
+            *map.get(&end).unwrap()
         }
 
         /// Expands this map as a tile into a `n` by `n` tile area and each tile
@@ -116,9 +115,7 @@ mod solution {
                 }
             }
 
-            Self {
-                grid: Grid::from_data(rows).unwrap(),
-            }
+            Self::from(Grid::from_data(rows).unwrap())
         }
     }
 }

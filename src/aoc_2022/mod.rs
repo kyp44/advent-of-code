@@ -15,5 +15,6 @@ year_solutions! {
         day_09,
         day_10,
         day_11,
+        day_12,
     ];
 }

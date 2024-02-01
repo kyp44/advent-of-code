@@ -10,6 +10,7 @@ use core::slice::SlicePattern;
 use derive_more::{Add, AddAssign, Deref, From, Into, Not, Sub, SubAssign};
 use itertools::{iproduct, process_results};
 use num::FromPrimitive;
+use petgraph::{graph::NodeIndex, stable_graph::IndexType, EdgeType, Graph};
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
 /// A point location in a [`Grid`] that should be within the bounds of the grid.
@@ -592,6 +593,89 @@ impl<T> Grid<T> {
         out
     }
 }
+// Additional methods for clone-able elements.
+impl<T: Clone> Grid<T> {
+    /// Creates a [`Graph`] representation of the grid.
+    ///
+    /// This can be useful to, for example, find the shortest path from one point
+    /// to another using [`petgraph::algo::dijkstra`](petgraph::algo::dijkstra::dijkstra).
+    /// A node is created for each point in the grid, with the node weight being a
+    /// clone of the corresponding element in this grid.
+    ///
+    /// The `edge_creator` closure can be used to create edges between adjacent points.
+    /// For each point in the grid, the closure will be called for each neighbor of the point,
+    /// optionally including diagonal neighbors when `include_diagonals` is `true`.
+    /// The first argument of the closure will be the element of the main point, while the
+    /// second argument is the element of the neighboring point.
+    /// The closure should return an edge weight if an edge should be created.
+    /// If [`None`] is returned, then an edge will not be created.
+    /// Note that the closure will be called twice for each pair of adjacent points, once
+    /// where one point is the main point, and again with other point as the main point.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// aoc::grid::todo();
+    /// ```
+    pub fn as_graph<E, Ty: EdgeType, Ix: IndexType>(
+        &self,
+        include_diagonals: bool,
+        edge_creator: impl Fn(&T, &T) -> Option<E>,
+    ) -> (Graph<T, E, Ty, Ix>, Grid<NodeIndex<Ix>>) {
+        let mut graph = Graph::default();
+
+        // Create nodes
+        let node_grid = Grid::from_data(
+            self.rows_iter()
+                .map(|row| row.iter().map(|t| graph.add_node(t.clone())).collect())
+                .collect(),
+        )
+        .unwrap();
+
+        // Create edges
+        for point in node_grid.all_points() {
+            for neighbor_point in node_grid.neighbor_points(&point, include_diagonals, false) {
+                // Possibly add an edge
+                if let Some(e) = edge_creator(self.get(&point), self.get(&neighbor_point)) {
+                    let _ =
+                        graph.add_edge(*node_grid.get(&point), *node_grid.get(&neighbor_point), e);
+                }
+            }
+        }
+
+        (graph, node_grid)
+    }
+}
+
+pub fn todo() {
+    use petgraph::{graph::DefaultIx, Directed};
+
+    // Create a graph of numbers.
+    let grid = Grid::from_data(vec![vec![2, 3, 3], vec![3, 1, 2], vec![4, 5, 1]]).unwrap();
+
+    // Generate a corresponding graph in which directed pathways exist between adjacent
+    // spaces only when going from one number to the same or successor number,
+    // including diagonal neighbors. The edge pathways have no weights.
+    //
+    // This graph would then look as follows:
+    // 2→3↔︎3
+    // ↓↖︎ ↖︎↑
+    // 3 1→2
+    // ↓  ⤡↑
+    // 4→5 1
+    let (graph, node_grid) = grid
+        .as_graph::<_, Directed, DefaultIx>(true, |p, n| (n == p || *n == *p + 1).then_some(()));
+
+    // Go through every node and verify that the graph has this structure.
+    for point in node_grid.all_points() {
+        for neighbor_point in node_grid.neighbor_points(&point, true, false) {}
+    }
+
+    let node_index = *node_grid.get(&GridPoint::new(0, 0));
+    assert_eq!(*graph.node_weight(node_index).unwrap(), 2);
+}
+
 // Additional methods for grids with boolean-like elements.
 impl<T: From<bool> + Default + Clone> Grid<T> {
     /// Builds a [`Grid`] from a set of [`AnyGridPoint`]s for any value type that can be
