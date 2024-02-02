@@ -51,7 +51,7 @@ mod solution {
         }
     }
     impl Square {
-        /// The numerical height of the square, with `a` being zero and `z` being 25.
+        /// Returns the numerical height of the square, with `a` being zero and `z` being 25.
         ///
         /// Note that the start space has height 0 and the end space has height 25.
         pub fn height(&self) -> u8 {
@@ -107,7 +107,7 @@ mod solution {
         /// Uses [Dijkstra's algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm) to determine
         /// the shortest path length from the `start` square to the designated end square.
         ///
-        /// The shortest path length is returned, or [None] if there is no path from `start` to the end.
+        /// The shortest path length is returned, or [`None``] if there is no path from `start` to the end.
         fn fewest_steps(&self, start: NodeIndex) -> Option<u64> {
             let map = dijkstra(&self.graph, start, Some(self.end), |_| 1);
 
