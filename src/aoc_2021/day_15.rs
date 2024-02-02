@@ -61,7 +61,9 @@ mod solution {
     pub struct RiskLevels {
         /// The grid of risk levels.
         grid: Grid<RiskLevel>,
+        /// The grid of the graph nodes.
         node_grid: Grid<NodeIndex>,
+        /// The directed graph.
         graph: DiGraph<RiskLevel, u64>,
     }
     impl From<Grid<RiskLevel>> for RiskLevels {
@@ -76,7 +78,7 @@ mod solution {
         }
     }
     impl RiskLevels {
-        /// Implements [Dijkstra's algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
+        /// Uses [Dijkstra's algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
         /// to find the path with minimal total risk and returns the total minimal risk.
         pub fn min_risk(&self) -> u64 {
             let end = *self.node_grid.get(&GridPoint::from_vec(

@@ -616,7 +616,62 @@ impl<T: Clone> Grid<T> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// aoc::grid::todo();
+    /// use itertools::{Itertools, iproduct};
+    /// use petgraph::{graph::DefaultIx, Directed};
+    ///
+    /// // Create a grid of numbers.
+    /// let grid = Grid::from_data(vec![vec![2, 2, 3], vec![3, 1, 2], vec![4, 5, 1]]).unwrap();
+    ///
+    /// // Generate a corresponding graph in which directed pathways exist between adjacent
+    /// // spaces only when going from one number to the same or successor number,
+    /// // including diagonal neighbors. The edge pathways have no weights.
+    /// //
+    /// // This graph would then look as follows:
+    /// // 2↔︎2→3
+    /// // ↓⤪↑⤡↑
+    /// // 3 1→2
+    /// // ↓  ⤡↑
+    /// // 4→5 1
+    /// let (graph, node_grid) = grid
+    ///     .as_graph::<_, Directed, DefaultIx>(true, |p, n| (n == p || *n == *p + 1).then_some(()));
+    ///
+    /// // Get all the node indices in row-major order.
+    /// let nodes = node_grid.all_values().copied().collect_vec();
+    ///
+    /// // Make a list of expected edges.
+    /// let expected_edges = [
+    ///     // First row
+    ///     (nodes[0], nodes[1]),
+    ///     (nodes[0], nodes[3]),
+    ///     (nodes[1], nodes[0]),
+    ///     (nodes[1], nodes[2]),
+    ///     (nodes[1], nodes[3]),
+    ///     (nodes[1], nodes[5]),
+    ///     // Second row
+    ///     (nodes[3], nodes[6]),
+    ///     (nodes[4], nodes[0]),
+    ///     (nodes[4], nodes[1]),
+    ///     (nodes[4], nodes[5]),
+    ///     (nodes[4], nodes[8]),
+    ///     (nodes[5], nodes[1]),
+    ///     (nodes[5], nodes[2]),
+    ///     // Third row
+    ///     (nodes[6], nodes[7]),
+    ///     (nodes[8], nodes[4]),
+    ///     (nodes[8], nodes[5]),
+    /// ];
+    ///
+    /// // Check the node weights.
+    /// assert!(nodes
+    ///     .iter()
+    ///     .map(|n| graph.node_weight(*n).unwrap())
+    ///     .copied()
+    ///     .eq([2, 2, 3, 3, 1, 2, 4, 5, 1]));
+    ///
+    /// // Check every possible pair of nodes for the expected edges.
+    /// for (a, b) in iproduct!(nodes.iter(), nodes.iter()).map(|(a, b)| (*a, *b)) {
+    ///     assert!(graph.contains_edge(a, b) == expected_edges.contains(&(a, b)));
+    /// }
     /// ```
     pub fn as_graph<E, Ty: EdgeType, Ix: IndexType>(
         &self,
@@ -646,34 +701,6 @@ impl<T: Clone> Grid<T> {
 
         (graph, node_grid)
     }
-}
-
-pub fn todo() {
-    use petgraph::{graph::DefaultIx, Directed};
-
-    // Create a graph of numbers.
-    let grid = Grid::from_data(vec![vec![2, 3, 3], vec![3, 1, 2], vec![4, 5, 1]]).unwrap();
-
-    // Generate a corresponding graph in which directed pathways exist between adjacent
-    // spaces only when going from one number to the same or successor number,
-    // including diagonal neighbors. The edge pathways have no weights.
-    //
-    // This graph would then look as follows:
-    // 2→3↔︎3
-    // ↓↖︎ ↖︎↑
-    // 3 1→2
-    // ↓  ⤡↑
-    // 4→5 1
-    let (graph, node_grid) = grid
-        .as_graph::<_, Directed, DefaultIx>(true, |p, n| (n == p || *n == *p + 1).then_some(()));
-
-    // Go through every node and verify that the graph has this structure.
-    for point in node_grid.all_points() {
-        for neighbor_point in node_grid.neighbor_points(&point, true, false) {}
-    }
-
-    let node_index = *node_grid.get(&GridPoint::new(0, 0));
-    assert_eq!(*graph.node_weight(node_index).unwrap(), 2);
 }
 
 // Additional methods for grids with boolean-like elements.

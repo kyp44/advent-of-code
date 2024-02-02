@@ -104,8 +104,8 @@ mod solution {
         }
     }
     impl HeightMap {
-        /// Uses Dijkstra’s shortest path algorithm to determine the shortest path length from the
-        /// `start` square to the designated end square.
+        /// Uses [Dijkstra's algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm) to determine
+        /// the shortest path length from the `start` square to the designated end square.
         ///
         /// The shortest path length is returned, or [None] if there is no path from `start` to the end.
         fn fewest_steps(&self, start: NodeIndex) -> Option<u64> {
