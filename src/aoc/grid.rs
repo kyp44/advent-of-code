@@ -332,7 +332,31 @@ impl<T> Grid<T> {
         &self.data[point.y][point.x]
     }
 
-    /// Sets element at a location.
+    /// Gets a reference to the element at any location, if the location is within
+    /// the bounds of the grid.
+    ///
+    /// # Panics
+    /// This will panic if the `point` is within the grid bounds but cannot be converted to a
+    /// [`GridPoint`].
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # #![feature(assert_matches)]
+    /// # use std::assert_matches::assert_matches;
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2], vec![3, 4], vec![5, 6]]).unwrap();
+    ///
+    /// assert_matches!(grid.get_any(&AnyGridPoint::new(0, 1)), Some(&3));
+    /// assert_matches!(grid.get_any(&AnyGridPoint::new(-1, 1)), None);
+    /// assert_matches!(grid.get_any(&AnyGridPoint::new(1, 2)), Some(&6));
+    /// assert_matches!(grid.get_any(&AnyGridPoint::new(3, 1)), None);
+    /// ```
+    pub fn get_any(&self, point: &AnyGridPoint) -> Option<&T> {
+        self.bounded_point(point).map(|p| self.get(&p))
+    }
+
+    /// Sets the element at a location.
     ///
     /// # Panics
     /// This will panic if the location is out of the bounds of the grid based on
@@ -346,12 +370,45 @@ impl<T> Grid<T> {
     /// let point = GridPoint::new(1, 1);
     ///
     /// assert_eq!(*grid.get(&point), 4);
-    ///
     /// grid.set(&point, 21);
     /// assert_eq!(*grid.get(&point), 21);
     /// ```
     pub fn set(&mut self, point: &GridPoint, value: T) {
         *self.element_at(point) = value;
+    }
+
+    /// Sets the element at any location, if the location is within
+    /// the bounds of the grid.
+    ///
+    /// Returns whether or not the `point` is within the grid bound.
+    /// If this was the case, then the element will have been set.
+    ///
+    /// # Panics
+    /// This will panic if the `point` is within the grid bounds but cannot be converted to a
+    /// [`GridPoint`].
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # #![feature(assert_matches)]
+    /// # use std::assert_matches::assert_matches;
+    /// # use aoc::prelude::*;
+    /// let mut grid = Grid::<u8>::from_data(vec![vec![1, 2], vec![3, 4], vec![5, 6]]).unwrap();
+    /// let point = AnyGridPoint::new(1, 1);
+    ///
+    /// assert_matches!(grid.get_any(&point), Some(&4));
+    /// assert!(grid.set_any(&point, 21));
+    /// assert_matches!(grid.get_any(&point), Some(&21));
+    /// assert!(!grid.set_any(&AnyGridPoint::new(-1, 1), 21));
+    /// ```
+    pub fn set_any(&mut self, point: &AnyGridPoint, value: T) -> bool {
+        match self.bounded_point(point) {
+            Some(p) => {
+                self.set(&p, value);
+                true
+            }
+            None => false,
+        }
     }
 
     /// Gets a mutable reference to an element.
@@ -727,7 +784,7 @@ impl<T: From<bool> + Default + Clone> Grid<T> {
     ///     AnyGridPoint::new(-2, 2),
     ///     AnyGridPoint::new(2, 1),
     ///     AnyGridPoint::new(3, 2),
-    /// ].into_iter());
+    /// ].iter());
     /// let values = vec![
     ///     vec![1, 0, 0, 0, 0, 1],
     ///     vec![0, 1, 0, 0, 1, 0],
@@ -739,7 +796,7 @@ impl<T: From<bool> + Default + Clone> Grid<T> {
     /// assert_eq!(grid.size(), &GridSize::new(6, 5));
     /// assert_eq!(grid, Grid::from_data(values).unwrap());
     /// ```
-    pub fn from_coordinates(points: impl Iterator<Item = AnyGridPoint> + Clone) -> Self {
+    pub fn from_coordinates<'a>(points: impl Iterator<Item = &'a AnyGridPoint> + Clone) -> Self {
         let x_range = points.clone().map(|p| p.x).range().unwrap_or(0..=0);
         let y_range = points.clone().map(|p| p.y).range().unwrap_or(0..=0);
         let size = GridSize::new(

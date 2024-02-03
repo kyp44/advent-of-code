@@ -66,12 +66,14 @@ mod solution {
                     .map(|i| ranges[i].clone())
                     .multi_cartesian_product()
                 {
-                    let slice = Slice::new(Grid::<StdBool>::from_coordinates(
-                        self.active_cubes
-                            .iter()
-                            .filter(|pt| pt[2..] == coords)
-                            .map(|v| AnyGridPoint::new(v[0], v[1])),
-                    ));
+                    let points = self
+                        .active_cubes
+                        .iter()
+                        .filter(|pt| pt[2..] == coords)
+                        .map(|v| AnyGridPoint::new(v[0], v[1]))
+                        .collect_vec();
+
+                    let slice = Slice::new(Grid::<StdBool>::from_coordinates(points.iter()));
 
                     writeln!(
                         f,
@@ -85,11 +87,13 @@ mod solution {
                     Debug::fmt(&slice, f)?;
                 }
             } else {
-                let slice = Slice::new(Grid::<StdBool>::from_coordinates(
-                    self.active_cubes
-                        .iter()
-                        .map(|v| AnyGridPoint::new(v[0], v[1])),
-                ));
+                let points = self
+                    .active_cubes
+                    .iter()
+                    .map(|v| AnyGridPoint::new(v[0], v[1]))
+                    .collect_vec();
+
+                let slice = Slice::new(Grid::<StdBool>::from_coordinates(points.iter()));
                 Debug::fmt(&slice, f)?;
             }
 

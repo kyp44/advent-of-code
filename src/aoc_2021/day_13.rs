@@ -43,6 +43,7 @@ mod solution {
     };
     use cgmath::Point2;
     use derive_more::{AsRef, Deref};
+    use itertools::Itertools;
     use nom::{
         bytes::complete::tag,
         character::complete::{multispace1, one_of},
@@ -90,11 +91,8 @@ mod solution {
     }
     impl Debug for Page {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(
-                f,
-                "{:?}",
-                Grid::<StdBool>::from_coordinates(self.dots.iter().map(|d| **d))
-            )
+            let points = self.dots.iter().map(|d| **d).collect_vec();
+            write!(f, "{:?}", Grid::<StdBool>::from_coordinates(points.iter()))
         }
     }
     impl Page {
