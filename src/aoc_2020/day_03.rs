@@ -29,6 +29,7 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::grid::StdBool;
+    use cgmath::EuclideanSpace;
     use derive_new::new;
 
     /// Map denoting open squares and trees, which can be parsed from text input.
@@ -58,7 +59,7 @@ mod solution {
         /// Slope down the hill.
         slope: Vector2<usize>,
         /// Current point on the map.
-        #[new(value = "GridPoint::new(0, 0)")]
+        #[new(value = "GridPoint::origin()")]
         point: GridPoint,
     }
     impl Iterator for MapDownhill<'_> {

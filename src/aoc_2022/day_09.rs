@@ -36,7 +36,7 @@ U 20";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use cgmath::{Point2, Vector2};
+    use cgmath::{EuclideanSpace, Point2, Vector2};
     use nom::{
         branch::alt, bytes::complete::tag, character::complete::space1, combinator::map,
         sequence::separated_pair,
@@ -118,7 +118,7 @@ mod solution {
                 Err(AocError::Process("Must have at least two knots!".into()))
             } else {
                 Ok(Self {
-                    knots: vec![Coords::new(0, 0); num_knots],
+                    knots: vec![Coords::origin(); num_knots],
                 })
             }
         }

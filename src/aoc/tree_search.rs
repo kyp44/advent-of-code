@@ -53,15 +53,16 @@ mod general {
     /// Implemented by a general tree node.
     pub trait TreeNode: Sized {
         /// The downward state type.
-        type DownwardState: Default;
+        type DownwardState;
         /// The upward state type.
         type UpwardState: TreeUpwardState<Self> + fmt::Debug;
 
         /// Returns the tree action for this node.
         fn recurse_action(&self, downward_state: &Self::DownwardState) -> TreeAction<Self>;
 
-        /// Performs the general tree search, returning the upward state of the root node.
-        fn traverse_tree(self) -> Self::UpwardState {
+        /// Performs the general tree search using the initial `downward_state`,
+        /// returning the upward state of the root node.
+        fn traverse_tree(self, downward_state: Self::DownwardState) -> Self::UpwardState {
             /// This is a recursive internal function of [`TreeNode::traverse_tree`].
             fn rec<N: TreeNode>(current: Child<N>) -> N::UpwardState {
                 let mut upward_state = N::UpwardState::new(&current);
@@ -82,7 +83,7 @@ mod general {
                 upward_state
             }
 
-            rec(Child::new(self, Self::DownwardState::default()))
+            rec(Child::new(self, downward_state))
         }
     }
 }
@@ -173,7 +174,9 @@ mod metric {
             }
 
             // If selected and we already have a solution, just pass that up
-            if N::STOP_AT_FIRST && let Some(bm) = global_state.solution_found() {
+            if N::STOP_AT_FIRST
+                && let Some(bm) = global_state.solution_found()
+            {
                 self.0 = *bm;
             } else {
                 // Update the global best cost if better for the total cost whose solution passes
@@ -245,6 +248,8 @@ mod metric {
 }
 
 use general::TreeNode;
+
+use self::metric::MetricDownwardState;
 
 /// A metric for use with a [`BestMetricTreeNode`] tree search.
 ///
@@ -320,7 +325,9 @@ pub trait BestMetricTreeNode: Sized + Eq + std::hash::Hash + fmt::Debug {
     /// a path if its cumulative cost becomes worse than the current best metric. The
     /// optimal/best metric is returned after the search is complete.
     fn best_metric(self) -> Self::Metric {
-        metric::BestMetricNode(self).traverse_tree().0
+        metric::BestMetricNode(self)
+            .traverse_tree(MetricDownwardState::default())
+            .0
     }
 }
 
@@ -385,7 +392,7 @@ mod global {
 /// A global state structure for use with a [`GlobalStateTreeNode`] tree search.
 ///
 /// The state can contain any data needed for the specific solution.
-pub trait GlobalState<N>: Default + fmt::Debug {
+pub trait GlobalState<N>: fmt::Debug {
     /// Updates the global state with information from a [`GlobalStateTreeNode`].
     fn update_with_node(&mut self, node: &N);
 
@@ -423,10 +430,12 @@ pub trait GlobalStateTreeNode: Sized + fmt::Debug {
     fn recurse_action(&self, state: &Self::GlobalState) -> GlobalAction<Self>;
 
     /// Performs the search tree with this node as the root, initializing the algorithm
-    /// with the default [`GlobalState`], and returning the current [`GlobalState`] after the
+    /// with the initial [`GlobalState`], and returning the current [`GlobalState`] after the
     /// search is complete.
-    fn traverse_tree(self) -> Self::GlobalState {
-        Rc::try_unwrap(global::GlobalStateNode(self).traverse_tree().0)
+    fn traverse_tree(self, initial_state: Self::GlobalState) -> Self::GlobalState {
+        let initial_state = Rc::new(RefCell::new(initial_state));
+
+        Rc::try_unwrap(global::GlobalStateNode(self).traverse_tree(initial_state).0)
             .unwrap()
             .into_inner()
     }

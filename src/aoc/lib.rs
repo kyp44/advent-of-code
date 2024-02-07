@@ -18,9 +18,7 @@ pub mod prelude {
     pub use super::{
         error::{AocError, AocResult},
         evolver::Evolver,
-        extension::{
-            PointExt, PointFrom, PointInto, RangeExt, TryPointFrom, TryPointInto, VectorExt,
-        },
+        extension::{PointFrom, PointInto, RangeExt, TryPointFrom, TryPointInto, VectorExt},
         grid::{
             AnyGridPoint, AnyGridPointExt, FromGridStr, Grid, GridDefault, GridPoint, GridSize,
             GridSizeExt,
@@ -81,7 +79,7 @@ pub mod error {
 
 /// Collection of general extension traits.
 pub mod extension {
-    use cgmath::{Point2, Point3, Vector2, Vector3, Zero};
+    use cgmath::{Point2, Point3, Vector2, Vector3};
     use num::{Integer, Signed};
     use std::ops::RangeInclusive;
 
@@ -114,32 +112,6 @@ pub mod extension {
     {
         fn manhattan_len(&self) -> T {
             self.x.abs() + self.y.abs() + self.z.abs()
-        }
-    }
-
-    /// Extension trait for mathematical points from [`cgmath`].
-    pub trait PointExt {
-        /// Returns the origin point of the coordinate system, that is the point
-        /// with all zero components.
-        ///
-        /// # Examples
-        /// Basic usage:
-        /// ```
-        /// # use aoc::prelude::*;
-        /// # use cgmath::{Point2, Point3};
-        /// assert_eq!(Point2::origin(), Point2::new(0, 0));
-        /// assert_eq!(Point3::origin(), Point3::new(0, 0, 0));
-        /// ```
-        fn origin() -> Self;
-    }
-    impl<T: Zero> PointExt for Point2<T> {
-        fn origin() -> Self {
-            Self::new(T::zero(), T::zero())
-        }
-    }
-    impl<T: Zero> PointExt for Point3<T> {
-        fn origin() -> Self {
-            Self::new(T::zero(), T::zero(), T::zero())
         }
     }
 

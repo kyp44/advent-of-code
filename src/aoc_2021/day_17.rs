@@ -17,7 +17,7 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::parse::{field_line_parser, trim};
-    use cgmath::{Point2, Vector2};
+    use cgmath::{EuclideanSpace, Point2, Vector2};
     use derive_new::new;
     use itertools::iproduct;
     use nom::{bytes::complete::tag, combinator::map, sequence::separated_pair};

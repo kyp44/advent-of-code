@@ -35,7 +35,7 @@ wseweeenwnesenwwwswnew";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use cgmath::{Point2, Vector2};
+    use cgmath::{EuclideanSpace, Point2, Vector2};
     use itertools::{iproduct, Itertools};
     use nom::{
         branch::alt,

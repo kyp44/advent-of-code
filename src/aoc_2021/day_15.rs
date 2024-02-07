@@ -87,7 +87,7 @@ mod solution {
 
             let map = dijkstra(
                 &self.graph,
-                *self.node_grid.get(&GridPoint::new(0, 0)),
+                *self.node_grid.get(&GridPoint::origin()),
                 Some(end),
                 |e| *e.weight(),
             );

@@ -160,7 +160,7 @@ mod solution {
 
         /// Plays the game with Dirac die and return the number of universes in which the winning player wins.
         pub fn play_dirac(&self) -> u64 {
-            let state = GameNode::from(self.clone()).traverse_tree();
+            let state = GameNode::from(self.clone()).traverse_tree(GameGlobalState::default());
             state.num_universes_wins[0].max(state.num_universes_wins[1])
         }
     }

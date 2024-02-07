@@ -178,7 +178,7 @@ mod solution {
         /// Counts the number of possible arrangements of the adapters.
         pub fn count_arrangements(&self) -> usize {
             // NOTE: We could theoretically use aoc::tree_search::GlobalStateTreeNode along with
-            // the CountLeaves global state, but the tree is far to large so that the below special
+            // the CountLeaves global state, but the tree is far too large so that the below special
             // algorithm is needed to solve in a reasonable time.
 
             // For each adapter we store the number of variations between it and the device

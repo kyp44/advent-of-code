@@ -212,7 +212,7 @@ mod solution {
                 visits_left,
                 path: vec![self.graph.node_weight(self.start).unwrap()],
             }
-            .traverse_tree()
+            .traverse_tree(PathGlobalState::default())
             .paths
         }
 

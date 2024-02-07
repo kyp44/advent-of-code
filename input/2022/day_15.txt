@@ -26,3 +26,5 @@ Sensor at x=3181909, y=2862960: closest beacon is at x=3565168, y=2949938
 Sensor at x=3099490, y=3946226: closest beacon is at x=2846628, y=4143786
 
 2000000
+
+4000000

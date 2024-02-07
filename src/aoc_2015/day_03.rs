@@ -31,7 +31,7 @@ mod solution {
     use super::*;
     use std::collections::HashSet;
 
-    use cgmath::{Point2, Vector2};
+    use cgmath::{EuclideanSpace, Point2, Vector2};
     use nom::{character::complete::one_of, combinator::map, multi::many1};
 
     /// The type for the coordinates of a house.

@@ -350,7 +350,7 @@ mod solution {
         /// Returns the transposer that leaves points unchanged.
         fn identity() -> Self {
             Transposer {
-                location: Point(PointExt::origin()),
+                location: Point(Point3::origin()),
                 rotation: RotationQuaternion::identity(),
             }
         }

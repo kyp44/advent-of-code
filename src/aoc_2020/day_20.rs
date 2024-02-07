@@ -598,7 +598,7 @@ mod solution {
             TileMap {
                 remaining: tile_set.tiles.into_iter().map(Rc::new).collect(),
                 slots: Grid::default(GridSize::new(size, size)),
-                placement_tile: GridPoint::new(0, 0),
+                placement_tile: GridPoint::origin(),
             }
         }
 
@@ -755,7 +755,7 @@ mod solution {
         /// Note that this is correct only up to rotations of the entire map.
         pub fn solve(self) -> AocResult<TileMap> {
             TileMap::new(self.tile_set)
-                .traverse_tree()
+                .traverse_tree(FirstSolutionGlobalState::default())
                 .solution()
                 .ok_or(AocError::NoSolution)
         }

@@ -13,6 +13,7 @@
 #![feature(ascii_char)]
 #![feature(ascii_char_variants)]
 #![feature(iter_array_chunks)]
+#![feature(extend_one)]
 #![warn(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
 
