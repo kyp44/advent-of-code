@@ -28,9 +28,10 @@ mod solution {
     use super::*;
     use aoc::{
         parse::trim,
-        tree_search::{GlobalAction, GlobalState, GlobalStateTreeNode},
+        tree_search::new::{self, GlobalStateAction, GlobalStateTreeNode},
     };
     use derive_new::new;
+    use indexmap::IndexMap;
     use itertools::Itertools;
     use nom::{
         bytes::complete::tag,
@@ -39,10 +40,7 @@ mod solution {
         multi::separated_list1,
         sequence::{preceded, tuple},
     };
-    use std::{
-        collections::{HashMap, HashSet},
-        marker::PhantomData,
-    };
+    use std::collections::HashSet;
 
     const STARTING_VALVE: &str = "AA";
     const MINUTES_ALLOWED: u8 = 30;
@@ -80,7 +78,7 @@ mod solution {
         }
     }
 
-    type ValveMap<'a> = HashMap<&'a str, CondensedValve<'a>>;
+    type ValveMap<'a> = IndexMap<&'a str, CondensedValve<'a>>;
 
     #[derive(Debug)]
     pub struct Volcano {
@@ -115,9 +113,8 @@ mod solution {
                 })
                 .collect();
 
-            // Extract the initial tunnel choices from valve AA
-            // TODO: Change to InvalidInput if moved.
-            let initial_tunnels = valves
+            // Verify the starting valve.
+            valves
                 .get(STARTING_VALVE)
                 .ok_or(AocError::Process(
                     format!("Valve {STARTING_VALVE} does not exist!").into(),
@@ -128,7 +125,7 @@ mod solution {
                             format!("The valve {STARTING_VALVE} flow rate is nonzero!").into(),
                         ))
                     } else {
-                        Ok(aa.tunnels.iter().cloned().collect::<HashSet<_>>())
+                        Ok(())
                     }
                 })?;
 
@@ -146,7 +143,13 @@ mod solution {
 
             // Now remove all valves with zero flow rate and substitute tunnels leading there with bypassed tunnels
             for zfr in zero_flow_rates {
-                let zfr_tunnels = valves.remove(zfr).unwrap().tunnels;
+                let zfr_tunnels = if zfr == STARTING_VALVE {
+                    // Only keep the starting valve since we need it to start, though no other tunnels will lead here.
+                    // We also need the starting valve's tunnels leading to ZFR valves to be replaced.
+                    valves.get(zfr).unwrap().tunnels.clone()
+                } else {
+                    valves.shift_remove(zfr).unwrap().tunnels
+                };
                 let zfr = Tunnel::from(zfr);
 
                 for valve in valves.values_mut() {
@@ -174,29 +177,20 @@ mod solution {
                 }
             }
 
-            // Now, re-add the starting valve which, once left, will never be returned to
-            valves.insert(
-                STARTING_VALVE,
-                CondensedValve {
-                    label: STARTING_VALVE,
-                    flow_rate: 0,
-                    tunnels: initial_tunnels,
-                },
-            );
+            let root = ValveNode::initial(&valves);
+            let final_state = root.traverse_tree(SearchState::new(&valves));
 
-            println!("TODO: {valves:?}");
-
-            Ok(0)
+            Ok(final_state.best_cumulative_released)
         }
     }
 
     #[derive(Debug, Clone)]
-    struct OpenedValves {
+    struct PressureTracker {
         cumulative_released: u64,
         total_flow_per_minute: u64,
         time_passed: u8,
     }
-    impl Default for OpenedValves {
+    impl Default for PressureTracker {
         fn default() -> Self {
             Self {
                 cumulative_released: 0,
@@ -205,7 +199,7 @@ mod solution {
             }
         }
     }
-    impl OpenedValves {
+    impl PressureTracker {
         pub fn open_valve(&mut self, flow_rate: u8) {
             self.total_flow_per_minute += u64::from(flow_rate);
         }
@@ -214,6 +208,12 @@ mod solution {
             let time = minutes.min(MINUTES_ALLOWED - self.time_passed);
             self.cumulative_released += self.total_flow_per_minute * u64::from(time);
             self.time_passed += time;
+            if self.cumulative_released > 1640 {
+                println!(
+                    "TODO time passed: {}, added {} over {} minutes",
+                    self.time_passed, self.total_flow_per_minute, time
+                );
+            }
         }
 
         pub fn run_out_clock(&mut self) -> u64 {
@@ -256,53 +256,86 @@ mod solution {
         tunnels: HashSet<Tunnel<'a>>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, new)]
     struct SearchState<'a> {
         valves: &'a ValveMap<'a>,
+        #[new(value = "0")]
         best_cumulative_released: u64,
-    }
-    impl<'a> SearchState<'a> {
-        pub fn new(valves: &'a ValveMap<'a>) -> Self {
-            Self {
-                valves,
-                best_cumulative_released: 0,
-            }
-        }
-    }
-    impl<'a> GlobalState<ValveNode<'a>> for SearchState<'a> {
-        fn update_with_node(&mut self, node: &ValveNode<'a>) {
-            todo!()
-        }
-
-        fn complete(&self) -> bool {
-            false
-        }
     }
 
     #[derive(Debug)]
     struct ValveNode<'a> {
         current: &'a CondensedValve<'a>,
         closed_valves: HashSet<&'a str>,
-        opened_valves: OpenedValves,
+        pressure_tracker: PressureTracker,
     }
     impl<'a> ValveNode<'a> {
-        pub fn initial(search_state: &'a SearchState<'a>) -> Self {
+        pub fn initial(valves: &'a ValveMap) -> Self {
             Self {
-                current: search_state.valves.get(STARTING_VALVE).unwrap(),
-                closed_valves: search_state.valves.keys().copied().collect(),
-                opened_valves: OpenedValves::default(),
+                current: &valves[STARTING_VALVE],
+                closed_valves: valves
+                    .keys()
+                    .filter(|k| **k != STARTING_VALVE)
+                    .copied()
+                    .collect(),
+                pressure_tracker: PressureTracker::default(),
             }
         }
     }
-
     impl<'a> GlobalStateTreeNode for ValveNode<'a> {
         type GlobalState = SearchState<'a>;
 
-        fn recurse_action(&self, state: &Self::GlobalState) -> GlobalAction<Self> {
-            if self.closed_valves.is_empty() {
-                // All valves are opened so just run out the clock
+        fn recurse_action(
+            &mut self,
+            global_state: &mut Self::GlobalState,
+        ) -> GlobalStateAction<Self> {
+            // Open this valve if not already open
+            let current_label = self.current.label;
+            if self.current.flow_rate > 0 && self.closed_valves.contains(current_label) {
+                // Opening the valve takes 1 minute (without the valve being open)
+                self.pressure_tracker.advance_time(1);
+
+                self.pressure_tracker.open_valve(self.current.flow_rate);
+                self.closed_valves.remove(current_label);
             }
-            todo!()
+
+            // If all the valves are open, run out the clock and this branch is done
+            if self.closed_valves.is_empty() {
+                let end_released = self.pressure_tracker.run_out_clock();
+                // TODO: Can we utilize a BestMetric here for its handy methods that make this less obnoxious
+                if end_released > global_state.best_cumulative_released {
+                    println!("TODO terminal {end_released}");
+                    global_state.best_cumulative_released = end_released;
+                }
+                return GlobalStateAction::Stop;
+            }
+
+            let mut nodes = Vec::with_capacity(self.current.tunnels.len());
+
+            for tunnel in self.current.tunnels.iter() {
+                let mut new_pressure_tracker = self.pressure_tracker.clone();
+
+                // Account for tunnel travel time
+                new_pressure_tracker.advance_time(tunnel.time);
+
+                // Check if we are out of time
+                if let Some(end_released) = new_pressure_tracker.is_time_up() {
+                    // TODO: Can we utilize a BestMetric here for its handy methods that make this less obnoxious
+                    if end_released > global_state.best_cumulative_released {
+                        global_state.best_cumulative_released = end_released;
+                    }
+                    return GlobalStateAction::Stop;
+                }
+
+                // Go down the tunnels
+                nodes.push(Self {
+                    current: &global_state.valves[tunnel.to],
+                    closed_valves: self.closed_valves.clone(),
+                    pressure_tracker: new_pressure_tracker,
+                })
+            }
+
+            GlobalStateAction::Continue(nodes)
         }
     }
 }
