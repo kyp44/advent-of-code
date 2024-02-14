@@ -180,6 +180,10 @@ mod solution {
             let root = ValveNode::initial(&valves);
             let final_state = root.traverse_tree(SearchState::new(&valves));
 
+            for muv in final_state.best_moves.iter() {
+                println!("{muv}");
+            }
+
             Ok(final_state.best_cumulative_released)
         }
     }
@@ -208,12 +212,6 @@ mod solution {
             let time = minutes.min(MINUTES_ALLOWED - self.time_passed);
             self.cumulative_released += self.total_flow_per_minute * u64::from(time);
             self.time_passed += time;
-            if self.cumulative_released > 1640 {
-                println!(
-                    "TODO time passed: {}, added {} over {} minutes",
-                    self.time_passed, self.total_flow_per_minute, time
-                );
-            }
         }
 
         pub fn run_out_clock(&mut self) -> u64 {
@@ -256,11 +254,43 @@ mod solution {
         tunnels: HashSet<Tunnel<'a>>,
     }
 
+    // TODO: Temporary instrumentation for debugging
+    #[derive(Debug, Clone)]
+    enum Move<'a> {
+        TurnOn(&'a str),
+        Tunnel(&'a str),
+    }
+    impl std::fmt::Display for Move<'_> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Move::TurnOn(v) => write!(f, "Turned on valve {}", v),
+                Move::Tunnel(to) => write!(f, "Moved through tunnel to {}", to),
+            }
+        }
+    }
+    #[derive(Debug, Clone, new)]
+    struct MoveRecord<'a> {
+        muv: Move<'a>,
+        released: u64,
+        over_time: u8,
+    }
+    impl std::fmt::Display for MoveRecord<'_> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(
+                f,
+                "{} for {} minutes, releasing {} pressure",
+                self.muv, self.over_time, self.released
+            )
+        }
+    }
+
     #[derive(Debug, new)]
     struct SearchState<'a> {
         valves: &'a ValveMap<'a>,
         #[new(value = "0")]
         best_cumulative_released: u64,
+        #[new(value = "Vec::new()")]
+        best_moves: Vec<MoveRecord<'a>>,
     }
 
     #[derive(Debug)]
@@ -268,6 +298,7 @@ mod solution {
         current: &'a CondensedValve<'a>,
         closed_valves: HashSet<&'a str>,
         pressure_tracker: PressureTracker,
+        moves: Vec<MoveRecord<'a>>,
     }
     impl<'a> ValveNode<'a> {
         pub fn initial(valves: &'a ValveMap) -> Self {
@@ -279,6 +310,7 @@ mod solution {
                     .copied()
                     .collect(),
                 pressure_tracker: PressureTracker::default(),
+                moves: Vec::new(),
             }
         }
     }
@@ -297,6 +329,13 @@ mod solution {
 
                 self.pressure_tracker.open_valve(self.current.flow_rate);
                 self.closed_valves.remove(current_label);
+
+                // TODO debugging
+                self.moves.push(MoveRecord::new(
+                    Move::TurnOn(current_label),
+                    self.pressure_tracker.total_flow_per_minute,
+                    1,
+                ))
             }
 
             // If all the valves are open, run out the clock and this branch is done
@@ -306,6 +345,7 @@ mod solution {
                 if end_released > global_state.best_cumulative_released {
                     println!("TODO terminal {end_released}");
                     global_state.best_cumulative_released = end_released;
+                    global_state.best_moves = self.moves.clone();
                 }
                 return GlobalStateAction::Stop;
             }
@@ -323,15 +363,24 @@ mod solution {
                     // TODO: Can we utilize a BestMetric here for its handy methods that make this less obnoxious
                     if end_released > global_state.best_cumulative_released {
                         global_state.best_cumulative_released = end_released;
+                        global_state.best_moves = self.moves.clone();
                     }
                     return GlobalStateAction::Stop;
                 }
+
+                // TODO debugging
+                self.moves.push(MoveRecord::new(
+                    Move::Tunnel(tunnel.to),
+                    self.pressure_tracker.total_flow_per_minute,
+                    tunnel.time,
+                ));
 
                 // Go down the tunnels
                 nodes.push(Self {
                     current: &global_state.valves[tunnel.to],
                     closed_valves: self.closed_valves.clone(),
                     pressure_tracker: new_pressure_tracker,
+                    moves: self.moves.clone(),
                 })
             }
 
