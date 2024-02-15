@@ -40,7 +40,9 @@ mod solution {
         multi::separated_list1,
         sequence::{preceded, tuple},
     };
-    use std::collections::HashSet;
+    use num::rational::Ratio;
+    use petgraph::{algo::floyd_warshall, graph::DiGraph, visit::EdgeRef};
+    use std::collections::{HashMap, HashSet};
 
     const STARTING_VALVE: &str = "AA";
     const MINUTES_ALLOWED: u8 = 30;
@@ -78,8 +80,6 @@ mod solution {
         }
     }
 
-    type ValveMap<'a> = IndexMap<&'a str, CondensedValve<'a>>;
-
     #[derive(Debug)]
     pub struct Volcano {
         valves: Vec<Valve>,
@@ -97,94 +97,169 @@ mod solution {
         pub fn maximum_pressure_release(&self) -> AocResult<u64> {
             // TODO: Do the reduction up front if raw parsed Valves are not needed for part two.
 
-            // First convert to the final form
-            let mut valves: ValveMap<'_> = self
+            println!("TODO building graph...");
+
+            // Build all the graph nodes
+            let mut graph = DiGraph::new();
+            let node_map = self
                 .valves
                 .iter()
-                .map(|v| {
+                .map(|valve| {
                     (
-                        v.label.as_str(),
-                        CondensedValve {
-                            label: v.label.as_str(),
-                            flow_rate: v.flow_rate,
-                            tunnels: v.tunnels.iter().map(|t| Tunnel::from(t.as_str())).collect(),
-                        },
+                        valve.label.as_str(),
+                        graph.add_node(ValveNode::new(&valve.label, valve.flow_rate)),
                     )
                 })
-                .collect();
+                .collect::<HashMap<_, _>>();
 
-            // Verify the starting valve.
-            valves
-                .get(STARTING_VALVE)
-                .ok_or(AocError::Process(
-                    format!("Valve {STARTING_VALVE} does not exist!").into(),
-                ))
-                .and_then(|aa| {
-                    if aa.flow_rate > 0 {
-                        Err(AocError::Process(
-                            format!("The valve {STARTING_VALVE} flow rate is nonzero!").into(),
-                        ))
-                    } else {
-                        Ok(())
-                    }
-                })?;
+            // Now build edges
+            for valve in self.valves.iter() {
+                for tunnel in valve.tunnels.iter() {
+                    graph.add_edge(
+                        node_map[valve.label.as_str()],
+                        node_map[tunnel.as_str()],
+                        1u8,
+                    );
+                }
+            }
 
-            // Collect those valves with zero flow rate
-            let zero_flow_rates = valves
-                .values()
-                .filter_map(|v| {
-                    if v.flow_rate == 0 {
-                        Some(v.label)
+            // Now determine shortest paths between all pairs
+            let shortest_paths = floyd_warshall(&graph, |e| *e.weight()).unwrap();
+
+            // Add shortest path edges
+            for ((a, b), time) in shortest_paths.into_iter() {
+                if a != b {
+                    graph.update_edge(a, b, time);
+                }
+            }
+
+            // Now remove all zero flow rate nodes except the starting node
+            graph.retain_nodes(|graph, ni| {
+                let valve = &graph[ni];
+                valve.flow_rate > 0 || valve.label == STARTING_VALVE
+            });
+
+            for node_index in graph.node_indices() {
+                let valve = &graph[node_index];
+                println!("Surviving node: {node_index:?}, {}", valve.label);
+            }
+
+            // TODO save out graph for viewing
+            println!("{}", petgraph::dot::Dot::new(&graph));
+
+            println!("TODO done!");
+
+            // TODO test code
+            let valves = graph
+                .node_indices()
+                .filter(|ni| graph[*ni].label != STARTING_VALVE)
+                .collect_vec();
+
+            println!("TODO total nodes: {}", graph.node_count());
+            println!("TODO numb of nodes to permute: {}", valves.len());
+
+            for ni in graph.node_indices() {
+                println!(
+                    "TODO {} edges FR/T: {}",
+                    graph[ni].label,
+                    graph
+                        .edges(ni)
+                        .map(|e| {
+                            let target = &graph[e.target()];
+                            let t = *e.weight();
+                            let fr = target.flow_rate;
+                            format!(
+                                "{}: {}/{}-{}",
+                                target.label,
+                                fr,
+                                t,
+                                target.open_next_score(t),
+                            )
+                        })
+                        .join(", ")
+                );
+            }
+
+            // First try naive algorithm
+            let mut closed_valves = graph
+                .node_indices()
+                .filter(|ni| graph[*ni].flow_rate > 0)
+                .collect::<HashSet<_>>();
+            let mut pressure_tracker = PressureTracker::default();
+            let mut current_node = graph
+                .node_indices()
+                .filter_map(|ni| {
+                    let valve = &graph[ni];
+
+                    if valve.label == STARTING_VALVE {
+                        Some(if valve.flow_rate != 0 {
+                            Err(AocError::Process(
+                                format!("The valve {STARTING_VALVE} flow rate is nonzero!").into(),
+                            ))
+                        } else {
+                            Ok(ni)
+                        })
                     } else {
                         None
                     }
                 })
-                .collect_vec();
+                .next()
+                .ok_or(AocError::Process(
+                    format!("Valve {STARTING_VALVE} does not exist!").into(),
+                ))??;
 
-            // Now remove all valves with zero flow rate and substitute tunnels leading there with bypassed tunnels
-            for zfr in zero_flow_rates {
-                let zfr_tunnels = if zfr == STARTING_VALVE {
-                    // Only keep the starting valve since we need it to start, though no other tunnels will lead here.
-                    // We also need the starting valve's tunnels leading to ZFR valves to be replaced.
-                    valves.get(zfr).unwrap().tunnels.clone()
-                } else {
-                    valves.shift_remove(zfr).unwrap().tunnels
-                };
-                let zfr = Tunnel::from(zfr);
-
-                for valve in valves.values_mut() {
-                    let valve_tunnels = &mut valve.tunnels;
-
-                    // Remove the ZFR tunnel from the valve tunnels there if it is there
-                    if let Some(old_tunnel) = valve_tunnels.take(&zfr) {
-                        // Replace with the ZFR tunnels if the path is better than the current path
-                        for zfr_tunnel in zfr_tunnels.iter().filter(|t| t.to != valve.label) {
-                            let new_tunnel =
-                                Tunnel::new(zfr_tunnel.to, old_tunnel.time + zfr_tunnel.time);
-
-                            match valve_tunnels.get(&new_tunnel) {
-                                Some(t) => {
-                                    if new_tunnel.time < t.time {
-                                        valve_tunnels.replace(new_tunnel);
-                                    }
-                                }
-                                None => {
-                                    valve_tunnels.insert(new_tunnel);
-                                }
-                            }
-                        }
-                    }
+            let x = loop {
+                // Have we opened all valves?
+                if closed_valves.is_empty() {
+                    break pressure_tracker.run_out_clock();
                 }
-            }
 
-            let root = ValveNode::initial(&valves);
-            let final_state = root.traverse_tree(SearchState::new(&valves));
+                // Have we run out of time?
+                if let Some(p) = pressure_tracker.is_time_up() {
+                    break p;
+                }
 
-            for muv in final_state.best_moves.iter() {
-                println!("{muv}");
-            }
+                // Determine which to move to next
+                let (next_node, next_valve, time) = closed_valves
+                    .iter()
+                    .map(|ni| {
+                        let valve = &graph[*ni];
+                        let time = graph[graph.find_edge(current_node, *ni).unwrap()];
+                        (*ni, valve, time)
+                    })
+                    .max_by_key(|(_, v, t)| v.open_next_score(*t))
+                    .unwrap();
 
-            Ok(final_state.best_cumulative_released)
+                // Move to the next valve
+                pressure_tracker.advance_time(time);
+
+                // Open the next valve
+                pressure_tracker.open_valve(next_valve.flow_rate);
+                closed_valves.remove(&next_node);
+
+                current_node = next_node;
+            };
+
+            println!("TODO Best: {x}");
+
+            Ok(0)
+        }
+    }
+
+    #[derive(new)]
+    struct ValveNode<'a> {
+        // TODO: in the end we may not need the label at and can just use the flow rate as the weight.
+        label: &'a str,
+        flow_rate: u8,
+    }
+    impl ValveNode<'_> {
+        pub fn open_next_score(&self, time: u8) -> Ratio<u8> {
+            Ratio::new(self.flow_rate, time)
+        }
+    }
+    impl std::fmt::Display for ValveNode<'_> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.label)
         }
     }
 
@@ -204,7 +279,9 @@ mod solution {
         }
     }
     impl PressureTracker {
+        // Includes time advance of 1 minute before opening
         pub fn open_valve(&mut self, flow_rate: u8) {
+            self.advance_time(1);
             self.total_flow_per_minute += u64::from(flow_rate);
         }
 
@@ -219,214 +296,9 @@ mod solution {
             self.cumulative_released
         }
 
-        // None if time is not up
+        // None if time is not up, otherwise the total pressure released.
         pub fn is_time_up(&self) -> Option<u64> {
             (self.time_passed >= MINUTES_ALLOWED).then_some(self.cumulative_released)
-        }
-    }
-
-    #[derive(Debug, Eq, Clone, new)]
-    struct Tunnel<'a> {
-        to: &'a str,
-        time: u8,
-    }
-    impl PartialEq for Tunnel<'_> {
-        fn eq(&self, other: &Self) -> bool {
-            self.to == other.to
-        }
-    }
-    impl std::hash::Hash for Tunnel<'_> {
-        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-            self.to.hash(state);
-        }
-    }
-    impl<'a> From<&'a str> for Tunnel<'a> {
-        fn from(value: &'a str) -> Self {
-            Self { to: value, time: 1 }
-        }
-    }
-
-    // TODO: if raw valves are never needed, refactor this to be the normal Valve
-    #[derive(Debug)]
-    struct CondensedValve<'a> {
-        label: &'a str,
-        flow_rate: u8,
-        tunnels: HashSet<Tunnel<'a>>,
-    }
-
-    // TODO: Temporary instrumentation for debugging
-    #[derive(Debug, Clone)]
-    enum Move<'a> {
-        TurnOn(&'a str),
-        Tunnel(&'a str),
-    }
-    impl std::fmt::Display for Move<'_> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            match self {
-                Move::TurnOn(v) => write!(f, "Turned on valve {v}"),
-                Move::Tunnel(to) => write!(f, "Moved through tunnel to {to}"),
-            }
-        }
-    }
-    #[derive(Debug, Clone, new)]
-    struct MoveRecord<'a> {
-        muv: Move<'a>,
-        released: u64,
-        total_released: u64,
-        over_time: u8,
-        total_time: u8,
-    }
-    impl std::fmt::Display for MoveRecord<'_> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(
-                f,
-                "== Minute {} ==\n{}, releasing {} pressure over {} minutes, {} released to this point",
-                self.total_time, self.muv, self.released, self.over_time, self.total_released,
-            )
-        }
-    }
-
-    #[derive(Debug, new)]
-    struct SearchState<'a> {
-        valves: &'a ValveMap<'a>,
-        #[new(value = "0")]
-        best_cumulative_released: u64,
-        #[new(value = "Vec::new()")]
-        best_moves: Vec<MoveRecord<'a>>,
-    }
-
-    #[derive(Debug)]
-    struct ValveNode<'a> {
-        current: &'a CondensedValve<'a>,
-        closed_valves: HashSet<&'a str>,
-        open_valves: HashSet<&'a str>,
-        pressure_tracker: PressureTracker,
-        must_open: bool,
-        moves: Vec<MoveRecord<'a>>,
-        transit_time: u8,
-    }
-    impl<'a> ValveNode<'a> {
-        pub fn initial(valves: &'a ValveMap) -> Self {
-            Self {
-                current: &valves[STARTING_VALVE],
-                closed_valves: valves
-                    .keys()
-                    .filter(|k| **k != STARTING_VALVE)
-                    .copied()
-                    .collect(),
-                open_valves: HashSet::new(),
-                pressure_tracker: PressureTracker::default(),
-                must_open: false,
-                moves: Vec::new(),
-                transit_time: 0,
-            }
-        }
-    }
-    impl<'a> GlobalStateTreeNode for ValveNode<'a> {
-        type GlobalState = SearchState<'a>;
-
-        fn recurse_action(
-            mut self,
-            global_state: &mut Self::GlobalState,
-        ) -> GlobalStateAction<Self> {
-            // Open this valve if not already open
-            let current_label = self.current.label;
-
-            // If we haven't opened any valves by now, just stop, which helps prune the tree
-            if self.open_valves.is_empty() && self.pressure_tracker.cumulative_released >= 5 {
-                return GlobalStateAction::Stop;
-            }
-
-            let mut children = Vec::new();
-
-            if self.must_open {
-                // Opening the valve takes 1 minute (without the valve being open)
-                self.pressure_tracker.advance_time(1);
-
-                // TODO debugging
-                self.moves.push(MoveRecord::new(
-                    Move::TurnOn(current_label),
-                    self.pressure_tracker.total_flow_per_minute,
-                    self.pressure_tracker.cumulative_released,
-                    1,
-                    self.pressure_tracker.time_passed,
-                ));
-
-                self.pressure_tracker.open_valve(self.current.flow_rate);
-                self.closed_valves.remove(current_label);
-                self.open_valves.insert(current_label);
-            } else {
-                // TODO debugging
-                self.moves.push(MoveRecord::new(
-                    Move::Tunnel(current_label),
-                    self.pressure_tracker.total_flow_per_minute,
-                    self.pressure_tracker.cumulative_released,
-                    self.transit_time,
-                    self.pressure_tracker.time_passed,
-                ));
-
-                if self.current.flow_rate > 0 && self.closed_valves.contains(current_label) {
-                    // Here we can open the valve but we do not have to so the tree splits
-                    children.push(Self {
-                        current: self.current,
-                        closed_valves: self.closed_valves.clone(),
-                        open_valves: self.open_valves.clone(),
-                        pressure_tracker: self.pressure_tracker.clone(),
-                        must_open: true,
-                        moves: self.moves.clone(),
-                        transit_time: self.transit_time,
-                    })
-                }
-            }
-
-            // If all the valves are open, run out the clock and this branch is done
-            if self.closed_valves.is_empty() {
-                let end_released = self.pressure_tracker.run_out_clock();
-                // TODO: Can we utilize a BestMetric here for its handy methods that make this less obnoxious
-                if end_released > global_state.best_cumulative_released {
-                    println!("TODO terminal {end_released}");
-                    global_state.best_cumulative_released = end_released;
-                    global_state.best_moves = self.moves.clone();
-                }
-                return GlobalStateAction::Stop;
-            }
-
-            let mut tunnels = self.current.tunnels.iter().collect_vec();
-            tunnels.sort_by(|a, b| {
-                global_state.valves[a.to]
-                    .flow_rate
-                    .cmp(&global_state.valves[b.to].flow_rate)
-                    .reverse()
-            });
-            for tunnel in tunnels {
-                let mut new_pressure_tracker = self.pressure_tracker.clone();
-
-                // Account for tunnel travel time
-                new_pressure_tracker.advance_time(tunnel.time);
-
-                // Check if we are out of time
-                if let Some(end_released) = new_pressure_tracker.is_time_up() {
-                    // TODO: Can we utilize a BestMetric here for its handy methods that make this less obnoxious
-                    if end_released > global_state.best_cumulative_released {
-                        global_state.best_cumulative_released = end_released;
-                        global_state.best_moves = self.moves.clone();
-                    }
-                    return GlobalStateAction::Stop;
-                }
-
-                // Go down the tunnels
-                children.push(Self {
-                    current: &global_state.valves[tunnel.to],
-                    closed_valves: self.closed_valves.clone(),
-                    open_valves: self.open_valves.clone(),
-                    pressure_tracker: new_pressure_tracker,
-                    must_open: false,
-                    moves: self.moves.clone(),
-                    transit_time: tunnel.time,
-                })
-            }
-
-            GlobalStateAction::Continue(children)
         }
     }
 }
