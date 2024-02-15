@@ -28,7 +28,7 @@ mod solution {
     use super::*;
     use aoc::{
         parse::trim,
-        tree_search::new::{self, GlobalStateAction, GlobalStateTreeNode},
+        tree_search::new::{GlobalStateAction, GlobalStateTreeNode},
     };
     use derive_new::new;
     use indexmap::IndexMap;
@@ -263,8 +263,8 @@ mod solution {
     impl std::fmt::Display for Move<'_> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                Move::TurnOn(v) => write!(f, "Turned on valve {}", v),
-                Move::Tunnel(to) => write!(f, "Moved through tunnel to {}", to),
+                Move::TurnOn(v) => write!(f, "Turned on valve {v}"),
+                Move::Tunnel(to) => write!(f, "Moved through tunnel to {to}"),
             }
         }
     }
@@ -272,14 +272,16 @@ mod solution {
     struct MoveRecord<'a> {
         muv: Move<'a>,
         released: u64,
+        total_released: u64,
         over_time: u8,
+        total_time: u8,
     }
     impl std::fmt::Display for MoveRecord<'_> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(
                 f,
-                "{} for {} minutes, releasing {} pressure",
-                self.muv, self.over_time, self.released
+                "== Minute {} ==\n{}, releasing {} pressure over {} minutes, {} released to this point",
+                self.total_time, self.muv, self.released, self.over_time, self.total_released,
             )
         }
     }
@@ -297,8 +299,11 @@ mod solution {
     struct ValveNode<'a> {
         current: &'a CondensedValve<'a>,
         closed_valves: HashSet<&'a str>,
+        open_valves: HashSet<&'a str>,
         pressure_tracker: PressureTracker,
+        must_open: bool,
         moves: Vec<MoveRecord<'a>>,
+        transit_time: u8,
     }
     impl<'a> ValveNode<'a> {
         pub fn initial(valves: &'a ValveMap) -> Self {
@@ -309,8 +314,11 @@ mod solution {
                     .filter(|k| **k != STARTING_VALVE)
                     .copied()
                     .collect(),
+                open_valves: HashSet::new(),
                 pressure_tracker: PressureTracker::default(),
+                must_open: false,
                 moves: Vec::new(),
+                transit_time: 0,
             }
         }
     }
@@ -318,24 +326,57 @@ mod solution {
         type GlobalState = SearchState<'a>;
 
         fn recurse_action(
-            &mut self,
+            mut self,
             global_state: &mut Self::GlobalState,
         ) -> GlobalStateAction<Self> {
             // Open this valve if not already open
             let current_label = self.current.label;
-            if self.current.flow_rate > 0 && self.closed_valves.contains(current_label) {
+
+            // If we haven't opened any valves by now, just stop, which helps prune the tree
+            if self.open_valves.is_empty() && self.pressure_tracker.cumulative_released >= 5 {
+                return GlobalStateAction::Stop;
+            }
+
+            let mut children = Vec::new();
+
+            if self.must_open {
                 // Opening the valve takes 1 minute (without the valve being open)
                 self.pressure_tracker.advance_time(1);
-
-                self.pressure_tracker.open_valve(self.current.flow_rate);
-                self.closed_valves.remove(current_label);
 
                 // TODO debugging
                 self.moves.push(MoveRecord::new(
                     Move::TurnOn(current_label),
                     self.pressure_tracker.total_flow_per_minute,
+                    self.pressure_tracker.cumulative_released,
                     1,
-                ))
+                    self.pressure_tracker.time_passed,
+                ));
+
+                self.pressure_tracker.open_valve(self.current.flow_rate);
+                self.closed_valves.remove(current_label);
+                self.open_valves.insert(current_label);
+            } else {
+                // TODO debugging
+                self.moves.push(MoveRecord::new(
+                    Move::Tunnel(current_label),
+                    self.pressure_tracker.total_flow_per_minute,
+                    self.pressure_tracker.cumulative_released,
+                    self.transit_time,
+                    self.pressure_tracker.time_passed,
+                ));
+
+                if self.current.flow_rate > 0 && self.closed_valves.contains(current_label) {
+                    // Here we can open the valve but we do not have to so the tree splits
+                    children.push(Self {
+                        current: self.current,
+                        closed_valves: self.closed_valves.clone(),
+                        open_valves: self.open_valves.clone(),
+                        pressure_tracker: self.pressure_tracker.clone(),
+                        must_open: true,
+                        moves: self.moves.clone(),
+                        transit_time: self.transit_time,
+                    })
+                }
             }
 
             // If all the valves are open, run out the clock and this branch is done
@@ -350,9 +391,14 @@ mod solution {
                 return GlobalStateAction::Stop;
             }
 
-            let mut nodes = Vec::with_capacity(self.current.tunnels.len());
-
-            for tunnel in self.current.tunnels.iter() {
+            let mut tunnels = self.current.tunnels.iter().collect_vec();
+            tunnels.sort_by(|a, b| {
+                global_state.valves[a.to]
+                    .flow_rate
+                    .cmp(&global_state.valves[b.to].flow_rate)
+                    .reverse()
+            });
+            for tunnel in tunnels {
                 let mut new_pressure_tracker = self.pressure_tracker.clone();
 
                 // Account for tunnel travel time
@@ -368,23 +414,19 @@ mod solution {
                     return GlobalStateAction::Stop;
                 }
 
-                // TODO debugging
-                self.moves.push(MoveRecord::new(
-                    Move::Tunnel(tunnel.to),
-                    self.pressure_tracker.total_flow_per_minute,
-                    tunnel.time,
-                ));
-
                 // Go down the tunnels
-                nodes.push(Self {
+                children.push(Self {
                     current: &global_state.valves[tunnel.to],
                     closed_valves: self.closed_valves.clone(),
+                    open_valves: self.open_valves.clone(),
                     pressure_tracker: new_pressure_tracker,
+                    must_open: false,
                     moves: self.moves.clone(),
+                    transit_time: tunnel.time,
                 })
             }
 
-            GlobalStateAction::Continue(nodes)
+            GlobalStateAction::Continue(children)
         }
     }
 }

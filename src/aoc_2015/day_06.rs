@@ -126,16 +126,10 @@ mod solution {
 
     /// Light states particular to a part of the problem.
     pub trait Part {
-        /// Returns the initial state.
-        fn initial() -> Self;
         /// Updates this light state based on the action.
         fn update(&mut self, action: &Action);
     }
     impl Part for StdBool {
-        fn initial() -> Self {
-            false.into()
-        }
-
         fn update(&mut self, action: &Action) {
             use Action::*;
             *self = match action {
@@ -147,10 +141,6 @@ mod solution {
     }
 
     impl Part for Digit {
-        fn initial() -> Self {
-            0.into()
-        }
-
         fn update(&mut self, action: &Action) {
             use Action::*;
             match action {

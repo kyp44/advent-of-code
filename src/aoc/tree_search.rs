@@ -547,10 +547,6 @@ pub trait LeastStepsTreeNode: Sized + fmt::Debug + Eq + std::hash::Hash {
 }
 
 pub mod new {
-    use std::cell::RefCell;
-
-    use super::global;
-
     pub enum GlobalStateAction<N> {
         Stop,
         Continue(Vec<N>),
@@ -560,10 +556,7 @@ pub mod new {
     pub trait GlobalStateTreeNode: Sized {
         type GlobalState;
 
-        fn recurse_action(
-            &mut self,
-            global_state: &mut Self::GlobalState,
-        ) -> GlobalStateAction<Self>;
+        fn recurse_action(self, global_state: &mut Self::GlobalState) -> GlobalStateAction<Self>;
 
         fn traverse_tree(self, mut initial_state: Self::GlobalState) -> Self::GlobalState {
             traverse_global_state_tree(1, &mut initial_state, self);
@@ -574,15 +567,16 @@ pub mod new {
     fn traverse_global_state_tree<N: GlobalStateTreeNode>(
         level: u8,
         global_state: &mut N::GlobalState,
-        mut current_node: N,
+        current_node: N,
     ) -> bool {
+        // TODO: Remove and possible boolean
         if level > 50 {
             return true;
         }
         match current_node.recurse_action(global_state) {
             GlobalStateAction::Stop => false,
             GlobalStateAction::Continue(children) => {
-                for mut child in children {
+                for child in children {
                     if traverse_global_state_tree(level + 1, global_state, child) {
                         return true;
                     }
