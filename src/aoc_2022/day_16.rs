@@ -19,7 +19,7 @@ Valve II has flow rate=0; tunnels lead to valves AA, JJ
 Valve JJ has flow rate=21; tunnel leads to valve II";
             answers = unsigned![1651];
         }
-        actual_answers = unsigned![123];
+        actual_answers = unsigned![1940];
     }
 }
 
@@ -28,8 +28,9 @@ mod solution {
     use super::*;
     use aoc::{
         parse::trim,
-        tree_search::new::{GlobalStateAction, GlobalStateTreeNode},
+        tree_search::new::{GlobalStateAction, GlobalStateTreeNode, Metric},
     };
+    use derive_more::From;
     use derive_new::new;
     use indexmap::IndexMap;
     use itertools::Itertools;
@@ -40,8 +41,12 @@ mod solution {
         multi::separated_list1,
         sequence::{preceded, tuple},
     };
-    use num::rational::Ratio;
-    use petgraph::{algo::floyd_warshall, graph::DiGraph, visit::EdgeRef};
+    use num::{rational::Ratio, ToPrimitive};
+    use petgraph::{
+        algo::floyd_warshall,
+        graph::{DefaultIx, DiGraph, NodeIndex},
+        visit::EdgeRef,
+    };
     use std::collections::{HashMap, HashSet};
 
     const STARTING_VALVE: &str = "AA";
@@ -107,7 +112,7 @@ mod solution {
                 .map(|valve| {
                     (
                         valve.label.as_str(),
-                        graph.add_node(ValveNode::new(&valve.label, valve.flow_rate)),
+                        graph.add_node(ValveNode::new(valve.label.to_string(), valve.flow_rate)),
                     )
                 })
                 .collect::<HashMap<_, _>>();
@@ -160,7 +165,8 @@ mod solution {
 
             for ni in graph.node_indices() {
                 println!(
-                    "TODO {} edges FR/T: {}",
+                    "TODO {:?} ({}) edges FR/T: {}",
+                    ni,
                     graph[ni].label,
                     graph
                         .edges(ni)
@@ -169,11 +175,16 @@ mod solution {
                             let t = *e.weight();
                             let fr = target.flow_rate;
                             format!(
-                                "{}: {}/{}-{}",
+                                "{}: {}/{}-{}-{}",
                                 target.label,
                                 fr,
                                 t,
-                                target.open_next_score(t),
+                                target.open_next_score(t).to_f32().unwrap(),
+                                {
+                                    let mut pt = PressureTracker::default();
+                                    pt.advance_time(2);
+                                    pt.next_valve_score(target, t)
+                                }
                             )
                         })
                         .join(", ")
@@ -186,7 +197,9 @@ mod solution {
                 .filter(|ni| graph[*ni].flow_rate > 0)
                 .collect::<HashSet<_>>();
             let mut pressure_tracker = PressureTracker::default();
-            let mut current_node = graph
+
+            // Validate and get the starting node
+            let mut starting_node = graph
                 .node_indices()
                 .filter_map(|ni| {
                     let valve = &graph[ni];
@@ -208,56 +221,25 @@ mod solution {
                     format!("Valve {STARTING_VALVE} does not exist!").into(),
                 ))??;
 
-            let x = loop {
-                // Have we opened all valves?
-                if closed_valves.is_empty() {
-                    break pressure_tracker.run_out_clock();
-                }
+            let final_state = SearchNode::new(graph.node_indices().collect(), starting_node)
+                .traverse_tree(SearchState::new(graph));
 
-                // Have we run out of time?
-                if let Some(p) = pressure_tracker.is_time_up() {
-                    break p;
-                }
-
-                // Determine which to move to next
-                let (next_node, next_valve, time) = closed_valves
-                    .iter()
-                    .map(|ni| {
-                        let valve = &graph[*ni];
-                        let time = graph[graph.find_edge(current_node, *ni).unwrap()];
-                        (*ni, valve, time)
-                    })
-                    .max_by_key(|(_, v, t)| v.open_next_score(*t))
-                    .unwrap();
-
-                // Move to the next valve
-                pressure_tracker.advance_time(time);
-
-                // Open the next valve
-                pressure_tracker.open_valve(next_valve.flow_rate);
-                closed_valves.remove(&next_node);
-
-                current_node = next_node;
-            };
-
-            println!("TODO Best: {x}");
-
-            Ok(0)
+            Ok(final_state.best_total_pressure.0)
         }
     }
 
     #[derive(new)]
-    struct ValveNode<'a> {
+    struct ValveNode {
         // TODO: in the end we may not need the label at and can just use the flow rate as the weight.
-        label: &'a str,
+        label: String,
         flow_rate: u8,
     }
-    impl ValveNode<'_> {
+    impl ValveNode {
         pub fn open_next_score(&self, time: u8) -> Ratio<u8> {
             Ratio::new(self.flow_rate, time)
         }
     }
-    impl std::fmt::Display for ValveNode<'_> {
+    impl std::fmt::Display for ValveNode {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "{}", self.label)
         }
@@ -300,6 +282,120 @@ mod solution {
         pub fn is_time_up(&self) -> Option<u64> {
             (self.time_passed >= MINUTES_ALLOWED).then_some(self.cumulative_released)
         }
+
+        // The total amount of pressure released if a valve is opened next
+        pub fn next_valve_score(&self, next_valve: &ValveNode, travel_time: u8) -> u64 {
+            u64::from(next_valve.flow_rate)
+                * u64::from(
+                    MINUTES_ALLOWED - (self.time_passed + travel_time + 1).min(MINUTES_ALLOWED),
+                )
+        }
+    }
+
+    #[derive(Clone, Copy, From)]
+    struct TotalPressure(u64);
+    impl Metric for TotalPressure {
+        fn is_better(&self, other: &Self) -> bool {
+            self.0 > other.0
+        }
+    }
+
+    #[derive(new)]
+    struct SearchState {
+        graph: DiGraph<ValveNode, u8, DefaultIx>,
+        #[new(value = "TotalPressure(0)")]
+        best_total_pressure: TotalPressure,
+    }
+
+    #[derive(new)]
+    struct SearchNode {
+        closed_valves: HashSet<NodeIndex>,
+        #[new(value = "PressureTracker::default()")]
+        pressure_tracker: PressureTracker,
+        current_node: NodeIndex,
+        // TODO delete
+        #[new(value = "1")]
+        number: u8,
+    }
+    impl GlobalStateTreeNode for SearchNode {
+        type GlobalState = SearchState;
+
+        fn recurse_action(
+            mut self,
+            global_state: &mut Self::GlobalState,
+        ) -> GlobalStateAction<Self> {
+            // Open this valve
+            let valve = &global_state.graph[self.current_node];
+            if valve.flow_rate > 0 {
+                self.pressure_tracker.open_valve(valve.flow_rate);
+            }
+            self.closed_valves.remove(&self.current_node);
+            println!("TODO {}. opened {}", self.number, valve.label);
+
+            // Have we opened all valves?
+            if self.closed_valves.is_empty() {
+                // TODO get rid of x
+                let x = self.pressure_tracker.run_out_clock();
+                /* global_state
+                .best_total_pressure
+                .update_if_better(self.pressure_tracker.run_out_clock().into()); */
+                global_state.best_total_pressure.update_if_better(x.into());
+                println!("TODO Terminal: {x}");
+                return GlobalStateAction::Stop;
+            }
+
+            // Have we run out of time?
+            if let Some(p) = self.pressure_tracker.is_time_up() {
+                global_state.best_total_pressure.update_if_better(p.into());
+                return GlobalStateAction::Stop;
+            }
+
+            #[derive(Debug)]
+            struct NextNode {
+                node: NodeIndex,
+                score: Ratio<u8>,
+                travel_time: u8,
+            }
+
+            // Determine which to move to next
+            let graph = &global_state.graph;
+            let mut next_nodes = self
+                .closed_valves
+                .iter()
+                .map(|ni| {
+                    let next_valve = &graph[*ni];
+                    let travel_time = graph[graph.find_edge(self.current_node, *ni).unwrap()];
+                    NextNode {
+                        node: *ni,
+                        score: next_valve.open_next_score(travel_time),
+                        travel_time,
+                    }
+                })
+                .collect_vec();
+            next_nodes.sort_by_key(|nn| std::cmp::Reverse(nn.score));
+            /* println!(
+                "TODO current: {:?}, next: {next_nodes:?}",
+                self.current_node
+            ); */
+
+            // Choose the best to can branch for each
+            GlobalStateAction::Continue(
+                next_nodes
+                    .into_iter()
+                    .take(2)
+                    .map(|nn| {
+                        let mut pressure_tracker = self.pressure_tracker.clone();
+                        pressure_tracker.advance_time(nn.travel_time);
+                        SearchNode {
+                            closed_valves: self.closed_valves.clone(),
+                            pressure_tracker,
+                            current_node: nn.node,
+                            number: self.number + 1,
+                        }
+                    })
+                    .collect(),
+            )
+        }
     }
 }
 
@@ -316,10 +412,8 @@ pub const SOLUTION: Solution = Solution {
             // Generation
             let volcano = Volcano::from_str(input.expect_input()?)?;
 
-            println!("TODO: {}", volcano.maximum_pressure_release()?);
-
             // Process
-            Ok(0u64.into())
+            Ok(volcano.maximum_pressure_release()?.into())
         },
     ],
 };

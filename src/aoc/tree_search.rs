@@ -586,4 +586,16 @@ pub mod new {
             GlobalStateAction::Complete => true,
         }
     }
+
+    pub trait Metric: Sized {
+        /// Returns whether this metric is better than some `other` metric.
+        fn is_better(&self, other: &Self) -> bool;
+
+        /// Sets this metric value to some other metric if the other is better.
+        fn update_if_better(&mut self, other: Self) {
+            if other.is_better(self) {
+                *self = other;
+            }
+        }
+    }
 }
