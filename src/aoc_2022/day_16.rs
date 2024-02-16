@@ -32,7 +32,6 @@ mod solution {
     };
     use derive_more::From;
     use derive_new::new;
-    use indexmap::IndexMap;
     use itertools::Itertools;
     use nom::{
         bytes::complete::tag,
@@ -47,18 +46,22 @@ mod solution {
         graph::{DefaultIx, DiGraph, NodeIndex},
         visit::EdgeRef,
     };
-    use std::collections::{HashMap, HashSet};
+    use std::{
+        collections::{HashMap, HashSet},
+        marker::PhantomData,
+    };
 
     const STARTING_VALVE: &str = "AA";
     const MINUTES_ALLOWED: u8 = 30;
+    const ELEPHANT_TEACHING_TIME: u8 = 4;
 
     #[derive(Debug)]
-    struct Valve {
+    struct ParseValve {
         label: String,
         flow_rate: u8,
         tunnels: Vec<String>,
     }
-    impl Parsable<'_> for Valve {
+    impl Parsable<'_> for ParseValve {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 tuple((
@@ -85,180 +88,15 @@ mod solution {
         }
     }
 
-    #[derive(Debug)]
-    pub struct Volcano {
-        valves: Vec<Valve>,
-    }
-    impl FromStr for Volcano {
-        type Err = AocError;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Ok(Self {
-                valves: Valve::gather(s.lines())?,
-            })
-        }
-    }
-    impl Volcano {
-        pub fn maximum_pressure_release(&self) -> AocResult<u64> {
-            // TODO: Do the reduction up front if raw parsed Valves are not needed for part two.
-
-            println!("TODO building graph...");
-
-            // Build all the graph nodes
-            let mut graph = DiGraph::new();
-            let node_map = self
-                .valves
-                .iter()
-                .map(|valve| {
-                    (
-                        valve.label.as_str(),
-                        graph.add_node(ValveNode::new(valve.label.to_string(), valve.flow_rate)),
-                    )
-                })
-                .collect::<HashMap<_, _>>();
-
-            // Now build edges
-            for valve in self.valves.iter() {
-                for tunnel in valve.tunnels.iter() {
-                    graph.add_edge(
-                        node_map[valve.label.as_str()],
-                        node_map[tunnel.as_str()],
-                        1u8,
-                    );
-                }
-            }
-
-            // Now determine shortest paths between all pairs
-            let shortest_paths = floyd_warshall(&graph, |e| *e.weight()).unwrap();
-
-            // Add shortest path edges
-            for ((a, b), time) in shortest_paths.into_iter() {
-                if a != b {
-                    graph.update_edge(a, b, time);
-                }
-            }
-
-            // Now remove all zero flow rate nodes except the starting node
-            graph.retain_nodes(|graph, ni| {
-                let valve = &graph[ni];
-                valve.flow_rate > 0 || valve.label == STARTING_VALVE
-            });
-
-            for node_index in graph.node_indices() {
-                let valve = &graph[node_index];
-                println!("Surviving node: {node_index:?}, {}", valve.label);
-            }
-
-            // TODO save out graph for viewing
-            println!("{}", petgraph::dot::Dot::new(&graph));
-
-            println!("TODO done!");
-
-            // TODO test code
-            let valves = graph
-                .node_indices()
-                .filter(|ni| graph[*ni].label != STARTING_VALVE)
-                .collect_vec();
-
-            println!("TODO total nodes: {}", graph.node_count());
-            println!("TODO numb of nodes to permute: {}", valves.len());
-
-            for ni in graph.node_indices() {
-                println!(
-                    "TODO {:?} ({}) edges FR/T: {}",
-                    ni,
-                    graph[ni].label,
-                    graph
-                        .edges(ni)
-                        .map(|e| {
-                            let target = &graph[e.target()];
-                            let t = *e.weight();
-                            let fr = target.flow_rate;
-                            format!(
-                                "{}: {}/{}-{}-{}",
-                                target.label,
-                                fr,
-                                t,
-                                target.open_next_score(t).to_f32().unwrap(),
-                                {
-                                    let mut pt = PressureTracker::default();
-                                    pt.advance_time(2);
-                                    pt.next_valve_score(target, t)
-                                }
-                            )
-                        })
-                        .join(", ")
-                );
-            }
-
-            // First try naive algorithm
-            let mut closed_valves = graph
-                .node_indices()
-                .filter(|ni| graph[*ni].flow_rate > 0)
-                .collect::<HashSet<_>>();
-            let mut pressure_tracker = PressureTracker::default();
-
-            // Validate and get the starting node
-            let mut starting_node = graph
-                .node_indices()
-                .filter_map(|ni| {
-                    let valve = &graph[ni];
-
-                    if valve.label == STARTING_VALVE {
-                        Some(if valve.flow_rate != 0 {
-                            Err(AocError::Process(
-                                format!("The valve {STARTING_VALVE} flow rate is nonzero!").into(),
-                            ))
-                        } else {
-                            Ok(ni)
-                        })
-                    } else {
-                        None
-                    }
-                })
-                .next()
-                .ok_or(AocError::Process(
-                    format!("Valve {STARTING_VALVE} does not exist!").into(),
-                ))??;
-
-            let final_state = SearchNode::new(graph.node_indices().collect(), starting_node)
-                .traverse_tree(SearchState::new(graph));
-
-            Ok(final_state.best_total_pressure.0)
-        }
-    }
-
-    #[derive(new)]
-    struct ValveNode {
-        // TODO: in the end we may not need the label at and can just use the flow rate as the weight.
-        label: String,
-        flow_rate: u8,
-    }
-    impl ValveNode {
-        pub fn open_next_score(&self, time: u8) -> Ratio<u8> {
-            Ratio::new(self.flow_rate, time)
-        }
-    }
-    impl std::fmt::Display for ValveNode {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "{}", self.label)
-        }
-    }
-
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, new)]
     struct PressureTracker {
+        minutes_allowed: u8,
+        #[new(value = "0")]
         cumulative_released: u64,
+        #[new(value = "0")]
         total_flow_per_minute: u64,
+        #[new(value = "0")]
         time_passed: u8,
-    }
-    impl Default for PressureTracker {
-        fn default() -> Self {
-            Self {
-                cumulative_released: 0,
-                total_flow_per_minute: 0,
-                time_passed: 0,
-            }
-        }
     }
     impl PressureTracker {
         // Includes time advance of 1 minute before opening
@@ -268,27 +106,19 @@ mod solution {
         }
 
         pub fn advance_time(&mut self, minutes: u8) {
-            let time = minutes.min(MINUTES_ALLOWED - self.time_passed);
+            let time = minutes.min(self.minutes_allowed - self.time_passed);
             self.cumulative_released += self.total_flow_per_minute * u64::from(time);
             self.time_passed += time;
         }
 
         pub fn run_out_clock(&mut self) -> u64 {
-            self.advance_time(MINUTES_ALLOWED);
+            self.advance_time(self.minutes_allowed);
             self.cumulative_released
         }
 
         // None if time is not up, otherwise the total pressure released.
         pub fn is_time_up(&self) -> Option<u64> {
-            (self.time_passed >= MINUTES_ALLOWED).then_some(self.cumulative_released)
-        }
-
-        // The total amount of pressure released if a valve is opened next
-        pub fn next_valve_score(&self, next_valve: &ValveNode, travel_time: u8) -> u64 {
-            u64::from(next_valve.flow_rate)
-                * u64::from(
-                    MINUTES_ALLOWED - (self.time_passed + travel_time + 1).min(MINUTES_ALLOWED),
-                )
+            (self.time_passed >= self.minutes_allowed).then_some(self.cumulative_released)
         }
     }
 
@@ -301,24 +131,37 @@ mod solution {
     }
 
     #[derive(new)]
-    struct SearchState {
-        graph: DiGraph<ValveNode, u8, DefaultIx>,
+    struct SearchState<'a> {
+        graph: &'a DiGraph<Valve, u8, DefaultIx>,
         #[new(value = "TotalPressure(0)")]
         best_total_pressure: TotalPressure,
     }
 
-    #[derive(new)]
-    struct SearchNode {
+    struct SearchNode<'a> {
         closed_valves: HashSet<NodeIndex>,
-        #[new(value = "PressureTracker::default()")]
         pressure_tracker: PressureTracker,
         current_node: NodeIndex,
         // TODO delete
-        #[new(value = "1")]
         number: u8,
+        _phantom: PhantomData<&'a u8>,
     }
-    impl GlobalStateTreeNode for SearchNode {
-        type GlobalState = SearchState;
+    impl SearchNode<'_> {
+        pub fn new(
+            closed_valves: HashSet<NodeIndex>,
+            minutes_allowed: u8,
+            starting_node: NodeIndex,
+        ) -> Self {
+            Self {
+                closed_valves,
+                pressure_tracker: PressureTracker::new(minutes_allowed),
+                current_node: starting_node,
+                number: 1,
+                _phantom: PhantomData,
+            }
+        }
+    }
+    impl<'a> GlobalStateTreeNode for SearchNode<'a> {
+        type GlobalState = SearchState<'a>;
 
         fn recurse_action(
             mut self,
@@ -330,7 +173,6 @@ mod solution {
                 self.pressure_tracker.open_valve(valve.flow_rate);
             }
             self.closed_valves.remove(&self.current_node);
-            println!("TODO {}. opened {}", self.number, valve.label);
 
             // Have we opened all valves?
             if self.closed_valves.is_empty() {
@@ -373,10 +215,6 @@ mod solution {
                 })
                 .collect_vec();
             next_nodes.sort_by_key(|nn| std::cmp::Reverse(nn.score));
-            /* println!(
-                "TODO current: {:?}, next: {next_nodes:?}",
-                self.current_node
-            ); */
 
             // Choose the best to can branch for each
             GlobalStateAction::Continue(
@@ -391,10 +229,173 @@ mod solution {
                             pressure_tracker,
                             current_node: nn.node,
                             number: self.number + 1,
+                            _phantom: PhantomData::default(),
                         }
                     })
                     .collect(),
             )
+        }
+    }
+
+    #[derive(Debug, new)]
+    struct Valve {
+        label: String,
+        flow_rate: u8,
+    }
+    impl Valve {
+        pub fn open_next_score(&self, time: u8) -> Ratio<u8> {
+            Ratio::new(self.flow_rate, time)
+        }
+    }
+    impl std::fmt::Display for Valve {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{}", self.label)
+        }
+    }
+
+    #[derive(Debug)]
+    pub struct Volcano {
+        graph: DiGraph<Valve, u8, DefaultIx>,
+        starting_node: NodeIndex,
+    }
+    impl FromStr for Volcano {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            let parse_valves = ParseValve::gather(s.lines())?;
+
+            println!("TODO building graph...");
+
+            // Build all the graph nodes
+            let mut graph = DiGraph::new();
+            let node_map = parse_valves
+                .iter()
+                .map(|valve| {
+                    (
+                        valve.label.as_str(),
+                        graph.add_node(Valve::new(valve.label.to_string(), valve.flow_rate)),
+                    )
+                })
+                .collect::<HashMap<_, _>>();
+
+            // Now build edges
+            for valve in parse_valves.iter() {
+                for tunnel in valve.tunnels.iter() {
+                    graph.add_edge(
+                        node_map[valve.label.as_str()],
+                        node_map[tunnel.as_str()],
+                        1u8,
+                    );
+                }
+            }
+
+            // Now determine shortest paths between all pairs
+            let shortest_paths = floyd_warshall(&graph, |e| *e.weight()).unwrap();
+
+            // Add shortest path edges
+            for ((a, b), time) in shortest_paths.into_iter() {
+                if a != b {
+                    graph.update_edge(a, b, time);
+                }
+            }
+
+            // Now remove all zero flow rate nodes except the starting node
+            graph.retain_nodes(|graph, ni| {
+                let valve = &graph[ni];
+                valve.flow_rate > 0 || valve.label == STARTING_VALVE
+            });
+
+            for node_index in graph.node_indices() {
+                let valve = &graph[node_index];
+                println!("Surviving node: {node_index:?}, {}", valve.label);
+            }
+
+            // TODO save out graph for viewing
+            println!("{}", petgraph::dot::Dot::new(&graph));
+
+            println!("TODO done!");
+
+            // Print out valves and paths in descending order of score
+            struct NodePaths<'a> {
+                node: &'a str,
+                paths: Vec<NodePath<'a>>,
+            }
+            impl std::fmt::Display for NodePaths<'_> {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    write!(
+                        f,
+                        "{} edges: {}",
+                        self.node,
+                        self.paths.iter().map(|p| format!("{p}")).join(", ")
+                    )
+                }
+            }
+            struct NodePath<'a> {
+                node: &'a str,
+                score: Ratio<u8>,
+            }
+            impl std::fmt::Display for NodePath<'_> {
+                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                    write!(f, "{}: {}", self.node, self.score.to_f32().unwrap())
+                }
+            }
+            graph
+                .node_indices()
+                .map(|ni| NodePaths {
+                    node: &graph[ni].label,
+                    paths: graph
+                        .edges(ni)
+                        .map(|e| {
+                            let new_valve = &graph[e.target()];
+                            NodePath {
+                                node: &new_valve.label,
+                                score: new_valve.open_next_score(*e.weight()),
+                            }
+                        })
+                        .sorted_by(|a, b| a.score.cmp(&b.score).reverse())
+                        .collect(),
+                })
+                .for_each(|np| println!("{np}"));
+
+            // Validate and get the starting node
+            let starting_node = graph
+                .node_indices()
+                .filter_map(|ni| {
+                    let valve = &graph[ni];
+
+                    if valve.label == STARTING_VALVE {
+                        Some(if valve.flow_rate != 0 {
+                            Err(AocError::Process(
+                                format!("The valve {STARTING_VALVE} flow rate is nonzero!").into(),
+                            ))
+                        } else {
+                            Ok(ni)
+                        })
+                    } else {
+                        None
+                    }
+                })
+                .next()
+                .ok_or(AocError::Process(
+                    format!("Valve {STARTING_VALVE} does not exist!").into(),
+                ))??;
+
+            Ok(Self {
+                graph,
+                starting_node,
+            })
+        }
+    }
+    impl Volcano {
+        pub fn maximum_pressure_released(&self, teach_elephant: bool) -> AocResult<u64> {
+            let final_state = SearchNode::new(
+                self.graph.node_indices().collect(),
+                MINUTES_ALLOWED,
+                self.starting_node,
+            )
+            .traverse_tree(SearchState::new(&self.graph));
+
+            Ok(final_state.best_total_pressure.0)
         }
     }
 }
@@ -405,15 +406,15 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 16,
     name: "Proboscidea Volcanium",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Volcano::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let volcano = Volcano::from_str(input.expect_input()?)?;
-
             // Process
-            Ok(volcano.maximum_pressure_release()?.into())
+            Ok(input
+                .expect_data::<Volcano>()?
+                .maximum_pressure_released(false)?
+                .into())
         },
     ],
 };
