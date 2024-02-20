@@ -17,9 +17,9 @@ Valve GG has flow rate=0; tunnels lead to valves FF, HH
 Valve HH has flow rate=22; tunnel leads to valve GG
 Valve II has flow rate=0; tunnels lead to valves AA, JJ
 Valve JJ has flow rate=21; tunnel leads to valve II";
-            answers = unsigned![1651];
+            answers = unsigned![1651, 1707];
         }
-        actual_answers = unsigned![1940];
+        actual_answers = unsigned![1940, 2469];
     }
 }
 
@@ -28,11 +28,11 @@ mod solution {
     use super::*;
     use aoc::{
         parse::trim,
-        tree_search::new::{GlobalStateAction, GlobalStateTreeNode, Metric},
+        tree_search::new::{GlobalStateTreeNode, Metric, NodeAction},
     };
     use derive_more::From;
     use derive_new::new;
-    use itertools::Itertools;
+    use itertools::{iproduct, Itertools};
     use nom::{
         bytes::complete::tag,
         character::complete::alphanumeric1,
@@ -40,7 +40,7 @@ mod solution {
         multi::separated_list1,
         sequence::{preceded, tuple},
     };
-    use num::{rational::Ratio, ToPrimitive};
+    use num::rational::Ratio;
     use petgraph::{
         algo::floyd_warshall,
         graph::{DefaultIx, DiGraph, NodeIndex},
@@ -54,6 +54,8 @@ mod solution {
     const STARTING_VALVE: &str = "AA";
     const MINUTES_ALLOWED: u8 = 30;
     const ELEPHANT_TEACHING_TIME: u8 = 4;
+    const YOU_BEST_TUNNEL_DEPTH: usize = 3;
+    const ELEPHANT_BEST_TUNNEL_DEPTH: usize = 2;
 
     #[derive(Debug)]
     struct ParseValve {
@@ -133,29 +135,93 @@ mod solution {
     #[derive(new)]
     struct SearchState<'a> {
         graph: &'a DiGraph<Valve, u8, DefaultIx>,
+        best_tunnel_map: &'a BestTunnelMap,
         #[new(value = "TotalPressure(0)")]
         best_total_pressure: TotalPressure,
     }
 
-    struct SearchNode<'a> {
-        closed_valves: HashSet<NodeIndex>,
+    #[derive(Clone)]
+    struct Opener {
         pressure_tracker: PressureTracker,
         current_node: NodeIndex,
-        // TODO delete
-        number: u8,
+    }
+    impl Opener {
+        pub fn new(minutes_allowed: u8, starting_node: NodeIndex) -> Self {
+            Self {
+                pressure_tracker: PressureTracker::new(minutes_allowed),
+                current_node: starting_node,
+            }
+        }
+
+        pub fn open_current_valve(
+            &mut self,
+            search_state: &SearchState<'_>,
+            closed_valves: &mut HashSet<NodeIndex>,
+        ) {
+            if closed_valves.contains(&self.current_node) {
+                let flow_rate = search_state.graph[self.current_node].flow_rate;
+
+                if flow_rate > 0 {
+                    self.pressure_tracker.open_valve(flow_rate);
+                }
+                closed_valves.remove(&self.current_node);
+            }
+        }
+
+        pub fn choose_tunnel<'a>(
+            &self,
+            closed_valves: &HashSet<NodeIndex>,
+            best_tunnel_map: &'a BestTunnelMap,
+            n: usize,
+            exclude: Option<&Tunnel>,
+        ) -> Option<&'a Tunnel> {
+            best_tunnel_map[&self.current_node]
+                .iter()
+                .filter(|t| {
+                    if let Some(et) = exclude
+                        && et.to == t.to
+                    {
+                        false
+                    } else {
+                        closed_valves.contains(&t.to)
+                    }
+                })
+                .skip(n)
+                .next()
+        }
+
+        pub fn travel_tunnel(&self, tunnel: &Tunnel) -> Self {
+            let mut pressure_tracker = self.pressure_tracker.clone();
+            pressure_tracker.advance_time(tunnel.travel_time);
+            Opener {
+                pressure_tracker,
+                current_node: tunnel.to,
+            }
+        }
+    }
+
+    struct SearchNode<'a> {
+        closed_valves: HashSet<NodeIndex>,
+        you: Opener,
+        elephant: Option<Opener>,
         _phantom: PhantomData<&'a u8>,
     }
     impl SearchNode<'_> {
         pub fn new(
             closed_valves: HashSet<NodeIndex>,
-            minutes_allowed: u8,
             starting_node: NodeIndex,
+            teach_elephant: bool,
         ) -> Self {
+            let minutes_allowed = if teach_elephant {
+                MINUTES_ALLOWED - ELEPHANT_TEACHING_TIME
+            } else {
+                MINUTES_ALLOWED
+            };
+
             Self {
                 closed_valves,
-                pressure_tracker: PressureTracker::new(minutes_allowed),
-                current_node: starting_node,
-                number: 1,
+                you: Opener::new(minutes_allowed, starting_node),
+                elephant: teach_elephant.then(|| Opener::new(minutes_allowed, starting_node)),
                 _phantom: PhantomData,
             }
         }
@@ -163,72 +229,94 @@ mod solution {
     impl<'a> GlobalStateTreeNode for SearchNode<'a> {
         type GlobalState = SearchState<'a>;
 
-        fn recurse_action(
-            mut self,
-            global_state: &mut Self::GlobalState,
-        ) -> GlobalStateAction<Self> {
-            // Open this valve
-            let valve = &global_state.graph[self.current_node];
-            if valve.flow_rate > 0 {
-                self.pressure_tracker.open_valve(valve.flow_rate);
+        fn recurse_action(mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
+            // Open the current valves
+            self.you
+                .open_current_valve(global_state, &mut self.closed_valves);
+            if let Some(el) = self.elephant.as_mut() {
+                el.open_current_valve(global_state, &mut self.closed_valves)
             }
-            self.closed_valves.remove(&self.current_node);
 
             // Have we opened all valves?
             if self.closed_valves.is_empty() {
-                // TODO get rid of x
-                let x = self.pressure_tracker.run_out_clock();
-                /* global_state
-                .best_total_pressure
-                .update_if_better(self.pressure_tracker.run_out_clock().into()); */
-                global_state.best_total_pressure.update_if_better(x.into());
-                println!("TODO Terminal: {x}");
-                return GlobalStateAction::Stop;
+                let total_pressure = self.you.pressure_tracker.run_out_clock()
+                    + self
+                        .elephant
+                        .as_mut()
+                        .map(|o| o.pressure_tracker.run_out_clock())
+                        .unwrap_or(0);
+
+                global_state
+                    .best_total_pressure
+                    .update_if_better(total_pressure.into());
+                return NodeAction::Stop;
             }
 
-            // Have we run out of time?
-            if let Some(p) = self.pressure_tracker.is_time_up() {
+            // Have we run out of time for either opener?
+            if let Some(p) = {
+                if let Some(p) = self.you.pressure_tracker.is_time_up() {
+                    Some(
+                        p + self
+                            .elephant
+                            .as_mut()
+                            .map(|o| o.pressure_tracker.run_out_clock())
+                            .unwrap_or(0),
+                    )
+                } else if let Some(p) = self
+                    .elephant
+                    .as_mut()
+                    .and_then(|o| o.pressure_tracker.is_time_up())
+                {
+                    Some(p + self.you.pressure_tracker.run_out_clock())
+                } else {
+                    None
+                }
+            } {
                 global_state.best_total_pressure.update_if_better(p.into());
-                return GlobalStateAction::Stop;
+                return NodeAction::Stop;
             }
 
-            #[derive(Debug)]
-            struct NextNode {
-                node: NodeIndex,
-                score: Ratio<u8>,
-                travel_time: u8,
-            }
+            let all_tunnels = iproduct!(0..YOU_BEST_TUNNEL_DEPTH, 0..ELEPHANT_BEST_TUNNEL_DEPTH)
+                .filter_map(|(ny, ne)| {
+                    let you_tunnel = self.you.choose_tunnel(
+                        &self.closed_valves,
+                        &global_state.best_tunnel_map,
+                        ny,
+                        None,
+                    );
+                    let elephant_tunnel = self.elephant.as_ref().and_then(|e| {
+                        e.choose_tunnel(
+                            &self.closed_valves,
+                            &global_state.best_tunnel_map,
+                            ne,
+                            you_tunnel,
+                        )
+                    });
 
-            // Determine which to move to next
-            let graph = &global_state.graph;
-            let mut next_nodes = self
-                .closed_valves
-                .iter()
-                .map(|ni| {
-                    let next_valve = &graph[*ni];
-                    let travel_time = graph[graph.find_edge(self.current_node, *ni).unwrap()];
-                    NextNode {
-                        node: *ni,
-                        score: next_valve.open_next_score(travel_time),
-                        travel_time,
-                    }
+                    (you_tunnel.is_some() || elephant_tunnel.is_some())
+                        .then_some((you_tunnel, elephant_tunnel))
                 })
                 .collect_vec();
-            next_nodes.sort_by_key(|nn| std::cmp::Reverse(nn.score));
 
-            // Choose the best to can branch for each
-            GlobalStateAction::Continue(
-                next_nodes
+            // Branch on the best two tunnels
+            NodeAction::Continue(
+                all_tunnels
                     .into_iter()
-                    .take(2)
-                    .map(|nn| {
-                        let mut pressure_tracker = self.pressure_tracker.clone();
-                        pressure_tracker.advance_time(nn.travel_time);
+                    .map(|(yt, et)| {
+                        let you = match yt {
+                            Some(yt) => self.you.travel_tunnel(yt),
+                            None => self.you.clone(),
+                        };
+
+                        let elephant = self.elephant.as_ref().map(|e| match et {
+                            Some(et) => e.travel_tunnel(et),
+                            None => e.clone(),
+                        });
+
                         SearchNode {
                             closed_valves: self.closed_valves.clone(),
-                            pressure_tracker,
-                            current_node: nn.node,
-                            number: self.number + 1,
+                            you,
+                            elephant,
                             _phantom: PhantomData::default(),
                         }
                     })
@@ -243,7 +331,7 @@ mod solution {
         flow_rate: u8,
     }
     impl Valve {
-        pub fn open_next_score(&self, time: u8) -> Ratio<u8> {
+        pub fn open_next_score(&self, time: u8) -> Score {
             Ratio::new(self.flow_rate, time)
         }
     }
@@ -253,9 +341,21 @@ mod solution {
         }
     }
 
+    type Score = Ratio<u8>;
+
+    #[derive(Debug)]
+    struct Tunnel {
+        to: NodeIndex,
+        score: Score,
+        travel_time: u8,
+    }
+
+    type BestTunnelMap = HashMap<NodeIndex, Vec<Tunnel>>;
+
     #[derive(Debug)]
     pub struct Volcano {
         graph: DiGraph<Valve, u8, DefaultIx>,
+        best_tunnel_map: BestTunnelMap,
         starting_node: NodeIndex,
     }
     impl FromStr for Volcano {
@@ -263,8 +363,6 @@ mod solution {
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             let parse_valves = ParseValve::gather(s.lines())?;
-
-            println!("TODO building graph...");
 
             // Build all the graph nodes
             let mut graph = DiGraph::new();
@@ -305,57 +403,29 @@ mod solution {
                 valve.flow_rate > 0 || valve.label == STARTING_VALVE
             });
 
-            for node_index in graph.node_indices() {
-                let valve = &graph[node_index];
-                println!("Surviving node: {node_index:?}, {}", valve.label);
-            }
-
-            // TODO save out graph for viewing
-            println!("{}", petgraph::dot::Dot::new(&graph));
-
-            println!("TODO done!");
-
-            // Print out valves and paths in descending order of score
-            struct NodePaths<'a> {
-                node: &'a str,
-                paths: Vec<NodePath<'a>>,
-            }
-            impl std::fmt::Display for NodePaths<'_> {
-                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                    write!(
-                        f,
-                        "{} edges: {}",
-                        self.node,
-                        self.paths.iter().map(|p| format!("{p}")).join(", ")
-                    )
-                }
-            }
-            struct NodePath<'a> {
-                node: &'a str,
-                score: Ratio<u8>,
-            }
-            impl std::fmt::Display for NodePath<'_> {
-                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                    write!(f, "{}: {}", self.node, self.score.to_f32().unwrap())
-                }
-            }
-            graph
+            // Create the table of paths ordered by the best scores.
+            let best_tunnel_map: BestTunnelMap = graph
                 .node_indices()
-                .map(|ni| NodePaths {
-                    node: &graph[ni].label,
-                    paths: graph
-                        .edges(ni)
-                        .map(|e| {
-                            let new_valve = &graph[e.target()];
-                            NodePath {
-                                node: &new_valve.label,
-                                score: new_valve.open_next_score(*e.weight()),
-                            }
-                        })
-                        .sorted_by(|a, b| a.score.cmp(&b.score).reverse())
-                        .collect(),
+                .map(|ni| {
+                    (
+                        ni,
+                        graph
+                            .edges(ni)
+                            .map(|e| {
+                                let to = e.target();
+                                let to_valve = &graph[to];
+                                let travel_time = *e.weight();
+                                Tunnel {
+                                    to,
+                                    score: to_valve.open_next_score(travel_time),
+                                    travel_time,
+                                }
+                            })
+                            .sorted_by(|a, b| a.score.cmp(&b.score).reverse())
+                            .collect_vec(),
+                    )
                 })
-                .for_each(|np| println!("{np}"));
+                .collect();
 
             // Validate and get the starting node
             let starting_node = graph
@@ -382,6 +452,7 @@ mod solution {
 
             Ok(Self {
                 graph,
+                best_tunnel_map,
                 starting_node,
             })
         }
@@ -390,10 +461,10 @@ mod solution {
         pub fn maximum_pressure_released(&self, teach_elephant: bool) -> AocResult<u64> {
             let final_state = SearchNode::new(
                 self.graph.node_indices().collect(),
-                MINUTES_ALLOWED,
                 self.starting_node,
+                teach_elephant,
             )
-            .traverse_tree(SearchState::new(&self.graph));
+            .traverse_tree(SearchState::new(&self.graph, &self.best_tunnel_map));
 
             Ok(final_state.best_total_pressure.0)
         }
@@ -414,6 +485,14 @@ pub const SOLUTION: Solution = Solution {
             Ok(input
                 .expect_data::<Volcano>()?
                 .maximum_pressure_released(false)?
+                .into())
+        },
+        // Part two
+        |input| {
+            // Process
+            Ok(input
+                .expect_data::<Volcano>()?
+                .maximum_pressure_released(true)?
                 .into())
         },
     ],

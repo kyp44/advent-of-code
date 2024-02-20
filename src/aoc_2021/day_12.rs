@@ -57,7 +57,7 @@ start-RW";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::tree_search::{GlobalAction, GlobalState, GlobalStateTreeNode};
+    use aoc::tree_search::new::{GlobalStateTreeNode, NodeAction};
     use infinitable::Infinitable;
     use nom::{
         bytes::complete::tag, character::complete::alphanumeric1, combinator::map,
@@ -182,7 +182,7 @@ mod solution {
     impl CaveSystem {
         /// Determines and returns the set of all possible paths through the cave system,
         /// only ever visiting small caves at most once.
-        pub fn paths(&self, special_cave: Option<NodeIndex>) -> HashSet<Vec<&Cave>> {
+        pub fn paths(&self, special_cave: Option<NodeIndex>) -> Paths<'_> {
             // Remaining visits for each cave
             let mut visits_left = HashMap::new();
             for index in self.graph.node_indices() {
@@ -212,8 +212,7 @@ mod solution {
                 visits_left,
                 path: vec![self.graph.node_weight(self.start).unwrap()],
             }
-            .traverse_tree(PathGlobalState::default())
-            .paths
+            .traverse_tree(Paths::new())
         }
 
         /// Determines and returns the set of all possible paths through the cave system,
@@ -233,22 +232,7 @@ mod solution {
         }
     }
 
-    /// Global state used for the path tree search.
-    #[derive(Debug, Default)]
-    struct PathGlobalState<'a> {
-        /// Set of complete paths through the cave from the start cave to the end cave.
-        paths: HashSet<Vec<&'a Cave>>,
-    }
-    impl<'a> GlobalState<PathTip<'a>> for PathGlobalState<'a> {
-        fn update_with_node(&mut self, node: &PathTip<'a>) {
-            self.paths.insert(node.path.clone());
-        }
-
-        fn complete(&self) -> bool {
-            // Never want the state to terminate recursion
-            false
-        }
-    }
+    type Paths<'a> = HashSet<Vec<&'a Cave>>;
 
     /// The end of a path through the cave system, which is a node in the tree search.
     #[derive(Debug)]
@@ -264,17 +248,15 @@ mod solution {
         path: Vec<&'a Cave>,
     }
     impl<'a> GlobalStateTreeNode for PathTip<'a> {
-        type GlobalState = PathGlobalState<'a>;
+        type GlobalState = Paths<'a>;
 
-        fn recurse_action(
-            &self,
-            _state: &Self::GlobalState,
-        ) -> aoc::tree_search::GlobalAction<Self> {
+        fn recurse_action(self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
             let cave = self.graph.node_weight(self.tip).unwrap();
 
             if cave.cave_type == CaveType::End {
                 // We've reached the end so add this path to the list.
-                GlobalAction::Apply
+                global_state.insert(self.path.clone());
+                NodeAction::Stop
             } else {
                 let num_visits = *self.visits_left.get(&self.tip).unwrap();
                 if num_visits > 0.into() {
@@ -283,7 +265,7 @@ mod solution {
                     *visits_left.get_mut(&self.tip).unwrap() = num_visits - 1.into();
 
                     // Now go through connecting caves and recurse
-                    GlobalAction::Continue(
+                    NodeAction::Continue(
                         self.graph
                             .neighbors(self.tip)
                             .filter(|nc| {
@@ -303,7 +285,7 @@ mod solution {
                     )
                 } else {
                     // Cannot visit this cave again so we're done
-                    GlobalAction::Stop
+                    NodeAction::Stop
                 }
             }
         }

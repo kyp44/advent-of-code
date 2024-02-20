@@ -5,13 +5,13 @@
 //! searching the tree. Tree search capability is implemented by implementing one of the node
 //! traits on tree node structures, which can then spawn child nodes into which the search
 //! algorithm will recurse.
+//! TODO UPDATE WITH NEW IF APPLICABLE
 //!
 //! Examples of problems amenable to tree structures including one or multiplayer game trees,
 //! optimally solving a problem with a particular goal using a brute force search, etc.
 //! Refer to AOC problem solutions that utilize this module for more examples.
 
 use derive_new::new;
-
 use std::{cell::RefCell, collections::HashMap, fmt, ops::Add, rc::Rc};
 
 /// Private module for a general tree search, which is utilized by the various public
@@ -331,232 +331,22 @@ pub trait BestMetricTreeNode: Sized + Eq + std::hash::Hash + fmt::Debug {
     }
 }
 
-/// Private module that performs the [`GlobalStateTreeNode`] search.
-mod global {
-    use super::general::*;
-    use super::*;
-
-    /// Upward state for the [`GlobalStateTreeNode`] search.
-    #[derive(Debug)]
-    pub struct GlobalUpwardState<N: GlobalStateTreeNode>(pub Rc<RefCell<N::GlobalState>>);
-    impl<N: GlobalStateTreeNode> TreeUpwardState<GlobalStateNode<N>> for GlobalUpwardState<N> {
-        fn new(current: &Child<GlobalStateNode<N>>) -> Self {
-            Self(current.state.clone())
-        }
-
-        fn incorporate_child(
-            &mut self,
-            _current: &Child<GlobalStateNode<N>>,
-            _child_upward_state: Self,
-        ) {
-            // Do nothing
-        }
-
-        fn finalize(&mut self, _current: Child<GlobalStateNode<N>>) {
-            // Do nothing
-        }
-    }
-
-    /// Wrapper tree node for the [`GlobalStateTreeNode`].
-    pub struct GlobalStateNode<N: GlobalStateTreeNode>(pub N);
-    impl<N: GlobalStateTreeNode> TreeNode for GlobalStateNode<N> {
-        type DownwardState = Rc<RefCell<N::GlobalState>>;
-        type UpwardState = GlobalUpwardState<N>;
-
-        fn recurse_action(&self, downward_state: &Self::DownwardState) -> TreeAction<Self> {
-            let mut global_state = downward_state.as_ref().borrow_mut();
-            let done_action = TreeAction::Stop(GlobalUpwardState(downward_state.clone()));
-
-            // Have we completed traversal?
-            if global_state.complete() {
-                return done_action;
-            }
-
-            match self.0.recurse_action(&global_state) {
-                GlobalAction::Apply => {
-                    global_state.update_with_node(&self.0);
-                    done_action
-                }
-                GlobalAction::Stop => done_action,
-                GlobalAction::Continue(children) => TreeAction::Continue(
-                    children
-                        .into_iter()
-                        .map(|node| Child::new(Self(node), downward_state.clone()))
-                        .collect(),
-                ),
-            }
-        }
-    }
-}
-
-/// A global state structure for use with a [`GlobalStateTreeNode`] tree search.
-///
-/// The state can contain any data needed for the specific solution.
-pub trait GlobalState<N>: fmt::Debug {
-    /// Updates the global state with information from a [`GlobalStateTreeNode`].
-    fn update_with_node(&mut self, node: &N);
-
-    /// Returns whether or not the search is complete based on the current global state.
-    ///
-    /// The will cause the tree search to stop and return the current global state.
-    fn complete(&self) -> bool;
-}
-
-/// An action to be returned from [`GlobalStateTreeNode::recurse_action`].
-pub enum GlobalAction<N: GlobalStateTreeNode> {
-    /// Apply the current node to the global state by calling [`GlobalState::update_with_node`].
-    Apply,
-    /// Stop at this node without applying it to the global state.
-    Stop,
-    /// Continue recursing to child nodes.
-    Continue(Vec<N>),
-}
-
-/// Implemented by a tree node, for which the tree search updates some global data that
-/// implements [`GlobalState`].
-///
-/// The [`GlobalState`] can also prematurely terminate the search algorithm if problem
-/// specific conditions have already been met.
-///
-/// # Examples
-/// For examples of the usage of this tree search method, see [`LeastStepsTreeNode`]
-/// or the
-/// [2021 day 21 problem](../../advent_of_code/aoc_2021/day_21/solution/struct.GameNode.html).
-pub trait GlobalStateTreeNode: Sized + fmt::Debug {
-    /// The global state to use.
-    type GlobalState: GlobalState<Self>;
-
-    /// Returns the action for the algorithm to take for this node.
-    fn recurse_action(&self, state: &Self::GlobalState) -> GlobalAction<Self>;
-
-    /// Performs the search tree with this node as the root, initializing the algorithm
-    /// with the initial [`GlobalState`], and returning the current [`GlobalState`] after the
-    /// search is complete.
-    fn traverse_tree(self, initial_state: Self::GlobalState) -> Self::GlobalState {
-        let initial_state = Rc::new(RefCell::new(initial_state));
-
-        Rc::try_unwrap(global::GlobalStateNode(self).traverse_tree(initial_state).0)
-            .unwrap()
-            .into_inner()
-    }
-}
-
-/// A [`GlobalState`] that will terminate the tree search once the first solution
-/// node is encountered.
-///
-/// This should be the type set in [`GlobalStateTreeNode::GlobalState`] for a node
-/// structure implementing [`GlobalStateTreeNode`].
-#[derive(Debug)]
-pub struct FirstSolutionGlobalState<N> {
-    /// The first solution encountered, if one has been found.
-    solution: Option<N>,
-}
-impl<N> Default for FirstSolutionGlobalState<N> {
-    fn default() -> Self {
-        Self { solution: None }
-    }
-}
-impl<N> FirstSolutionGlobalState<N> {
-    /// Consumes the state, returning the first solution that was encountered, if one was found.
-    pub fn solution(self) -> Option<N> {
-        self.solution
-    }
-}
-impl<N: GlobalStateTreeNode + Clone + fmt::Debug> GlobalState<N> for FirstSolutionGlobalState<N> {
-    fn update_with_node(&mut self, node: &N) {
-        self.solution = Some(node.clone());
-    }
-
-    fn complete(&self) -> bool {
-        self.solution.is_some()
-    }
-}
-
-/// Private module that performs the actual [`LeastStepsTreeNode`] search.
-mod least_steps {
-    use super::*;
+pub mod new {
+    use crate::error::{AocError, AocResult};
+    use derive_more::Add;
+    use derive_new::new;
     use infinitable::Infinitable;
 
-    /// [`Metric`] for the private least steps tree search.
-    type LeastStepsMetric = Infinitable<usize>;
-    impl Metric for LeastStepsMetric {
-        const INITIAL_BEST: Self = Infinitable::Infinity;
-        const INITIAL_COST: Self = Infinitable::Finite(0);
-
-        fn is_better(&self, other: &Self) -> bool {
-            *self < *other
-        }
-    }
-
-    /// Wrapper tree node for the [`LeastStepsTreeNode`].
-    #[derive(Debug, Hash, PartialEq, Eq)]
-    pub struct LeastStepsNode<N: LeastStepsTreeNode>(pub N);
-    impl<N: LeastStepsTreeNode> BestMetricTreeNode for LeastStepsNode<N> {
-        type Metric = LeastStepsMetric;
-        const STOP_AT_FIRST: bool = N::STOP_AT_FIRST;
-
-        fn recurse_action(&self, _cumulative_cost: &Self::Metric) -> BestMetricAction<Self> {
-            match self.0.recurse_action() {
-                LeastStepsAction::StopSuccess => BestMetricAction::StopSuccess,
-                LeastStepsAction::StopFailure => BestMetricAction::StopFailure,
-                LeastStepsAction::Continue(children) => BestMetricAction::Continue(
-                    children
-                        .into_iter()
-                        .map(|child| MetricChild::new(Self(child), 1.into()))
-                        .collect(),
-                ),
-            }
-        }
-    }
-}
-
-/// An action to be returned from [`LeastStepsTreeNode::recurse_action`].
-pub enum LeastStepsAction<N> {
-    /// This is a successful terminal node.
-    StopSuccess,
-    /// This is an unsuccessful terminal node.
-    StopFailure,
-    /// Recurse to some child nodes.
-    Continue(Vec<N>),
-}
-
-/// Implemented by a tree node, for which the tree search determines the shortest path
-/// to a successful leaf node.
-///
-/// That is, the minimal depth over all the successful leaf nodes.
-///
-/// # Examples
-/// For examples of the usage of this tree search method, see the
-/// [2015 day 19 problem](../../advent_of_code/aoc_2015/day_19/solution/struct.Molecule.html).
-pub trait LeastStepsTreeNode: Sized + fmt::Debug + Eq + std::hash::Hash {
-    /// Setting this to `true` will terminate the search once the first successful node
-    /// is encountered.
-    const STOP_AT_FIRST: bool = false;
-
-    /// Returns the action for the algorithm to take at this node.
-    fn recurse_action(&self) -> LeastStepsAction<Self>;
-
-    /// Performs the tree search, returning the shortest path to reach a successful
-    /// leaf node.
-    fn least_steps(self) -> Option<usize> {
-        match least_steps::LeastStepsNode(self).best_metric() {
-            infinitable::Infinitable::Finite(steps) => Some(steps),
-            _ => None,
-        }
-    }
-}
-
-pub mod new {
-    pub enum GlobalStateAction<N> {
+    pub enum NodeAction<N> {
         Stop,
-        Continue(Vec<N>),
         Complete,
+        Continue(Vec<N>),
     }
 
     pub trait GlobalStateTreeNode: Sized {
         type GlobalState;
 
-        fn recurse_action(self, global_state: &mut Self::GlobalState) -> GlobalStateAction<Self>;
+        fn recurse_action(self, global_state: &mut Self::GlobalState) -> NodeAction<Self>;
 
         fn traverse_tree(self, mut initial_state: Self::GlobalState) -> Self::GlobalState {
             traverse_global_state_tree(1, &mut initial_state, self);
@@ -564,18 +354,16 @@ pub mod new {
         }
     }
 
+    // Recursive
+    // Return value is whether to terminate the search immediately.
     fn traverse_global_state_tree<N: GlobalStateTreeNode>(
         level: u8,
         global_state: &mut N::GlobalState,
         current_node: N,
     ) -> bool {
-        // TODO: Remove and possible boolean
-        if level > 50 {
-            return true;
-        }
         match current_node.recurse_action(global_state) {
-            GlobalStateAction::Stop => false,
-            GlobalStateAction::Continue(children) => {
+            NodeAction::Stop => false,
+            NodeAction::Continue(children) => {
                 for child in children {
                     if traverse_global_state_tree(level + 1, global_state, child) {
                         return true;
@@ -583,7 +371,7 @@ pub mod new {
                 }
                 false
             }
-            GlobalStateAction::Complete => true,
+            NodeAction::Complete => true,
         }
     }
 
@@ -596,6 +384,139 @@ pub mod new {
             if other.is_better(self) {
                 *self = other;
             }
+        }
+    }
+
+    pub enum ApplyNodeAction<C> {
+        Stop(bool),
+        Complete(bool),
+        Continue(Vec<C>),
+    }
+
+    pub struct BasicSolutionState<T> {
+        solution: Option<T>,
+    }
+    impl<T> Default for BasicSolutionState<T> {
+        fn default() -> Self {
+            Self { solution: None }
+        }
+    }
+    impl<T> BasicSolutionState<T> {
+        pub fn set_solution(&mut self, sol: T) {
+            self.solution = Some(sol);
+        }
+
+        pub fn solution(self) -> AocResult<T> {
+            self.solution.ok_or(AocError::NoSolution)
+        }
+    }
+
+    #[derive(new)]
+    pub struct BestCostChild<N: BestCostTreeNode> {
+        node: N,
+        cost: N::Metric,
+    }
+
+    struct BestCostNode<N: BestCostTreeNode> {
+        node: N,
+        cumulative_cost: N::Metric,
+    }
+    impl<N: BestCostTreeNode> GlobalStateTreeNode for BestCostNode<N> {
+        type GlobalState = N::Metric;
+
+        fn recurse_action(self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
+            // If the cost is already too high, just stop
+            if global_state.is_better(&self.cumulative_cost) {
+                return NodeAction::Stop;
+            }
+
+            match self.node.recurse_action() {
+                ApplyNodeAction::Stop(apply) => {
+                    if apply {
+                        global_state.update_if_better(self.cumulative_cost)
+                    }
+                    NodeAction::Stop
+                }
+                ApplyNodeAction::Complete(apply) => {
+                    if apply {
+                        global_state.update_if_better(self.cumulative_cost)
+                    }
+                    NodeAction::Complete
+                }
+                ApplyNodeAction::Continue(children) => NodeAction::Continue(
+                    children
+                        .into_iter()
+                        .map(|child| {
+                            let mut cumulative_cost = self.cumulative_cost.clone();
+                            cumulative_cost = cumulative_cost + child.cost;
+
+                            Self {
+                                node: child.node,
+                                cumulative_cost,
+                            }
+                        })
+                        .collect(),
+                ),
+            }
+        }
+    }
+
+    pub trait BestCostTreeNode: Sized {
+        type Metric: Metric + Clone + std::ops::Add<Output = Self::Metric>;
+
+        fn recurse_action(self) -> ApplyNodeAction<BestCostChild<Self>>;
+
+        fn traverse_tree(
+            self,
+            initial_cost: Self::Metric,
+            initial_best: Self::Metric,
+        ) -> AocResult<Self::Metric> {
+            Ok(BestCostNode {
+                node: self,
+                cumulative_cost: initial_cost.clone(),
+            }
+            .traverse_tree(initial_best))
+        }
+    }
+
+    #[derive(Clone, Copy, Add)]
+    struct Step(Infinitable<usize>);
+    impl Metric for Step {
+        fn is_better(&self, other: &Self) -> bool {
+            self.0 < other.0
+        }
+    }
+
+    struct LeastStepsNode<N: LeastStepsTreeNode>(N);
+    impl<N: LeastStepsTreeNode> BestCostTreeNode for LeastStepsNode<N> {
+        type Metric = Step;
+
+        fn recurse_action(self) -> ApplyNodeAction<BestCostChild<Self>> {
+            match self.0.recurse_action() {
+                ApplyNodeAction::Stop(a) => ApplyNodeAction::Stop(a),
+                ApplyNodeAction::Complete(a) => ApplyNodeAction::Complete(a),
+                ApplyNodeAction::Continue(v) => ApplyNodeAction::Continue(
+                    v.into_iter()
+                        .map(|node| BestCostChild {
+                            node: Self(node),
+                            cost: Step(1.into()),
+                        })
+                        .collect(),
+                ),
+            }
+        }
+    }
+
+    pub trait LeastStepsTreeNode: Sized {
+        fn recurse_action(self) -> ApplyNodeAction<Self>;
+
+        fn traverse_tree(self) -> AocResult<usize> {
+            LeastStepsNode(self)
+                .traverse_tree(Step(0.into()), Step(Infinitable::Infinity))
+                .and_then(|s| match s.0 {
+                    Infinitable::Finite(n) => Ok(n),
+                    _ => Err(AocError::NoSolution),
+                })
         }
     }
 }

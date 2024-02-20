@@ -19,7 +19,7 @@ mod solution {
     use super::*;
     use aoc::{
         parse::field_line_parser,
-        tree_search::{BestMetricAction, BestMetricTreeNode, Metric, MetricChild},
+        tree_search::new::{ApplyNodeAction, BestCostChild, BestCostTreeNode, Metric},
     };
     use derive_more::Add;
     use derive_new::new;
@@ -318,7 +318,7 @@ mod solution {
         /// Searches the game tree to determine the minimal mana cost in which the player wins.
         pub fn minimal_mana_cost(mut self, hard_mode: bool) -> AocResult<u64> {
             self.hard_mode = hard_mode;
-            match self.best_metric().0 {
+            match self.traverse_tree(0.into(), Mana::infinite())?.0 {
                 Infinitable::Finite(m) => Ok(m.into()),
                 _ => Err(AocError::NoSolution),
             }
@@ -329,9 +329,6 @@ mod solution {
     #[derive(Clone, Copy, Debug, Add)]
     pub struct Mana(Infinitable<u32>);
     impl Metric for Mana {
-        const INITIAL_BEST: Self = Mana(Infinitable::Infinity);
-        const INITIAL_COST: Self = Mana(Infinitable::Finite(0));
-
         fn is_better(&self, other: &Self) -> bool {
             self.0 < other.0
         }
@@ -341,28 +338,34 @@ mod solution {
             Self(value.into())
         }
     }
-    impl BestMetricTreeNode for Characters {
+    impl Mana {
+        pub fn infinite() -> Self {
+            Self(Infinitable::Infinity)
+        }
+    }
+
+    impl BestCostTreeNode for Characters {
         type Metric = Mana;
 
-        fn recurse_action(&self, _cumulative_cost: &Self::Metric) -> BestMetricAction<Self> {
+        fn recurse_action(self) -> ApplyNodeAction<BestCostChild<Self>> {
             // Only count victory if the boss is dead
             if self.boss.dead() {
-                return BestMetricAction::StopSuccess;
+                return ApplyNodeAction::Stop(true);
             }
 
             let mut player = self.player.clone();
 
-            // If in hard mode the player takes damage no matter.
+            // If in hard mode the player takes damage no matter what.
             if self.hard_mode {
                 player.hurt(1)
             }
 
             // If the player is dead than we are done and we lost.
             if player.dead() {
-                return BestMetricAction::StopFailure;
+                return ApplyNodeAction::Stop(false);
             }
 
-            BestMetricAction::Continue(
+            ApplyNodeAction::Continue(
                 Spell::iter()
                     .filter_map(|spell| {
                         let mut player = player.clone();
@@ -372,7 +375,7 @@ mod solution {
                         if player.turn_cast(spell, &mut boss) {
                             boss.turn_attack(&mut player);
 
-                            Some(MetricChild::new(
+                            Some(BestCostChild::new(
                                 Characters {
                                     hard_mode: self.hard_mode,
                                     player,

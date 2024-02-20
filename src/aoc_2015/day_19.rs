@@ -60,7 +60,7 @@ mod solution {
     use super::*;
     use aoc::{
         parse::trim,
-        tree_search::{LeastStepsAction, LeastStepsTreeNode},
+        tree_search::new::{ApplyNodeAction, LeastStepsTreeNode},
     };
     use derive_new::new;
     use nom::{
@@ -143,20 +143,18 @@ mod solution {
         }
     }
     impl LeastStepsTreeNode for Molecule<'_> {
-        const STOP_AT_FIRST: bool = true;
-
-        fn recurse_action(&self) -> aoc::tree_search::LeastStepsAction<Self> {
+        fn recurse_action(self) -> ApplyNodeAction<Self> {
             if self.current == self.target {
-                return LeastStepsAction::StopSuccess;
+                return ApplyNodeAction::Complete(true);
             } else if self.current.contains(self.target) {
                 // An assumption here is that the target string is not a part
                 // of any replacement to string, i.e. it cannot be further transformed.
                 // Thus, if it is in any non-equal string, this branch can be abandoned.
-                return LeastStepsAction::StopFailure;
+                return ApplyNodeAction::Complete(false);
             }
 
             // All replacements in the current string
-            LeastStepsAction::Continue(
+            ApplyNodeAction::Continue(
                 self.machine
                     .replacements
                     .iter()
@@ -245,10 +243,10 @@ mod solution {
 
         /// Counts the number of replacement steps required to create a target molecule
         /// from a starting molecule.
-        pub fn number_of_steps(&self, starting_molecule: &'static str) -> Option<u64> {
+        pub fn number_of_steps(&self, starting_molecule: &'static str) -> AocResult<u64> {
             Molecule::start(starting_molecule, self)
-                .least_steps()
-                .map(|steps| steps.try_into().unwrap())
+                .traverse_tree()
+                .map(|s| s.try_into().unwrap())
         }
     }
 }
@@ -272,10 +270,7 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Process
             let machine = input.expect_data::<Machine>()?;
-            Ok(machine
-                .number_of_steps("e")
-                .ok_or(AocError::NoSolution)?
-                .into())
+            Ok(machine.number_of_steps("e")?.into())
         },
     ],
 };

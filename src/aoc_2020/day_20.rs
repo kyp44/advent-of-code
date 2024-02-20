@@ -124,7 +124,7 @@ Tile 3079:
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::tree_search::{FirstSolutionGlobalState, GlobalAction, GlobalStateTreeNode};
+    use aoc::tree_search::new::{BasicSolutionState, GlobalStateTreeNode, NodeAction};
     use cgmath::EuclideanSpace;
     use derive_more::{Deref, From, Into};
     use derive_new::new;
@@ -662,14 +662,12 @@ mod solution {
     }
 
     impl GlobalStateTreeNode for TileMap {
-        type GlobalState = FirstSolutionGlobalState<Self>;
+        type GlobalState = BasicSolutionState<Self>;
 
-        fn recurse_action(
-            &self,
-            _state: &Self::GlobalState,
-        ) -> aoc::tree_search::GlobalAction<Self> {
+        fn recurse_action(self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
             if self.remaining.is_empty() {
-                return GlobalAction::Apply;
+                global_state.set_solution(self);
+                return NodeAction::Complete;
             }
             //println!("Have :\n {:?}", map);
 
@@ -726,9 +724,9 @@ mod solution {
                 .collect();
 
             if children.is_empty() {
-                GlobalAction::Stop
+                NodeAction::Stop
             } else {
-                GlobalAction::Continue(children)
+                NodeAction::Continue(children)
             }
         }
     }
@@ -755,9 +753,8 @@ mod solution {
         /// Note that this is correct only up to rotations of the entire map.
         pub fn solve(self) -> AocResult<TileMap> {
             TileMap::new(self.tile_set)
-                .traverse_tree(FirstSolutionGlobalState::default())
+                .traverse_tree(BasicSolutionState::default())
                 .solution()
-                .ok_or(AocError::NoSolution)
         }
     }
 }

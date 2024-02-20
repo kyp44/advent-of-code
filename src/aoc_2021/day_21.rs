@@ -26,7 +26,7 @@ mod solution {
     use super::*;
     use aoc::{
         parse::field_line_parser,
-        tree_search::{GlobalAction, GlobalState, GlobalStateTreeNode},
+        tree_search::new::{GlobalStateTreeNode, NodeAction},
     };
     use bare_metal_modulo::{MNum, OffsetNumC};
     use derive_new::new;
@@ -182,16 +182,6 @@ mod solution {
             }
         }
     }
-    impl GlobalState<GameNode> for GameGlobalState {
-        fn update_with_node(&mut self, node: &GameNode) {
-            self.num_universes_wins[node.turn] += node.num_universes;
-        }
-
-        fn complete(&self) -> bool {
-            // Always traverse the entire tree
-            false
-        }
-    }
 
     /// A node in the game tree that represents a turn that just happened.
     #[derive(Debug)]
@@ -221,18 +211,19 @@ mod solution {
     impl GlobalStateTreeNode for GameNode {
         type GlobalState = GameGlobalState;
 
-        fn recurse_action(&self, state: &Self::GlobalState) -> GlobalAction<Self> {
+        fn recurse_action(self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
             if self.win() {
-                return GlobalAction::Apply;
+                global_state.num_universes_wins[self.turn] += self.num_universes;
+                return NodeAction::Stop;
             }
 
-            GlobalAction::Continue(
-                state
+            NodeAction::Continue(
+                global_state
                     .rolls
                     .distinct_elements()
                     .sorted()
                     .map(|r| {
-                        let num_universes = u64::try_from(state.rolls.count_of(r)).unwrap();
+                        let num_universes = u64::try_from(global_state.rolls.count_of(r)).unwrap();
                         let turn = 1 - self.turn;
                         let mut game = self.game.clone();
                         game.players[turn].move_player(*r);
