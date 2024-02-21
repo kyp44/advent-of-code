@@ -24,7 +24,6 @@ mod solution {
     use derive_more::Add;
     use derive_new::new;
     use enum_dispatch::enum_dispatch;
-    use infinitable::Infinitable;
     use nom::{combinator::map, sequence::tuple};
     use std::{fmt, hash::Hash};
 
@@ -318,16 +317,13 @@ mod solution {
         /// Searches the game tree to determine the minimal mana cost in which the player wins.
         pub fn minimal_mana_cost(mut self, hard_mode: bool) -> AocResult<u64> {
             self.hard_mode = hard_mode;
-            match self.traverse_tree(0.into(), Mana::infinite())?.0 {
-                Infinitable::Finite(m) => Ok(m.into()),
-                _ => Err(AocError::NoSolution),
-            }
+            self.traverse_tree(0.into()).map(|m| m.0.into())
         }
     }
 
     /// Relative or cumulative mana cost for spells.
     #[derive(Clone, Copy, Debug, Add)]
-    pub struct Mana(Infinitable<u32>);
+    pub struct Mana(u32);
     impl Metric for Mana {
         fn is_better(&self, other: &Self) -> bool {
             self.0 < other.0
@@ -338,16 +334,11 @@ mod solution {
             Self(value.into())
         }
     }
-    impl Mana {
-        pub fn infinite() -> Self {
-            Self(Infinitable::Infinity)
-        }
-    }
 
     impl BestCostTreeNode for Characters {
         type Metric = Mana;
 
-        fn recurse_action(self) -> ApplyNodeAction<BestCostChild<Self>> {
+        fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>> {
             // Only count victory if the boss is dead
             if self.boss.dead() {
                 return ApplyNodeAction::Stop(true);

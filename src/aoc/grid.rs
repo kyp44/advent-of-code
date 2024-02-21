@@ -2,7 +2,6 @@
 //!
 //! Contains the main [`Grid`] struct, associated traits, and some useful
 //! grid element types.
-use crate::extension::TryPointFrom;
 
 use super::prelude::*;
 use cgmath::{EuclideanSpace, Point2, Vector2};

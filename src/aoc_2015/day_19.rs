@@ -143,7 +143,7 @@ mod solution {
         }
     }
     impl LeastStepsTreeNode for Molecule<'_> {
-        fn recurse_action(self) -> ApplyNodeAction<Self> {
+        fn recurse_action(&mut self) -> ApplyNodeAction<Self> {
             if self.current == self.target {
                 return ApplyNodeAction::Complete(true);
             } else if self.current.contains(self.target) {

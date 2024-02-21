@@ -90,10 +90,9 @@ mod general {
 
 /// Private module that implements the [`BestMetricTreeNode`] search.
 mod metric {
-    use std::collections::hash_map::Entry;
-
     use super::general::*;
     use super::*;
+    use std::collections::hash_map::Entry;
 
     /// Global state among the whole recursive process.
     ///
@@ -333,9 +332,9 @@ pub trait BestMetricTreeNode: Sized + Eq + std::hash::Hash + fmt::Debug {
 
 pub mod new {
     use crate::error::{AocError, AocResult};
-    use derive_more::Add;
+    use derive_more::{Add, From};
     use derive_new::new;
-    use infinitable::Infinitable;
+    use std::collections::HashMap;
 
     pub enum NodeAction<N> {
         Stop,
@@ -346,29 +345,36 @@ pub mod new {
     pub trait GlobalStateTreeNode: Sized {
         type GlobalState;
 
-        fn recurse_action(self, global_state: &mut Self::GlobalState) -> NodeAction<Self>;
+        fn recurse_action(&mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self>;
 
-        fn traverse_tree(self, mut initial_state: Self::GlobalState) -> Self::GlobalState {
-            traverse_global_state_tree(1, &mut initial_state, self);
+        fn traverse_tree(mut self, mut initial_state: Self::GlobalState) -> Self::GlobalState {
+            traverse_global_state_tree(&mut initial_state, &mut self);
             initial_state
+        }
+
+        // Called after recurse (if any)
+        fn post_recurse(&mut self, global_state: &mut Self::GlobalState, _chidren: Vec<Self>) {
+            // Do nothing by default
         }
     }
 
     // Recursive
     // Return value is whether to terminate the search immediately.
     fn traverse_global_state_tree<N: GlobalStateTreeNode>(
-        level: u8,
         global_state: &mut N::GlobalState,
-        current_node: N,
+        current_node: &mut N,
     ) -> bool {
-        match current_node.recurse_action(global_state) {
+        let mut action = current_node.recurse_action(global_state);
+
+        match action {
             NodeAction::Stop => false,
-            NodeAction::Continue(children) => {
-                for child in children {
-                    if traverse_global_state_tree(level + 1, global_state, child) {
+            NodeAction::Continue(mut children) => {
+                for child in children.iter_mut() {
+                    if traverse_global_state_tree(global_state, child) {
                         return true;
                     }
                 }
+                current_node.post_recurse(global_state, children);
                 false
             }
             NodeAction::Complete => true,
@@ -383,6 +389,17 @@ pub mod new {
         fn update_if_better(&mut self, other: Self) {
             if other.is_better(self) {
                 *self = other;
+            }
+        }
+    }
+    impl<T: Metric> Metric for Option<T> {
+        fn is_better(&self, other: &Self) -> bool {
+            match self {
+                Some(s) => match other {
+                    Some(o) => s.is_better(o),
+                    None => true,
+                },
+                None => false,
             }
         }
     }
@@ -411,6 +428,16 @@ pub mod new {
         }
     }
 
+    struct BestCostState<N: BestCostTreeNode> {
+        best_cost: Option<N::Metric>,
+        node_best_costs: HashMap<N, N::Metric>,
+    }
+    impl<N: BestCostTreeNode> BestCostState<N> {
+        pub fn update_if_better(&mut self, other: N::Metric) {
+            self.best_cost.update_if_better(Some(other));
+        }
+    }
+
     #[derive(new)]
     pub struct BestCostChild<N: BestCostTreeNode> {
         node: N,
@@ -422,11 +449,14 @@ pub mod new {
         cumulative_cost: N::Metric,
     }
     impl<N: BestCostTreeNode> GlobalStateTreeNode for BestCostNode<N> {
-        type GlobalState = N::Metric;
+        type GlobalState = BestCostState<N>;
 
-        fn recurse_action(self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
+        fn recurse_action(&mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
             // If the cost is already too high, just stop
-            if global_state.is_better(&self.cumulative_cost) {
+            if global_state
+                .best_cost
+                .is_better(&Some(self.cumulative_cost))
+            {
                 return NodeAction::Stop;
             }
 
@@ -462,25 +492,26 @@ pub mod new {
     }
 
     pub trait BestCostTreeNode: Sized {
-        type Metric: Metric + Clone + std::ops::Add<Output = Self::Metric>;
+        type Metric: Metric + Clone + Copy + std::ops::Add<Output = Self::Metric>;
 
-        fn recurse_action(self) -> ApplyNodeAction<BestCostChild<Self>>;
+        fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>>;
 
-        fn traverse_tree(
-            self,
-            initial_cost: Self::Metric,
-            initial_best: Self::Metric,
-        ) -> AocResult<Self::Metric> {
-            Ok(BestCostNode {
+        fn traverse_tree(self, initial_cost: Self::Metric) -> AocResult<Self::Metric> {
+            BestCostNode {
                 node: self,
                 cumulative_cost: initial_cost.clone(),
             }
-            .traverse_tree(initial_best))
+            .traverse_tree(BestCostState {
+                best_cost: None,
+                node_best_costs: HashMap::new(),
+            })
+            .best_cost
+            .ok_or(AocError::NoSolution)
         }
     }
 
-    #[derive(Clone, Copy, Add)]
-    struct Step(Infinitable<usize>);
+    #[derive(Clone, Copy, Add, From)]
+    struct Step(usize);
     impl Metric for Step {
         fn is_better(&self, other: &Self) -> bool {
             self.0 < other.0
@@ -491,7 +522,7 @@ pub mod new {
     impl<N: LeastStepsTreeNode> BestCostTreeNode for LeastStepsNode<N> {
         type Metric = Step;
 
-        fn recurse_action(self) -> ApplyNodeAction<BestCostChild<Self>> {
+        fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>> {
             match self.0.recurse_action() {
                 ApplyNodeAction::Stop(a) => ApplyNodeAction::Stop(a),
                 ApplyNodeAction::Complete(a) => ApplyNodeAction::Complete(a),
@@ -499,7 +530,7 @@ pub mod new {
                     v.into_iter()
                         .map(|node| BestCostChild {
                             node: Self(node),
-                            cost: Step(1.into()),
+                            cost: 1.into(),
                         })
                         .collect(),
                 ),
@@ -508,15 +539,10 @@ pub mod new {
     }
 
     pub trait LeastStepsTreeNode: Sized {
-        fn recurse_action(self) -> ApplyNodeAction<Self>;
+        fn recurse_action(&mut self) -> ApplyNodeAction<Self>;
 
         fn traverse_tree(self) -> AocResult<usize> {
-            LeastStepsNode(self)
-                .traverse_tree(Step(0.into()), Step(Infinitable::Infinity))
-                .and_then(|s| match s.0 {
-                    Infinitable::Finite(n) => Ok(n),
-                    _ => Err(AocError::NoSolution),
-                })
+            LeastStepsNode(self).traverse_tree(0.into()).map(|s| s.0)
         }
     }
 }

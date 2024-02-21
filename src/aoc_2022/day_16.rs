@@ -229,7 +229,7 @@ mod solution {
     impl<'a> GlobalStateTreeNode for SearchNode<'a> {
         type GlobalState = SearchState<'a>;
 
-        fn recurse_action(mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
+        fn recurse_action(&mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
             // Open the current valves
             self.you
                 .open_current_valve(global_state, &mut self.closed_valves);
