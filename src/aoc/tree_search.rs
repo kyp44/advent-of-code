@@ -346,42 +346,31 @@ pub mod new {
         type GlobalState;
         type NodeValue = ();
 
-        fn recurse_action(&mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self>;
+        fn recurse_action(self, global_state: &mut Self::GlobalState) -> NodeAction<Self>;
 
-        // Called after recursion
-        // Called regardless of whether we recursed to children
-        fn post_recurse(
-            &mut self,
-            global_state: &mut Self::GlobalState,
-            _action: NodeAction<Self>,
-        ) {
-            // Do nothing by default
-        }
-
-        fn traverse_tree(mut self, mut initial_state: Self::GlobalState) -> Self::GlobalState {
-            traverse_global_state_tree(&mut initial_state, &mut self);
-            initial_state
-        }
-    }
-
-    // Recursive
-    // Return value is whether to terminate the search immediately.
-    fn traverse_global_state_tree<N: GlobalStateTreeNode>(
-        global_state: &mut N::GlobalState,
-        current_node: &mut N,
-    ) -> bool {
-        match current_node.recurse_action(global_state) {
-            NodeAction::Stop => false,
-            NodeAction::Continue(mut children) => {
-                for child in children.iter_mut() {
-                    if traverse_global_state_tree(global_state, child) {
-                        return true;
+        fn traverse_tree(self, mut initial_state: Self::GlobalState) -> Self::GlobalState {
+            // Recursive
+            // Return value is whether to terminate the search immediately.
+            fn rec_traverse<N: GlobalStateTreeNode>(
+                global_state: &mut N::GlobalState,
+                current_node: N,
+            ) -> bool {
+                match current_node.recurse_action(global_state) {
+                    NodeAction::Stop => false,
+                    NodeAction::Continue(mut children) => {
+                        for child in children {
+                            if rec_traverse(global_state, child) {
+                                return true;
+                            }
+                        }
+                        false
                     }
+                    NodeAction::Complete => true,
                 }
-                current_node.post_recurse(global_state, children);
-                false
             }
-            NodeAction::Complete => true,
+
+            rec_traverse(&mut initial_state, self);
+            initial_state
         }
     }
 
@@ -455,90 +444,116 @@ pub mod new {
         // Total cost of paths all the way to this node
         cumulative_cost: N::Metric,
     }
-    impl<N: BestCostTreeNode> GlobalStateTreeNode for BestCostNode<N> {
-        type GlobalState = BestCostState<N>;
 
-        fn recurse_action(&mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
-            // If the cost is already too high, just stop
-            if global_state
-                .best_cost
-                .is_better(&Some(self.cumulative_cost))
-            {
-                return NodeAction::Stop;
-            }
-
-            // If we already know the best cost to add for this node and its sub-tree, then exit early
-            if let Some(bc) = global_state.node_best_costs.get(&self.node) {
-                if let Some(best_cost) = bc {
-                    global_state.update_if_better(self.cumulative_cost + *best_cost);
-                }
-                return NodeAction::Stop;
-            }
-
-            match self.node.recurse_action() {
-                ApplyNodeAction::Stop(apply) => {
-                    if apply {
-                        global_state.update_if_better(self.cumulative_cost)
-                    }
-                    NodeAction::Stop
-                }
-                ApplyNodeAction::Complete(apply) => {
-                    if apply {
-                        global_state.update_if_better(self.cumulative_cost)
-                    }
-                    NodeAction::Complete
-                }
-                ApplyNodeAction::Continue(children) => NodeAction::Continue(
-                    children
-                        .into_iter()
-                        .map(|child| {
-                            let mut cumulative_cost = self.cumulative_cost.clone();
-                            cumulative_cost = cumulative_cost + child.cost;
-
-                            Self {
-                                node: child.node,
-                                cumulative_cost,
-                            }
-                        })
-                        .collect(),
-                ),
-            }
-        }
-
-        fn post_recurse(
-            &mut self,
-            global_state: &mut Self::GlobalState,
-            _action: NodeAction<Self>,
-        ) {
-            let mut best_cost: Option<N::Metric> = None;
-            for best_sub_cost in _children
-                .into_iter()
-                .filter_map(|child| *global_state.node_best_costs.get(&child.node).unwrap())
-            {
-                best_cost.update_if_better(Some(best_sub_cost))
-            }
-            global_state
-                .node_best_costs
-                .insert(self.node.clone(), best_cost);
-        }
+    struct BestCostReturn<N: BestCostTreeNode> {
+        complete: bool,
+        best_cost: Option<N::Metric>,
     }
 
     pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
-        type Metric: Metric + Clone + Copy + std::ops::Add<Output = Self::Metric>;
+        // Default should be initial or zero cost
+        type Metric: Metric + Clone + Default + Copy + std::ops::Add<Output = Self::Metric>;
 
         fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>>;
 
-        fn traverse_tree(self, initial_cost: Self::Metric) -> AocResult<Self::Metric> {
-            BestCostNode {
-                node: self,
-                cumulative_cost: initial_cost.clone(),
+        fn traverse_tree(self) -> AocResult<Self::Metric> {
+            // Recursive
+            // Return value is whether to terminate the search immediately.
+            fn rec_traverse<N: BestCostTreeNode>(
+                best_cost_state: &mut BestCostState<N>,
+                mut current_node: BestCostNode<N>,
+            ) -> BestCostReturn<N> {
+                // If the cost is already too high, just stop
+                // TODO
+                /* if best_cost_state
+                    .best_cost
+                    .is_better(&Some(current_node.cumulative_cost))
+                {
+                    return false;
+                } */
+
+                // If we already know the best cost to add for this node and its sub-tree, then exit early
+                if let Some(bc) = best_cost_state
+                    .node_best_costs
+                    .get(&current_node.node)
+                    .copied()
+                {
+                    if let Some(best_cost) = bc {
+                        best_cost_state.update_if_better(current_node.cumulative_cost + best_cost);
+                    }
+                    return BestCostReturn {
+                        complete: false,
+                        best_cost: bc,
+                    };
+                }
+
+                let bc_return = match current_node.node.recurse_action() {
+                    ApplyNodeAction::Stop(apply) => {
+                        if apply {
+                            best_cost_state.update_if_better(current_node.cumulative_cost);
+                        }
+                        BestCostReturn {
+                            complete: false,
+                            best_cost: apply.then_some(N::Metric::default()),
+                        }
+                    }
+                    ApplyNodeAction::Complete(apply) => {
+                        if apply {
+                            best_cost_state.update_if_better(current_node.cumulative_cost);
+                        }
+                        BestCostReturn {
+                            complete: true,
+                            best_cost: apply.then_some(N::Metric::default()),
+                        }
+                    }
+                    ApplyNodeAction::Continue(children) => {
+                        let mut best_cost = None;
+
+                        for child in children {
+                            let child_cost = child.cost;
+                            let mut bc_return = rec_traverse(
+                                best_cost_state,
+                                BestCostNode {
+                                    node: child.node,
+                                    cumulative_cost: current_node.cumulative_cost + child.cost,
+                                },
+                            );
+
+                            bc_return.best_cost = bc_return.best_cost.map(|c| c + child_cost);
+
+                            if bc_return.complete {
+                                return bc_return;
+                            }
+
+                            best_cost.update_if_better(bc_return.best_cost);
+                        }
+
+                        BestCostReturn {
+                            complete: false,
+                            best_cost,
+                        }
+                    }
+                };
+
+                // Update the best cost node optimization table
+                best_cost_state
+                    .node_best_costs
+                    .insert(current_node.node.clone(), bc_return.best_cost);
+                bc_return
             }
-            .traverse_tree(BestCostState {
+
+            let mut initial_state = BestCostState {
                 best_cost: None,
                 node_best_costs: HashMap::new(),
-            })
-            .best_cost
-            .ok_or(AocError::NoSolution)
+            };
+            rec_traverse(
+                &mut initial_state,
+                BestCostNode {
+                    node: self,
+                    cumulative_cost: Self::Metric::default(),
+                },
+            );
+            initial_state.best_cost.ok_or(AocError::NoSolution)
         }
     }
 
@@ -547,6 +562,11 @@ pub mod new {
     impl Metric for Step {
         fn is_better(&self, other: &Self) -> bool {
             self.0 < other.0
+        }
+    }
+    impl Default for Step {
+        fn default() -> Self {
+            Self(0)
         }
     }
 
@@ -575,7 +595,7 @@ pub mod new {
         fn recurse_action(&mut self) -> ApplyNodeAction<Self>;
 
         fn traverse_tree(self) -> AocResult<usize> {
-            LeastStepsNode(self).traverse_tree(0.into()).map(|s| s.0)
+            LeastStepsNode(self).traverse_tree().map(|s| s.0)
         }
     }
 }

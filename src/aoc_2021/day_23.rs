@@ -429,12 +429,12 @@ mod solution {
         /// to solve from this position, that is to return all amphipods to their
         /// home rooms.
         pub fn minimal_energy(self) -> AocResult<u64> {
-            self.traverse_tree(0.into()).map(|c| c.0)
+            self.traverse_tree().map(|c| c.0)
         }
     }
 
     /// Wrapper structure that represents a relative or total cost to move amphipods.
-    #[derive(Clone, Copy, Add, From, Debug)]
+    #[derive(Clone, Copy, Default, Add, From, Debug)]
     pub struct Cost(u64);
     impl Metric for Cost {
         fn is_better(&self, other: &Self) -> bool {

@@ -664,7 +664,7 @@ mod solution {
     impl GlobalStateTreeNode for TileMap {
         type GlobalState = BasicSolutionState<Self>;
 
-        fn recurse_action(&mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
+        fn recurse_action(self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
             if self.remaining.is_empty() {
                 global_state.set_solution(self.clone());
                 return NodeAction::Complete;

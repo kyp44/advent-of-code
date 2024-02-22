@@ -317,12 +317,12 @@ mod solution {
         /// Searches the game tree to determine the minimal mana cost in which the player wins.
         pub fn minimal_mana_cost(mut self, hard_mode: bool) -> AocResult<u64> {
             self.hard_mode = hard_mode;
-            self.traverse_tree(0.into()).map(|m| m.0.into())
+            self.traverse_tree().map(|m| m.0.into())
         }
     }
 
     /// Relative or cumulative mana cost for spells.
-    #[derive(Clone, Copy, Debug, Add)]
+    #[derive(Clone, Copy, Default, Debug, Add)]
     pub struct Mana(u32);
     impl Metric for Mana {
         fn is_better(&self, other: &Self) -> bool {

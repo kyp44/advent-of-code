@@ -211,7 +211,7 @@ mod solution {
     impl GlobalStateTreeNode for GameNode {
         type GlobalState = GameGlobalState;
 
-        fn recurse_action(&mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
+        fn recurse_action(self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
             if self.win() {
                 global_state.num_universes_wins[self.turn] += self.num_universes;
                 return NodeAction::Stop;

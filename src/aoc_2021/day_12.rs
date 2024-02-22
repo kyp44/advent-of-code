@@ -250,7 +250,7 @@ mod solution {
     impl<'a> GlobalStateTreeNode for PathTip<'a> {
         type GlobalState = Paths<'a>;
 
-        fn recurse_action(&mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
+        fn recurse_action(self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
             let cave = self.graph.node_weight(self.tip).unwrap();
 
             if cave.cave_type == CaveType::End {
