@@ -344,17 +344,23 @@ pub mod new {
 
     pub trait GlobalStateTreeNode: Sized {
         type GlobalState;
+        type NodeValue = ();
 
         fn recurse_action(&mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self>;
+
+        // Called after recursion
+        // Called regardless of whether we recursed to children
+        fn post_recurse(
+            &mut self,
+            global_state: &mut Self::GlobalState,
+            _action: NodeAction<Self>,
+        ) {
+            // Do nothing by default
+        }
 
         fn traverse_tree(mut self, mut initial_state: Self::GlobalState) -> Self::GlobalState {
             traverse_global_state_tree(&mut initial_state, &mut self);
             initial_state
-        }
-
-        // Called after recurse (if any)
-        fn post_recurse(&mut self, global_state: &mut Self::GlobalState, _chidren: Vec<Self>) {
-            // Do nothing by default
         }
     }
 
@@ -364,9 +370,7 @@ pub mod new {
         global_state: &mut N::GlobalState,
         current_node: &mut N,
     ) -> bool {
-        let mut action = current_node.recurse_action(global_state);
-
-        match action {
+        match current_node.recurse_action(global_state) {
             NodeAction::Stop => false,
             NodeAction::Continue(mut children) => {
                 for child in children.iter_mut() {
@@ -430,7 +434,9 @@ pub mod new {
 
     struct BestCostState<N: BestCostTreeNode> {
         best_cost: Option<N::Metric>,
-        node_best_costs: HashMap<N, N::Metric>,
+        // For each node, the best path cost among its entire sub-tree.
+        // Optimization that obviates the need to recurse past this node more than once.
+        node_best_costs: HashMap<N, Option<N::Metric>>,
     }
     impl<N: BestCostTreeNode> BestCostState<N> {
         pub fn update_if_better(&mut self, other: N::Metric) {
@@ -446,6 +452,7 @@ pub mod new {
 
     struct BestCostNode<N: BestCostTreeNode> {
         node: N,
+        // Total cost of paths all the way to this node
         cumulative_cost: N::Metric,
     }
     impl<N: BestCostTreeNode> GlobalStateTreeNode for BestCostNode<N> {
@@ -457,6 +464,14 @@ pub mod new {
                 .best_cost
                 .is_better(&Some(self.cumulative_cost))
             {
+                return NodeAction::Stop;
+            }
+
+            // If we already know the best cost to add for this node and its sub-tree, then exit early
+            if let Some(bc) = global_state.node_best_costs.get(&self.node) {
+                if let Some(best_cost) = bc {
+                    global_state.update_if_better(self.cumulative_cost + *best_cost);
+                }
                 return NodeAction::Stop;
             }
 
@@ -489,9 +504,26 @@ pub mod new {
                 ),
             }
         }
+
+        fn post_recurse(
+            &mut self,
+            global_state: &mut Self::GlobalState,
+            _action: NodeAction<Self>,
+        ) {
+            let mut best_cost: Option<N::Metric> = None;
+            for best_sub_cost in _children
+                .into_iter()
+                .filter_map(|child| *global_state.node_best_costs.get(&child.node).unwrap())
+            {
+                best_cost.update_if_better(Some(best_sub_cost))
+            }
+            global_state
+                .node_best_costs
+                .insert(self.node.clone(), best_cost);
+        }
     }
 
-    pub trait BestCostTreeNode: Sized {
+    pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
         type Metric: Metric + Clone + Copy + std::ops::Add<Output = Self::Metric>;
 
         fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>>;
@@ -518,6 +550,7 @@ pub mod new {
         }
     }
 
+    #[derive(Clone, PartialEq, Eq, Hash)]
     struct LeastStepsNode<N: LeastStepsTreeNode>(N);
     impl<N: LeastStepsTreeNode> BestCostTreeNode for LeastStepsNode<N> {
         type Metric = Step;
@@ -538,7 +571,7 @@ pub mod new {
         }
     }
 
-    pub trait LeastStepsTreeNode: Sized {
+    pub trait LeastStepsTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
         fn recurse_action(&mut self) -> ApplyNodeAction<Self>;
 
         fn traverse_tree(self) -> AocResult<usize> {

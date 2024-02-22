@@ -107,6 +107,7 @@ mod solution {
     ///
     /// The tree search works backwards, from the molecule we are trying to make
     /// to the starting molecule.
+    #[derive(Clone)]
     struct Molecule<'a> {
         /// The molecule making machine.
         machine: &'a Machine,
