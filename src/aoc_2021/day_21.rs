@@ -26,7 +26,7 @@ mod solution {
     use super::*;
     use aoc::{
         parse::field_line_parser,
-        tree_search::new::{GlobalStateTreeNode, NodeAction},
+        tree_search::{GlobalStateTreeNode, NodeAction},
     };
     use bare_metal_modulo::{MNum, OffsetNumC};
     use derive_new::new;

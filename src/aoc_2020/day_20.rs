@@ -124,7 +124,7 @@ Tile 3079:
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::tree_search::new::{BasicSolutionState, GlobalStateTreeNode, NodeAction};
+    use aoc::tree_search::{BasicSolutionState, GlobalStateTreeNode, NodeAction};
     use cgmath::EuclideanSpace;
     use derive_more::{Deref, From, Into};
     use derive_new::new;

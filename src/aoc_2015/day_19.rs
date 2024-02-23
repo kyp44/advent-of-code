@@ -60,7 +60,7 @@ mod solution {
     use super::*;
     use aoc::{
         parse::trim,
-        tree_search::new::{ApplyNodeAction, LeastStepsTreeNode},
+        tree_search::{ApplyNodeAction, LeastStepsTreeNode},
     };
     use derive_new::new;
     use nom::{

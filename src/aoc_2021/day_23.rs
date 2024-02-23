@@ -22,7 +22,7 @@ mod solution {
     use super::*;
     use aoc::{
         parse::trim,
-        tree_search::new::{ApplyNodeAction, BestCostChild, BestCostTreeNode, Metric},
+        tree_search::{ApplyNodeAction, BestCostChild, BestCostTreeNode, Metric},
     };
     use derive_more::{Add, Deref, From};
     use enum_map::{Enum, EnumMap};
@@ -555,121 +555,6 @@ mod solution {
 
             ApplyNodeAction::Continue(moves)
         }
-
-        // TODO: delete
-        /* type Metric = Cost;
-
-        fn recurse_action(&self, _cumulative_cost: &Self::Metric) -> BestMetricAction<Self> {
-            // NOTE: One principle we follow that is not a rule, we never move an amphipod only partially into
-            // a room, we always go as deep as possible. Likewise we never move an amphipod to a different space
-            // in the same room.
-
-            if Amphipod::iter().all(|a| {
-                P::board().room_spaces[a]
-                    .iter()
-                    .all(|n| self.positions[a].contains(n))
-            }) {
-                return BestMetricAction::StopSuccess;
-            }
-
-            let mut moves = Vec::new();
-
-            // Go through all amphipods at all (occupied) spaces
-            for own_amph in Amphipod::iter() {
-                // The nodes of our home room
-                let home_spaces = &P::board().room_spaces[own_amph];
-
-                // Whether our home room is filled only with our own kind
-                let home_good = home_spaces.iter().all(|n| match self.occupant(n) {
-                    Some(a) => a == own_amph,
-                    None => true,
-                });
-
-                for own_space_node in self.positions[own_amph].iter() {
-                    let own_space_type = P::board().graph.node_weight(*own_space_node).unwrap();
-
-                    // If we are already home (and it's filled with like amphipods) then we do not want to move
-                    if let SpaceType::Room(own_space_amph) = own_space_type
-                        && *own_space_amph == own_amph
-                        && home_good
-                    {
-                        continue;
-                    }
-
-                    // Remove all occupied graph nodes except this one
-                    let mut graph = P::board().clone().graph;
-                    self.occupied_spaces().for_each(|n| {
-                        if n != *own_space_node {
-                            graph.remove_node(n);
-                        }
-                    });
-
-                    // Also remove all rooms that we don't want to move into
-                    for room_amph in Amphipod::iter() {
-                        // Do we want to remove or keep this room?
-                        if !match own_space_type {
-                            // If in the hall, we only want to keep our own room but only if it's filled with our kind
-                            SpaceType::Hall => room_amph == own_amph && home_good,
-                            // Need to keep only the room we are in or our home room if it's filled with our kind
-                            SpaceType::Room(own_space_amph) => {
-                                room_amph == *own_space_amph || (room_amph == own_amph && home_good)
-                            }
-                        } {
-                            // Remove this entire room
-                            P::board().room_spaces[room_amph].iter().for_each(|n| {
-                                graph.remove_node(*n);
-                            })
-                        }
-                    }
-
-                    //println!("Amph {} at {}", amphipod, space.index());
-
-                    // Determine shortest paths to all possible destination nodes and filter by those we actually might want to move to
-                    let paths = bellman_ford(&graph, *own_space_node).unwrap();
-                    for (distance, node) in graph.node_indices().filter_map(|node| {
-                        let new_space_type = graph.node_weight(node).unwrap();
-
-                        // Do not want to move to unreachable nodes
-                        let d = match paths.distances[node.index()].finite() {
-                            Some(d) => d,
-                            None => return None,
-                        };
-                        // Do not want to move to our own space
-                        if d == 0 {
-                            return None;
-                        }
-
-                        // Do we want to remove this space?
-                        if match new_space_type {
-                            // We cannot move to another hall node if we are in the hall but want
-                            // to keep hall spaces if we are in a room.
-                            SpaceType::Hall => matches!(own_space_type, SpaceType::Hall),
-                            // We only want to move into the deepest free space in our home room.
-                            SpaceType::Room(room) => {
-                                !(home_good
-                                    && *room == own_amph
-                                    && self.deepest_free_space(own_amph).is_some_and(|n| n == node))
-                            }
-                        } {
-                            return None;
-                        }
-
-                        Some((d, node))
-                    }) {
-                        // Copy current position and make the move
-                        let mut new_position = self.clone();
-                        new_position.move_amphipod(own_amph, own_space_node, node);
-
-                        moves.push(MetricChild::new(
-                            new_position,
-                            (own_amph.required_energy() * u64::from(distance)).into(),
-                        ))
-                    }
-                }
-            }
-
-            BestMetricAction::Continue(moves)
-        } */
     }
 }
 

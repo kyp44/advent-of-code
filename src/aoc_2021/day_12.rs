@@ -57,7 +57,7 @@ start-RW";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::tree_search::new::{GlobalStateTreeNode, NodeAction};
+    use aoc::tree_search::{GlobalStateTreeNode, NodeAction};
     use infinitable::Infinitable;
     use nom::{
         bytes::complete::tag, character::complete::alphanumeric1, combinator::map,
@@ -232,6 +232,7 @@ mod solution {
         }
     }
 
+    /// The set of unique paths through the cave system.
     type Paths<'a> = HashSet<Vec<&'a Cave>>;
 
     /// The end of a path through the cave system, which is a node in the tree search.

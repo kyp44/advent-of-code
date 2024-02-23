@@ -19,9 +19,9 @@ mod solution {
     use super::*;
     use aoc::{
         parse::field_line_parser,
-        tree_search::new::{ApplyNodeAction, BestCostChild, BestCostTreeNode, Metric},
+        tree_search::{ApplyNodeAction, BestCostChild, BestCostTreeNode, Metric},
     };
-    use derive_more::Add;
+    use derive_more::{Add, From};
     use derive_new::new;
     use enum_dispatch::enum_dispatch;
     use nom::{combinator::map, sequence::tuple};
@@ -322,16 +322,11 @@ mod solution {
     }
 
     /// Relative or cumulative mana cost for spells.
-    #[derive(Clone, Copy, Default, Debug, Add)]
+    #[derive(Clone, Copy, Default, Debug, Add, From)]
     pub struct Mana(u32);
     impl Metric for Mana {
         fn is_better(&self, other: &Self) -> bool {
             self.0 < other.0
-        }
-    }
-    impl From<u32> for Mana {
-        fn from(value: u32) -> Self {
-            Self(value.into())
         }
     }
 
