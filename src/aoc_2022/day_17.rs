@@ -19,7 +19,7 @@ mod solution {
     use super::*;
     use aoc::grid::StdBool;
     use circular_buffer::CircularBuffer;
-    use euclid::{Point2D, Vector2D};
+    use euclid::{Length, Point2D, Vector2D};
     use itertools::Itertools;
     use num::integer::lcm;
     use std::collections::HashSet;
@@ -120,15 +120,6 @@ mod solution {
         lower_left: Point<ChamberRelativeSpace>,
     }
     impl Rock {
-        fn check_point(point: Point) -> Option<Point> {
-            (0..CHAMBER_WIDTH).contains(point.x) || point.y < 0
-            if point.x < 0 || point.x > CHAMBER_WIDTH - 1 || point.y < 0 {
-                None
-            } else {
-                Some(point)
-            }
-        }
-
         // TODO: Can we just create at a position?
         /* pub fn move_lower_left_to(&self, point: Point) -> Option<Self> {
             self.move_relative(point.to_vec())
@@ -143,20 +134,19 @@ mod solution {
                 lower_left,
             })
         }
+
+        pub fn collides(&self, other: &Self) -> bool {}
     }
 
     #[derive(Default)]
     struct ChamberRocks {
-        fallen_rocks: HashSet<Point>,
+        fallen_rocks: CircularBuffer<BUFFER_SIZE, Rock>,
+        floor_height: Length<u64, ChamberAbsoluteSpace>,
+        tower_height: Length<u64, ChamberRelativeSpace>,
     }
     impl ChamberRocks {
-        pub fn tower_height(&self) -> isize {
-            self.fallen_rocks
-                .iter()
-                .map(|p| p.y)
-                .max()
-                .map(|h| h + 1)
-                .unwrap_or(0)
+        pub fn tower_height(&self) -> u64 {
+            self.floor_height + u64::try_from(self.relative_tower_height).unwrap()
         }
 
         pub fn collides(&self, rock: &Rock) -> bool {
