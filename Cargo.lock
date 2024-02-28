@@ -11,6 +11,7 @@ dependencies = [
  "bimap",
  "bitbuffer",
  "cgmath",
+ "circular-buffer",
  "clap",
  "colored",
  "derive-new",
@@ -18,6 +19,7 @@ dependencies = [
  "enum-as-inner",
  "enum-map",
  "enum_dispatch",
+ "euclid",
  "gat-lending-iterator",
  "gcollections",
  "hex",
@@ -173,6 +175,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "circular-buffer"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8da9d36ad01a07a2c380bdece16e418820ffa8eda01d3debed9bff3f296a84f"
+
+[[package]]
 name = "clap"
 version = "4.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -326,6 +334,15 @@ dependencies = [
  "rustversion",
  "syn 1.0.109",
  "synstructure",
+]
+
+[[package]]
+name = "euclid"
+version = "0.22.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "87f253bc5c813ca05792837a0ff4b3a580336b224512d48f7eda1d7dd9210787"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]

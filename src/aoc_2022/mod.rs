@@ -20,6 +20,7 @@ year_solutions! {
         day_14,
         day_15,
         day_16,
+	day_17,
         day_18,
     ];
 }

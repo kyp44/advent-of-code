@@ -122,6 +122,8 @@ mod solution {
     /// The range type used to define a cuboid.
     type CuboidRange = RangeInclusive<i32>;
 
+    // TODO: Can the `euclid` crate help us here with its `Box3D` type?
+    // TODO: In fact, do we want to switch to this everywhere instead of `cgmath`?
     /// A cuboid region defined by an inclusive range in each dimension.
     ///
     /// This can be parsed from text input.
