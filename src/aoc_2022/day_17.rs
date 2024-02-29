@@ -19,14 +19,17 @@ mod solution {
     use super::*;
     use aoc::grid::StdBool;
     use circular_buffer::CircularBuffer;
-    use euclid::{Length, Point2D, Vector2D};
+    use derive_new::new;
+    use euclid::{point2, size2, vec2, Box2D, Length, Point2D, Size2D, Vector2D};
+    use gat_lending_iterator::LendingIterator;
     use itertools::Itertools;
     use num::integer::lcm;
     use std::collections::HashSet;
+    use strum::IntoEnumIterator;
+    use strum_macros::EnumIter;
 
     mod rock_shapes {
         use super::*;
-        use euclid::point2;
 
         pub const LINE_HORIZONTAL: &[Point<RockSpace>] =
             &[point2(0, 0), point2(1, 0), point2(2, 0), point2(3, 0)];
@@ -59,7 +62,7 @@ mod solution {
     const BUFFER_SIZE: usize = 10;
     // From left side of chamber
     const ROCK_SPAWN_DX: isize = 2;
-    /// From height of tower
+    // From height of tower
     const ROCK_SPAWN_DY: isize = 3;
 
     type Point<U> = Point2D<isize, U>;
@@ -88,14 +91,15 @@ mod solution {
     impl JetDirection {
         pub fn direction_vector<U>(&self) -> Vector<U> {
             match self {
-                JetDirection::Left => Vector::new(-1, 0),
-                JetDirection::Right => Vector::new(1, 0),
+                JetDirection::Left => vec2(-1, 0),
+                JetDirection::Right => vec2(1, 0),
             }
         }
     }
 
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, EnumIter)]
     enum RockType {
+        #[default]
         LineHorizontal,
         Plus,
         RightAngle,
@@ -112,9 +116,20 @@ mod solution {
                 RockType::Square => &rock_shapes::SQUARE,
             }
         }
+
+        pub fn size(&self) -> Size2D<isize, RockSpace> {
+            match self {
+                RockType::LineHorizontal => size2(4, 1),
+                RockType::Plus => size2(3, 3),
+                RockType::RightAngle => size2(3, 3),
+                RockType::LineVertical => size2(1, 4),
+                RockType::Square => size2(2, 2),
+            }
+        }
     }
 
-    #[derive(Debug, Clone)]
+    // A rock in the chamber
+    #[derive(Debug, Clone, PartialEq, Eq, new)]
     struct Rock {
         rock_type: RockType,
         lower_left: Point<ChamberRelativeSpace>,
@@ -124,47 +139,111 @@ mod solution {
         /* pub fn move_lower_left_to(&self, point: Point) -> Option<Self> {
             self.move_relative(point.to_vec())
         } */
-
-        pub fn move_relative(&self, direction: Vector<ChamberRelativeSpace>) -> Option<Self> {
-            let lower_left = self.lower_left + direction;
-
-            // TODO: Do we need to better detect negative height to panic? Or maybe just outside this?
-            ((0..CHAMBER_WIDTH).contains(&lower_left.x) && lower_left.y >= 0).then(|| Self {
-                rock_type: self.rock_type,
-                lower_left,
-            })
+        fn points(&self) -> HashSet<Point<ChamberRelativeSpace>> {
+            self.rock_type
+                .points()
+                .iter()
+                .map(|p| self.lower_left + p.to_vector().cast_unit())
+                .collect()
         }
 
-        pub fn collides(&self, other: &Self) -> bool {}
+        fn bounding_box(&self) -> Box2D<isize, ChamberRelativeSpace> {
+            Box2D::from_origin_and_size(self.lower_left, self.rock_type.size().cast_unit())
+        }
+
+        pub fn collides(&self, other: &Self) -> bool {
+            if self.bounding_box().intersects(&other.bounding_box()) {
+                !self.points().is_disjoint(&other.points())
+            } else {
+                false
+            }
+        }
+    }
+    impl std::ops::Add<Vector<ChamberRelativeSpace>> for &Rock {
+        type Output = Rock;
+
+        fn add(self, rhs: Vector<ChamberRelativeSpace>) -> Self::Output {
+            Rock {
+                rock_type: self.rock_type,
+                lower_left: self.lower_left + rhs,
+            }
+        }
     }
 
-    #[derive(Default)]
+    #[derive(Debug, Clone, Copy)]
+    enum CheckRock {
+        Good,
+        OutOfBounds,
+        RockCollision,
+        FallOutBottom,
+    }
+
+    #[derive(Default, Eq)]
     struct ChamberRocks {
         fallen_rocks: CircularBuffer<BUFFER_SIZE, Rock>,
         floor_height: Length<u64, ChamberAbsoluteSpace>,
-        tower_height: Length<u64, ChamberRelativeSpace>,
+        tower_height: Length<isize, ChamberRelativeSpace>,
+        last_rock_type: RockType,
+        last_jet_direction_idx: usize,
+    }
+    impl PartialEq for ChamberRocks {
+        fn eq(&self, other: &Self) -> bool {
+            self.fallen_rocks == other.fallen_rocks
+                && self.last_rock_type == other.last_rock_type
+                && self.last_jet_direction_idx == other.last_jet_direction_idx
+        }
     }
     impl ChamberRocks {
-        pub fn tower_height(&self) -> u64 {
-            self.floor_height + u64::try_from(self.relative_tower_height).unwrap()
+        pub fn tower_height(&self) -> Length<u64, ChamberAbsoluteSpace> {
+            self.floor_height + self.tower_height.cast_unit().try_cast().unwrap()
         }
 
-        pub fn collides(&self, rock: &Rock) -> bool {
-            !rock.points.is_disjoint(&self.fallen_rocks)
+        pub fn check_rock(&self, rock: &Rock) -> CheckRock {
+            let point = rock.lower_left;
+
+            if point.y < 0 {
+                CheckRock::FallOutBottom
+            } else {
+                let rock_box = rock.bounding_box();
+                let chamber_box = Box2D::new(
+                    point2(0, rock_box.min.y),
+                    point2(CHAMBER_WIDTH, rock_box.max.y),
+                );
+                if !chamber_box.contains_box(&rock_box) {
+                    CheckRock::OutOfBounds
+                } else {
+                    if rock.lower_left.y <= self.tower_height.0
+                        && self.fallen_rocks.iter().any(|r| rock.collides(r))
+                    {
+                        CheckRock::RockCollision
+                    } else {
+                        CheckRock::Good
+                    }
+                }
+            }
         }
 
         // Adds no matter what without checking for collisions.
-        pub fn add_rock(&mut self, rock: Rock) {
-            self.fallen_rocks.extend(rock.points);
+        pub fn add_rock(&mut self, rock: Rock, last_jet_direction_idx: usize) {
+            self.last_rock_type = rock.rock_type;
+            self.last_jet_direction_idx = last_jet_direction_idx;
+            self.fallen_rocks.push_front(rock);
 
-            self.remove_old();
-        }
+            // A rock was removed at the end so re-adjust floor and height.
+            let mut floor_offset = isize::MAX;
+            let mut height = 0;
+            for rock in self.fallen_rocks.iter() {
+                floor_offset = floor_offset.min(rock.lower_left.y);
+                height = height.max(rock.bounding_box().max.y.try_into().unwrap());
+            }
+            self.floor_height += Length::new(floor_offset.try_into().unwrap());
+            self.tower_height = Length::new(height - floor_offset);
 
-        // Optimization for part two
-        fn remove_old(&mut self) {
-            let height = self.tower_height();
-
-            self.fallen_rocks.retain(|p| p.y > height - 50);
+            // Now adjust all rock locations since the new floor is at relative zero height.
+            let offset = vec2(0, -floor_offset);
+            for rock in self.fallen_rocks.iter_mut() {
+                rock.lower_left += offset;
+            }
         }
     }
     impl std::fmt::Debug for ChamberRocks {
@@ -172,11 +251,80 @@ mod solution {
             let points = self
                 .fallen_rocks
                 .iter()
-                .map(|p| Point::new(p.x, -p.y))
+                .flat_map(|r| r.points().into_iter().map(|p| AnyGridPoint::new(p.x, -p.y)))
                 .collect_vec();
             let grid: Grid<StdBool> = Grid::from_coordinates(points.iter());
 
             write!(f, "{grid:?}")
+        }
+    }
+
+    struct ChamberSimulation<I> {
+        jet_direction_iter: I,
+        rock_type_iter: RockTypeIter,
+        chamber_rocks: ChamberRocks,
+    }
+    impl<'a>
+        ChamberSimulation<
+            std::iter::Cycle<std::iter::Enumerate<std::slice::Iter<'a, JetDirection>>>,
+        >
+    {
+        pub fn new(jet_directions: &'a [JetDirection]) -> Self {
+            Self {
+                jet_direction_iter: jet_directions.iter().enumerate().cycle(),
+                rock_type_iter: RockType::iter(),
+                chamber_rocks: ChamberRocks::default(),
+            }
+        }
+    }
+    impl<I: Iterator<Item = (usize, JetDirection)>> LendingIterator for ChamberSimulation<I> {
+        type Item<'a> = &'a ChamberRocks
+        where
+            Self: 'a;
+
+        fn next(&mut self) -> Option<Self::Item<'_>> {
+            let rock_type = self.rock_type_iter.next().unwrap();
+
+            // Spawn in rock
+            let mut rock = Rock::new(
+                rock_type,
+                point2(
+                    ROCK_SPAWN_DX,
+                    self.chamber_rocks.tower_height.0 + ROCK_SPAWN_DY,
+                ),
+            );
+
+            loop {
+                // Push with jet if possible
+                let (jet_direction_idx, jet_direction) = self.jet_direction_iter.next().unwrap();
+                let new_rock = &rock + jet_direction.direction_vector();
+                if let CheckRock::Good = self.chamber_rocks.check_rock(&new_rock) {
+                    rock = new_rock;
+                }
+
+                // Move down if possible
+                let new_rock = &rock + vec2(0, -1);
+                match self.chamber_rocks.check_rock(&new_rock) {
+                    CheckRock::Good => rock = new_rock,
+                    CheckRock::FallOutBottom => {
+                        if self.chamber_rocks.floor_height.0 == 0 {
+                            self.chamber_rocks.add_rock(rock, jet_direction_idx);
+                        }
+
+                        // If a rock falls out the bottom of our current shifted buffer then, oh well,
+                        // it contributes nothing.
+
+                        break;
+                    }
+                    CheckRock::RockCollision => {
+                        self.chamber_rocks.add_rock(rock, jet_direction_idx);
+                        break;
+                    }
+                    _ => panic!(),
+                }
+            }
+
+            Some(&self.chamber_rocks)
         }
     }
 
@@ -204,56 +352,8 @@ mod solution {
         }
     }
     impl Chamber {
-        /// Simulates the falling rocks and returns the tower height after
-        /// `num_rocks` have fallen.
-        pub fn simulate(&self, num_rocks: usize) -> ChamberRocks {
-            let mut jet_directions = self.jet_directions.iter().cycle();
-            let mut chamber_rocks = ChamberRocks::default();
-
-            for rock in self.rock_types.iter().cycle().take(num_rocks) {
-                // Spawn in rock
-                let mut rock = rock
-                    .move_lower_left_to(Point::new(
-                        ROCK_SPAWN_DX,
-                        chamber_rocks.tower_height() + ROCK_SPAWN_DY,
-                    ))
-                    .unwrap();
-
-                loop {
-                    // Push with jet if possible
-                    if let Some(r) =
-                        rock.move_relative(jet_directions.next().unwrap().direction_vector())
-                    {
-                        if !chamber_rocks.collides(&r) {
-                            rock = r;
-                        }
-                    }
-
-                    // Move down if possible
-                    match rock.move_relative(-Vector::unit_y()) {
-                        Some(r) => {
-                            if chamber_rocks.collides(&r) {
-                                // Lands at old position
-                                chamber_rocks.add_rock(rock);
-                                break;
-                            } else {
-                                // Keep on moving
-                                rock = r;
-                            }
-                        }
-                        None => {
-                            // Lands on the floor
-                            chamber_rocks.add_rock(rock);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            chamber_rocks
-        }
-
         pub fn tower_height(&self, num_rocks: usize) -> u64 {
+            let mut simulation = ChamberSimulation::new(&self.jet_directions);
             /* let lcm = lcm(self.rock_types.len(), self.jet_directions.len());
 
             for m in 1..=5 {
@@ -264,7 +364,7 @@ mod solution {
                     chamber_rocks.tower_height(),
                 );
             } */
-            self.simulate(num_rocks).tower_height().try_into().unwrap()
+            simulation.next()
         }
     }
 }
