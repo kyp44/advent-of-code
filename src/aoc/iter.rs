@@ -121,35 +121,31 @@ impl<T, I: Iterator<Item = T>> IteratorExt<T> for I {
 ///
 /// This is a mirror of [`IteratorExt`], but a distinct trait is unfortunately needed
 /// because Rust does not currently support blanket trait implementations for types
-/// having disjoint trait bounds, or, alternatively, to specify negative trait bounds.
-pub trait LendingIteratorExt<T> {
+/// having disjoint trait bounds, or, alternatively, specifying negative trait bounds.
+///
+/// NOTE: Had trouble implementing this with the GAT, which was solved
+/// [here](https://users.rust-lang.org/t/trouble-writing-an-extension-trait-for-a-trait-that-includes-a-gat/107628).
+pub trait LendingIteratorExt: LendingIterator {
     /// This is a mirror of [`IteratorExt::filter_count`] for lending iterators.
-    fn filter_count<P, O: TryFrom<usize>>(self, f: P) -> O
+    fn filter_count<P, O: TryFrom<usize>>(self, f: impl FnMut(&Self::Item<'_>) -> bool) -> O
     where
-        P: FnMut(&T) -> bool,
-        // TODO can we get away with the the second one? Also for IteratorExt.
-        <O as TryFrom<usize>>::Error: Debug;
-    //O::Error: Debug;
+        O::Error: Debug;
 
-    /*
     /// This is a mirror of [`IteratorExt::iterations`] for lending iterators.
-    fn iterations(&mut self, n: usize) -> Option<T>;
+    fn iterations(&mut self, n: usize) -> Option<Self::Item<'_>>;
 
     /// This is a mirror of [`IteratorExt::expect_next`] for lending iterators.
-    fn expect_next(&mut self) -> AocResult<T>; */
+    fn expect_next(&mut self) -> AocResult<Self::Item<'_>>;
 }
-impl<'a, I: LendingIterator> LendingIteratorExt<I::Item<'a>> for I {
-    fn filter_count<P, O: TryFrom<usize>>(self, f: P) -> O
+impl<I: LendingIterator + Sized> LendingIteratorExt for I {
+    fn filter_count<P, O: TryFrom<usize>>(self, f: impl FnMut(&Self::Item<'_>) -> bool) -> O
     where
-        P: FnMut(&I::Item<'a>) -> bool,
-        // TODO can we get away with the the second one? Also for IteratorExt.
-        <O as TryFrom<usize>>::Error: Debug,
+        O::Error: Debug,
     {
         self.filter(f).count().try_into().unwrap()
     }
-    //self.filter(f).count().try_into().unwrap()
 
-    /* fn iterations(&'a mut self, n: usize) -> Option<I::Item<'a>> {
+    fn iterations(&mut self, n: usize) -> Option<Self::Item<'_>> {
         if n > 0 {
             self.nth(n - 1)
         } else {
@@ -157,11 +153,11 @@ impl<'a, I: LendingIterator> LendingIteratorExt<I::Item<'a>> for I {
         }
     }
 
-    fn expect_next(&'a mut self) -> AocResult<I::Item<'_>> {
+    fn expect_next(&mut self) -> AocResult<Self::Item<'_>> {
         self.next().ok_or(AocError::Process(
             "Expected another item but there was none!".into(),
         ))
-    } */
+    }
 }
 
 /// Extension methods for iteration over strings.

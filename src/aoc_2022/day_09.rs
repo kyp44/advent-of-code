@@ -172,7 +172,7 @@ mod solution {
         pub fn execute(
             &self,
             num_knots: usize,
-        ) -> AocResult<Executor<impl Iterator<Item = &Move> + FusedIterator>> {
+        ) -> AocResult<Executor<impl FusedIterator<Item = &Move>>> {
             Ok(Executor {
                 first_emitted: false,
                 rope: Rope::new(num_knots)?,
