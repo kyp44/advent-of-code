@@ -25,8 +25,8 @@ mod solution {
     use itertools::Itertools;
     use num::integer::lcm;
     use std::collections::HashSet;
-    use strum::IntoEnumIterator;
-    use strum_macros::EnumIter;
+    use strum::{EnumCount, IntoEnumIterator};
+    use strum_macros::{EnumCount, EnumIter};
 
     mod rock_shapes {
         use super::*;
@@ -97,7 +97,7 @@ mod solution {
         }
     }
 
-    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, EnumIter)]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, EnumIter, EnumCount)]
     enum RockType {
         #[default]
         LineHorizontal,
@@ -135,10 +135,6 @@ mod solution {
         lower_left: Point<ChamberRelativeSpace>,
     }
     impl Rock {
-        // TODO: Can we just create at a position?
-        /* pub fn move_lower_left_to(&self, point: Point) -> Option<Self> {
-            self.move_relative(point.to_vec())
-        } */
         fn points(&self) -> HashSet<Point<ChamberRelativeSpace>> {
             self.rock_type
                 .points()
@@ -178,7 +174,7 @@ mod solution {
         FallOutBottom,
     }
 
-    #[derive(Default, Eq)]
+    #[derive(Clone, Default, Eq)]
     struct ChamberRocks {
         fallen_rocks: CircularBuffer<BUFFER_SIZE, Rock>,
         floor_height: Length<u64, ChamberAbsoluteSpace>,
@@ -259,25 +255,23 @@ mod solution {
         }
     }
 
-    struct ChamberSimulation<I> {
-        jet_direction_iter: I,
-        rock_type_iter: RockTypeIter,
+    struct ChamberSimulation<'a> {
+        jet_direction_iter: std::iter::Cycle<
+            std::iter::Enumerate<std::iter::Copied<std::slice::Iter<'a, JetDirection>>>,
+        >,
+        rock_type_iter: std::iter::Cycle<RockTypeIter>,
         chamber_rocks: ChamberRocks,
     }
-    impl<'a>
-        ChamberSimulation<
-            std::iter::Cycle<std::iter::Enumerate<std::slice::Iter<'a, JetDirection>>>,
-        >
-    {
+    impl<'a> ChamberSimulation<'a> {
         pub fn new(jet_directions: &'a [JetDirection]) -> Self {
             Self {
-                jet_direction_iter: jet_directions.iter().enumerate().cycle(),
-                rock_type_iter: RockType::iter(),
+                jet_direction_iter: jet_directions.iter().copied().enumerate().cycle(),
+                rock_type_iter: RockType::iter().cycle(),
                 chamber_rocks: ChamberRocks::default(),
             }
         }
     }
-    impl<I: Iterator<Item = (usize, JetDirection)>> LendingIterator for ChamberSimulation<I> {
+    impl LendingIterator for ChamberSimulation<'_> {
         type Item<'a> = &'a ChamberRocks
         where
             Self: 'a;
@@ -354,17 +348,24 @@ mod solution {
     impl Chamber {
         pub fn tower_height(&self, num_rocks: usize) -> u64 {
             let mut simulation = ChamberSimulation::new(&self.jet_directions);
-            /* let lcm = lcm(self.rock_types.len(), self.jet_directions.len());
+            let lcm = lcm(RockType::COUNT, self.jet_directions.len());
 
-            for m in 1..=5 {
-                let chamber_rocks = self.simulate(m * lcm);
+            if num_rocks > lcm {
+                println!("TODO searching for cycle...");
+                // In this case we look for cycles to apply a remainder to reduce the compute time
+                // TODO
+                //simulation.iterations(lcm);
+                let lcm_chamber_state = simulation.chamber_rocks.clone();
 
-                println!(
-                    "TODO: {m}: {}\n{chamber_rocks:?}\n",
-                    chamber_rocks.tower_height(),
-                );
-            } */
-            simulation.next()
+                /* for _ in simulation {
+                    simulation.
+                } */
+            }
+
+            let mut simulation = ChamberSimulation::new(&self.jet_directions);
+            // TODO
+            //simulation.iterations(num_rocks).unwrap().0
+            0
         }
     }
 }
