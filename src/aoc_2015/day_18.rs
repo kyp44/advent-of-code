@@ -50,9 +50,9 @@ mod solution {
             let size = grid.size();
             hashset![
                 GridPoint::new(0, 0),
-                GridPoint::new(size.x - 1, 0),
-                GridPoint::new(0, size.y - 1),
-                GridPoint::new(size.x - 1, size.y - 1),
+                GridPoint::new(size.width - 1, 0),
+                GridPoint::new(0, size.height - 1),
+                GridPoint::new(size.width - 1, size.height - 1),
             ]
         }
     }
@@ -108,8 +108,8 @@ mod solution {
             }
         }
 
-        fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
-            Box::new(self.grid.all_points())
+        fn next_iter(&self) -> impl Iterator<Item = Self::Point> {
+            self.grid.all_points()
         }
     }
     impl<P: Part> LightGrid<P> {

@@ -23,9 +23,9 @@ v.v..>>v.v
 
 /// Contains solution implementation items.
 mod solution {
-    use cgmath::Vector2;
-
     use super::*;
+    use aoc::grid::GridSpace;
+    use euclid::Vector2D;
     use std::{fmt, rc::Rc};
 
     /// A spot in the [`Trench`] grid.
@@ -97,7 +97,7 @@ mod solution {
         ) -> impl Iterator<Item = AnyGridPoint> + 'a {
             self.grid.all_points().filter_map(move |point| {
                 if self.grid.get(&point) == location {
-                    Some(point.try_point_into().unwrap())
+                    Some(point.to_isize())
                 } else {
                     None
                 }
@@ -109,29 +109,31 @@ mod solution {
             let mut new_trench = self.clone();
 
             // Move all cucumbers of a particular type
-            let mut move_cucumbers = |cucumber: Location, direction: Vector2<isize>| {
+            let mut move_cucumbers = |cucumber: Location, direction: Vector2D<isize, GridSpace>| {
                 // Need to capture the current state to check against for all open spaces.
                 // This fixes the problem of a cucumber in the first row/col moving out of the way first
                 // so that one in the last row/col moves in, which shouldn't happen.
                 let check_trench = new_trench.clone();
 
                 for point in self.specific_points(&cucumber) {
-                    let moved_point = (point + direction).unwrap_point(new_trench.grid.size());
+                    let moved_point =
+                        (point + direction).wrapped_grid_point(new_trench.grid.size());
                     // Move if the adjacent space is free
                     if !check_trench.grid.get(&moved_point).occupied() {
-                        new_trench
-                            .grid
-                            .set(&point.unwrap_point(new_trench.grid.size()), Location::Empty);
+                        new_trench.grid.set(
+                            &point.wrapped_grid_point(new_trench.grid.size()),
+                            Location::Empty,
+                        );
                         new_trench.grid.set(&moved_point, cucumber);
                     }
                 }
             };
 
             // Move all eastbound cucumbers
-            move_cucumbers(Location::East, Vector2::new(1, 0));
+            move_cucumbers(Location::East, Vector2D::new(1, 0));
 
             // Move all southbound cucumbers
-            move_cucumbers(Location::South, Vector2::new(0, 1));
+            move_cucumbers(Location::South, Vector2D::new(0, 1));
 
             new_trench
         }

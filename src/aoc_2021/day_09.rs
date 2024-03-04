@@ -22,7 +22,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use aoc::grid::Digit;
-    use cgmath::Vector2;
+    use euclid::vec2;
 
     use super::*;
 
@@ -57,16 +57,16 @@ mod solution {
                 let size = grid.size();
                 points.insert(point);
                 if point.x > 0 {
-                    reg_size += region_size(grid, point - Vector2::unit_x(), points);
+                    reg_size += region_size(grid, point - vec2(1, 0), points);
                 }
-                if point.x < size.x - 1 {
-                    reg_size += region_size(grid, point + Vector2::unit_x(), points);
+                if point.x < size.width - 1 {
+                    reg_size += region_size(grid, point + vec2(1, 0), points);
                 }
                 if point.y > 0 {
-                    reg_size += region_size(grid, point - Vector2::unit_y(), points);
+                    reg_size += region_size(grid, point - vec2(0, 1), points);
                 }
-                if point.y < size.y - 1 {
-                    reg_size += region_size(grid, point + Vector2::unit_y(), points);
+                if point.y < size.height - 1 {
+                    reg_size += region_size(grid, point + vec2(0, 1), points);
                 }
 
                 reg_size

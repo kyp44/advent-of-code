@@ -27,8 +27,8 @@ mod solution {
     use super::*;
     use aoc::grid::Digit;
     use bare_metal_modulo::{MNum, OffsetNumC};
-    use cgmath::{EuclideanSpace, Vector2};
     use derive_more::{Add, Deref};
+    use euclid::Vector2D;
     use petgraph::{
         algo::dijkstra,
         graph::{DiGraph, NodeIndex},
@@ -81,9 +81,9 @@ mod solution {
         /// Uses [Dijkstra's algorithm](https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm)
         /// to find the path with minimal total risk and returns the total minimal risk.
         pub fn min_risk(&self) -> u64 {
-            let end = *self.node_grid.get(&GridPoint::from_vec(
-                self.node_grid.size() - Vector2::new(1, 1),
-            ));
+            let end = *self
+                .node_grid
+                .get(&(self.node_grid.size().to_vector() - Vector2D::new(1, 1)).to_point());
 
             let map = dijkstra(
                 &self.graph,

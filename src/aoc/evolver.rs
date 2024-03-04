@@ -87,6 +87,8 @@ use std::{marker::PhantomData, rc::Rc};
 pub trait Evolver<T> {
     /// Type that is used to address a single cell.
     type Point;
+    /// TODO: document me with note about why this is here
+    //type NextIterator: Iterator<Item = Self::Point>;
 
     /// Creates a new cell array in the default state based on the current
     /// cell array.
@@ -103,7 +105,7 @@ pub trait Evolver<T> {
 
     /// Returns an iterator over the cell addresses to be set in the
     /// next step using the [`Evolver::next_cell`] method.
-    fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>>;
+    fn next_iter(&self) -> impl Iterator<Item = Self::Point>;
 
     /// Returns an [`Iterator`] over the steps in the evolution of the cell array.
     ///

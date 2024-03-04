@@ -25,7 +25,7 @@ turn off 499,499 through 500,500";
 mod solution {
     use super::*;
     use aoc::grid::{Digit, StdBool};
-    use cgmath::Point2;
+    use euclid::point2;
     use itertools::iproduct;
     use nom::{
         branch::alt,
@@ -63,7 +63,7 @@ mod solution {
     fn point_parser(input: &str) -> NomParseResult<&str, GridPoint> {
         use nom::character::complete::u64 as cu64;
         map(separated_pair(cu64, tag(","), cu64), |(x, y)| {
-            Point2::new(x, y).try_point_into().unwrap()
+            point2(x, y).to_usize()
         })(input)
     }
 

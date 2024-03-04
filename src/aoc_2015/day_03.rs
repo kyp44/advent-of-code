@@ -29,16 +29,18 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use euclid::{
+        default::{Point2D, Vector2D},
+        vec2,
+    };
+    use nom::{character::complete::one_of, combinator::map, multi::many1};
     use std::collections::HashSet;
 
-    use cgmath::{EuclideanSpace, Point2, Vector2};
-    use nom::{character::complete::one_of, combinator::map, multi::many1};
-
     /// The type for the coordinates of a house.
-    type Point = Point2<i32>;
+    type Point = Point2D<i32>;
 
     /// The type for a displacement vector between houses.
-    type Vector = Vector2<i32>;
+    type Vector = Vector2D<i32>;
 
     /// A direction in which Santa can move.
     pub enum Direction {
@@ -68,10 +70,10 @@ mod solution {
         fn to_vector(&self) -> Vector {
             use Direction::*;
             match self {
-                North => Vector::unit_y(),
-                East => Vector::unit_x(),
-                South => -Vector::unit_y(),
-                West => -Vector::unit_x(),
+                North => vec2(0, 1),
+                East => vec2(1, 0),
+                South => vec2(0, -1),
+                West => vec2(-1, 0),
             }
         }
     }

@@ -4,33 +4,57 @@
 //! grid element types.
 
 use super::prelude::*;
-use cgmath::{EuclideanSpace, Point2, Vector2};
 use core::slice::SlicePattern;
 use derive_more::{Add, AddAssign, Deref, From, Into, Not, Sub, SubAssign};
+use euclid::{Box2D, Point2D, Size2D, Vector2D};
 use itertools::{iproduct, process_results};
 use num::FromPrimitive;
 use petgraph::{graph::NodeIndex, stable_graph::IndexType, EdgeType, Graph};
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, str::FromStr};
 
-/// A point location in a [`Grid`] that should be within the bounds of the grid.
-///
-/// Conceptually, the origin point (0, 0) is in the upper-left corner of the grid
-/// with increasing `x` moving to the right, and increasing `y` moving down.
-pub type GridPoint = Point2<usize>;
-
-/// A point location in any [`Grid`] regardless of its bounds.
-///
-/// Conceptually, the origin point (0, 0) is in the upper-left corner of the grid
-/// with increasing `x` moving to the right, and increasing `y` moving down.
-pub type AnyGridPoint = Point2<isize>;
+/// A grid coordinate system in which the origin is the in upper left of the grid
+/// and increasing `y` moves down in the grid.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct GridSpace;
 
 /// The size of a [`Grid`].
 ///
 /// Sizes in which either element is zero are not valid.
-pub type GridSize = Vector2<usize>;
+pub type GridSize<U = GridSpace> = Size2D<usize, U>;
+
+/// A point location in a [`Grid`] that should be within the bounds of the grid.
+///
+/// Refer to [`GridSpace`] for the coordinate system.
+pub type GridPoint<U = GridSpace> = Point2D<usize, U>;
+
+/// A point location in any [`Grid`] regardless of its bounds.
+///
+/// Refer to [`GridSpace`] for the coordinate system.
+pub type AnyGridPoint<U = GridSpace> = Point2D<isize, U>;
+
+/// A box within a [`Grid`] that defines a sub-grid.
+///
+/// Refer to [`GridSpace`] for the coordinate system.
+pub type GridBox<U = GridSpace> = Box2D<usize, U>;
 
 /// Extension trait for [`GridSize`].
-pub trait GridSizeExt {
+pub trait GridSizeExt<U>: Sized {
+    /// TODO: document me with note about why this is here
+    type AllPointsIterator: Iterator<Item = GridPoint<U>>;
+
+    /// Returns whether the size is valid, that is nonzero in both dimensions.
+    fn is_valid(&self) -> bool;
+
+    /// Panics if the size is not valid, see [`GridSizeExt::is_valid`].
+    fn validate(&self) {
+        if !self.is_valid() {
+            panic!("Grid size is invalid");
+        }
+    }
+
+    /// Creates a size and verifies that it is valid, see [`GridSizeExt::is_valid`].
+    fn new_valid(width: usize, height: usize) -> Option<Self>;
+
     /// Returns an [`Iterator`] over all points in a grid of this size in row-major order.
     ///
     /// # Examples
@@ -49,32 +73,34 @@ pub trait GridSizeExt {
     ///     GridPoint::new(1, 2),
     /// ]);
     /// ```
-    fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>>;
-
-    /// Validates that a size is valid for a grid.
-    ///
-    /// Valid sizes are those that are nonzero in both dimensions.
-    ///
-    /// # Panics
-    /// This will panic if the size is invalid.
-    fn validate(self) -> Self;
+    fn all_points(&self) -> Self::AllPointsIterator;
 }
-impl GridSizeExt for GridSize {
-    fn all_points(&self) -> Box<dyn Iterator<Item = GridPoint>> {
-        Box::new(iproduct!(0..self.y, 0..self.x).map(|(y, x)| GridPoint::new(x, y)))
+impl<U> GridSizeExt<U> for GridSize<U> {
+    type AllPointsIterator = impl Iterator<Item = GridPoint<U>>;
+
+    fn new_valid(width: usize, height: usize) -> Option<Self> {
+        let size = Self::new(width, height);
+        (size.is_valid()).then_some(size)
     }
 
-    fn validate(self) -> Self {
-        if self.x == 0 || self.y == 0 {
-            panic!("A GridSize of (${}, ${}) is invalid", self.x, self.y);
-        }
-        self
+    fn is_valid(&self) -> bool {
+        !self.is_empty()
+    }
+
+    fn all_points(&self) -> Self::AllPointsIterator {
+        iproduct!(0..self.height, 0..self.width).map(|(y, x)| GridPoint::new(x, y))
     }
 }
 
 /// Extension trait for [`AnyGridPoint`].
-pub trait AnyGridPointExt {
-    /// Unwraps an infinitely repeating grid point into the actual addressable point
+pub trait AnyGridPointExt<U> {
+    /// The iterator type returned from [`AnyGridPointExt::all_neighbor_points`].
+    ///
+    /// This is needed due to a
+    /// [fundamental limitation of RPITIT](https://users.rust-lang.org/t/fully-owned-iterator-causing-lifetime-problems/107677/4).
+    type NeighborPoints: Iterator<Item = AnyGridPoint<U>>;
+
+    /// Converts an infinitely repeating grid point into the actual addressable point
     /// for a given grid size.
     ///
     /// This is effectively just a modulo operation in both dimensions using the `size`
@@ -90,19 +116,19 @@ pub trait AnyGridPointExt {
     /// # use aoc::prelude::*;
     /// let size = GridSize::new(5, 4);
     /// assert_eq!(
-    ///     AnyGridPoint::new(1, 2).unwrap_point(&size),
+    ///     AnyGridPoint::new(1, 2).wrapped_grid_point(&size),
     ///     GridPoint::new(1, 2),
     /// );
     /// assert_eq!(
-    ///     AnyGridPoint::new(-1, -2).unwrap_point(&size),
+    ///     AnyGridPoint::new(-1, -2).wrapped_grid_point(&size),
     ///     GridPoint::new(4, 2),
     /// );
     /// assert_eq!(
-    ///     AnyGridPoint::new(-789, 27615).unwrap_point(&size),
+    ///     AnyGridPoint::new(-789, 27615).wrapped_grid_point(&size),
     ///     GridPoint::new(1, 3),
     /// );
     /// ```
-    fn unwrap_point(&self, size: &GridSize) -> GridPoint;
+    fn wrapped_grid_point(&self, size: &GridSize<U>) -> GridPoint<U>;
 
     /// Returns an [`Iterator`] over all the neighboring points around a `point`
     /// in row-major order.
@@ -156,38 +182,44 @@ pub trait AnyGridPointExt {
         &self,
         include_diagonals: bool,
         include_self: bool,
-    ) -> Box<dyn Iterator<Item = AnyGridPoint>>;
+    ) -> Self::NeighborPoints;
 }
-impl AnyGridPointExt for AnyGridPoint {
-    fn unwrap_point(&self, size: &GridSize) -> GridPoint {
-        let any_size = AnyGridPoint::try_point_from(Point2::from_vec(*size)).unwrap();
-        AnyGridPoint::new(self.x.rem_euclid(any_size.x), self.y.rem_euclid(any_size.y))
-            .try_point_into()
-            .unwrap()
+impl<U> AnyGridPointExt<U> for AnyGridPoint<U> {
+    type NeighborPoints = impl Iterator<Item = Self>;
+
+    fn wrapped_grid_point(&self, size: &GridSize<U>) -> GridPoint<U> {
+        let any_size = size.try_cast().unwrap();
+
+        AnyGridPoint::new(
+            self.x.rem_euclid(any_size.width),
+            self.y.rem_euclid(any_size.height),
+        )
+        .to_usize()
     }
 
     fn all_neighbor_points(
         &self,
         include_diagonals: bool,
         include_self: bool,
-    ) -> Box<dyn Iterator<Item = AnyGridPoint>> {
-        let point = *self;
-        Box::new(
-            iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
-                let point = point + Vector2::new(dx, dy);
-                if dx == 0 && dy == 0 {
-                    if include_self {
-                        Some(point)
-                    } else {
-                        None
-                    }
-                } else if !include_diagonals && (dx + dy).abs() != 1 {
-                    None
-                } else {
+    ) -> Self::NeighborPoints {
+        // TODO can we just deference?
+        let point = self.clone();
+
+        iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
+            let point = point + Vector2D::new(dx, dy);
+            // TODO use manhattan distance here!
+            if dx == 0 && dy == 0 {
+                if include_self {
                     Some(point)
+                } else {
+                    None
                 }
-            }),
-        )
+            } else if !include_diagonals && (dx + dy).abs() != 1 {
+                None
+            } else {
+                Some(point)
+            }
+        })
     }
 }
 
@@ -197,9 +229,9 @@ impl AnyGridPointExt for AnyGridPoint {
 /// Conceptually, the origin point (0, 0) is in the upper-left corner of the grid
 /// with increasing `x` moving to the right, and increasing `y` moving down.
 #[derive(Clone, PartialEq, Eq, Hash)]
-pub struct Grid<T> {
+pub struct Grid<T, U = GridSpace> {
     /// The size of the grid.
-    size: GridSize,
+    size: GridSize<U>,
     /// The actual grid data of fixed size.
     ///
     /// This is an array of arrays in which each inner array is a row and is
@@ -207,7 +239,7 @@ pub struct Grid<T> {
     /// the grid.
     data: Box<[Box<[T]>]>,
 }
-impl<T: Default + Clone> Grid<T> {
+impl<T: Default + Clone, U> Grid<T, U> {
     /// Creates a default grid of a particular `size` with default values.
     ///
     /// # Panics
@@ -221,18 +253,20 @@ impl<T: Default + Clone> Grid<T> {
     ///
     /// assert_eq!(grid, Grid::from_data(vec![vec![0, 0, 0], vec![0, 0, 0], vec![0, 0, 0]]).unwrap());
     /// ```
-    pub fn default(size: GridSize) -> Self {
+    pub fn default(size: GridSize<U>) -> Self {
+        size.validate();
         Self {
-            size: size.validate(),
-            data: vec![vec![T::default(); size.x].into_boxed_slice(); size.y].into_boxed_slice(),
+            size,
+            data: vec![vec![T::default(); size.width].into_boxed_slice(); size.height]
+                .into_boxed_slice(),
         }
     }
 }
-impl<T> Grid<T> {
+impl<T, U> Grid<T, U> {
     /// Creates a grid from raw data.
     ///
     /// The raw data should be a [`Vec`] for rows, with each row being
-    /// itself a [`Vec`] of the same length. Returns an [`AocError::InvalidInput`]
+    /// itself a [`Vec`] of the same length. Returns an [`AocError::Other`]
     /// if either the passed data is empty, or if there are rows with different
     /// lengths.
     ///
@@ -255,20 +289,20 @@ impl<T> Grid<T> {
     /// # #![feature(assert_matches)]
     /// # use std::assert_matches::assert_matches;
     /// # use aoc::prelude::*;
-    /// assert_matches!(Grid::<u8>::from_data(vec![]), Err(AocError::InvalidInput(_)));
+    /// assert_matches!(Grid::<u8>::from_data(vec![]), Err(AocError::Other(_)));
     ///
     /// let result = Grid::from_data(vec![
     ///     vec![1, 2, 3],
     ///     vec![4, 5],
     ///     vec![6],
     /// ]);
-    /// assert_matches!(result, Err(AocError::InvalidInput(_)));
+    /// assert_matches!(result, Err(AocError::Other(_)));
     /// ```
     pub fn from_data(data: Vec<Vec<T>>) -> AocResult<Self> {
         // Verify that we have at least one row
         let height = data.len();
         if height < 1 {
-            return Err(AocError::InvalidInput("The grid has no content!".into()));
+            return Err(AocError::Other("The grid has no content!".into()));
         }
 
         // Verify that all the row widths are the same
@@ -276,7 +310,7 @@ impl<T> Grid<T> {
         let data = process_results(
             data.into_iter().map(|row| {
                 if row.len() != width {
-                    Err(AocError::InvalidInput(
+                    Err(AocError::Other(
                         format!(
                             "Grid row has a length of {} instead of the expected {}",
                             row.len(),
@@ -307,7 +341,7 @@ impl<T> Grid<T> {
     ///
     /// assert_eq!(*grid.size(), GridSize::new(2, 3));
     /// ```
-    pub fn size(&self) -> &GridSize {
+    pub fn size(&self) -> &GridSize<U> {
         &self.size
     }
 
@@ -327,7 +361,7 @@ impl<T> Grid<T> {
     /// assert_eq!(*grid.get(&GridPoint::new(1, 1)), 4);
     /// assert_eq!(*grid.get(&GridPoint::new(0, 0)), 1);
     /// ```
-    pub fn get(&self, point: &GridPoint) -> &T {
+    pub fn get(&self, point: &GridPoint<U>) -> &T {
         &self.data[point.y][point.x]
     }
 
@@ -351,7 +385,7 @@ impl<T> Grid<T> {
     /// assert_matches!(grid.get_any(&AnyGridPoint::new(1, 2)), Some(&6));
     /// assert_matches!(grid.get_any(&AnyGridPoint::new(3, 1)), None);
     /// ```
-    pub fn get_any(&self, point: &AnyGridPoint) -> Option<&T> {
+    pub fn get_any(&self, point: &AnyGridPoint<U>) -> Option<&T> {
         self.bounded_point(point).map(|p| self.get(&p))
     }
 
@@ -372,7 +406,7 @@ impl<T> Grid<T> {
     /// grid.set(&point, 21);
     /// assert_eq!(*grid.get(&point), 21);
     /// ```
-    pub fn set(&mut self, point: &GridPoint, value: T) {
+    pub fn set(&mut self, point: &GridPoint<U>, value: T) {
         *self.element_at(point) = value;
     }
 
@@ -400,7 +434,7 @@ impl<T> Grid<T> {
     /// assert_matches!(grid.get_any(&point), Some(&21));
     /// assert!(!grid.set_any(&AnyGridPoint::new(-1, 1), 21));
     /// ```
-    pub fn set_any(&mut self, point: &AnyGridPoint, value: T) -> bool {
+    pub fn set_any(&mut self, point: &AnyGridPoint<U>, value: T) -> bool {
         match self.bounded_point(point) {
             Some(p) => {
                 self.set(&p, value);
@@ -427,7 +461,7 @@ impl<T> Grid<T> {
     /// *grid.element_at(&point) =  21;
     /// assert_eq!(*grid.element_at(&point), 21);
     /// ```
-    pub fn element_at(&mut self, point: &GridPoint) -> &mut T {
+    pub fn element_at(&mut self, point: &GridPoint<U>) -> &mut T {
         &mut self.data[point.y][point.x]
     }
 
@@ -447,18 +481,12 @@ impl<T> Grid<T> {
     /// assert_eq!(grid.bounded_point(&AnyGridPoint::new(0, -1)), None);
     /// assert_eq!(grid.bounded_point(&AnyGridPoint::new(2, 0)), None);
     /// ```
-    pub fn bounded_point(&self, point: &AnyGridPoint) -> Option<GridPoint> {
-        if point.x >= 0 && point.y >= 0 {
-            let point = GridPoint::try_point_from(*point).unwrap();
-            let size = self.size();
-            if point.x < size.x && point.y < size.y {
-                Some(point)
-            } else {
-                None
-            }
-        } else {
-            None
-        }
+    pub fn bounded_point(&self, point: &AnyGridPoint<U>) -> Option<GridPoint<U>> {
+        Box2D::from(self.size)
+            .try_cast()
+            .unwrap()
+            .contains(*point)
+            .then(|| point.to_usize())
     }
 
     /// Returns an [`Iterator`] over all valid grid points in row-major order.
@@ -479,7 +507,7 @@ impl<T> Grid<T> {
     ///
     /// assert_eq!(grid.all_points().collect::<Vec<_>>(), points);
     /// ```
-    pub fn all_points(&self) -> impl Iterator<Item = GridPoint> {
+    pub fn all_points(&self) -> impl Iterator<Item = GridPoint<U>> + '_ {
         self.size().all_points()
     }
 
@@ -531,7 +559,7 @@ impl<T> Grid<T> {
     /// assert_eq!(grid.column_iter(1).copied().collect::<Vec<_>>(), vec![4, 5, 6]);
     /// ```
     pub fn column_iter(&self, column: usize) -> impl Iterator<Item = &T> {
-        (0..self.size.y).map(move |y| &self.data[y][column])
+        (0..self.size.height).map(move |y| &self.data[y][column])
     }
 
     /// Returns an [`Iterator`] over the rows as slices.
@@ -599,11 +627,12 @@ impl<T> Grid<T> {
     /// ```
     pub fn neighbor_points<'a>(
         &'a self,
-        point: &GridPoint,
+        point: &GridPoint<U>,
         include_diagonals: bool,
         include_self: bool,
-    ) -> impl Iterator<Item = GridPoint> + 'a {
-        AnyGridPoint::try_point_from(*point)
+    ) -> impl Iterator<Item = GridPoint<U>> + 'a {
+        point
+            .try_cast()
             .unwrap()
             .all_neighbor_points(include_diagonals, include_self)
             .filter_map(|p| self.bounded_point(&p))
@@ -611,12 +640,11 @@ impl<T> Grid<T> {
 
     /// Creates a sub-grid by cloning the applicable elements of this grid.
     ///
-    /// The inclusive upper-left corner of the sub-grid is given by `point`, with
-    /// the size of the sub-grid determined by `size`.
+    /// The inclusive sub-grid location is given by the `sub_grid_box`.
     ///
     /// # Panics
     /// This will panic if any part of the sub-grid is out of the bounds of this
-    /// grid.
+    /// grid, or if `sub_grid_box` has an invalid size, see [`GridSizeExt::is_valid`].
     ///
     /// # Examples
     /// Basic usage:
@@ -637,14 +665,17 @@ impl<T> Grid<T> {
     ///     Grid::from_data(vec![vec![8, 9]]).unwrap(),
     /// );
     /// ```
-    pub fn sub_grid(&self, point: &GridPoint, size: GridSize) -> Self
+    /// TODO Update documentation and test code.
+    pub fn sub_grid(&self, sub_grid_box: GridBox<U>) -> Self
     where
         T: Default + Clone,
     {
-        let point = point.to_vec();
+        let size = sub_grid_box.size();
+        // Note that this will validate the size
         let mut out = Self::default(size);
-        for out_point in out.all_points() {
-            out.set(&out_point, self.get(&(out_point + point)).clone());
+        let shift = sub_grid_box.min.to_vector();
+        for out_point in size.all_points() {
+            out.set(&out_point, self.get(&(out_point + shift)).clone());
         }
         out
     }
@@ -760,7 +791,7 @@ impl<T: Clone> Grid<T> {
 }
 
 // Additional methods for grids with boolean-like elements.
-impl<T: From<bool> + Default + Clone> Grid<T> {
+impl<T: From<bool> + Default + Clone, U> Grid<T, U> {
     /// Builds a [`Grid`] from a set of [`AnyGridPoint`]s for any value type that can be
     /// created from [`bool`] values.
     ///
@@ -795,7 +826,10 @@ impl<T: From<bool> + Default + Clone> Grid<T> {
     /// assert_eq!(grid.size(), &GridSize::new(6, 5));
     /// assert_eq!(grid, Grid::from_data(values).unwrap());
     /// ```
-    pub fn from_coordinates<'a>(points: impl Iterator<Item = &'a AnyGridPoint> + Clone) -> Self {
+    pub fn from_coordinates<'a>(points: impl Iterator<Item = &'a AnyGridPoint<U>> + Clone) -> Self
+    where
+        U: 'a,
+    {
         let x_range = points.clone().map(|p| p.x).range().unwrap_or(0..=0);
         let y_range = points.clone().map(|p| p.y).range().unwrap_or(0..=0);
         let size = GridSize::new(
@@ -815,7 +849,7 @@ impl<T: From<bool> + Default + Clone> Grid<T> {
         grid
     }
 }
-impl<T: Into<bool> + Clone> Grid<T> {
+impl<T: Into<bool> + Clone, U> Grid<T, U> {
     /// Returns a set of grid point coordinates for grid elements corresponding
     /// to `true` for value types that can be converted to [`bool`].
     ///
@@ -850,7 +884,7 @@ impl<T: Into<bool> + Clone> Grid<T> {
     ///
     /// assert_eq!(grid.as_coordinates(), coordinates.into_iter().collect());
     /// ```
-    pub fn as_coordinates(&self) -> HashSet<GridPoint> {
+    pub fn as_coordinates(&self) -> HashSet<GridPoint<U>> {
         self.all_points()
             .filter(|p| Into::<bool>::into(self.get(p).clone()))
             .collect()
@@ -931,7 +965,7 @@ impl<T: Into<bool> + Clone> Grid<T> {
 /// let string = "WRRW
 /// RWWX";
 ///
-/// assert_matches!(Grid::<Correctness>::from_str(string), Err(AocError::InvalidInput(_)));
+/// assert_matches!(Grid::<Correctness>::from_str(string), Err(AocError::Other(_)));
 /// ```
 impl<T: TryFrom<char>> FromStr for Grid<T> {
     type Err = AocError;
@@ -943,7 +977,7 @@ impl<T: TryFrom<char>> FromStr for Grid<T> {
                 line.chars()
                     .map(|c| {
                         T::try_from(c).map_err(|_| {
-                            AocError::InvalidInput(format!("Invalid character found: '{c}'").into())
+                            AocError::Other(format!("Invalid character found: '{c}'").into())
                         })
                     })
                     .collect()
@@ -956,8 +990,8 @@ impl<T: TryFrom<char>> FromStr for Grid<T> {
 impl<T: fmt::Debug> fmt::Debug for Grid<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let size = self.size();
-        for y in 0..size.y {
-            for x in 0..size.x {
+        for y in 0..size.height {
+            for x in 0..size.width {
                 write!(f, "{:?}", self.get(&GridPoint::new(x, y)))?;
             }
             writeln!(f)?;

@@ -6,6 +6,7 @@
 #![warn(missing_docs)]
 #![feature(let_chains)]
 #![feature(associated_type_defaults)]
+#![feature(impl_trait_in_assoc_type)]
 #![warn(clippy::missing_docs_in_private_items)]
 
 pub mod evolver;
@@ -19,7 +20,9 @@ pub mod prelude {
     pub use super::{
         error::{AocError, AocResult},
         evolver::Evolver,
-        extension::{PointFrom, PointInto, RangeExt, TryPointFrom, TryPointInto, VectorExt},
+        extension::{
+            EuclidExt, PointFrom, PointInto, RangeExt, TryPointFrom, TryPointInto, VectorExt,
+        },
         grid::{
             AnyGridPoint, AnyGridPointExt, FromGridStr, Grid, GridDefault, GridPoint, GridSize,
             GridSizeExt,
@@ -72,6 +75,9 @@ pub mod error {
         /// No solution found.
         #[error("No solution found!")]
         NoSolution,
+        /// Other, miscellaneous error with description.
+        #[error("Other error: {0}")]
+        Other(Cow<'static, str>),
     }
 
     /// Result with an [`AocError`].
@@ -81,11 +87,13 @@ pub mod error {
 /// Collection of general extension traits.
 pub mod extension {
     use cgmath::{Point2, Point3, Vector2, Vector3};
-    use num::{Integer, Signed};
+    use euclid::{Point2D, Vector2D, Vector3D};
+    use num::{Integer, NumCast, Signed};
     use std::ops::RangeInclusive;
 
     /// Extension trait for mathematical vectors from [`cgmath`].
-    pub trait VectorExt<T> {
+    /// TODO update doc and doc test.
+    pub trait VectorExt<T, U> {
         /// Calculates the [Manhattan length](https://en.wikipedia.org/wiki/Taxicab_geometry) of the vector.
         ///
         /// # Examples
@@ -99,22 +107,35 @@ pub mod extension {
         /// ```
         fn manhattan_len(&self) -> T;
     }
-    impl<T> VectorExt<T> for Vector2<T>
-    where
-        T: Signed,
-    {
+    impl<T: Signed, U> VectorExt<T, U> for Vector2D<T, U> {
         fn manhattan_len(&self) -> T {
             self.x.abs() + self.y.abs()
         }
     }
-    impl<T> VectorExt<T> for Vector3<T>
-    where
-        T: Signed,
-    {
+    impl<T: Signed, U> VectorExt<T, U> for Vector3D<T, U> {
         fn manhattan_len(&self) -> T {
             self.x.abs() + self.y.abs() + self.z.abs()
         }
     }
+
+    /// TODO: document me!
+    pub trait EuclidExt {
+        /// TODO: document me!
+        type Item<S>;
+
+        /// TODO: document me!
+        fn to_isize(self) -> Self::Item<isize>;
+    }
+    impl<T: NumCast + Copy, U> EuclidExt for Point2D<T, U> {
+        type Item<S> = Point2D<S, U>;
+
+        fn to_isize(self) -> Self::Item<isize> {
+            self.try_cast().unwrap()
+        }
+    }
+
+    // TODO: These conversions should go away, as they are build into Euclid, though, do we
+    // want and extension for to_isize, since this is missing?
 
     /// Extension trait to convert between [`cgmath`] vector component types more easily.
     ///

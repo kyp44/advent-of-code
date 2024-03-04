@@ -1,8 +1,9 @@
-use cgmath::Vector2;
-use cgmath::{EuclideanSpace, Point2};
-use std::str::FromStr;
-
 use aoc::prelude::*;
+use euclid::{
+    default::{Point2D, Vector2D},
+    point2, vec2,
+};
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -31,7 +32,7 @@ mod solution {
     #[derive(Debug)]
     enum Instruction {
         /// Move the ship or waypoint by some relative displacement.
-        Move(Vector2<i32>),
+        Move(Vector2D<i32>),
         /// Turn by some angle or rotate the waypoint about the ship.
         Turn(i32),
         /// Move forward in the currently facing direction or to the waypoint.
@@ -44,10 +45,10 @@ mod solution {
                 |(c, n)| {
                     use Instruction::*;
                     match c {
-                        'N' => Move(n * Vector2::unit_y()),
-                        'S' => Move(-n * Vector2::unit_y()),
-                        'E' => Move(n * Vector2::unit_x()),
-                        'W' => Move(-n * Vector2::unit_x()),
+                        'N' => Move(vec2(0, 1) * n),
+                        'S' => Move(vec2(0, -1) * n),
+                        'E' => Move(vec2(1, 0) * n),
+                        'W' => Move(vec2(-1, 0) * n),
                         'L' => Turn(n / 90),
                         'R' => Turn(-n / 90),
                         'F' => Forward(n),
@@ -65,24 +66,24 @@ mod solution {
         }
 
         /// Gets translation vector given facing direction and distance.
-        fn go_forward(facing: i32, distance: i32) -> Vector2<i32> {
-            distance
-                * match facing % 4 {
-                    0 => Vector2::unit_x(),
-                    1 => Vector2::unit_y(),
-                    2 => -Vector2::unit_x(),
-                    3 => -Vector2::unit_y(),
-                    _ => panic!(),
-                }
+        fn go_forward(facing: i32, distance: i32) -> Vector2D<i32> {
+            let vec = match facing % 4 {
+                0 => vec2(1, 0),
+                1 => vec2(0, 1),
+                2 => vec2(-1, 0),
+                3 => vec2(0, -1),
+                _ => panic!(),
+            };
+            vec * distance
         }
 
         /// Rotates a point given a turn number.
-        fn rotate_point(turn: i32, point: &Point2<i32>) -> Point2<i32> {
+        fn rotate_point(turn: i32, point: &Point2D<i32>) -> Point2D<i32> {
             match Instruction::turn(0, turn) {
                 0 => *point,
-                1 => Point2::new(-point.y, point.x),
-                2 => Point2::from_vec(-point.to_vec()),
-                3 => Point2::new(point.y, -point.x),
+                1 => point2(-point.y, point.x),
+                2 => -*point,
+                3 => point2(point.y, -point.x),
                 _ => panic!(),
             }
         }
@@ -108,8 +109,8 @@ mod solution {
         /// Optionally pass an initial waypoint location relative to the ship.
         /// If no initial waypoint is specified the commands always act on the ship,
         /// otherwise most commands act on the waypoint.
-        pub fn final_ship_position(&self, initial_waypoint: Option<&Point2<i32>>) -> Point2<i32> {
-            let mut position = Point2::origin();
+        pub fn final_ship_position(&self, initial_waypoint: Option<&Point2D<i32>>) -> Point2D<i32> {
+            let mut position = Point2D::zero();
             match initial_waypoint {
                 None => {
                     let mut facing = 0;
@@ -132,7 +133,7 @@ mod solution {
                             Instruction::Turn(a) => {
                                 waypoint = Instruction::rotate_point(*a, &waypoint)
                             }
-                            Instruction::Forward(d) => position += *d * waypoint.to_vec(),
+                            Instruction::Forward(d) => position += waypoint.to_vector() * *d,
                         }
                         //println!("Instruction: {:?}, Waypoint: {:?}, Position {:?}", inst, waypoint, position);
                     }
@@ -158,7 +159,7 @@ pub const SOLUTION: Solution = Solution {
                 input
                     .expect_data::<NavigationInstructions>()?
                     .final_ship_position(None)
-                    .to_vec()
+                    .to_vector()
                     .manhattan_len()
                     .try_into()
                     .unwrap(),
@@ -170,8 +171,8 @@ pub const SOLUTION: Solution = Solution {
             Ok(Answer::Unsigned(
                 input
                     .expect_data::<NavigationInstructions>()?
-                    .final_ship_position(Some(&Point2::new(10, 1)))
-                    .to_vec()
+                    .final_ship_position(Some(&point2(10, 1)))
+                    .to_vector()
                     .manhattan_len()
                     .try_into()
                     .unwrap(),

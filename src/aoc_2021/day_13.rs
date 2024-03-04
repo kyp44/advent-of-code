@@ -41,8 +41,8 @@ mod solution {
         grid::{AnyGridPoint, StdBool},
         parse::trim,
     };
-    use cgmath::Point2;
     use derive_more::{AsRef, Deref};
+    use euclid::Point2D;
     use itertools::Itertools;
     use nom::{
         bytes::complete::tag,
@@ -63,7 +63,7 @@ mod solution {
                     trim(false, tag(",")),
                     nom::character::complete::i32,
                 ),
-                |(x, y)| Self(Point2::new(x, y).try_point_into().unwrap()),
+                |(x, y)| Self(Point2D::new(x, y).to_isize()),
             )(input)
         }
     }

@@ -22,9 +22,9 @@ mod solution {
 
     use super::*;
     use aoc::parse::trim;
-    use cgmath::{Point2, Vector2};
     use derive_more::Deref;
     use derive_new::new;
+    use euclid::{vec2, Point2D};
     use gat_lending_iterator::LendingIterator;
     use itertools::process_results;
     use nom::{
@@ -42,7 +42,7 @@ mod solution {
                     tag(","),
                     nom::character::complete::u16,
                 ),
-                |(x, y)| ParsePoint(Point2::new(x, y).try_point_into().unwrap()),
+                |(x, y)| ParsePoint(Point2D::new(x, y).to_isize()),
             )(input)
         }
     }
@@ -213,7 +213,7 @@ mod solution {
             let mut grid: Grid<Cell> = Grid::from_coordinates(rock_points.iter());
 
             // Mark the source location in the grid
-            let source = source - delta * Vector2::unit_x();
+            let source = source - vec2(1, 0) * delta;
             grid.set_any(&source, Cell::Source);
 
             Ok(SimulationState { grid, source })
@@ -247,18 +247,14 @@ mod solution {
                 return None;
             }
 
-            let deltas = [
-                Vector2::unit_y(),
-                Vector2::unit_y() - Vector2::unit_x(),
-                Vector2::unit_y() + Vector2::unit_x(),
-            ];
+            let deltas = [vec2(0, 1), vec2(-1, 1), vec2(1, 1)];
 
             loop {
                 let mut deltas = deltas.iter();
                 loop {
                     match deltas.next() {
                         Some(delta) => {
-                            let new = point + delta;
+                            let new = point + *delta;
                             match self.grid.get_any(&new) {
                                 Some(cell) => {
                                     if cell.is_air() {

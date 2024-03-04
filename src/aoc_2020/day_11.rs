@@ -1,6 +1,5 @@
-use std::cell::RefCell;
-
 use aoc::prelude::*;
+use std::cell::RefCell;
 
 #[cfg(test)]
 mod tests {
@@ -27,9 +26,8 @@ L.LLLLL.LL";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::grid::AnyGridPoint;
-    use cgmath::{Vector2, Zero};
     use derive_new::new;
+    use euclid::Vector2D;
     use itertools::iproduct;
     use std::{collections::HashSet, fmt::Display, hash::Hash, rc::Rc};
 
@@ -124,14 +122,14 @@ mod solution {
                     .filter_count(|point| *grid.get(point) == Seat::Occupied),
                 // Look for the first seat in the eight directions in our line of sight.
                 Part::PartTwo => iproduct!(-1isize..=1, -1isize..=1)
-                    .map(|(dx, dy)| Vector2::new(dx, dy))
-                    .filter(|dp| *dp != Vector2::zero())
+                    .map(|(dx, dy)| Vector2D::new(dx, dy))
+                    .filter(|dp| *dp != Vector2D::zero())
                     .filter_count(|dp| {
-                        let mut i = 1;
+                        let mut i: isize = 1;
                         loop {
-                            let point = AnyGridPoint::try_point_from(*point).unwrap();
+                            let point = point.to_isize();
 
-                            match grid.bounded_point(&(point + i * dp)) {
+                            match grid.bounded_point(&(point + *dp * i)) {
                                 Some(p) => match grid.get(&p) {
                                     Seat::Occupied => break true,
                                     Seat::Empty => break false,
@@ -196,8 +194,8 @@ mod solution {
             }
         }
 
-        fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
-            Box::new(self.grid.all_points())
+        fn next_iter(&self) -> impl Iterator<Item = Self::Point> {
+            self.grid.all_points()
         }
     }
     impl Area {

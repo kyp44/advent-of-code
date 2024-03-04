@@ -38,8 +38,8 @@ mod solution {
 
     use super::*;
     use aoc::parse::trim;
-    use cgmath::Point2;
     use derive_more::Deref;
+    use euclid::Point2D;
     use gcollections::ops::{Bounded, Cardinality, Difference, Empty, IsEmpty};
     use interval::{ops::Range, Interval, IntervalSet};
     use nom::{
@@ -59,7 +59,7 @@ mod solution {
                     trim(false, tag(",")),
                     preceded(tag("y="), nom::character::complete::i32),
                 ),
-                |(x, y)| Self(Point2::new(x, y).try_point_into().unwrap()),
+                |(x, y)| Self(Point2D::new(x, y).to_isize()),
             )(input)
         }
     }

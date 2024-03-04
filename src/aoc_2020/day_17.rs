@@ -182,13 +182,11 @@ mod solution {
             (self.active_cubes.contains(point) && neighbors == 2) || neighbors == 3
         }
 
-        fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
-            Box::new(
-                self.ranges()
-                    .iter()
-                    .map(|r| (r.start() - 1)..=(r.end() + 1))
-                    .multi_cartesian_product(),
-            )
+        fn next_iter(&self) -> impl Iterator<Item = Self::Point> {
+            self.ranges()
+                .iter()
+                .map(|r| (r.start() - 1)..=(r.end() + 1))
+                .multi_cartesian_product()
         }
     }
 }

@@ -129,6 +129,7 @@ mod solution {
     use derive_more::{Deref, From, Into};
     use derive_new::new;
     use enum_map::{enum_map, Enum, EnumMap};
+    use euclid::{point2, size2, Box2D};
     use itertools::{iproduct, Itertools};
     use nom::{
         bytes::complete::tag,
@@ -209,10 +210,10 @@ mod solution {
         /// Returns this image rotated 90 degrees counter-clockwise.
         fn rot_90(&self) -> Self {
             let size = self.pixels.size();
-            let mut out = Image::default(GridSize::new(size.y, size.x));
+            let mut out = Image::default(*size);
             for point in self.pixels.all_points() {
                 out.pixels.set(
-                    &GridPoint::new(point.y, size.x - 1 - point.x),
+                    &point2(point.y, size.width - 1 - point.x),
                     *self.pixels.get(&point),
                 );
             }
@@ -225,7 +226,7 @@ mod solution {
             let mut out = Image::default(*size);
             for point in self.pixels.all_points() {
                 out.pixels.set(
-                    &GridPoint::new(size.x - 1 - point.x, point.y),
+                    &point2(size.width - 1 - point.x, point.y),
                     *self.pixels.get(&point),
                 )
             }
@@ -238,7 +239,7 @@ mod solution {
             let mut out = Image::default(*size);
             for point in self.pixels.all_points() {
                 out.pixels.set(
-                    &GridPoint::new(point.x, size.y - 1 - point.y),
+                    &point2(point.x, size.height - 1 - point.y),
                     *self.pixels.get(&point),
                 )
             }
@@ -265,23 +266,21 @@ mod solution {
             let size = self.pixels.size();
             let right_size = right.pixels.size();
             assert_eq!(
-                size.y, right_size.y,
+                size.height, right_size.height,
                 "Images must have the same height to adjoin horizontally"
             );
-            let width = size.x + right_size.x;
-            let mut out = Image::default(GridSize::new(width, size.y));
-            for x in 0..width {
-                for y in 0..size.y {
-                    let point = GridPoint::new(x, y);
-                    out.pixels.set(
-                        &point,
-                        if x < size.x {
-                            *self.pixels.get(&point)
-                        } else {
-                            *right.pixels.get(&GridPoint::new(point.x - size.x, point.y))
-                        },
-                    )
-                }
+            let new_size = size2(size.width + right_size.width, size.height);
+            let mut out = Image::default(new_size);
+
+            for point in new_size.all_points() {
+                out.pixels.set(
+                    &point,
+                    if point.x < size.width {
+                        *self.pixels.get(&point)
+                    } else {
+                        *right.pixels.get(&point2(point.x - size.width, point.y))
+                    },
+                )
             }
             out
         }
@@ -291,23 +290,20 @@ mod solution {
             let size = self.pixels.size();
             let below_size = below.pixels.size();
             assert_eq!(
-                size.x, below_size.x,
+                size.width, below_size.width,
                 "Images must have the same width to adjoin vertically"
             );
-            let height = size.y + below_size.y;
-            let mut out = Image::default(GridSize::new(size.x, height));
-            for x in 0..size.x {
-                for y in 0..height {
-                    let point = GridPoint::new(x, y);
-                    out.pixels.set(
-                        &point,
-                        if y < size.y {
-                            *self.pixels.get(&point)
-                        } else {
-                            *below.pixels.get(&GridPoint::new(point.x, point.y - size.y))
-                        },
-                    )
-                }
+            let new_size = size2(size.width, size.height + below_size.height);
+            let mut out = Image::default(new_size);
+            for point in new_size.all_points() {
+                out.pixels.set(
+                    &point,
+                    if point.y < size.height {
+                        *self.pixels.get(&point)
+                    } else {
+                        *below.pixels.get(&point2(point.x, point.y - size.height))
+                    },
+                )
             }
             out
         }
@@ -320,22 +316,27 @@ mod solution {
             let size = self.pixels.size();
             let image_size = image.pixels.size();
 
-            iproduct!(0..=(size.y - image_size.y), 0..=(size.x - image_size.x))
-                .filter_map(|(y, x)| {
-                    let point = GridPoint::new(x, y);
-                    let sub_image = self.pixels.sub_grid(&point, *image_size);
-                    if image
-                        .pixels
-                        .all_values()
-                        .zip(sub_image.all_values())
-                        .all(|(pi, ps)| !**pi || **ps)
-                    {
-                        Some(point)
-                    } else {
-                        None
-                    }
-                })
-                .collect()
+            size2(
+                size.width - image_size.width,
+                size.height - image_size.height,
+            )
+            .all_points()
+            .filter_map(|point| {
+                let sub_image = self
+                    .pixels
+                    .sub_grid(Box2D::from_origin_and_size(point, *image_size));
+                if image
+                    .pixels
+                    .all_values()
+                    .zip(sub_image.all_values())
+                    .all(|(pi, ps)| !**pi || **ps)
+                {
+                    Some(point)
+                } else {
+                    None
+                }
+            })
+            .collect()
         }
 
         /// Subtracts a smaller sub-image from this image at the specified
@@ -348,7 +349,7 @@ mod solution {
             for image_point in image.pixels.all_points() {
                 if **image.pixels.get(&image_point) {
                     self.pixels
-                        .set(&(point + image_point.to_vec()), false.into());
+                        .set(&(*point + image_point.to_vector()), false.into());
                 }
             }
         }
@@ -415,26 +416,25 @@ mod solution {
             let full_image = Image::from_grid_str(image_str)?;
 
             // Verify the tile dimensions
-            let size = full_image.pixels.size().x;
-            if full_image.pixels.size().y != size || size < 3 {
+            let size = full_image.pixels.size().width;
+            if full_image.pixels.size().height != size || size < 3 {
                 return Err(AocError::InvalidInput(
                     format!("Tile {id} must be square with at least a size of 3x3").into(),
                 ));
             }
 
             // Create image of interior
-            let image = Image::new(
-                full_image
-                    .pixels
-                    .sub_grid(&GridPoint::new(1, 1), GridSize::new(size - 2, size - 2)),
-            );
+            let image = Image::new(full_image.pixels.sub_grid(Box2D::from_origin_and_size(
+                point2(1, 1),
+                size2(size - 2, size - 2),
+            )));
 
             // Pull out the edges
             let edges: EnumMap<_, Vec<bool>> = enum_map! {
                 Edge::Top => full_image.pixels.row_iter(0).map(|sb| **sb).collect(),
-                Edge::Bottom => full_image.pixels.row_iter(full_image.pixels.size().y-1).map(|sb| **sb).collect(),
+                Edge::Bottom => full_image.pixels.row_iter(full_image.pixels.size().height-1).map(|sb| **sb).collect(),
                 Edge::Left => full_image.pixels.column_iter(0).map(|sb| **sb).collect(),
-                Edge::Right => full_image.pixels.column_iter(full_image.pixels.size().x - 1).map(|sb| **sb).collect(),
+                Edge::Right => full_image.pixels.column_iter(full_image.pixels.size().width - 1).map(|sb| **sb).collect(),
             };
             let mut edges_reversed = EnumMap::default();
             for (k, v) in edges.iter() {
@@ -597,14 +597,14 @@ mod solution {
             let size = tile_set.size;
             TileMap {
                 remaining: tile_set.tiles.into_iter().map(Rc::new).collect(),
-                slots: Grid::default(GridSize::new(size, size)),
+                slots: Grid::default(size2(size, size)),
                 placement_tile: GridPoint::origin(),
             }
         }
 
         /// Returns the width and height of the square map in tiles.
         fn size(&self) -> usize {
-            self.slots.size().x
+            self.slots.size().width
         }
 
         /// Sets a tile in the map.
@@ -656,7 +656,7 @@ mod solution {
 
             let size = self.size();
             Ok(iproduct!([0, size - 1], [0, size - 1])
-                .map(|(x, y)| self.get(&GridPoint::new(x, y)).unwrap().tile.id)
+                .map(|(x, y)| self.get(&point2(x, y)).unwrap().tile.id)
                 .product::<u64>())
         }
     }
@@ -686,7 +686,7 @@ mod solution {
                     let mut fits = true;
                     // Do we need to match to the right side of the tile to the left?
                     if x > 0 {
-                        let left_slot = self.get(&GridPoint::new(x - 1, y)).unwrap();
+                        let left_slot = self.get(&point2(x - 1, y)).unwrap();
                         if tile.get_edge(Edge::Left, transform)
                             != left_slot.tile.get_edge(Edge::Right, left_slot.transform)
                         {
@@ -696,7 +696,7 @@ mod solution {
                     // Do we need to match the top side of the tile with the bottom
                     // side of the tile above?
                     if y > 0 {
-                        let above_slot = self.get(&GridPoint::new(x, y - 1)).unwrap();
+                        let above_slot = self.get(&point2(x, y - 1)).unwrap();
                         if tile.get_edge(Edge::Top, transform)
                             != above_slot.tile.get_edge(Edge::Bottom, above_slot.transform)
                         {
@@ -708,14 +708,14 @@ mod solution {
                         // The tile fits, so place it and work on the next tile
                         //println!("It fit!");
                         let mut map = self.clone();
-                        map.set(&GridPoint::new(x, y), tile.clone(), transform);
+                        map.set(&point2(x, y), tile.clone(), transform);
                         map.remaining.remove(tile_idx);
                         let (x, y) = if x == map.size() - 1 {
                             (0, y + 1)
                         } else {
                             (x + 1, y)
                         };
-                        map.placement_tile = GridPoint::new(x, y);
+                        map.placement_tile = point2(x, y);
                         Some(map)
                     } else {
                         None

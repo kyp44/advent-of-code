@@ -196,14 +196,14 @@ mod solution {
             }
         }
 
-        fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
+        fn next_iter(&self) -> impl Iterator<Item = Self::Point> {
             // Determine the range in x and y
             let range = |f: fn(&Point) -> i32| match self.black_tiles.iter().map(f).range() {
                 Some(r) => (r.start() - 1)..=(r.end() + 1),
                 None => 0..=0,
             };
 
-            Box::new(iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Self::Point::new(x, y)))
+            iproduct!(range(|p| p.y), range(|p| p.x)).map(|(y, x)| Self::Point::new(x, y))
         }
     }
     impl Floor {

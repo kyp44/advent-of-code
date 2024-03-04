@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use cgmath::Vector2;
 
 #[cfg(test)]
 mod tests {
@@ -28,9 +27,10 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::grid::StdBool;
+    use aoc::grid::{GridSpace, StdBool};
     use cgmath::EuclideanSpace;
     use derive_new::new;
+    use euclid::Vector2D;
 
     /// Map denoting open squares and trees, which can be parsed from text input.
     pub struct Map {
@@ -45,7 +45,7 @@ mod solution {
     impl Map {
         /// Returns whether a certain point on the map is a tree or not.
         fn is_tree(&self, point: &GridPoint) -> bool {
-            let x = point.x % self.grid.size().x;
+            let x = point.x % self.grid.size().width;
             **self.grid.get(&GridPoint::new(x, point.y))
         }
     }
@@ -57,7 +57,7 @@ mod solution {
         /// Map through which we are traversing.
         map: &'a Map,
         /// Slope down the hill.
-        slope: Vector2<usize>,
+        slope: Vector2D<usize, GridSpace>,
         /// Current point on the map.
         #[new(value = "GridPoint::origin()")]
         point: GridPoint,
@@ -67,7 +67,7 @@ mod solution {
 
         fn next(&mut self) -> Option<Self::Item> {
             // If past the map vertically then we are done
-            if self.point.y >= self.map.grid.size().y {
+            if self.point.y >= self.map.grid.size().height {
                 return None;
             }
 
@@ -75,18 +75,19 @@ mod solution {
             let tree = self.map.is_tree(&self.point);
 
             // Ready the next position
-            self.point += self.slope;
+            self.point = self.point + self.slope;
 
             Some(tree)
         }
     }
 
     /// Counts the number of trees encountered on the way down for a particular [`Map`] and slope.
-    pub fn count_slope(map: &Map, slope: Vector2<usize>) -> u64 {
+    pub fn count_slope(map: &Map, slope: Vector2D<usize, GridSpace>) -> u64 {
         MapDownhill::new(map, slope).filter_count(|t| *t)
     }
 }
 
+use euclid::vec2;
 use solution::*;
 
 /// Solution struct.
@@ -98,7 +99,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Process
-            Ok(count_slope(input.expect_data::<Map>()?, Vector2::new(3, 1)).into())
+            Ok(count_slope(input.expect_data::<Map>()?, vec2(3, 1)).into())
         },
         // Part two
         |input| {
@@ -107,7 +108,7 @@ pub const SOLUTION: Solution = Solution {
             let slopes: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
             Ok(slopes
                 .iter()
-                .map(|(x, y)| count_slope(map, Vector2::new(*x, *y)))
+                .map(|(x, y)| count_slope(map, vec2(*x, *y)))
                 .product::<u64>()
                 .into())
         },

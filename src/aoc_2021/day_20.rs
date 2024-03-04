@@ -31,7 +31,7 @@ mod solution {
     use super::*;
     use aoc::{grid::StdBool, parse::trim};
     use bitbuffer::{BitReadBuffer, BitWriteStream, LittleEndian};
-    use cgmath::Vector2;
+    use euclid::Vector2D;
     use nom::{character::complete::one_of, combinator::map, multi::many_m_n};
     use std::rc::Rc;
 
@@ -93,7 +93,7 @@ mod solution {
     impl Image {
         /// Returns the size of the next enhanced image, which will be a bit larger.
         fn enhanced_size(&self) -> GridSize {
-            self.grid.size() + GridSize::new(2, 2)
+            *self.grid.size() + GridSize::new(2, 2)
         }
 
         /// Counts the number of lit pixels in the image.
@@ -111,6 +111,8 @@ mod solution {
     }
     impl Evolver<bool> for Image {
         type Point = AnyGridPoint;
+        // TODO
+        //type NextIterator = impl Iterator<Item = Self::Point>;
 
         fn next_default(other: &Self) -> Self {
             let infinity_pixels = other
@@ -130,8 +132,7 @@ mod solution {
         }
 
         fn set_element(&mut self, point: &Self::Point, value: bool) {
-            self.grid
-                .set(&GridPoint::try_point_from(*point).unwrap(), value.into());
+            self.grid.set_any(point, value.into());
         }
 
         fn next_cell(&self, point: &Self::Point) -> bool {
@@ -139,7 +140,7 @@ mod solution {
             let mut write_stream = BitWriteStream::new(&mut binary_data, LittleEndian);
 
             // New grid is offset so need to convert point into current grid space
-            let point = point - Vector2::new(1, 1);
+            let point = *point - Vector2D::new(1, 1);
             let bits: Vec<bool> = point
                 .all_neighbor_points(true, true)
                 .map(|p| self.get_pixel(&p))
@@ -154,12 +155,8 @@ mod solution {
             self.algorithm.lookup(binary_value).unwrap()
         }
 
-        fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
-            Box::new(
-                self.enhanced_size()
-                    .all_points()
-                    .map(|p| p.try_point_into().unwrap()),
-            )
+        fn next_iter(&self) -> impl Iterator<Item = Self::Point> {
+            self.enhanced_size().all_points().map(|p| p.to_isize())
         }
     }
 }

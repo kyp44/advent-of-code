@@ -51,8 +51,7 @@ mod solution {
     impl Octopi {
         /// Returns the total number of octopi in the grid.
         pub fn total_octopi(&self) -> usize {
-            let size = self.grid.size();
-            size.x * size.y
+            self.grid.size().area()
         }
 
         /// Creates an [`Iterator`] over the evolution of octopi energies.

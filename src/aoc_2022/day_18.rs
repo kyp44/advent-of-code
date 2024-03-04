@@ -33,16 +33,16 @@ mod solution {
         parse::trim,
         tree_search::{GlobalStateTreeNode, NodeAction},
     };
-    use cgmath::{Point3, Vector3};
     use derive_new::new;
+    use euclid::default::{Point3D, Vector3D};
     use itertools::{iproduct, Itertools};
     use nom::{bytes::complete::tag, combinator::map, multi::separated_list1};
     use std::{collections::HashSet, marker::PhantomData, ops::RangeInclusive};
 
     /// The 3D points for the cube locations.
-    type Point = Point3<i16>;
+    type Point = Point3D<i16>;
     /// The 3D vectors used to translate cube locations.
-    type Vector = Vector3<i16>;
+    type Vector = Vector3D<i16>;
 
     /// A single cube, which can be parsed from text input.
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
