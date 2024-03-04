@@ -87,7 +87,7 @@ use std::{marker::PhantomData, rc::Rc};
 pub trait Evolver<T> {
     /// Type that is used to address a single cell.
     type Point;
-    /// TODO: document me with note about why this is here
+    /// TODO: document me with note about why this is here, delete if uneeded.
     //type NextIterator: Iterator<Item = Self::Point>;
 
     /// Creates a new cell array in the default state based on the current

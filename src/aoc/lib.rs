@@ -5,6 +5,7 @@
 #![feature(assert_matches)]
 #![warn(missing_docs)]
 #![feature(let_chains)]
+#![feature(step_trait)]
 #![feature(associated_type_defaults)]
 #![feature(impl_trait_in_assoc_type)]
 #![warn(clippy::missing_docs_in_private_items)]
@@ -21,7 +22,8 @@ pub mod prelude {
         error::{AocError, AocResult},
         evolver::Evolver,
         extension::{
-            EuclidExt, PointFrom, PointInto, RangeExt, TryPointFrom, TryPointInto, VectorExt,
+            AllPoints, EuclidExt, PointFrom, PointInto, RangeExt, TryPointFrom, TryPointInto,
+            VectorExt,
         },
         grid::{
             AnyGridPoint, AnyGridPointExt, FromGridStr, Grid, GridDefault, GridPoint, GridSize,
@@ -87,7 +89,8 @@ pub mod error {
 /// Collection of general extension traits.
 pub mod extension {
     use cgmath::{Point2, Point3, Vector2, Vector3};
-    use euclid::{Point2D, Vector2D, Vector3D};
+    use euclid::{Box2D, Box3D, Point2D, Point3D, Size2D, Size3D, Vector2D, Vector3D};
+    use itertools::iproduct;
     use num::{Integer, NumCast, Signed};
     use std::ops::RangeInclusive;
 
@@ -120,7 +123,7 @@ pub mod extension {
 
     /// TODO: document me!
     pub trait EuclidExt {
-        /// TODO: document me!
+        /// TODO: document me! Why is needed?
         type Item<S>;
 
         /// TODO: document me!
@@ -131,6 +134,77 @@ pub mod extension {
 
         fn to_isize(self) -> Self::Item<isize> {
             self.try_cast().unwrap()
+        }
+    }
+
+    /// TODO: document me!
+    pub trait AllPoints {
+        /// TODO: document me!
+        type Point;
+        /// TODO: document me with note about why this is here, do we need this?
+        type AllPointsIterator: Iterator<Item = Self::Point>;
+
+        /// TODO: document me!
+        /// Returns an [`Iterator`] over all points in a grid of this size in row-major order.
+        ///
+        /// # Examples
+        /// Basic usage:
+        /// ```
+        /// # use aoc::prelude::*;
+        /// let size = GridSize::new(2, 3);
+        /// let points = size.all_points().collect::<Vec<_>>();
+        ///
+        /// assert_eq!(points, vec![
+        ///     GridPoint::new(0, 0),
+        ///     GridPoint::new(1, 0),
+        ///     GridPoint::new(0, 1),
+        ///     GridPoint::new(1, 1),
+        ///     GridPoint::new(0, 2),
+        ///     GridPoint::new(1, 2),
+        /// ]);
+        /// ```
+        fn all_points(&self) -> Self::AllPointsIterator;
+    }
+    impl<T: Copy + std::iter::Step + euclid::num::Zero, U> AllPoints for Size2D<T, U> {
+        type Point = Point2D<T, U>;
+        type AllPointsIterator = impl Iterator<Item = Self::Point>;
+
+        fn all_points(&self) -> Self::AllPointsIterator {
+            iproduct!(T::zero()..self.width, T::zero()..self.height).map(Self::Point::from)
+        }
+    }
+    impl<T: Copy + std::iter::Step + euclid::num::Zero, U> AllPoints for Size3D<T, U> {
+        type Point = Point3D<T, U>;
+        type AllPointsIterator = impl Iterator<Item = Self::Point>;
+
+        fn all_points(&self) -> Self::AllPointsIterator {
+            iproduct!(
+                T::zero()..self.width,
+                T::zero()..self.height,
+                T::zero()..self.depth
+            )
+            .map(Self::Point::from)
+        }
+    }
+    impl<T: Copy + std::iter::Step, U> AllPoints for Box2D<T, U> {
+        type Point = Point2D<T, U>;
+        type AllPointsIterator = impl Iterator<Item = Self::Point>;
+
+        fn all_points(&self) -> Self::AllPointsIterator {
+            iproduct!(self.min.x..=self.max.x, self.min.y..=self.max.y).map(Self::Point::from)
+        }
+    }
+    impl<T: Copy + std::iter::Step, U> AllPoints for Box3D<T, U> {
+        type Point = Point3D<T, U>;
+        type AllPointsIterator = impl Iterator<Item = Self::Point>;
+
+        fn all_points(&self) -> Self::AllPointsIterator {
+            iproduct!(
+                self.min.x..=self.max.x,
+                self.min.y..=self.max.y,
+                self.min.z..=self.max.z
+            )
+            .map(Self::Point::from)
         }
     }
 

@@ -28,16 +28,17 @@ mod tests {
 
 /// Contains solution implementation items.
 mod solution {
+    use std::{collections::HashSet, marker::PhantomData};
+
     use super::*;
     use aoc::{
         parse::trim,
         tree_search::{GlobalStateTreeNode, NodeAction},
     };
     use derive_new::new;
-    use euclid::default::{Point3D, Vector3D};
+    use euclid::default::{Box3D, Point3D, Vector3D};
     use itertools::{iproduct, Itertools};
     use nom::{bytes::complete::tag, combinator::map, multi::separated_list1};
-    use std::{collections::HashSet, marker::PhantomData, ops::RangeInclusive};
 
     /// The 3D points for the cube locations.
     type Point = Point3D<i16>;
@@ -90,7 +91,7 @@ mod solution {
         /// The set of cubes comprising the droplet itself.
         droplet_cubes: &'a HashSet<Cube>,
         /// The inclusive bounds of the droplet for each dimension.
-        bounds: Point3<RangeInclusive<i16>>,
+        bounds: Box3D<i16>,
         /// The set of cubes comprising the regions outside the droplet.
         outside_cubes: HashSet<Cube>,
         /// The set of cubes comprising air pockets within the droplet.
@@ -105,7 +106,7 @@ mod solution {
         ///
         /// The new search state begins with no regions identified except the droplet.
         pub fn new(droplet: &'a HashSet<Cube>) -> AocResult<Self> {
-            let cr = |mapper: fn(&Point) -> i16| match droplet
+            /* let cr = |mapper: fn(&Point) -> i16| match droplet
                 .iter()
                 .map(|c| mapper(&c.location))
                 .minmax()
@@ -114,11 +115,14 @@ mod solution {
                 _ => Err(AocError::Process(
                     "The droplet must comprise more than one cube!".into(),
                 )),
-            };
+            }; */
+            // TODO test how to check for empty droplet.
+            // What is the box with zero points? What about a single point, still empty?
 
+            // TODO Does this still work? If tests pass then yes!
             Ok(Self {
                 droplet_cubes: droplet,
-                bounds: Point3::new(cr(|p| p.x)?, cr(|p| p.y)?, cr(|p| p.z)?),
+                bounds: Box3D::from_points(droplet.iter().map(|c| c.location)),
                 outside_cubes: Default::default(),
                 pocket_cubes: Default::default(),
                 current_region: Default::default(),
@@ -134,10 +138,7 @@ mod solution {
 
         /// Returns whether a given `cube` is within the bounds of the droplet/problem.
         fn in_bounds(&self, cube: &Cube) -> bool {
-            let p = &cube.location;
-            self.bounds.x.contains(&p.x)
-                && self.bounds.y.contains(&p.y)
-                && self.bounds.z.contains(&p.z)
+            self.bounds.contains(cube.location)
         }
 
         /// Returns whether a `cube` is in one of the currently known regions, including
@@ -169,14 +170,7 @@ mod solution {
 
         /// Returns an iterator over every cube within the droplet bounding box.
         fn all_cubes(&self) -> impl Iterator<Item = Cube> {
-            iproduct!(
-                self.bounds.z.clone(),
-                self.bounds.y.clone(),
-                self.bounds.x.clone()
-            )
-            .map(|(z, y, x)| Cube {
-                location: Point::new(x, y, z),
-            })
+            self.bounds.all_points().map(|location| Cube { location })
         }
 
         /// Iterates over every cube in the bounding box and classifies them as being

@@ -39,9 +39,6 @@ pub type GridBox<U = GridSpace> = Box2D<usize, U>;
 
 /// Extension trait for [`GridSize`].
 pub trait GridSizeExt<U>: Sized {
-    /// TODO: document me with note about why this is here
-    type AllPointsIterator: Iterator<Item = GridPoint<U>>;
-
     /// Returns whether the size is valid, that is nonzero in both dimensions.
     fn is_valid(&self) -> bool;
 
@@ -54,30 +51,8 @@ pub trait GridSizeExt<U>: Sized {
 
     /// Creates a size and verifies that it is valid, see [`GridSizeExt::is_valid`].
     fn new_valid(width: usize, height: usize) -> Option<Self>;
-
-    /// Returns an [`Iterator`] over all points in a grid of this size in row-major order.
-    ///
-    /// # Examples
-    /// Basic usage:
-    /// ```
-    /// # use aoc::prelude::*;
-    /// let size = GridSize::new(2, 3);
-    /// let points = size.all_points().collect::<Vec<_>>();
-    ///
-    /// assert_eq!(points, vec![
-    ///     GridPoint::new(0, 0),
-    ///     GridPoint::new(1, 0),
-    ///     GridPoint::new(0, 1),
-    ///     GridPoint::new(1, 1),
-    ///     GridPoint::new(0, 2),
-    ///     GridPoint::new(1, 2),
-    /// ]);
-    /// ```
-    fn all_points(&self) -> Self::AllPointsIterator;
 }
 impl<U> GridSizeExt<U> for GridSize<U> {
-    type AllPointsIterator = impl Iterator<Item = GridPoint<U>>;
-
     fn new_valid(width: usize, height: usize) -> Option<Self> {
         let size = Self::new(width, height);
         (size.is_valid()).then_some(size)
@@ -85,10 +60,6 @@ impl<U> GridSizeExt<U> for GridSize<U> {
 
     fn is_valid(&self) -> bool {
         !self.is_empty()
-    }
-
-    fn all_points(&self) -> Self::AllPointsIterator {
-        iproduct!(0..self.height, 0..self.width).map(|(y, x)| GridPoint::new(x, y))
     }
 }
 
@@ -507,7 +478,7 @@ impl<T, U> Grid<T, U> {
     ///
     /// assert_eq!(grid.all_points().collect::<Vec<_>>(), points);
     /// ```
-    pub fn all_points(&self) -> impl Iterator<Item = GridPoint<U>> + '_ {
+    pub fn all_points(&self) -> impl Iterator<Item = GridPoint<U>> {
         self.size().all_points()
     }
 

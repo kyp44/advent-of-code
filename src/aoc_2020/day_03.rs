@@ -28,7 +28,6 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::grid::{GridSpace, StdBool};
-    use cgmath::EuclideanSpace;
     use derive_new::new;
     use euclid::Vector2D;
 

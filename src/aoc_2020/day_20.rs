@@ -125,7 +125,6 @@ Tile 3079:
 mod solution {
     use super::*;
     use aoc::tree_search::{BasicSolutionState, GlobalStateTreeNode, NodeAction};
-    use cgmath::EuclideanSpace;
     use derive_more::{Deref, From, Into};
     use derive_new::new;
     use enum_map::{enum_map, Enum, EnumMap};

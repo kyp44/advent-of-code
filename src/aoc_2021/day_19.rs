@@ -153,9 +153,9 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::parse::trim;
-    use cgmath::{EuclideanSpace, Point3, Quaternion, Vector3, Zero};
     use derive_more::{Deref, From};
     use derive_new::new;
+    use euclid::default::{Point3D, Rotation3D, Vector3D};
     use itertools::{iproduct, Itertools};
     use maplit::hashset;
     use nom::{
@@ -175,22 +175,22 @@ mod solution {
     use strum_macros::EnumIter;
 
     /// A 3D vector over the field of integers.
-    type Vector = Vector3<i32>;
+    type Vector = Vector3D<i32>;
 
     /// A 3D point in our coordinate system, which can be parsed from text input.
     #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, From)]
-    pub struct Point(Point3<i32>);
+    pub struct Point(Point3D<i32>);
     impl Parsable<'_> for Point {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
                 separated_list1(tag(","), trim(false, nom::character::complete::i32)),
-                |v| Self(Point3::new(v[0], v[1], v[2])),
+                |v| Self(Point3D::new(v[0], v[1], v[2])),
             )(input)
         }
     }
-    impl From<Point> for Quaternion<i32> {
+    impl From<Point> for Rotation3D<i32> {
         fn from(p: Point) -> Self {
-            Self::from_sv(0, p.to_vec())
+            Self::from_sv(0, p.to_vector())
         }
     }
     impl Add<Vector> for Point {
@@ -214,18 +214,21 @@ mod solution {
             (*self - rhs).into()
         }
     }
-    impl From<Quaternion<i32>> for Point {
-        fn from(q: Quaternion<i32>) -> Self {
-            Point3::from_vec(q.v).into()
+    impl From<Rotation3D<i32>> for Point {
+        fn from(q: Rotation3D<i32>) -> Self {
+            q.vector_part().to_point().into()
         }
     }
 
     /// Extension trait for [`Quaternion`] because, for some reason, certain operations
     /// are not implemented for integer quaternions, only floats.
+    /// TODO: update doc
     ///
     /// Note that these could not have been implemented as the normal operator traits
     /// due to the orphan rule.
     trait QuaternionExt {
+        /// TODO: Document me!
+        fn from_sv(s: i32, v: Vector3D<i32>) -> Self;
         /// Conjugates a quaternion.
         fn conj(self) -> Self;
         /// Multiplies two quaternions.
@@ -233,22 +236,26 @@ mod solution {
         /// Divides two quaternions.
         fn div(self, rhs: i32) -> Self;
     }
-    impl QuaternionExt for Quaternion<i32> {
+    impl QuaternionExt for Rotation3D<i32> {
+        fn from_sv(s: i32, v: Vector3D<i32>) -> Self {
+            Self::quaternion(v.x, v.y, v.z, s)
+        }
+
         fn conj(self) -> Self {
-            Quaternion::from_sv(self.s, -self.v)
+            Self::from_sv(self.r, -self.vector_part())
         }
 
         fn mul(self, rhs: Self) -> Self {
-            Self::new(
-                self.s * rhs.s - self.v.x * rhs.v.x - self.v.y * rhs.v.y - self.v.z * rhs.v.z,
-                self.s * rhs.v.x + self.v.x * rhs.s + self.v.y * rhs.v.z - self.v.z * rhs.v.y,
-                self.s * rhs.v.y + self.v.y * rhs.s + self.v.z * rhs.v.x - self.v.x * rhs.v.z,
-                self.s * rhs.v.z + self.v.z * rhs.s + self.v.x * rhs.v.y - self.v.y * rhs.v.x,
+            Self::quaternion(
+                self.r * rhs.r - self.i * rhs.i - self.j * rhs.j - self.k * rhs.k,
+                self.r * rhs.i + self.i * rhs.r + self.j * rhs.k - self.k * rhs.j,
+                self.r * rhs.j + self.j * rhs.r + self.k * rhs.i - self.i * rhs.k,
+                self.r * rhs.k + self.k * rhs.r + self.i * rhs.j - self.j * rhs.i,
             )
         }
 
         fn div(self, rhs: i32) -> Self {
-            Self::from_sv(self.s / rhs, self.v / rhs)
+            Self::from_sv(self.r / rhs, self.vector_part() / rhs)
         }
     }
 
@@ -270,16 +277,16 @@ mod solution {
         fn rotation_quaternion(&self, unit_axis: Vector) -> RotationQuaternion {
             match self {
                 RotationAngle::Rot0 => {
-                    RotationQuaternion::new(1, Quaternion::from_sv(1, Vector::zero()))
+                    RotationQuaternion::new(1, Rotation3D::from_sv(1, Vector::zero()))
                 }
                 RotationAngle::Rot90 => {
-                    RotationQuaternion::new(2, Quaternion::from_sv(1, unit_axis))
+                    RotationQuaternion::new(2, Rotation3D::from_sv(1, unit_axis))
                 }
                 RotationAngle::Rot180 => {
-                    RotationQuaternion::new(1, Quaternion::from_sv(0, unit_axis))
+                    RotationQuaternion::new(1, Rotation3D::from_sv(0, unit_axis))
                 }
                 RotationAngle::Rot270 => {
-                    RotationQuaternion::new(2, Quaternion::from_sv(-1, unit_axis))
+                    RotationQuaternion::new(2, Rotation3D::from_sv(-1, unit_axis))
                 }
             }
         }
@@ -295,12 +302,12 @@ mod solution {
         /// once.
         divisor: i32,
         /// The rotation quaternion without the divisor.
-        quat: Quaternion<i32>,
+        quat: Rotation3D<i32>,
     }
     impl RotationQuaternion {
         /// Returns the identity rotation quaternion that leaves points unchanged.
         fn identity() -> Self {
-            Self::new(1, Quaternion::from_sv(1, Vector::zero()))
+            Self::new(1, Rotation3D::from_sv(1, Vector::zero()))
         }
 
         /// Rotates a point according to this quaternion.
@@ -323,17 +330,20 @@ mod solution {
         /// Iterates over the 24 possible rotation quaternions representing possible scanner
         /// orientations.
         fn orientations() -> impl Iterator<Item = Self> {
+            let unit_y = Vector::new(0, 1, 0);
+            let unit_z = Vector::new(0, 0, 1);
+
             let facing_rotations: [RotationQuaternion; 6] = [
-                RotationAngle::Rot0.rotation_quaternion(Vector::unit_z()),
-                RotationAngle::Rot90.rotation_quaternion(Vector::unit_z()),
-                RotationAngle::Rot180.rotation_quaternion(Vector::unit_z()),
-                RotationAngle::Rot270.rotation_quaternion(Vector::unit_z()),
-                RotationAngle::Rot90.rotation_quaternion(Vector::unit_y()),
-                RotationAngle::Rot270.rotation_quaternion(Vector::unit_y()),
+                RotationAngle::Rot0.rotation_quaternion(unit_z),
+                RotationAngle::Rot90.rotation_quaternion(unit_z),
+                RotationAngle::Rot180.rotation_quaternion(unit_z),
+                RotationAngle::Rot270.rotation_quaternion(unit_z),
+                RotationAngle::Rot90.rotation_quaternion(unit_y),
+                RotationAngle::Rot270.rotation_quaternion(unit_y),
             ];
 
             iproduct!(facing_rotations.into_iter(), RotationAngle::iter())
-                .map(|(fr, ra)| ra.rotation_quaternion(Vector::unit_x()).compose(fr))
+                .map(|(fr, ra)| ra.rotation_quaternion(Vector::new(1, 0, 0)).compose(fr))
         }
     }
 
@@ -350,7 +360,7 @@ mod solution {
         /// Returns the transposer that leaves points unchanged.
         fn identity() -> Self {
             Transposer {
-                location: Point(Point3::origin()),
+                location: Point(Point3D::origin()),
                 rotation: RotationQuaternion::identity(),
             }
         }
@@ -358,7 +368,7 @@ mod solution {
         /// Transposes a point relative to scanner B to be relative
         /// to scanner A.
         fn transpose_point(&self, point: Point) -> Point {
-            self.rotation.rotate_point(point) + self.location.to_vec()
+            self.rotation.rotate_point(point) + self.location.to_vector()
         }
 
         /// Composes transpositions.
@@ -367,7 +377,7 @@ mod solution {
         /// to B, then the result transposes C to A.
         fn compose(self, other: Self) -> Self {
             Self {
-                location: self.rotation.rotate_point(other.location) + self.location.to_vec(),
+                location: self.rotation.rotate_point(other.location) + self.location.to_vector(),
                 rotation: other.rotation.compose(self.rotation),
             }
         }
@@ -440,7 +450,7 @@ mod solution {
                     {
                         // We have a sufficient number of correlated points!
                         return Some(Transposer {
-                            location: Point3::from_vec(delta).into(),
+                            location: delta.to_point().into(),
                             rotation,
                         });
                     }
