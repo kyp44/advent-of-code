@@ -323,7 +323,7 @@ mod solution {
             .filter_map(|point| {
                 let sub_image = self
                     .pixels
-                    .sub_grid(Box2D::from_origin_and_size(point, *image_size));
+                    .sub_grid(&Box2D::from_origin_and_size(point, *image_size));
                 if image
                     .pixels
                     .all_values()
@@ -423,7 +423,7 @@ mod solution {
             }
 
             // Create image of interior
-            let image = Image::new(full_image.pixels.sub_grid(Box2D::from_origin_and_size(
+            let image = Image::new(full_image.pixels.sub_grid(&Box2D::from_origin_and_size(
                 point2(1, 1),
                 size2(size - 2, size - 2),
             )));

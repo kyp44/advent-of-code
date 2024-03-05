@@ -28,8 +28,6 @@ mod tests {
 
 /// Contains solution implementation items.
 mod solution {
-    use std::{collections::HashSet, marker::PhantomData};
-
     use super::*;
     use aoc::{
         parse::trim,
@@ -39,6 +37,7 @@ mod solution {
     use euclid::default::{Box3D, Point3D, Vector3D};
     use itertools::{iproduct, Itertools};
     use nom::{bytes::complete::tag, combinator::map, multi::separated_list1};
+    use std::{collections::HashSet, marker::PhantomData};
 
     /// The 3D points for the cube locations.
     type Point = Point3D<i16>;
@@ -106,23 +105,10 @@ mod solution {
         ///
         /// The new search state begins with no regions identified except the droplet.
         pub fn new(droplet: &'a HashSet<Cube>) -> AocResult<Self> {
-            /* let cr = |mapper: fn(&Point) -> i16| match droplet
-                .iter()
-                .map(|c| mapper(&c.location))
-                .minmax()
-            {
-                itertools::MinMaxResult::MinMax(a, b) => Ok(a..=b),
-                _ => Err(AocError::Process(
-                    "The droplet must comprise more than one cube!".into(),
-                )),
-            }; */
-            // TODO test how to check for empty droplet.
-            // What is the box with zero points? What about a single point, still empty?
-
-            // TODO Does this still work? If tests pass then yes!
             Ok(Self {
                 droplet_cubes: droplet,
-                bounds: Box3D::from_points(droplet.iter().map(|c| c.location)),
+                // TODO: This may break depending on whether a bug is fixed: https://github.com/servo/euclid/issues/519
+                bounds: Box3D::from_points(droplet.iter().map(|c| c.location)).inflate(1, 1, 1),
                 outside_cubes: Default::default(),
                 pocket_cubes: Default::default(),
                 current_region: Default::default(),

@@ -26,8 +26,8 @@ pub mod prelude {
             VectorExt,
         },
         grid::{
-            AnyGridPoint, AnyGridPointExt, FromGridStr, Grid, GridDefault, GridPoint, GridSize,
-            GridSizeExt,
+            AnyGridPoint, AnyGridPointExt, FromGridStr, Grid, GridBox, GridDefault, GridPoint,
+            GridSize, GridSizeExt, GridSpace,
         },
         iter::{IteratorExt, LendingIteratorExt, StrExt},
         parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parsable, Sections},
@@ -103,10 +103,10 @@ pub mod extension {
         /// Basic usage:
         /// ```
         /// # use aoc::prelude::*;
-        /// # use cgmath::{Vector2, Vector3};
-        /// assert_eq!(Vector2::new(0, 0).manhattan_len(), 0);
-        /// assert_eq!(Vector2::new(3, -10).manhattan_len(), 13);
-        /// assert_eq!(Vector3::new(-5, 2, -4).manhattan_len(), 11);
+        /// # use euclid::default::{Vector2D, Vector3D};
+        /// assert_eq!(Vector2D::new(0, 0).manhattan_len(), 0);
+        /// assert_eq!(Vector2D::new(3, -10).manhattan_len(), 13);
+        /// assert_eq!(Vector3D::new(-5, 2, -4).manhattan_len(), 11);
         /// ```
         fn manhattan_len(&self) -> T;
     }
@@ -142,6 +142,7 @@ pub mod extension {
         /// TODO: document me!
         type Point;
         /// TODO: document me with note about why this is here, do we need this?
+        /// TODO: Since the point is copy should we just make this simpler and consume the point?
         type AllPointsIterator: Iterator<Item = Self::Point>;
 
         /// TODO: document me!
@@ -151,7 +152,7 @@ pub mod extension {
         /// Basic usage:
         /// ```
         /// # use aoc::prelude::*;
-        /// let size = GridSize::new(2, 3);
+        /// let size = GridSize::<GridSpace>::new(2, 3);
         /// let points = size.all_points().collect::<Vec<_>>();
         ///
         /// assert_eq!(points, vec![
@@ -170,7 +171,8 @@ pub mod extension {
         type AllPointsIterator = impl Iterator<Item = Self::Point>;
 
         fn all_points(&self) -> Self::AllPointsIterator {
-            iproduct!(T::zero()..self.width, T::zero()..self.height).map(Self::Point::from)
+            iproduct!(T::zero()..self.height, T::zero()..self.width)
+                .map(|(y, x)| Self::Point::new(x, y))
         }
     }
     impl<T: Copy + std::iter::Step + euclid::num::Zero, U> AllPoints for Size3D<T, U> {
@@ -179,11 +181,11 @@ pub mod extension {
 
         fn all_points(&self) -> Self::AllPointsIterator {
             iproduct!(
-                T::zero()..self.width,
+                T::zero()..self.depth,
                 T::zero()..self.height,
-                T::zero()..self.depth
+                T::zero()..self.width
             )
-            .map(Self::Point::from)
+            .map(|(z, y, x)| Self::Point::new(x, y, z))
         }
     }
     impl<T: Copy + std::iter::Step, U> AllPoints for Box2D<T, U> {
@@ -191,7 +193,8 @@ pub mod extension {
         type AllPointsIterator = impl Iterator<Item = Self::Point>;
 
         fn all_points(&self) -> Self::AllPointsIterator {
-            iproduct!(self.min.x..=self.max.x, self.min.y..=self.max.y).map(Self::Point::from)
+            iproduct!(self.min.y..self.max.y, self.min.x..self.max.x)
+                .map(|(y, x)| Self::Point::new(x, y))
         }
     }
     impl<T: Copy + std::iter::Step, U> AllPoints for Box3D<T, U> {
@@ -200,11 +203,11 @@ pub mod extension {
 
         fn all_points(&self) -> Self::AllPointsIterator {
             iproduct!(
-                self.min.x..=self.max.x,
-                self.min.y..=self.max.y,
-                self.min.z..=self.max.z
+                self.min.z..self.max.z,
+                self.min.y..self.max.y,
+                self.min.x..self.max.x
             )
-            .map(Self::Point::from)
+            .map(|(z, y, x)| Self::Point::new(x, y, z))
         }
     }
 

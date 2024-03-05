@@ -53,7 +53,7 @@ use std::{marker::PhantomData, rc::Rc};
 ///         }
 ///     }
 ///
-///     fn next_iter(&self) -> Box<dyn Iterator<Item = Self::Point>> {
+///     fn next_iter(&self) -> impl Iterator<Item = Self::Point> {
 ///         self.grid.size().all_points()
 ///     }
 /// }

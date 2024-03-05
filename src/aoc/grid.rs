@@ -85,7 +85,7 @@ pub trait AnyGridPointExt<U> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// let size = GridSize::new(5, 4);
+    /// let size = GridSize::<GridSpace>::new(5, 4);
     /// assert_eq!(
     ///     AnyGridPoint::new(1, 2).wrapped_grid_point(&size),
     ///     GridPoint::new(1, 2),
@@ -113,7 +113,7 @@ pub trait AnyGridPointExt<U> {
     /// ```
     /// # use aoc::prelude::*;
     /// assert_eq!(
-    ///     AnyGridPoint::new(0, 0).all_neighbor_points(true, true).collect::<Vec<_>>(),
+    ///     AnyGridPoint::<GridSpace>::new(0, 0).all_neighbor_points(true, true).collect::<Vec<_>>(),
     ///     vec![
     ///         AnyGridPoint::new(-1, -1),
     ///         AnyGridPoint::new(0, -1),
@@ -127,7 +127,7 @@ pub trait AnyGridPointExt<U> {
     ///     ],
     /// );
     /// assert_eq!(
-    ///     AnyGridPoint::new(-4, -2).all_neighbor_points(true, false).collect::<Vec<_>>(),
+    ///     AnyGridPoint::<GridSpace>::new(-4, -2).all_neighbor_points(true, false).collect::<Vec<_>>(),
     ///     vec![
     ///         AnyGridPoint::new(-5, -3),
     ///         AnyGridPoint::new(-4, -3),
@@ -140,7 +140,7 @@ pub trait AnyGridPointExt<U> {
     ///     ],
     /// );
     /// assert_eq!(
-    ///     AnyGridPoint::new(5, 6).all_neighbor_points(false, false).collect::<Vec<_>>(),
+    ///     AnyGridPoint::<GridSpace>::new(5, 6).all_neighbor_points(false, false).collect::<Vec<_>>(),
     ///     vec![
     ///         AnyGridPoint::new(5, 5),
     ///         AnyGridPoint::new(4, 6),
@@ -624,20 +624,20 @@ impl<T, U> Grid<T, U> {
     /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]).unwrap();
     ///
     /// assert_eq!(
-    ///     grid.sub_grid(&GridPoint::new(0, 0), GridSize::new(2, 3)),
+    ///     grid.sub_grid(&GridBox::<GridSpace>::from_origin_and_size(GridPoint::new(0, 0), GridSize::new(2, 3))),
     ///     Grid::from_data(vec![vec![1, 2], vec![4, 5], vec![7, 8]]).unwrap(),
     /// );
     /// assert_eq!(
-    ///     grid.sub_grid(&GridPoint::new(1, 0), GridSize::new(2, 2)),
+    ///     grid.sub_grid(&GridBox::<GridSpace>::from_origin_and_size(GridPoint::new(1, 0), GridSize::new(2, 2))),
     ///     Grid::from_data(vec![vec![2, 3], vec![5, 6]]).unwrap(),
     /// );
     /// assert_eq!(
-    ///     grid.sub_grid(&GridPoint::new(1, 2), GridSize::new(2, 1)),
+    ///     grid.sub_grid(&GridBox::<GridSpace>::from_origin_and_size(GridPoint::new(1, 2), GridSize::new(2, 1))),
     ///     Grid::from_data(vec![vec![8, 9]]).unwrap(),
     /// );
     /// ```
     /// TODO Update documentation and test code.
-    pub fn sub_grid(&self, sub_grid_box: GridBox<U>) -> Self
+    pub fn sub_grid(&self, sub_grid_box: &GridBox<U>) -> Self
     where
         T: Default + Clone,
     {

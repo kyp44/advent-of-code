@@ -247,10 +247,10 @@ mod solution {
 
         fn mul(self, rhs: Self) -> Self {
             Self::quaternion(
-                self.r * rhs.r - self.i * rhs.i - self.j * rhs.j - self.k * rhs.k,
                 self.r * rhs.i + self.i * rhs.r + self.j * rhs.k - self.k * rhs.j,
                 self.r * rhs.j + self.j * rhs.r + self.k * rhs.i - self.i * rhs.k,
                 self.r * rhs.k + self.k * rhs.r + self.i * rhs.j - self.j * rhs.i,
+                self.r * rhs.r - self.i * rhs.i - self.j * rhs.j - self.k * rhs.k,
             )
         }
 
@@ -307,7 +307,7 @@ mod solution {
     impl RotationQuaternion {
         /// Returns the identity rotation quaternion that leaves points unchanged.
         fn identity() -> Self {
-            Self::new(1, Rotation3D::from_sv(1, Vector::zero()))
+            Self::new(1, Rotation3D::identity())
         }
 
         /// Rotates a point according to this quaternion.
