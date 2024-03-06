@@ -74,7 +74,7 @@ mod solution {
             let tree = self.map.is_tree(&self.point);
 
             // Ready the next position
-            self.point = self.point + self.slope;
+            self.point += self.slope;
 
             Some(tree)
         }

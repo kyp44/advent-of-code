@@ -107,8 +107,7 @@ mod solution {
         pub fn new(droplet: &'a HashSet<Cube>) -> AocResult<Self> {
             Ok(Self {
                 droplet_cubes: droplet,
-                // TODO: This may break depending on whether a bug is fixed: https://github.com/servo/euclid/issues/519
-                bounds: Box3D::from_points(droplet.iter().map(|c| c.location)).inflate(1, 1, 1),
+                bounds: Box3D::from_points_inclusive(droplet.iter().map(|c| c.location)),
                 outside_cubes: Default::default(),
                 pocket_cubes: Default::default(),
                 current_region: Default::default(),

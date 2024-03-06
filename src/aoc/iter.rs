@@ -197,10 +197,12 @@ pub trait StrExt {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
+    /// use itertools::Itertools;
+    ///
     /// assert_eq!("".split_runs().next(), None);
-    /// assert_eq!("X".split_runs().collect::<Vec<_>>(), vec!["X"]);
-    /// assert_eq!("ABCDEF".split_runs().collect::<Vec<_>>(), vec!["A", "B", "C", "D", "E", "F"]);
-    /// assert_eq!("abbbcddddeefggg".split_runs().collect::<Vec<_>>(), vec!["a", "bbb", "c", "dddd", "ee", "f", "ggg"]);
+    /// assert_eq!("X".split_runs().collect_vec(), vec!["X"]);
+    /// assert_eq!("ABCDEF".split_runs().collect_vec(), vec!["A", "B", "C", "D", "E", "F"]);
+    /// assert_eq!("abbbcddddeefggg".split_runs().collect_vec(), vec!["a", "bbb", "c", "dddd", "ee", "f", "ggg"]);
     /// ```
     fn split_runs(&self) -> Runs;
 }

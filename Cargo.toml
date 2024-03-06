@@ -27,7 +27,6 @@ anyhow = "1.0"
 bare_metal_modulo = "1.2"
 bimap = "0.6"
 bitbuffer = "0.10"
-cgmath = "0.18"
 circular-buffer = "0.1"
 clap = {version = "4.5", features = ["derive", "string"]}
 colored = "2.1"
@@ -36,7 +35,10 @@ derive_more = "0.99"
 enum-as-inner = "0.6"
 enum-map = "2.7"
 enum_dispatch = "0.3"
-euclid = "0.22"
+# TODO: Use released version if/when changes get incorporated:
+# https://github.com/servo/euclid/pull/520
+euclid = {git = "https://github.com/kyp44/euclid.git"}
+#euclid = "0.22"
 gat-lending-iterator = "0.1"
 gcollections = "1.5"
 hex = "0.4"

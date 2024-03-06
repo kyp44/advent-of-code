@@ -223,7 +223,7 @@ pub const SOLUTION: Solution = Solution {
                     }
                 })
                 .sorted()
-                .collect::<Vec<_>>();
+                .collect_vec();
             if scores.len().is_even() {
                 return Err(AocError::Process(
                     "One of the incomplete lines is missing an even number of closers!".into(),

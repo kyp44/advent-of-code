@@ -59,7 +59,7 @@ mod solution {
                     trim(false, tag(",")),
                     preceded(tag("y="), nom::character::complete::i32),
                 ),
-                |(x, y)| Self(Point2D::new(x, y).to_isize()),
+                |t| Self(Point2D::from(t).to_isize()),
             )(input)
         }
     }

@@ -23,7 +23,7 @@ CrZsJsPPZsGzwwsLwLmpwMDw";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use itertools::process_results;
+    use itertools::{process_results, Itertools};
     use std::ascii::Char as AsciiChar;
     use std::collections::HashSet;
     use std::str::FromStr;
@@ -82,9 +82,7 @@ mod solution {
         pub fn common_priority(&self) -> AocResult<u8> {
             let compartment_1 = self.compartment_1.iter().copied().collect::<HashSet<_>>();
             let compartment_2 = self.compartment_2.iter().copied().collect::<HashSet<_>>();
-            let common = compartment_1
-                .intersection(&compartment_2)
-                .collect::<Vec<_>>();
+            let common = compartment_1.intersection(&compartment_2).collect_vec();
 
             if common.len() != 1 {
                 Err(AocError::Process(

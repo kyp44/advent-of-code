@@ -17,8 +17,8 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::parse::{field_line_parser, trim};
-    use cgmath::{EuclideanSpace, Point2, Vector2};
     use derive_new::new;
+    use euclid::default::{Point2D, Vector2D};
     use itertools::iproduct;
     use nom::{bytes::complete::tag, combinator::map, sequence::separated_pair};
     use std::ops::RangeInclusive;
@@ -95,10 +95,10 @@ mod solution {
     }
 
     /// Position of the probe relative to the submarine.
-    type Position = Point2<i32>;
+    type Position = Point2D<i32>;
 
     /// A relative velocity vector.
-    type Velocity = Vector2<i32>;
+    type Velocity = Vector2D<i32>;
 
     /// A trajectory taken by the probe, which is an [`Iterator`] over the probe
     /// locations at every step.

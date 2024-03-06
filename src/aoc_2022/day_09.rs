@@ -36,7 +36,7 @@ U 20";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use cgmath::{EuclideanSpace, Point2, Vector2};
+    use euclid::default::{Point2D, Vector2D};
     use nom::{
         branch::alt, bytes::complete::tag, character::complete::space1, combinator::map,
         sequence::separated_pair,
@@ -69,12 +69,12 @@ mod solution {
         /// Returns the 2D displacement vector corresponding with this direction.
         ///
         /// This would be added to a position to move one space in the direction.
-        pub fn as_vector(&self) -> Vector2<isize> {
+        pub fn as_vector(&self) -> Vector2D<isize> {
             match self {
-                Direction::Left => -Vector2::unit_x(),
-                Direction::Right => Vector2::unit_x(),
-                Direction::Up => Vector2::unit_y(),
-                Direction::Down => -Vector2::unit_y(),
+                Direction::Left => -Vector2D::<isize>::unit_x(),
+                Direction::Right => Vector2D::unit_x(),
+                Direction::Up => Vector2D::unit_y(),
+                Direction::Down => -Vector2D::<isize>::unit_y(),
             }
         }
     }
@@ -97,7 +97,7 @@ mod solution {
     }
 
     /// The type of the coordinates of the rope knots.
-    type Coords = Point2<isize>;
+    type Coords = Point2D<isize>;
 
     /// Represents the current state of a rope wth some number of knots.
     ///

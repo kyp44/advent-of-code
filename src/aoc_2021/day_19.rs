@@ -220,14 +220,13 @@ mod solution {
         }
     }
 
-    /// Extension trait for [`Quaternion`] because, for some reason, certain operations
-    /// are not implemented for integer quaternions, only floats.
-    /// TODO: update doc
+    /// Extension trait for [`Rotation3D`] that allow raw mathematical operations
+    /// on the quaternions.
     ///
     /// Note that these could not have been implemented as the normal operator traits
     /// due to the orphan rule.
     trait QuaternionExt {
-        /// TODO: Document me!
+        /// Creates a quaternion from the scalar and vector components.
         fn from_sv(s: i32, v: Vector3D<i32>) -> Self;
         /// Conjugates a quaternion.
         fn conj(self) -> Self;
@@ -330,20 +329,17 @@ mod solution {
         /// Iterates over the 24 possible rotation quaternions representing possible scanner
         /// orientations.
         fn orientations() -> impl Iterator<Item = Self> {
-            let unit_y = Vector::new(0, 1, 0);
-            let unit_z = Vector::new(0, 0, 1);
-
             let facing_rotations: [RotationQuaternion; 6] = [
-                RotationAngle::Rot0.rotation_quaternion(unit_z),
-                RotationAngle::Rot90.rotation_quaternion(unit_z),
-                RotationAngle::Rot180.rotation_quaternion(unit_z),
-                RotationAngle::Rot270.rotation_quaternion(unit_z),
-                RotationAngle::Rot90.rotation_quaternion(unit_y),
-                RotationAngle::Rot270.rotation_quaternion(unit_y),
+                RotationAngle::Rot0.rotation_quaternion(Vector::unit_z()),
+                RotationAngle::Rot90.rotation_quaternion(Vector::unit_z()),
+                RotationAngle::Rot180.rotation_quaternion(Vector::unit_z()),
+                RotationAngle::Rot270.rotation_quaternion(Vector::unit_z()),
+                RotationAngle::Rot90.rotation_quaternion(Vector::unit_y()),
+                RotationAngle::Rot270.rotation_quaternion(Vector::unit_y()),
             ];
 
             iproduct!(facing_rotations.into_iter(), RotationAngle::iter())
-                .map(|(fr, ra)| ra.rotation_quaternion(Vector::new(1, 0, 0)).compose(fr))
+                .map(|(fr, ra)| ra.rotation_quaternion(Vector::unit_x()).compose(fr))
         }
     }
 

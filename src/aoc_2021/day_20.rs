@@ -111,8 +111,6 @@ mod solution {
     }
     impl Evolver<bool> for Image {
         type Point = AnyGridPoint;
-        // TODO
-        //type NextIterator = impl Iterator<Item = Self::Point>;
 
         fn next_default(other: &Self) -> Self {
             let infinity_pixels = other

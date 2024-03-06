@@ -35,7 +35,7 @@ wseweeenwnesenwwwswnew";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use cgmath::{EuclideanSpace, Point2, Vector2};
+    use euclid::default::{Point2D, Vector2D};
     use itertools::{iproduct, Itertools};
     use nom::{
         branch::alt,
@@ -55,7 +55,7 @@ mod solution {
     /// For a given tile, increasing the `y` coordinate, on the other hand,
     /// moves along a diagonal line to upper left so that decreasing the `y`
     /// coordinates moves to the lower right.
-    type Point = Point2<i32>;
+    type Point = Point2D<i32>;
 
     /// Direction to go from a tile, which can be parsed from text input.
     ///
@@ -100,16 +100,16 @@ mod solution {
             )(input)
         }
     }
-    impl From<Direction> for Vector2<i32> {
+    impl From<Direction> for Vector2D<i32> {
         fn from(dir: Direction) -> Self {
             use Direction::*;
             match dir {
-                East => Vector2::unit_x(),
-                West => -Vector2::unit_x(),
-                SouthEast => -Vector2::unit_y(),
-                SouthWest => Vector2::new(-1, -1),
-                NorthEast => Vector2::new(1, 1),
-                NorthWest => Vector2::unit_y(),
+                East => Vector2D::unit_x(),
+                West => -Vector2D::<i32>::unit_x(),
+                SouthEast => -Vector2D::<i32>::unit_y(),
+                SouthWest => Vector2D::new(-1, -1),
+                NorthEast => Vector2D::new(1, 1),
+                NorthWest => Vector2D::unit_y(),
             }
         }
     }
@@ -133,7 +133,7 @@ mod solution {
         fn follow(&self, start: Point) -> Point {
             self.directions
                 .iter()
-                .fold(start, |a, b| a + Vector2::<i32>::from(*b))
+                .fold(start, |a, b| a + Vector2D::<i32>::from(*b))
         }
     }
 
@@ -186,7 +186,7 @@ mod solution {
         fn next_cell(&self, point: &Self::Point) -> bool {
             let adj: usize = Direction::iter()
                 .map(|d| d.into())
-                .filter_count(|dp: &Vector2<i32>| self.black_tiles.contains(&(point + *dp)));
+                .filter_count(|dp: &Vector2D<i32>| self.black_tiles.contains(&(*point + *dp)));
             if self.black_tiles.contains(point) {
                 // Tile is black
                 adj > 0 && adj <= 2

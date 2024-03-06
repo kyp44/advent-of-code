@@ -130,10 +130,10 @@ mod solution {
             };
 
             // Move all eastbound cucumbers
-            move_cucumbers(Location::East, Vector2D::new(1, 0));
+            move_cucumbers(Location::East, Vector2D::unit_x());
 
             // Move all southbound cucumbers
-            move_cucumbers(Location::South, Vector2D::new(0, 1));
+            move_cucumbers(Location::South, Vector2D::unit_y());
 
             new_trench
         }

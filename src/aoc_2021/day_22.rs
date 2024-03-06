@@ -109,7 +109,7 @@ off x=-93533..-4276,y=-16170..68771,z=-104985..-24507";
 mod solution {
     use super::*;
     use aoc::parse::field_line_parser;
-    use cgmath::Vector3;
+    use euclid::default::{Box3D, Point3D};
     use nom::{
         branch::alt,
         bytes::complete::tag,
@@ -117,34 +117,25 @@ mod solution {
         combinator::map,
         sequence::{separated_pair, terminated, tuple},
     };
-    use std::ops::RangeInclusive;
 
-    /// The range type used to define a cuboid.
-    type CuboidRange = RangeInclusive<i32>;
-
-    // TODO: Can the `euclid` crate help us here with its `Box3D` type?
-    // TODO: In fact, do we want to switch to this everywhere instead of `cgmath`?
-    /// A cuboid region defined by an inclusive range in each dimension.
+    /// A cuboid region defined by a box in 3D.
     ///
     /// This can be parsed from text input.
     #[derive(Debug, Clone)]
     pub struct Cuboid {
-        /// Inclusive ranges for each dimension.
-        ranges: Vector3<CuboidRange>,
+        /// The exclusive bounding box that defines the cuboid.
+        bounding_box: Box3D<i32>,
     }
     impl Parsable<'_> for Cuboid {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             /// This is a [`nom`] parser that parses an inclusive range.
             ///
             /// This is an internal function of [`Cuboid::parser`].
-            fn parse_range(input: &str) -> NomParseResult<&str, CuboidRange> {
-                map(
-                    separated_pair(
-                        nom::character::complete::i32,
-                        tag(".."),
-                        nom::character::complete::i32,
-                    ),
-                    |(a, b)| a..=b,
+            fn parse_range(input: &str) -> NomParseResult<&str, (i32, i32)> {
+                separated_pair(
+                    nom::character::complete::i32,
+                    tag(".."),
+                    nom::character::complete::i32,
                 )(input)
             }
 
@@ -154,17 +145,21 @@ mod solution {
                     field_line_parser("y=", terminated(parse_range, tag(","))),
                     field_line_parser("z=", parse_range),
                 )),
-                |(x, y, z)| Self {
-                    ranges: Vector3::new(x, y, z),
+                |(xr, yr, zr)| Self {
+                    bounding_box: Box3D::new_inclusive(
+                        Point3D::new(xr.0, yr.0, zr.0),
+                        Point3D::new(xr.1, yr.1, zr.1),
+                    ),
                 },
             )(input)
         }
     }
     impl Cuboid {
-        /// Returns a cubic region in which the `range` of every dimension is the same.
-        pub fn cube(range: CuboidRange) -> Self {
+        /// Returns a cubic region in which the range of every dimension is the same,
+        /// from `a` to `b` inclusive.
+        pub fn cube(a: i32, b: i32) -> Self {
             Cuboid {
-                ranges: Vector3::new(range.clone(), range.clone(), range),
+                bounding_box: Box3D::new_inclusive(Point3D::new(a, a, a), Point3D::new(b, b, b)),
             }
         }
 
@@ -173,25 +168,14 @@ mod solution {
         ///
         /// If the cuboids are disjoint, then `None` is returned.
         fn intersection(&self, other: &Cuboid) -> Option<Cuboid> {
-            let rx = self.ranges.x.intersection(&other.ranges.x);
-            let ry = self.ranges.y.intersection(&other.ranges.y);
-            let rz = self.ranges.z.intersection(&other.ranges.z);
-
-            match (rx, ry, rz) {
-                (Some(x), Some(y), Some(z)) => Some(Cuboid {
-                    ranges: Vector3::new(x, y, z),
-                }),
-                _ => None,
-            }
+            self.bounding_box
+                .intersection(&other.bounding_box)
+                .map(|bounding_box| Self { bounding_box })
         }
 
         /// Calculates the number of points contained in the cuboid region.
         fn num_points(&self) -> u64 {
-            let ranges = &self.ranges;
-            [&ranges.x, &ranges.y, &ranges.z]
-                .into_iter()
-                .map(|r| u64::try_from(r.size()).unwrap())
-                .product::<u64>()
+            self.bounding_box.size().to_u64().volume()
         }
     }
 
@@ -327,7 +311,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(input
                 .expect_data::<Set>()?
-                .intersection(&Cuboid::cube(-50..=50).into())
+                .intersection(&Cuboid::cube(-50, 50).into())
                 .num_points()
                 .into())
         },

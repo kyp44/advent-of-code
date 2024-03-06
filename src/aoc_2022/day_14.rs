@@ -42,7 +42,7 @@ mod solution {
                     tag(","),
                     nom::character::complete::u16,
                 ),
-                |(x, y)| ParsePoint(Point2D::new(x, y).to_isize()),
+                |t| ParsePoint(Point2D::from(t).to_isize()),
             )(input)
         }
     }

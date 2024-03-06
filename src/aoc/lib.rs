@@ -22,8 +22,8 @@ pub mod prelude {
         error::{AocError, AocResult},
         evolver::Evolver,
         extension::{
-            AllPoints, EuclidExt, PointFrom, PointInto, RangeExt, TryPointFrom, TryPointInto,
-            VectorExt,
+            euclid::{AllPoints, BoxInclusive, ConversionExt, ManhattanLen, UnitVectors},
+            RangeExt,
         },
         grid::{
             AnyGridPoint, AnyGridPointExt, FromGridStr, Grid, GridBox, GridDefault, GridPoint,
@@ -88,285 +88,389 @@ pub mod error {
 
 /// Collection of general extension traits.
 pub mod extension {
-    use cgmath::{Point2, Point3, Vector2, Vector3};
-    use euclid::{Box2D, Box3D, Point2D, Point3D, Size2D, Size3D, Vector2D, Vector3D};
-    use itertools::iproduct;
-    use num::{Integer, NumCast, Signed};
+    use num::Integer;
     use std::ops::RangeInclusive;
 
-    /// Extension trait for mathematical vectors from [`cgmath`].
-    /// TODO update doc and doc test.
-    pub trait VectorExt<T, U> {
-        /// Calculates the [Manhattan length](https://en.wikipedia.org/wiki/Taxicab_geometry) of the vector.
-        ///
-        /// # Examples
-        /// Basic usage:
-        /// ```
-        /// # use aoc::prelude::*;
-        /// # use euclid::default::{Vector2D, Vector3D};
-        /// assert_eq!(Vector2D::new(0, 0).manhattan_len(), 0);
-        /// assert_eq!(Vector2D::new(3, -10).manhattan_len(), 13);
-        /// assert_eq!(Vector3D::new(-5, 2, -4).manhattan_len(), 11);
-        /// ```
-        fn manhattan_len(&self) -> T;
-    }
-    impl<T: Signed, U> VectorExt<T, U> for Vector2D<T, U> {
-        fn manhattan_len(&self) -> T {
-            self.x.abs() + self.y.abs()
-        }
-    }
-    impl<T: Signed, U> VectorExt<T, U> for Vector3D<T, U> {
-        fn manhattan_len(&self) -> T {
-            self.x.abs() + self.y.abs() + self.z.abs()
-        }
-    }
+    /// Extension traits for items in the `euclid` geometry crate.
+    pub mod euclid {
+        use std::borrow::Borrow;
 
-    /// TODO: document me!
-    pub trait EuclidExt {
-        /// TODO: document me! Why is needed?
-        type Item<S>;
-
-        /// TODO: document me!
-        fn to_isize(self) -> Self::Item<isize>;
-    }
-    impl<T: NumCast + Copy, U> EuclidExt for Point2D<T, U> {
-        type Item<S> = Point2D<S, U>;
-
-        fn to_isize(self) -> Self::Item<isize> {
-            self.try_cast().unwrap()
-        }
-    }
-
-    /// TODO: document me!
-    pub trait AllPoints {
-        /// TODO: document me!
-        type Point;
-        /// TODO: document me with note about why this is here, do we need this?
-        /// TODO: Since the point is copy should we just make this simpler and consume the point?
-        type AllPointsIterator: Iterator<Item = Self::Point>;
-
-        /// TODO: document me!
-        /// Returns an [`Iterator`] over all points in a grid of this size in row-major order.
-        ///
-        /// # Examples
-        /// Basic usage:
-        /// ```
-        /// # use aoc::prelude::*;
-        /// let size = GridSize::<GridSpace>::new(2, 3);
-        /// let points = size.all_points().collect::<Vec<_>>();
-        ///
-        /// assert_eq!(points, vec![
-        ///     GridPoint::new(0, 0),
-        ///     GridPoint::new(1, 0),
-        ///     GridPoint::new(0, 1),
-        ///     GridPoint::new(1, 1),
-        ///     GridPoint::new(0, 2),
-        ///     GridPoint::new(1, 2),
-        /// ]);
-        /// ```
-        fn all_points(&self) -> Self::AllPointsIterator;
-    }
-    impl<T: Copy + std::iter::Step + euclid::num::Zero, U> AllPoints for Size2D<T, U> {
-        type Point = Point2D<T, U>;
-        type AllPointsIterator = impl Iterator<Item = Self::Point>;
-
-        fn all_points(&self) -> Self::AllPointsIterator {
-            iproduct!(T::zero()..self.height, T::zero()..self.width)
-                .map(|(y, x)| Self::Point::new(x, y))
-        }
-    }
-    impl<T: Copy + std::iter::Step + euclid::num::Zero, U> AllPoints for Size3D<T, U> {
-        type Point = Point3D<T, U>;
-        type AllPointsIterator = impl Iterator<Item = Self::Point>;
-
-        fn all_points(&self) -> Self::AllPointsIterator {
-            iproduct!(
-                T::zero()..self.depth,
-                T::zero()..self.height,
-                T::zero()..self.width
-            )
-            .map(|(z, y, x)| Self::Point::new(x, y, z))
-        }
-    }
-    impl<T: Copy + std::iter::Step, U> AllPoints for Box2D<T, U> {
-        type Point = Point2D<T, U>;
-        type AllPointsIterator = impl Iterator<Item = Self::Point>;
-
-        fn all_points(&self) -> Self::AllPointsIterator {
-            iproduct!(self.min.y..self.max.y, self.min.x..self.max.x)
-                .map(|(y, x)| Self::Point::new(x, y))
-        }
-    }
-    impl<T: Copy + std::iter::Step, U> AllPoints for Box3D<T, U> {
-        type Point = Point3D<T, U>;
-        type AllPointsIterator = impl Iterator<Item = Self::Point>;
-
-        fn all_points(&self) -> Self::AllPointsIterator {
-            iproduct!(
-                self.min.z..self.max.z,
-                self.min.y..self.max.y,
-                self.min.x..self.max.x
-            )
-            .map(|(z, y, x)| Self::Point::new(x, y, z))
-        }
-    }
-
-    // TODO: These conversions should go away, as they are build into Euclid, though, do we
-    // want and extension for to_isize, since this is missing?
-
-    /// Extension trait to convert between [`cgmath`] vector component types more easily.
-    ///
-    /// Together with [`PointInto`], these are analogous to the [`From`] and [`Into`] traits
-    /// and the interaction between them. Note that we cannot implement these [`std`]
-    /// conversion traits due to the orphan rule.
-    ///
-    /// # Examples
-    /// Basic usage:
-    /// ```
-    /// # use aoc::prelude::*;
-    /// # use cgmath::{Vector2, Vector3, Point2, Point3};
-    /// let v: Vector2<i64> = Vector2::<u32>::new(3, 4).point_into();
-    /// assert_eq!(v, Vector2::<i64>::new(3, 4));
-    /// assert_eq!(
-    ///     Vector3::<u16>::point_from(Vector3::<u8>::new(7, 14, 21)),
-    ///     Vector3::<u16>::new(7, 14, 21)
-    /// );
-    /// let v: Point2<i32> = Point2::<i16>::new(-4, 9).point_into();
-    /// assert_eq!(v, Point2::<i32>::new(-4, 9));
-    /// assert_eq!(
-    ///     Point3::<usize>::point_from(Point3::<u8>::new(6, 5, 4)),
-    ///     Point3::<usize>::new(6, 5, 4)
-    /// );
-    /// ```
-    pub trait PointFrom<T> {
-        /// Converts the point into another point with a different component type.
-        ///
-        /// Refer to [`PointFrom`].
-        fn point_from(value: T) -> Self;
-    }
-
-    /// Extension trait to convert between [`cgmath`] vector component types more easily.
-    ///
-    /// Refer to [`PointFrom`].
-    pub trait PointInto<T> {
-        /// Converts the point into another point with a different component type.
-        ///
-        /// Refer to [`PointFrom`].
-        fn point_into(self) -> T;
-    }
-
-    impl<T, S: PointFrom<T>> PointInto<S> for T {
-        /// Converts the point into another point with a different component type.
-        ///
-        /// Refer to [`PointFrom`].
-        fn point_into(self) -> S {
-            S::point_from(self)
-        }
-    }
-
-    /// Extension trait to convert between [`cgmath`] vector component types more easily.
-    ///
-    /// Together with [`TryPointInto`], these are analogous to the [`TryFrom`] and [`TryInto`]
-    /// traits and the interaction between them. Note that we cannot implement these [`std`]
-    /// conversion traits due to the orphan rule.
-    ///
-    /// # Examples
-    /// Basic usage:
-    /// ```
-    /// # #![feature(assert_matches)]
-    /// # use std::assert_matches::assert_matches;
-    /// # use aoc::prelude::*;
-    /// # use cgmath::{Vector2, Vector3, Point2, Point3};
-    /// assert_eq!(
-    ///     Vector2::<isize>::new(3, 4).try_point_into(),
-    ///     Ok(Vector2::<usize>::new(3, 4))
-    /// );
-    /// assert_matches!(
-    ///     Vector2::<usize>::try_point_from(Vector2::<isize>::new(3, -4)),
-    ///     Err(_),
-    /// );
-    /// assert_eq!(
-    ///     Vector3::<u64>::new(23, 255, 78).try_point_into(),
-    ///     Ok(Vector3::<u8>::new(23, 255, 78)),
-    /// );
-    /// assert_matches!(
-    ///     Vector3::<u8>::try_point_from(Vector3::<u64>::new(45, 2, 256)),
-    ///     Err(_),
-    /// );
-    /// assert_eq!(
-    ///     Point2::<i16>::new(-9, 5).try_point_into(),
-    ///     Ok(Point2::<i8>::new(-9, 5)),
-    /// );
-    /// assert_matches!(
-    ///     Point2::<i8>::try_point_from(Point2::<i16>::new(-1000, 4)),
-    ///     Err(_),
-    /// );
-    /// assert_eq!(
-    ///     Point3::<usize>::new(1000, 2000, 3000).try_point_into(),
-    ///     Ok(Point3::<u16>::new(1000, 2000, 3000)),
-    /// );
-    /// assert_matches!(
-    ///     Point3::<u8>::try_point_from(Point3::<usize>::new(0, 1, usize::MAX)),
-    ///     Err(_),
-    /// );
-    /// ```
-    pub trait TryPointFrom<T>: Sized {
-        /// Error type, the same type as the [`TryFrom::Error`] for the component type.
-        type Error;
-
-        /// Tries to convert the point into another point with a different component type.
-        ///
-        /// Refer to [`TryPointFrom`].
-        fn try_point_from(value: T) -> Result<Self, Self::Error>;
-    }
-
-    /// Extension trait to convert between [`cgmath`] vector component types more easily.
-    ///
-    /// Refer to [`TryPointFrom`].
-    pub trait TryPointInto<T> {
-        /// Error type, the same type as the [`TryInto::Error`] for the component type.
-        type Error;
-
-        /// Tries to convert the point into another point with a different component type.
-        ///
-        /// Refer to [`TryPointFrom`].
-        fn try_point_into(self) -> Result<T, Self::Error>;
-    }
-
-    impl<T, S: TryPointFrom<T>> TryPointInto<S> for T {
-        type Error = S::Error;
-
-        /// Tries to convert the point into another point with a different component type.
-        ///
-        /// Refer to [`TryPointFrom`].
-        fn try_point_into(self) -> Result<S, Self::Error> {
-            S::try_point_from(self)
-        }
-    }
-
-    /// Implements the [`PointFrom`] and [`TryPointFrom`] traits for a vector type.
-    macro_rules! impl_point_conversions {
-        ($ArrayN:ident <$S:ident> {$($field:ident),+}) => {
-            impl<T, $S: From<T>> PointFrom<$ArrayN<T>> for $ArrayN<$S> {
-                fn point_from(value: $ArrayN<T>) -> Self {
-                    $ArrayN::new($(value.$field.into()),+)
-                }
-            }
-
-            impl<T, $S: TryFrom<T>> TryPointFrom<$ArrayN<T>> for $ArrayN<$S> {
-                type Error = S::Error;
-
-                fn try_point_from(value: $ArrayN<T>) -> Result<Self, Self::Error> {
-                    Ok($ArrayN::new($(value.$field.try_into()?),+))
-                }
-            }
+        use euclid::{
+            num::{One, Zero},
+            Box2D, Box3D, Point2D, Point3D, Size2D, Size3D, Vector2D, Vector3D,
         };
-    }
+        use itertools::iproduct;
+        use num::{NumCast, Signed};
 
-    impl_point_conversions!(Point2<S> {x, y});
-    impl_point_conversions!(Point3<S> {x, y, z});
-    impl_point_conversions!(Vector2<S> {x, y});
-    impl_point_conversions!(Vector3<S> {x, y, z});
+        /// Extension trait for mathematical vectors from that calculates their
+        /// [Manhattan length](https://en.wikipedia.org/wiki/Taxicab_geometry).
+        pub trait ManhattanLen<T, U> {
+            /// Calculates the [Manhattan length](https://en.wikipedia.org/wiki/Taxicab_geometry)
+            /// of the vector.
+            ///
+            /// # Examples
+            /// Basic usage:
+            /// ```
+            /// # use aoc::prelude::*;
+            /// use euclid::default::{Vector2D, Vector3D};
+            /// assert_eq!(Vector2D::new(0, 0).manhattan_len(), 0);
+            /// assert_eq!(Vector2D::new(3, -10).manhattan_len(), 13);
+            /// assert_eq!(Vector3D::new(-5, 2, -4).manhattan_len(), 11);
+            /// ```
+            fn manhattan_len(&self) -> T;
+        }
+        impl<T: Signed, U> ManhattanLen<T, U> for Vector2D<T, U> {
+            fn manhattan_len(&self) -> T {
+                self.x.abs() + self.y.abs()
+            }
+        }
+        impl<T: Signed, U> ManhattanLen<T, U> for Vector3D<T, U> {
+            fn manhattan_len(&self) -> T {
+                self.x.abs() + self.y.abs() + self.z.abs()
+            }
+        }
+
+        /// Extension trait the provides unit vectors for each 3D axis.
+        pub trait UnitVectors {
+            /// Returns the positive `x` unit vector.
+            ///
+            /// # Examples
+            /// Basic usage:
+            /// ```
+            /// # use aoc::prelude::*;
+            /// use euclid::default::{Vector2D, Vector3D};
+            ///
+            /// assert_eq!(Vector2D::<u8>::unit_x(), Vector2D::new(1, 0));
+            /// assert_eq!(Vector3D::<u8>::unit_x(), Vector3D::new(1, 0, 0));
+            /// ```
+            fn unit_x() -> Self;
+
+            /// Returns the positive `y` unit vector.
+            ///
+            /// # Examples
+            /// Basic usage:
+            /// ```
+            /// # use aoc::prelude::*;
+            /// use euclid::default::{Vector2D, Vector3D};
+            ///
+            /// assert_eq!(Vector2D::<u8>::unit_y(), Vector2D::new(0, 1));
+            /// assert_eq!(Vector3D::<u8>::unit_y(), Vector3D::new(0, 1, 0));
+            /// ```
+            fn unit_y() -> Self;
+
+            /// Returns the positive `z` unit vector.
+            ///
+            /// # Panics
+            /// This will panic if called on a 2D vector.
+            ///
+            /// # Examples
+            /// Basic usage:
+            /// ```
+            /// # use aoc::prelude::*;
+            /// use euclid::default::Vector3D;
+            ///
+            /// assert_eq!(Vector3D::<u8>::unit_z(), Vector3D::new(0, 0, 1));
+            /// ```
+            ///
+            /// Incorrect usage:
+            /// ```should_panic
+            /// # use aoc::prelude::*;
+            /// use euclid::default::Vector2D;
+            ///
+            /// let _ = Vector2D::<u8>::unit_z();
+            /// ```
+            fn unit_z() -> Self;
+        }
+        impl<T: One + Zero, U> UnitVectors for Vector2D<T, U> {
+            fn unit_x() -> Self {
+                Self::new(T::one(), T::zero())
+            }
+
+            fn unit_y() -> Self {
+                Self::new(T::zero(), T::one())
+            }
+
+            fn unit_z() -> Self {
+                panic!("A 2D vector has no z coordinate!")
+            }
+        }
+        impl<T: One + Zero, U> UnitVectors for Vector3D<T, U> {
+            fn unit_x() -> Self {
+                Self::new(T::one(), T::zero(), T::zero())
+            }
+
+            fn unit_y() -> Self {
+                Self::new(T::zero(), T::one(), T::zero())
+            }
+
+            fn unit_z() -> Self {
+                Self::new(T::zero(), T::zero(), T::one())
+            }
+        }
+
+        /// Extension trait to provide additional component type conversions.
+        pub trait ConversionExt {
+            /// The item we are extending with its generic component type.
+            type Item<S>;
+
+            /// Converts the item components to [`isize`].
+            ///  
+            /// # Panics
+            /// This will panic if any of the components cannot be converted.
+            fn to_isize(self) -> Self::Item<isize>;
+
+            /// Converts the item components to [`u64`].
+            ///
+            /// # Panics
+            /// This will panic if any of the components cannot be converted.
+            fn to_u64(self) -> Self::Item<u64>;
+        }
+
+        /// Implements [`ConversionExt`] for a particular `euclid` item.
+        ///
+        /// The item must have the `try_cast` method.
+        macro_rules! impl_euclid_conversions {
+            ($T:ident) => {
+                impl<T: NumCast + Copy, U> ConversionExt for $T<T, U> {
+                    type Item<S> = $T<S, U>;
+
+                    fn to_isize(self) -> Self::Item<isize> {
+                        self.try_cast().unwrap()
+                    }
+
+                    fn to_u64(self) -> Self::Item<u64> {
+                        self.try_cast().unwrap()
+                    }
+                }
+            };
+        }
+
+        impl_euclid_conversions!(Point2D);
+        impl_euclid_conversions!(Point3D);
+        impl_euclid_conversions!(Size2D);
+        impl_euclid_conversions!(Size3D);
+        impl_euclid_conversions!(Vector2D);
+        impl_euclid_conversions!(Vector3D);
+        impl_euclid_conversions!(Box2D);
+        impl_euclid_conversions!(Box3D);
+
+        /// Extension trait to define boxes using inclusive points.
+        ///
+        /// The compensates for the fact that the `max` point of a `euclid`
+        /// box item is exclusive.
+        pub trait BoxInclusive {
+            /// The point type that defines the box.
+            type Point;
+
+            /// Returns a new box with `min` and `max` points that are both contained in the box.
+            ///
+            /// # Examples
+            /// Basic usage:
+            /// ```
+            /// # use aoc::prelude::*;
+            /// use euclid::default::{Box2D, Box3D, Point2D, Point3D, Size2D, Size3D, Vector2D, Vector3D};
+            ///
+            /// let min = Point2D::new(1, 2);
+            /// let max = Point2D::new(6, 7);
+            /// let bounds = Box2D::new_inclusive(min, max);
+            /// assert!(bounds.contains(min));
+            /// assert!(bounds.contains(max));
+            /// assert!(!bounds.contains(min - Vector2D::unit_x()));
+            /// assert!(!bounds.contains(max + Vector2D::unit_x()));
+            /// assert_eq!(bounds.size(), Size2D::new(6, 6));
+            ///
+            /// let min = Point3D::new(1, 2, 3);
+            /// let max = Point3D::new(6, 7, 8);
+            /// let bounds = Box3D::new_inclusive(min, max);
+            /// assert!(bounds.contains(min));
+            /// assert!(bounds.contains(max));
+            /// assert!(!bounds.contains(min - Vector3D::unit_y()));
+            /// assert!(!bounds.contains(max + Vector3D::unit_y()));
+            /// assert_eq!(bounds.size(), Size3D::new(6, 6, 6));
+            /// ```
+            fn new_inclusive(min: Self::Point, max: Self::Point) -> Self;
+
+            /// Returns the smallest box containing **all** of the provided points.
+            ///
+            /// TODO: This corrects for a [potential bug](https://github.com/servo/euclid/issues/519),
+            /// which could be fixed at some point, breaking this code.
+            /// Based on the response, this may not be a bug, but the intended behavior.
+            ///
+            /// If a bug, this can be removed once fixed.
+            /// If not a bug, write complete documentation for this.
+            ///
+            /// We may also [integrate this into `euclid` itself](https://github.com/servo/euclid/issues/503).
+            fn from_points_inclusive<I>(points: I) -> Self
+            where
+                I: IntoIterator,
+                I::Item: Borrow<Self::Point>;
+        }
+        impl<T: Copy + std::ops::Add<Output = T> + One + Zero + PartialOrd, U> BoxInclusive
+            for Box2D<T, U>
+        {
+            type Point = Point2D<T, U>;
+
+            fn new_inclusive(min: Self::Point, max: Self::Point) -> Self {
+                Self::new(min, max + Vector2D::new(T::one(), T::one()))
+            }
+
+            fn from_points_inclusive<I>(points: I) -> Self
+            where
+                I: IntoIterator,
+                I::Item: Borrow<Self::Point>,
+            {
+                {
+                    let bounds = Self::from_points(points);
+                    Self::new_inclusive(bounds.min, bounds.max)
+                }
+            }
+        }
+        impl<T: Copy + std::ops::Add<Output = T> + One + Zero + PartialOrd, U> BoxInclusive
+            for Box3D<T, U>
+        {
+            type Point = Point3D<T, U>;
+
+            fn new_inclusive(min: Self::Point, max: Self::Point) -> Self {
+                Self::new(min, max + Vector3D::new(T::one(), T::one(), T::one()))
+            }
+
+            fn from_points_inclusive<I>(points: I) -> Self
+            where
+                I: IntoIterator,
+                I::Item: Borrow<Self::Point>,
+            {
+                {
+                    let bounds = Self::from_points(points);
+                    Self::new_inclusive(bounds.min, bounds.max)
+                }
+            }
+        }
+
+        /// Extension trait for iterating over all the points contained in an
+        /// appropriate `euclid` item.
+        pub trait AllPoints {
+            /// The type of the point to be contained in the item.
+            type Point;
+
+            /// The iterator type returned from [`AllPoints::all_points`].
+            ///
+            /// This is needed due to a
+            /// [limitation of RPITIT](https://users.rust-lang.org/t/fully-owned-iterator-causing-lifetime-problems/107677).
+            type AllPointsIterator: Iterator<Item = Self::Point>;
+
+            /// Returns an [`Iterator`] over all points contained in the item in row-major order.
+            ///
+            /// # Examples
+            /// Basic usage:
+            /// ```
+            /// # use aoc::prelude::*;
+            /// use itertools::Itertools;
+            /// use euclid::default::{Box2D, Box3D, Point2D, Point3D, Size2D, Size3D};
+            ///
+            /// assert_eq!(
+            ///     Size2D::new(2, 3).all_points().collect_vec(),
+            ///     vec![
+            ///         Point2D::new(0, 0),
+            ///         Point2D::new(1, 0),
+            ///         Point2D::new(0, 1),
+            ///         Point2D::new(1, 1),
+            ///         Point2D::new(0, 2),
+            ///         Point2D::new(1, 2),
+            ///     ],
+            /// );
+            /// assert_eq!(
+            ///     Size3D::new(2, 2, 3).all_points().collect_vec(),
+            ///     vec![
+            ///         Point3D::new(0, 0, 0),
+            ///         Point3D::new(1, 0, 0),
+            ///         Point3D::new(0, 1, 0),
+            ///         Point3D::new(1, 1, 0),
+            ///         Point3D::new(0, 0, 1),
+            ///         Point3D::new(1, 0, 1),
+            ///         Point3D::new(0, 1, 1),
+            ///         Point3D::new(1, 1, 1),
+            ///         Point3D::new(0, 0, 2),
+            ///         Point3D::new(1, 0, 2),
+            ///         Point3D::new(0, 1, 2),
+            ///         Point3D::new(1, 1, 2),
+            ///     ],
+            /// );
+            /// assert_eq!(
+            ///     Box2D::from_origin_and_size(Point2D::new(3, 4), Size2D::new(2, 3)).all_points().collect_vec(),
+            ///     vec![
+            ///         Point2D::new(3, 4),
+            ///         Point2D::new(4, 4),
+            ///         Point2D::new(3, 5),
+            ///         Point2D::new(4, 5),
+            ///         Point2D::new(3, 6),
+            ///         Point2D::new(4, 6),
+            ///     ],
+            /// );
+            /// assert_eq!(
+            ///     Box3D::from_origin_and_size(Point3D::new(3, 4, 5), Size3D::new(2, 2, 3)).all_points().collect_vec(),
+            ///     vec![
+            ///         Point3D::new(3, 4, 5),
+            ///         Point3D::new(4, 4, 5),
+            ///         Point3D::new(3, 5, 5),
+            ///         Point3D::new(4, 5, 5),
+            ///         Point3D::new(3, 4, 6),
+            ///         Point3D::new(4, 4, 6),
+            ///         Point3D::new(3, 5, 6),
+            ///         Point3D::new(4, 5, 6),
+            ///         Point3D::new(3, 4, 7),
+            ///         Point3D::new(4, 4, 7),
+            ///         Point3D::new(3, 5, 7),
+            ///         Point3D::new(4, 5, 7),
+            ///     ],
+            /// );
+            /// ```
+            fn all_points(&self) -> Self::AllPointsIterator;
+        }
+        impl<T: Copy + std::iter::Step + euclid::num::Zero, U> AllPoints for Size2D<T, U> {
+            type Point = Point2D<T, U>;
+            type AllPointsIterator = impl Iterator<Item = Self::Point>;
+
+            fn all_points(&self) -> Self::AllPointsIterator {
+                iproduct!(T::zero()..self.height, T::zero()..self.width)
+                    .map(|(y, x)| Self::Point::new(x, y))
+            }
+        }
+        impl<T: Copy + std::iter::Step + euclid::num::Zero, U> AllPoints for Size3D<T, U> {
+            type Point = Point3D<T, U>;
+            type AllPointsIterator = impl Iterator<Item = Self::Point>;
+
+            fn all_points(&self) -> Self::AllPointsIterator {
+                iproduct!(
+                    T::zero()..self.depth,
+                    T::zero()..self.height,
+                    T::zero()..self.width
+                )
+                .map(|(z, y, x)| Self::Point::new(x, y, z))
+            }
+        }
+        impl<T: Copy + std::iter::Step, U> AllPoints for Box2D<T, U> {
+            type Point = Point2D<T, U>;
+            type AllPointsIterator = impl Iterator<Item = Self::Point>;
+
+            fn all_points(&self) -> Self::AllPointsIterator {
+                iproduct!(self.min.y..self.max.y, self.min.x..self.max.x)
+                    .map(|(y, x)| Self::Point::new(x, y))
+            }
+        }
+        impl<T: Copy + std::iter::Step, U> AllPoints for Box3D<T, U> {
+            type Point = Point3D<T, U>;
+            type AllPointsIterator = impl Iterator<Item = Self::Point>;
+
+            fn all_points(&self) -> Self::AllPointsIterator {
+                iproduct!(
+                    self.min.z..self.max.z,
+                    self.min.y..self.max.y,
+                    self.min.x..self.max.x
+                )
+                .map(|(z, y, x)| Self::Point::new(x, y, z))
+            }
+        }
+    }
 
     /// Extension trait for inclusive ranges.
     pub trait RangeExt<T>: Sized {

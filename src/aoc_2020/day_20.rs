@@ -320,20 +320,20 @@ mod solution {
                 size.height - image_size.height,
             )
             .all_points()
-            .filter_map(|point| {
+            .filter(|point| {
                 let sub_image = self
                     .pixels
-                    .sub_grid(&Box2D::from_origin_and_size(point, *image_size));
-                if image
+                    .sub_grid(&Box2D::from_origin_and_size(*point, *image_size));
+
+                // It is very strange to me that we need to use assign variable here, but we get a compiler
+                // error if we do not.
+                let keep = image
                     .pixels
                     .all_values()
                     .zip(sub_image.all_values())
-                    .all(|(pi, ps)| !**pi || **ps)
-                {
-                    Some(point)
-                } else {
-                    None
-                }
+                    .all(|(pi, ps)| !**pi || **ps);
+
+                keep
             })
             .collect()
         }

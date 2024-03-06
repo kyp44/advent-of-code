@@ -68,7 +68,7 @@ pub trait AnyGridPointExt<U> {
     /// The iterator type returned from [`AnyGridPointExt::all_neighbor_points`].
     ///
     /// This is needed due to a
-    /// [fundamental limitation of RPITIT](https://users.rust-lang.org/t/fully-owned-iterator-causing-lifetime-problems/107677/4).
+    /// [limitation of RPITIT](https://users.rust-lang.org/t/fully-owned-iterator-causing-lifetime-problems/107677).
     type NeighborPoints: Iterator<Item = AnyGridPoint<U>>;
 
     /// Converts an infinitely repeating grid point into the actual addressable point
@@ -112,8 +112,10 @@ pub trait AnyGridPointExt<U> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
+    /// use itertools::Itertools;
+    ///
     /// assert_eq!(
-    ///     AnyGridPoint::<GridSpace>::new(0, 0).all_neighbor_points(true, true).collect::<Vec<_>>(),
+    ///     AnyGridPoint::<GridSpace>::new(0, 0).all_neighbor_points(true, true).collect_vec(),
     ///     vec![
     ///         AnyGridPoint::new(-1, -1),
     ///         AnyGridPoint::new(0, -1),
@@ -127,7 +129,7 @@ pub trait AnyGridPointExt<U> {
     ///     ],
     /// );
     /// assert_eq!(
-    ///     AnyGridPoint::<GridSpace>::new(-4, -2).all_neighbor_points(true, false).collect::<Vec<_>>(),
+    ///     AnyGridPoint::<GridSpace>::new(-4, -2).all_neighbor_points(true, false).collect_vec(),
     ///     vec![
     ///         AnyGridPoint::new(-5, -3),
     ///         AnyGridPoint::new(-4, -3),
@@ -140,7 +142,7 @@ pub trait AnyGridPointExt<U> {
     ///     ],
     /// );
     /// assert_eq!(
-    ///     AnyGridPoint::<GridSpace>::new(5, 6).all_neighbor_points(false, false).collect::<Vec<_>>(),
+    ///     AnyGridPoint::<GridSpace>::new(5, 6).all_neighbor_points(false, false).collect_vec(),
     ///     vec![
     ///         AnyGridPoint::new(5, 5),
     ///         AnyGridPoint::new(4, 6),
@@ -159,13 +161,7 @@ impl<U> AnyGridPointExt<U> for AnyGridPoint<U> {
     type NeighborPoints = impl Iterator<Item = Self>;
 
     fn wrapped_grid_point(&self, size: &GridSize<U>) -> GridPoint<U> {
-        let any_size = size.try_cast().unwrap();
-
-        AnyGridPoint::new(
-            self.x.rem_euclid(any_size.width),
-            self.y.rem_euclid(any_size.height),
-        )
-        .to_usize()
+        self.rem_euclid(&size.to_isize()).to_usize()
     }
 
     fn all_neighbor_points(
@@ -173,23 +169,16 @@ impl<U> AnyGridPointExt<U> for AnyGridPoint<U> {
         include_diagonals: bool,
         include_self: bool,
     ) -> Self::NeighborPoints {
-        // TODO can we just deference?
-        let point = self.clone();
+        let point = *self;
 
         iproduct!(-1isize..=1, -1isize..=1).filter_map(move |(dy, dx)| {
-            let point = point + Vector2D::new(dx, dy);
-            // TODO use manhattan distance here!
-            if dx == 0 && dy == 0 {
-                if include_self {
-                    Some(point)
-                } else {
-                    None
-                }
-            } else if !include_diagonals && (dx + dy).abs() != 1 {
-                None
-            } else {
-                Some(point)
+            let vector = Vector2D::new(dx, dy);
+            match vector.manhattan_len() {
+                0 => include_self,
+                2 => include_diagonals,
+                _ => true,
             }
+            .then(|| point + vector)
         })
     }
 }
@@ -466,6 +455,8 @@ impl<T, U> Grid<T, U> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
+    /// use itertools::Itertools;
+    ///
     /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6]]).unwrap();
     /// let points = vec![
     ///     GridPoint::new(0, 0),
@@ -476,7 +467,7 @@ impl<T, U> Grid<T, U> {
     ///     GridPoint::new(2, 1),
     /// ];
     ///
-    /// assert_eq!(grid.all_points().collect::<Vec<_>>(), points);
+    /// assert_eq!(grid.all_points().collect_vec(), points);
     /// ```
     pub fn all_points(&self) -> impl Iterator<Item = GridPoint<U>> {
         self.size().all_points()
@@ -488,15 +479,16 @@ impl<T, U> Grid<T, U> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6]]).unwrap();
+    /// use itertools::Itertools;
     ///
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6]]).unwrap();
     /// assert_eq!(
-    ///     grid.all_values().copied().collect::<Vec<_>>(),
+    ///     grid.all_values().copied().collect_vec(),
     ///     vec![1, 2, 3, 4, 5, 6]
     /// );
     /// ```
     pub fn all_values(&self) -> impl Iterator<Item = &T> {
-        Box::new(self.all_points().map(|p| self.get(&p)))
+        self.all_points().map(|p| self.get(&p))
     }
 
     /// Returns an [`Iterator`] over the values in a `row`.
@@ -508,9 +500,10 @@ impl<T, U> Grid<T, U> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2], vec![3, 4], vec![5, 6]]).unwrap();
+    /// use itertools::Itertools;
     ///
-    /// assert_eq!(grid.row_iter(1).copied().collect::<Vec<_>>(), vec![3, 4]);
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2], vec![3, 4], vec![5, 6]]).unwrap();
+    /// assert_eq!(grid.row_iter(1).copied().collect_vec(), vec![3, 4]);
     /// ```
     pub fn row_iter(&self, row: usize) -> impl Iterator<Item = &T> {
         self.data[row].iter()
@@ -525,9 +518,10 @@ impl<T, U> Grid<T, U> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// let grid = Grid::<u8>::from_data(vec![vec![1, 4], vec![2, 5], vec![3, 6]]).unwrap();
+    /// use itertools::Itertools;
     ///
-    /// assert_eq!(grid.column_iter(1).copied().collect::<Vec<_>>(), vec![4, 5, 6]);
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 4], vec![2, 5], vec![3, 6]]).unwrap();
+    /// assert_eq!(grid.column_iter(1).copied().collect_vec(), vec![4, 5, 6]);
     /// ```
     pub fn column_iter(&self, column: usize) -> impl Iterator<Item = &T> {
         (0..self.size.height).map(move |y| &self.data[y][column])
@@ -564,10 +558,11 @@ impl<T, U> Grid<T, U> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]).unwrap();
+    /// use itertools::Itertools;
     ///
+    /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]).unwrap();
     /// assert_eq!(
-    ///     grid.neighbor_points(&GridPoint::new(0, 0), true, true).collect::<Vec<_>>(),
+    ///     grid.neighbor_points(&GridPoint::new(0, 0), true, true).collect_vec(),
     ///     vec![
     ///         GridPoint::new(0, 0),
     ///         GridPoint::new(1, 0),
@@ -576,7 +571,7 @@ impl<T, U> Grid<T, U> {
     ///     ],    
     /// );
     /// assert_eq!(
-    ///     grid.neighbor_points(&GridPoint::new(1, 1), false, true).collect::<Vec<_>>(),
+    ///     grid.neighbor_points(&GridPoint::new(1, 1), false, true).collect_vec(),
     ///     vec![
     ///         GridPoint::new(1, 0),
     ///         GridPoint::new(0, 1),
@@ -586,7 +581,7 @@ impl<T, U> Grid<T, U> {
     ///     ],    
     /// );
     /// assert_eq!(
-    ///     grid.neighbor_points(&GridPoint::new(1, 2), true, false).collect::<Vec<_>>(),
+    ///     grid.neighbor_points(&GridPoint::new(1, 2), true, false).collect_vec(),
     ///     vec![
     ///         GridPoint::new(0, 1),
     ///         GridPoint::new(1, 1),
@@ -611,7 +606,7 @@ impl<T, U> Grid<T, U> {
 
     /// Creates a sub-grid by cloning the applicable elements of this grid.
     ///
-    /// The inclusive sub-grid location is given by the `sub_grid_box`.
+    /// The sub-grid location is given by the `sub_grid_box`.
     ///
     /// # Panics
     /// This will panic if any part of the sub-grid is out of the bounds of this
@@ -636,7 +631,6 @@ impl<T, U> Grid<T, U> {
     ///     Grid::from_data(vec![vec![8, 9]]).unwrap(),
     /// );
     /// ```
-    /// TODO Update documentation and test code.
     pub fn sub_grid(&self, sub_grid_box: &GridBox<U>) -> Self
     where
         T: Default + Clone,
