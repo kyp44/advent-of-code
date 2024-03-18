@@ -6,13 +6,20 @@ mod tests {
     use aoc::prelude_test::*;
 
     solution_tests! {
-        example {
-            input = "Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.
+            /* example {
+                input = "Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.
     Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsidian robot costs 3 ore and 8 clay. Each geode robot costs 3 ore and 12 obsidian.";
-            answers = unsigned![33];
+                answers = unsigned![33, 3472];
+            } */
+            example {
+                input = "Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.
+Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsidian robot costs 3 ore and 8 clay. Each geode robot costs 3 ore and 12 obsidian.
+Blueprint 3: Each ore robot costs 4 ore. Each clay robot costs 4 ore. Each obsidian robot costs 3 ore and 11 clay. Each geode robot costs 3 ore and 8 obsidian.
+Blueprint 4: Each ore robot costs 3 ore. Each clay robot costs 4 ore. Each obsidian robot costs 4 ore and 5 clay. Each geode robot costs 3 ore and 12 obsidian.";
+                answers = unsigned![71];
+            }
+            actual_answers = unsigned![1294];
         }
-        actual_answers = unsigned![123];
-    }
 }
 
 /// Contains solution implementation items.
@@ -39,8 +46,6 @@ mod solution {
     use strum_macros::EnumIter;
 
     const NUM_ROBOTS: usize = 4;
-    // In minutes
-    const TIME_ALLOWED: u8 = 24;
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
     enum Material {
@@ -127,27 +132,22 @@ mod solution {
         }
     }
     impl Blueprint {
-        pub fn largest_geodes_cracked(&self) -> AocResult<u64> {
-            /* let search_state = SearchNode::new(self).traverse_tree(SearchState::new(self));
+        pub fn largest_geodes_cracked(&self, time_allowed: usize) -> u64 {
+            /* let search_state = SearchNode::new(self, time_allowed)
+                .traverse_tree(SearchState::new(self, time_allowed));
 
             // TODO: print recipe
             println!(
                 "Recipe: {:?}",
-                search_state
-                    .build_recipe
-                    .into_iter()
-                    .map(|rs| rs.built)
-                    .collect_vec()
+                search_state.build_recipe.into_iter().collect_vec()
             );
 
-            return Ok(search_state.most_geodes_cracked.0.try_into().unwrap()); */
+            return search_state.most_geodes_cracked.0.try_into().unwrap(); */
 
             // TODO test code
-            let mut time_tracker = TimeTracker::new(&self.robot_costs);
+            let mut time_tracker = TimeTracker::new(&self.robot_costs, time_allowed);
 
             for build in BUILD_RECIPES[usize::from(self.num) - 1] {
-                println!("== Minute {} ==", time_tracker.elapsed_time + 1);
-
                 // TODO now calculate the number of turns to build each robot
                 /* for robot_type in Material::iter() {
                     let time_to_build = time_tracker.time_to_build_robot(&robot_type);
@@ -196,33 +196,42 @@ mod solution {
                     }
                 } */
 
-                //let should_build = time_tracker.should_build_robot();
-                let should_build = build;
+                // Check whether we should build
+                let prob = if let Some(to_build) = build {
+                    let time_to_build = time_tracker
+                        .time_to_build_robot(&to_build)
+                        .finite()
+                        .unwrap();
+                    if !time_tracker.should_build_robot(time_to_build, to_build) {
+                        println!("At minute {} we want to build a {to_build:?} robot, but really shouldn't!", time_tracker.elapsed_time + 1);
+                        println!(
+                            "Before build: {:?}",
+                            time_tracker.time_to_build_important(&to_build)
+                        );
+                        true
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                };
 
-                /* if let Some(rt) = time_tracker.should_build_robot() {
-                    println!("We should build a {rt:?} robot!");
-                    println!();
-                } */
+                let _ = time_tracker.advance_time(build);
 
-                if let Some(rt) = should_build {
-                    println!("Building a {rt:?} robot");
-                    println!();
+                if prob {
+                    println!(
+                        "After build: {:?}\n",
+                        time_tracker.time_to_build_important(&build.unwrap())
+                    );
                 }
-                println!("Robots: {:?}", time_tracker.robots);
-                time_tracker.advance_time(should_build);
-                println!("Materials: {:?}", time_tracker.materials);
-                println!();
             }
 
-            Ok(time_tracker
-                .materials
-                .count_of(&Material::Geode)
-                .try_into()
-                .unwrap())
+            time_tracker.geodes_cracked().try_into().unwrap()
         }
     }
 
     const BUILD_RECIPES: &[[Option<Material>; 24]] = &[
+        // Blueprint 1
         [
             None,
             None,
@@ -249,6 +258,7 @@ mod solution {
             None,
             None,
         ],
+        // Blueprint 2
         [
             None,
             None,
@@ -261,29 +271,84 @@ mod solution {
             Some(Material::Clay),
             Some(Material::Clay),
             Some(Material::Obsidian),
-            Some(Material::Clay),
-            Some(Material::Obsidian),
-            Some(Material::Clay),
+            None,
             Some(Material::Obsidian),
             Some(Material::Obsidian),
-            Some(Material::Obsidian),
-            Some(Material::Geode),
+            None,
             Some(Material::Obsidian),
             Some(Material::Obsidian),
             Some(Material::Geode),
+            Some(Material::Obsidian),
             Some(Material::Geode),
             None,
+            Some(Material::Geode),
+            None,
+            None,
+        ],
+        // Blueprint 3
+        [
+            None,
+            None,
+            None,
+            None,
+            Some(Material::Clay),
+            None,
+            None,
+            None,
+            Some(Material::Clay),
+            None,
+            None,
+            None,
+            None,
+            Some(Material::Obsidian),
+            None,
+            None,
+            None,
+            None,
+            Some(Material::Obsidian),
+            None,
+            None,
+            Some(Material::Geode),
+            None,
+            None,
+        ],
+        // Blueprint 4
+        [
+            None,
+            None,
+            None,
+            Some(Material::Ore),
+            None,
+            Some(Material::Ore),
+            None,
+            Some(Material::Clay),
+            Some(Material::Clay),
+            None,
+            Some(Material::Clay),
+            Some(Material::Obsidian),
+            Some(Material::Ore),
+            Some(Material::Obsidian),
+            Some(Material::Clay),
+            Some(Material::Obsidian),
+            Some(Material::Obsidian),
+            Some(Material::Obsidian),
+            Some(Material::Geode),
+            Some(Material::Obsidian),
+            Some(Material::Obsidian),
+            Some(Material::Geode),
+            Some(Material::Geode),
             None,
         ],
     ];
 
     struct SearchState {
-        build_recipe: Vec<RecipeStep>,
+        build_recipe: Vec<Option<Material>>,
+        time_allowed: usize,
         max_robots_needed: RobotInventory,
         most_geodes_cracked: GeodesCracked,
     }
     impl SearchState {
-        pub fn new(blueprint: &Blueprint) -> Self {
+        pub fn new(blueprint: &Blueprint, time_allowed: usize) -> Self {
             let mut max_robots_needed = RobotInventory::default();
             for rt in Material::iter() {
                 let max_cost = blueprint
@@ -293,18 +358,13 @@ mod solution {
                     .max()
                     .unwrap();
 
-                max_robots_needed.insert_times(
-                    rt,
-                    if max_cost > 0 {
-                        max_cost
-                    } else {
-                        TIME_ALLOWED.into()
-                    },
-                )
+                max_robots_needed
+                    .insert_times(rt, if max_cost > 0 { max_cost } else { time_allowed })
             }
 
             Self {
                 build_recipe: Vec::new(),
+                time_allowed,
                 max_robots_needed,
                 most_geodes_cracked: GeodesCracked(0),
             }
@@ -312,34 +372,34 @@ mod solution {
     }
 
     #[derive(Clone)]
-    struct RecipeStep {
-        built: Option<Material>,
-        materials: MaterialInventory,
+    struct ToBuildNext {
+        time_to_build: usize,
+        to_build: Material,
     }
 
     #[derive(Clone)]
     struct SearchNode<'a> {
         blueprint: &'a Blueprint,
         time_tracker: TimeTracker<'a>,
-        to_build: Option<Material>,
-        build_recipe: Vec<RecipeStep>,
+        to_build_next: Option<ToBuildNext>,
+        build_recipe: Vec<Option<Material>>,
     }
     impl<'a> SearchNode<'a> {
-        fn new(blueprint: &'a Blueprint) -> Self {
+        fn new(blueprint: &'a Blueprint, time_allowed: usize) -> Self {
             Self {
                 blueprint,
-                time_tracker: TimeTracker::new(&blueprint.robot_costs),
-                to_build: None,
-                build_recipe: Vec::with_capacity(TIME_ALLOWED.into()),
+                time_tracker: TimeTracker::new(&blueprint.robot_costs, time_allowed),
+                build_recipe: Vec::with_capacity(time_allowed),
+                to_build_next: None,
             }
         }
 
-        fn duplicate(&self, to_build: Option<Material>) -> Self {
+        fn duplicate(&self, to_build_next: ToBuildNext) -> Self {
             Self {
                 blueprint: self.blueprint,
                 time_tracker: self.time_tracker.clone(),
                 build_recipe: self.build_recipe.clone(),
-                to_build,
+                to_build_next: Some(to_build_next),
             }
         }
     }
@@ -347,68 +407,55 @@ mod solution {
         type GlobalState = SearchState;
 
         fn recurse_action(mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
-            // If time is up, we are done
-            if let Some(gc) = self.time_tracker.time_up() {
-                println!(
-                    "TODO time is up: {}",
-                    self.time_tracker.materials.count_of(&Material::Geode)
-                );
-                let geodes_cracked = GeodesCracked(gc);
-                if geodes_cracked.is_better(&global_state.most_geodes_cracked) {
+            // Wait to build our current robot
+            if let Some(ref ttb) = self.to_build_next {
+                for _ in 0..ttb.time_to_build {
+                    self.build_recipe.push(None);
+                }
+                self.build_recipe.push(Some(ttb.to_build));
+
+                if let Err(gc) = self
+                    .time_tracker
+                    .wait_to_build_robot(ttb.time_to_build, ttb.to_build)
+                    .and_then(|_| self.time_tracker.time_up())
+                {
+                    // TODO: switch back to best cost search?
+                    if GeodesCracked(gc).is_better(&global_state.most_geodes_cracked) {
+                        global_state.build_recipe = self.build_recipe.clone();
+                    }
                     global_state
                         .most_geodes_cracked
-                        .update_if_better(geodes_cracked);
-                    global_state.build_recipe = self.build_recipe;
-                }
-
-                return NodeAction::Stop;
-            }
-
-            println!(
-                "TODO ============== Minute {} ===============",
-                self.time_tracker.elapsed_time + 1
-            );
-            println!("TODO Building a {:?} robot", self.to_build);
-
-            // Optimization to shorten the search time
-            if !global_state.build_recipe.is_empty() {
-                let best_materials = &global_state.build_recipe[self.build_recipe.len()].materials;
-                if self.time_tracker.materials.count_of(&Material::Geode)
-                    < best_materials.count_of(&Material::Geode)
-                {
-                    println!(
-                        "TODO no good! us: {:?} global: {:?}",
-                        self.time_tracker.materials,
-                        global_state.build_recipe[self.build_recipe.len()].materials
-                    );
+                        .update_if_better(GeodesCracked(gc));
+                    //println!("Done with {gc} geodes cracked!");
                     return NodeAction::Stop;
                 }
             }
 
-            println!("TODO robots: {:?}", self.time_tracker.robots);
-            self.build_recipe.push(RecipeStep {
-                built: self.to_build,
-                materials: self.time_tracker.materials.clone(),
-            });
-            self.time_tracker.advance_time(self.to_build);
-            println!("TODO materials: {:?}", self.time_tracker.materials);
-
+            // See which robots we can actually build right now
             let mut children = Vec::new();
 
-            for build_rt in Material::iter().rev() {
-                // Can we build this robot?
-                if self.time_tracker.can_build_robot(&build_rt)
-                    && self.time_tracker.robots.count_of(&build_rt)
-                        < global_state.max_robots_needed.count_of(&build_rt)
+            // TODO: Could do this with iterator filter map
+            for to_build in Material::iter().rev() {
+                if let Infinitable::Finite(t) = self.time_tracker.time_to_build_robot(&to_build)
+                    && usize::from(self.time_tracker.elapsed_time) + t <= global_state.time_allowed
+                    && self.time_tracker.robots.count_of(&to_build)
+                        < global_state.max_robots_needed.count_of(&to_build)
+                //&& self.time_tracker.should_build_robot(t, to_build)
                 {
-                    children.push(self.duplicate(Some(build_rt)));
+                    if !self.time_tracker.should_build_robot(t, to_build) {
+                        println!(
+                            "Can avoid build of {to_build:?} robot at minute {}",
+                            self.time_tracker.elapsed_time + 1
+                        );
+                    }
+
+                    // TODO: Give ToBuildNext a constructor
+                    children.push(self.duplicate(ToBuildNext {
+                        time_to_build: t,
+                        to_build,
+                    }));
                 }
             }
-
-            // We always want to build something if we can
-            //if children.is_empty() {
-            children.push(self.duplicate(None));
-            //}
 
             NodeAction::Continue(children)
         }
@@ -491,18 +538,20 @@ mod solution {
     #[derive(Debug, Clone)]
     struct TimeTracker<'a> {
         robot_costs: &'a RobotCosts,
+        time_allowed: usize,
         materials: MaterialInventory,
         robots: RobotInventory,
-        elapsed_time: u8,
+        elapsed_time: usize,
     }
     impl<'a> TimeTracker<'a> {
-        pub fn new(robot_costs: &'a RobotCosts) -> Self {
+        pub fn new(robot_costs: &'a RobotCosts, time_allowed: usize) -> Self {
             // We start with one ore-collecting robot
             let mut robots = RobotInventory::default();
             robots.insert(Material::Ore);
 
             Self {
                 robot_costs,
+                time_allowed,
                 materials: MaterialInventory::default(),
                 robots,
                 elapsed_time: 0,
@@ -516,8 +565,10 @@ mod solution {
         // Passes one minute of time
         // Does nothing if time is up
         // Returns geodes cracked in during the minute
-        fn tick(&mut self) -> bool {
-            if self.elapsed_time < TIME_ALLOWED {
+        // TODO: Return GeodesCracked everywhere maybe, if nothing else makes the intention clearer.
+        fn tick(&mut self) -> Result<(), usize> {
+            // TODO use self.time_up here if it survives
+            if self.elapsed_time < self.time_allowed {
                 // Have the robots collect materials
                 for robot in self.robots.iter() {
                     self.materials.insert(*robot)
@@ -526,14 +577,18 @@ mod solution {
                 // Increment time
                 self.elapsed_time += 1;
 
-                true
+                Ok(())
             } else {
-                false
+                Err(self.geodes_cracked())
             }
         }
 
-        pub fn time_up(&self) -> Option<usize> {
-            (self.elapsed_time >= TIME_ALLOWED).then_some(self.geodes_cracked())
+        pub fn time_up(&self) -> Result<(), usize> {
+            if self.elapsed_time >= self.time_allowed {
+                Err(self.geodes_cracked())
+            } else {
+                Ok(())
+            }
         }
 
         pub fn can_build_robot(&self, robot_type: &Material) -> bool {
@@ -543,7 +598,7 @@ mod solution {
                 .all(|m| self.materials.count_of(m) >= robot_cost.count_of(m))
         }
 
-        // Will panic if cannot afford to build and also advances time
+        // Raw dog, no check whether we can build.
         fn build_robot(&mut self, robot_type: Material) {
             // Spend the materials
             self.materials -= &self.robot_costs[&robot_type];
@@ -552,22 +607,56 @@ mod solution {
             self.robots.insert(robot_type);
         }
 
-        pub fn advance_time(&mut self, to_build: Option<Material>) {
+        pub fn advance_time(&mut self, to_build: Option<Material>) -> Result<(), usize> {
+            if DEBUG_PRINT {
+                self.time_up()?;
+                println!(
+                    "============== Minute {} ===============",
+                    self.elapsed_time + 1
+                );
+            }
+
             if let Some(rt) = to_build
                 && !self.can_build_robot(&rt)
             {
                 panic!("Cannot afford to build a {rt:?} robot!");
             }
 
-            self.tick();
+            if DEBUG_PRINT {
+                if let Some(rt) = to_build {
+                    println!("Building a {rt:?} robot");
+                    println!();
+                }
+
+                println!("Robots: {:?}", self.robots);
+            }
+            self.tick()?;
 
             if let Some(rt) = to_build {
                 self.build_robot(rt)
             }
+
+            if DEBUG_PRINT {
+                println!("Materials: {:?}\n", self.materials);
+            }
+            Ok(())
+        }
+
+        // Returns total geodes cracked if time ran out
+        // TODO: Consider taking ToBuildNext if that struct sticks around
+        pub fn wait_to_build_robot(
+            &mut self,
+            time_to_build: usize,
+            to_build: Material,
+        ) -> Result<(), usize> {
+            for _ in 0..time_to_build {
+                self.advance_time(None)?;
+            }
+            self.advance_time(Some(to_build))
         }
 
         // TODO: We may never actually care about individual material costs just the max
-        pub fn time_to_build_robot(&self, robot_type: &Material) -> TimeToBuild {
+        pub fn time_to_build_robot(&self, robot_type: &Material) -> Infinitable<usize> {
             let mut times = MultiSet::default();
 
             for material in Material::iter() {
@@ -586,49 +675,28 @@ mod solution {
                 }
             }
 
-            Infinitable::Finite(times)
+            Infinitable::Finite(times.max_count())
         }
 
-        pub fn should_build_robot(&self) -> Option<Material> {
-            // TODO: Maybe make an extension trait for Infinitable?
-            fn annoying(ttb: &TimeToBuild) -> Infinitable<usize> {
-                match ttb {
-                    Infinitable::Finite(ref t) => Infinitable::Finite(t.max_count()),
-                    _ => Infinitable::Infinity,
-                }
-            }
+        fn time_to_build_important(&self, to_build: &Material) -> Vec<Infinitable<usize>> {
+            [Material::Obsidian, Material::Geode]
+                .into_iter()
+                .filter_map(|rt| (rt != *to_build).then(|| self.time_to_build_robot(&rt)))
+                .collect()
+        }
 
-            for robot_type in Material::iter().rev().filter(|rt| self.can_build_robot(rt)) {
-                // We always want to build a geode robot if possible
-                if robot_type == Material::Geode {
-                    return Some(robot_type);
-                }
+        // TODO do we need this?
+        // TODO: replace with TimeToBuild
+        pub fn should_build_robot(&self, time_to_build: usize, to_build: Material) -> bool {
+            let current_ttb = self.time_to_build_important(&to_build);
 
-                // Otherwise, does it hasten the building of another robot?
-                for hasten_rt in Material::iter().rev() {
-                    let current_time = annoying(&self.time_to_build_robot(&hasten_rt));
+            let mut future = self.clone();
+            let _ = future.wait_to_build_robot(time_to_build, to_build);
 
-                    // If we were to build it, does it lessen the time?
-                    let mut future = self.clone();
-                    future.tick();
-                    future.build_robot(robot_type);
-
-                    let new_time =
-                        annoying(&future.time_to_build_robot(&hasten_rt)) + Infinitable::Finite(1);
-
-                    match new_time.cmp(&current_time) {
-                        Ordering::Less => return Some(robot_type),
-                        Ordering::Equal => {
-                            if hasten_rt == Material::Clay && new_time.is_finite() {
-                                println!("Dare we build a {robot_type:?} robot?!");
-                            }
-                        }
-                        Ordering::Greater => break,
-                    }
-                }
-            }
-
-            None
+            current_ttb
+                .into_iter()
+                .zip(future.time_to_build_important(&to_build))
+                .all(|(c, f)| f <= c)
         }
     }
 
@@ -646,10 +714,26 @@ mod solution {
         }
     }
     impl RobotFactory {
-        pub fn sum_of_quality_levels(&self) -> AocResult<u64> {
-            self.blueprints[1].largest_geodes_cracked()
+        pub fn sum_of_quality_levels(&self) -> u64 {
+            //self.blueprints[1].largest_geodes_cracked()
+
+            self.blueprints
+                .iter()
+                .map(|b| {
+                    let mgc = b.largest_geodes_cracked(24);
+                    println!("===================== MGC for blueprint {}: {mgc}\n", b.num);
+                    u64::from(b.num) * mgc
+                })
+                .sum()
+            //self.blueprints[3].largest_geodes_cracked(24)
+        }
+
+        pub fn product_of_most_geodes(&self) -> u64 {
+            self.blueprints[0].largest_geodes_cracked(32)
         }
     }
+
+    const DEBUG_PRINT: bool = false;
 }
 
 use solution::*;
@@ -665,8 +749,16 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(input
                 .expect_data::<RobotFactory>()?
-                .sum_of_quality_levels()?
+                .sum_of_quality_levels()
                 .into())
         },
+        // Part two
+        /* |input| {
+            // Process
+            Ok(input
+                .expect_data::<RobotFactory>()?
+                .product_of_most_geodes()
+                .into())
+        }, */
     ],
 };
