@@ -191,7 +191,7 @@ pub mod extension {
             }
 
             fn unit_z() -> Self {
-                panic!("A 2D vector has no z coordinate!")
+                panic!("a 2D vector has no z coordinate")
             }
         }
         impl<T: One + Zero, U> UnitVectors for Vector3D<T, U> {

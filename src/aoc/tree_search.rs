@@ -46,6 +46,9 @@ pub trait GlobalStateTreeNode: Sized {
     /// by returning [`NodeAction::Complete`].
     ///
     /// The initial global state is passed in and the final state after the search is returned.
+    ///
+    /// # Panics
+    /// This will panic if any node returns an empty array of children.
     fn traverse_tree(self, mut initial_state: Self::GlobalState) -> Self::GlobalState {
         /// This is an internal recursive function of [`GlobalStateTreeNode::traverse_tree`].
         ///
@@ -58,6 +61,10 @@ pub trait GlobalStateTreeNode: Sized {
             match current_node.recurse_action(global_state) {
                 NodeAction::Stop => false,
                 NodeAction::Continue(children) => {
+                    if children.is_empty() {
+                        panic!("node returned an empty child list");
+                    }
+
                     for child in children {
                         if rec_traverse(global_state, child) {
                             return true;
@@ -191,6 +198,9 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
     /// sub-tree.
     /// This obviates the need to recurse past each node more than once, which can vastly reduce
     /// the algorithm execution time.
+    ///
+    /// # Panics
+    /// This will panic if any node returns an empty array of children.
     fn traverse_tree(self) -> AocResult<Self::Metric> {
         /// A return value from the the recursive tree search function.
         struct BestCostReturn<N: BestCostTreeNode> {
@@ -243,6 +253,10 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
                     }
                 }
                 ApplyNodeAction::Continue(children) => {
+                    if children.is_empty() {
+                        panic!("node returned an empty child list");
+                    }
+
                     let mut best_cost = None;
 
                     for child in children {

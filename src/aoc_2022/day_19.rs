@@ -6,20 +6,21 @@ mod tests {
     use aoc::prelude_test::*;
 
     solution_tests! {
-            /* example {
-                input = "Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.
-    Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsidian robot costs 3 ore and 8 clay. Each geode robot costs 3 ore and 12 obsidian.";
-                answers = unsigned![33, 3472];
-            } */
-            example {
-                input = "Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.
-Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsidian robot costs 3 ore and 8 clay. Each geode robot costs 3 ore and 12 obsidian.
-Blueprint 3: Each ore robot costs 4 ore. Each clay robot costs 4 ore. Each obsidian robot costs 3 ore and 11 clay. Each geode robot costs 3 ore and 8 obsidian.
-Blueprint 4: Each ore robot costs 3 ore. Each clay robot costs 4 ore. Each obsidian robot costs 4 ore and 5 clay. Each geode robot costs 3 ore and 12 obsidian.";
-                answers = unsigned![71];
+                example {
+                    input = "Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.
+        Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsidian robot costs 3 ore and 8 clay. Each geode robot costs 3 ore and 12 obsidian.";
+                    answers = unsigned![33, 3472];
+                }
+                // TODO
+                /* example {
+                    input = "Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 2 ore. Each obsidian robot costs 3 ore and 14 clay. Each geode robot costs 2 ore and 7 obsidian.
+    Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsidian robot costs 3 ore and 8 clay. Each geode robot costs 3 ore and 12 obsidian.
+    Blueprint 3: Each ore robot costs 4 ore. Each clay robot costs 4 ore. Each obsidian robot costs 3 ore and 11 clay. Each geode robot costs 3 ore and 8 obsidian.
+    Blueprint 4: Each ore robot costs 3 ore. Each clay robot costs 4 ore. Each obsidian robot costs 4 ore and 5 clay. Each geode robot costs 3 ore and 12 obsidian.";
+                    answers = unsigned![71];
+                } */
+                actual_answers = unsigned![1294];
             }
-            actual_answers = unsigned![1294];
-        }
 }
 
 /// Contains solution implementation items.
@@ -32,6 +33,7 @@ mod solution {
     use derive_more::{Add, Deref, DerefMut};
     use infinitable::Infinitable;
     use itertools::Itertools;
+    use maplit::hashmap;
     use multiset::HashMultiSet;
     use nom::{
         branch::alt,
@@ -41,7 +43,12 @@ mod solution {
         multi::{many_m_n, separated_list1},
         sequence::{delimited, pair, separated_pair, terminated},
     };
-    use std::{cmp::Ordering, collections::HashMap, hash::Hash};
+    use num::rational::Ratio;
+    use std::{
+        cmp::Ordering,
+        collections::{hash_map, HashMap},
+        hash::Hash,
+    };
     use strum::IntoEnumIterator;
     use strum_macros::EnumIter;
 
@@ -133,16 +140,16 @@ mod solution {
     }
     impl Blueprint {
         pub fn largest_geodes_cracked(&self, time_allowed: usize) -> u64 {
-            /* let search_state = SearchNode::new(self, time_allowed)
+            let search_state = SearchNode::new(self, time_allowed)
                 .traverse_tree(SearchState::new(self, time_allowed));
 
             // TODO: print recipe
-            println!(
-                "Recipe: {:?}",
-                search_state.build_recipe.into_iter().collect_vec()
-            );
+            println!("Recipe:",);
+            for (min, built) in search_state.build_recipe.into_iter().enumerate() {
+                println!("{min}. {built:?}");
+            }
 
-            return search_state.most_geodes_cracked.0.try_into().unwrap(); */
+            return search_state.most_geodes_cracked.0.try_into().unwrap();
 
             // TODO test code
             let mut time_tracker = TimeTracker::new(&self.robot_costs, time_allowed);
@@ -342,10 +349,11 @@ mod solution {
     ];
 
     struct SearchState {
-        build_recipe: Vec<Option<Material>>,
         time_allowed: usize,
-        max_robots_needed: RobotInventory,
         most_geodes_cracked: GeodesCracked,
+        build_recipe: Vec<Option<Material>>,
+        max_robots_needed: RobotInventory,
+        max_build_time: HashMap<Material, usize>,
     }
     impl SearchState {
         pub fn new(blueprint: &Blueprint, time_allowed: usize) -> Self {
@@ -362,11 +370,20 @@ mod solution {
                     .insert_times(rt, if max_cost > 0 { max_cost } else { time_allowed })
             }
 
+            let max_value = |t| (Ratio::new(t, 24) * time_allowed).ceil().to_integer();
+            let max_build_time = hashmap! [
+                Material::Ore => max_value(14),
+                Material::Clay => max_value(16),
+                Material::Obsidian => max_value(20),
+                Material::Geode => max_value(22),
+            ];
+
             Self {
-                build_recipe: Vec::new(),
                 time_allowed,
-                max_robots_needed,
                 most_geodes_cracked: GeodesCracked(0),
+                build_recipe: Vec::new(),
+                max_robots_needed,
+                max_build_time,
             }
         }
     }
@@ -437,17 +454,19 @@ mod solution {
             // TODO: Could do this with iterator filter map
             for to_build in Material::iter().rev() {
                 if let Infinitable::Finite(t) = self.time_tracker.time_to_build_robot(&to_build)
-                    && usize::from(self.time_tracker.elapsed_time) + t <= global_state.time_allowed
+                    && self.time_tracker.elapsed_time + t < global_state.time_allowed
                     && self.time_tracker.robots.count_of(&to_build)
                         < global_state.max_robots_needed.count_of(&to_build)
-                //&& self.time_tracker.should_build_robot(t, to_build)
+                    && self.time_tracker.elapsed_time + t <= global_state.max_build_time[&to_build]
+                    && self.time_tracker.should_build_robot(t, to_build)
                 {
-                    if !self.time_tracker.should_build_robot(t, to_build) {
+                    // TODO
+                    /* if !self.time_tracker.should_build_robot(t, to_build) {
                         println!(
                             "Can avoid build of {to_build:?} robot at minute {}",
                             self.time_tracker.elapsed_time + 1
                         );
-                    }
+                    } */
 
                     // TODO: Give ToBuildNext a constructor
                     children.push(self.duplicate(ToBuildNext {
@@ -457,7 +476,15 @@ mod solution {
                 }
             }
 
-            NodeAction::Continue(children)
+            // If we have nothing to build, then we can just run out the clock
+            if children.is_empty() {
+                global_state
+                    .most_geodes_cracked
+                    .update_if_better(GeodesCracked(self.time_tracker.run_out_clock()));
+                NodeAction::Stop
+            } else {
+                NodeAction::Continue(children)
+            }
         }
     }
 
@@ -619,7 +646,7 @@ mod solution {
             if let Some(rt) = to_build
                 && !self.can_build_robot(&rt)
             {
-                panic!("Cannot afford to build a {rt:?} robot!");
+                panic!("cannot afford to build a {rt:?} robot!");
             }
 
             if DEBUG_PRINT {
@@ -653,6 +680,14 @@ mod solution {
                 self.advance_time(None)?;
             }
             self.advance_time(Some(to_build))
+        }
+
+        pub fn run_out_clock(&mut self) -> usize {
+            loop {
+                if let Err(gc) = self.tick() {
+                    break gc;
+                }
+            }
         }
 
         // TODO: We may never actually care about individual material costs just the max
@@ -715,8 +750,6 @@ mod solution {
     }
     impl RobotFactory {
         pub fn sum_of_quality_levels(&self) -> u64 {
-            //self.blueprints[1].largest_geodes_cracked()
-
             self.blueprints
                 .iter()
                 .map(|b| {
@@ -725,11 +758,21 @@ mod solution {
                     u64::from(b.num) * mgc
                 })
                 .sum()
-            //self.blueprints[3].largest_geodes_cracked(24)
+
+            // TODO
+            //self.blueprints[0].largest_geodes_cracked(24)
         }
 
         pub fn product_of_most_geodes(&self) -> u64 {
-            self.blueprints[0].largest_geodes_cracked(32)
+            self.blueprints
+                .iter()
+                .take(3)
+                .map(|b| {
+                    let mgc = b.largest_geodes_cracked(32);
+                    println!("===================== MGC for blueprint {}: {mgc}\n", b.num);
+                    mgc
+                })
+                .product()
         }
     }
 
@@ -753,12 +796,12 @@ pub const SOLUTION: Solution = Solution {
                 .into())
         },
         // Part two
-        /* |input| {
+        |input| {
             // Process
             Ok(input
                 .expect_data::<RobotFactory>()?
                 .product_of_most_geodes()
                 .into())
-        }, */
+        },
     ],
 };

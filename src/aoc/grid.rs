@@ -45,7 +45,7 @@ pub trait GridSizeExt<U>: Sized {
     /// Panics if the size is not valid, see [`GridSizeExt::is_valid`].
     fn validate(&self) {
         if !self.is_valid() {
-            panic!("Grid size is invalid");
+            panic!("grid size is invalid");
         }
     }
 
