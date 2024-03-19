@@ -553,7 +553,11 @@ mod solution {
                 }
             }
 
-            ApplyNodeAction::Continue(moves)
+            if moves.is_empty() {
+                ApplyNodeAction::Stop(false)
+            } else {
+                ApplyNodeAction::Continue(moves)
+            }
         }
     }
 }

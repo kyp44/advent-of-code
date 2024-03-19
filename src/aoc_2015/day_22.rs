@@ -24,6 +24,7 @@ mod solution {
     use derive_more::{Add, From};
     use derive_new::new;
     use enum_dispatch::enum_dispatch;
+    use itertools::Itertools;
     use nom::{combinator::map, sequence::tuple};
     use std::{fmt, hash::Hash};
 
@@ -351,30 +352,34 @@ mod solution {
                 return ApplyNodeAction::Stop(false);
             }
 
-            ApplyNodeAction::Continue(
-                Spell::iter()
-                    .filter_map(|spell| {
-                        let mut player = player.clone();
-                        let mut boss = self.boss.clone();
-                        let cost = spell.cost();
+            let children = Spell::iter()
+                .filter_map(|spell| {
+                    let mut player = player.clone();
+                    let mut boss = self.boss.clone();
+                    let cost = spell.cost();
 
-                        if player.turn_cast(spell, &mut boss) {
-                            boss.turn_attack(&mut player);
+                    if player.turn_cast(spell, &mut boss) {
+                        boss.turn_attack(&mut player);
 
-                            Some(BestCostChild::new(
-                                Characters {
-                                    hard_mode: self.hard_mode,
-                                    player,
-                                    boss,
-                                },
-                                cost.into(),
-                            ))
-                        } else {
-                            None
-                        }
-                    })
-                    .collect(),
-            )
+                        Some(BestCostChild::new(
+                            Characters {
+                                hard_mode: self.hard_mode,
+                                player,
+                                boss,
+                            },
+                            cost.into(),
+                        ))
+                    } else {
+                        None
+                    }
+                })
+                .collect_vec();
+
+            if children.is_empty() {
+                ApplyNodeAction::Stop(false)
+            } else {
+                ApplyNodeAction::Continue(children)
+            }
         }
     }
 }

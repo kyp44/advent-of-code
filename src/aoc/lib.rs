@@ -292,14 +292,30 @@ pub mod extension {
 
             /// Returns the smallest box containing **all** of the provided points.
             ///
-            /// TODO: This corrects for a [potential bug](https://github.com/servo/euclid/issues/519),
-            /// which could be fixed at some point, breaking this code.
-            /// Based on the response, this may not be a bug, but the intended behavior.
+            /// [`Box2D::from_points`] and [`Box3D::from_points`] will create
+            /// boxes that actually exclude one or more points on the back edges of
+            /// the box.
+            /// I thought this may be a bug, but it turns out that this is the
+            /// [intended behavior](https://github.com/servo/euclid/issues/519).
             ///
-            /// If a bug, this can be removed once fixed.
-            /// If not a bug, write complete documentation for this.
+            /// # Examples
+            /// Basic usage:
+            /// ```
+            /// # use aoc::prelude::*;
+            /// use euclid::default::{Box2D, Box3D, Point2D, Point3D};
             ///
-            /// We may also [integrate this into `euclid` itself](https://github.com/servo/euclid/issues/503).
+            /// let points = [(1, 2), (2, 0), (4, 9), (6, 7), (7, 8)].map(Point2D::from);
+            /// assert_eq!(
+            ///     Box2D::from_points_inclusive(points),
+            ///     Box2D::new_inclusive((1, 0).into(), (7, 9).into())
+            /// );
+            ///
+            /// let points = [(1, 2, 8), (2, 0, 4), (4, 9, -8), (6, 7, -5), (7, 8, 3)].map(Point3D::from);
+            /// assert_eq!(
+            ///     Box3D::from_points_inclusive(points),
+            ///     Box3D::new_inclusive((1, 0, -8).into(), (7, 9, 8).into())
+            /// );
+            /// ```
             fn from_points_inclusive<I>(points: I) -> Self
             where
                 I: IntoIterator,
