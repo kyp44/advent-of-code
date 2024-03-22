@@ -36,6 +36,7 @@ enum-as-inner = "0.6"
 enum-map = "2.7"
 enum_dispatch = "0.3"
 # TODO: Use released version if/when changes get incorporated:
+# Status: The pull request was accepted, but a new version has not yet been released.
 # https://github.com/servo/euclid/pull/520
 euclid = {git = "https://github.com/kyp44/euclid.git"}
 #euclid = "0.22"
