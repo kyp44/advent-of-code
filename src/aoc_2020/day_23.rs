@@ -21,7 +21,10 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::parse::single_digit;
+    use aoc::{
+        circular_list::{CircularList, NodeRef},
+        parse::single_digit,
+    };
     use bare_metal_modulo::{MNum, OffsetNum};
     use derive_new::new;
     use itertools::Itertools;
@@ -31,131 +34,30 @@ mod solution {
         collections::HashMap,
         convert::TryInto,
         fmt,
+        marker::PhantomData,
         rc::{Rc, Weak},
     };
 
-    /// Shared reference to a [`Cup`].
-    ///
-    /// Weak references are needed here to avoid the issue that circular strong references
-    /// that would lead to a memory leak (one of the few ways to create a memory
-    /// leak in safe Rust).
-    #[derive(Clone, new)]
-    pub struct CupRef {
-        /// The weak reference to the cup.
-        rc: Weak<RefCell<Cup>>,
-    }
-    impl CupRef {
-        /// Returns the label for the referent cup.
-        fn label(&self) -> Label {
-            self.rc.upgrade().unwrap().borrow().label
-        }
-
-        /// Returns a reference to the next cup in the chain of cups, if there is one.
-        fn next(&self) -> Option<CupRef> {
-            self.rc.upgrade().unwrap().borrow().next.as_ref().cloned()
-        }
-
-        /// Sets the optional next cup reference for the referent cup,
-        /// returning a reference to the previously set next cup if
-        /// there was one.
-        fn set_next(&self, next: Option<CupRef>) -> Option<CupRef> {
-            let rc = self.rc.upgrade().unwrap();
-            let mut cup = rc.borrow_mut();
-            let old = cup.next.take();
-            cup.next = next;
-            old
-        }
-
-        /// Returns an [`Iterator`] over the chain of cups with the first element being this cup.
-        fn iter(&self) -> CupIter {
-            CupIter::new(self)
-        }
-    }
-    impl From<&Rc<RefCell<Cup>>> for CupRef {
-        fn from(rc: &Rc<RefCell<Cup>>) -> Self {
-            CupRef::new(Rc::downgrade(rc))
-        }
-    }
-    impl fmt::Debug for CupRef {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            self.rc.upgrade().unwrap().borrow().fmt(f)
-        }
-    }
-
-    /// [`Iterator`] over a chain of cups.
-    ///
-    /// If the chain is circular the [`Iterator`] will stop just before the
-    /// first cup is reached again so that every cup in the circle is visited
-    /// exactly once.
-    #[derive(Debug)]
-    struct CupIter {
-        /// The label for the first cup, which is used know when to stop.
-        first_label: Label,
-        /// Reference to the cup that will be returned next, if any.
-        next_ref: Option<CupRef>,
-    }
-    impl CupIter {
-        /// Creates a new [`Iterator`] with the first item being the passed cup.
-        fn new(cr: &CupRef) -> CupIter {
-            CupIter {
-                first_label: cr.label(),
-                next_ref: Some(cr.clone()),
-            }
-        }
-    }
-    impl Iterator for CupIter {
-        type Item = CupRef;
-
-        fn next(&mut self) -> Option<Self::Item> {
-            let out = self.next_ref.take();
-
-            if let Some(curr) = &out {
-                self.next_ref = curr.next();
-                if let Some(next) = &self.next_ref {
-                    if next.label() == self.first_label {
-                        self.next_ref = None;
-                    }
-                }
-            }
-
-            out
-        }
-    }
-
     /// The labels for the cups.
-    type Label = u32;
-
-    /// A cup.
-    #[derive(new)]
-    pub struct Cup {
-        /// Label for the cup.
-        label: Label,
-        /// A reference to the next cup in the chain, if any.
-        next: Option<CupRef>,
-    }
-    impl fmt::Debug for Cup {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            self.label.fmt(f)
-        }
-    }
+    type Label = usize;
 
     /// Behavior specific to a particular part of the problem.
     pub trait Part {
         /// Adds any additional cups labels to the initially parsed labels.
-        fn add_cups(&self, _cups: &mut Vec<Label>);
+        fn add_cups(cups: &mut Vec<Label>);
         /// Calculates the score starting at what should be the cup labeled 1.
-        fn score(&self, one: &CupRef) -> u64;
+        fn score(one: &NodeRef<Label>) -> u64;
     }
 
     /// Behavior for part one.
     pub struct PartOne;
     impl Part for PartOne {
-        fn add_cups(&self, _cups: &mut Vec<Label>) {}
+        fn add_cups(_cups: &mut Vec<Label>) {}
 
-        fn score(&self, one: &CupRef) -> u64 {
-            one.iter()
+        fn score(one: &NodeRef<Label>) -> u64 {
+            one.iter(true)
                 .skip(1)
-                .map(|cr| cr.label().to_string())
+                .map(|nr| nr.value().to_string())
                 .collect::<String>()
                 .parse()
                 .unwrap()
@@ -165,17 +67,17 @@ mod solution {
     /// Behavior for part two.
     pub struct PartTwo;
     impl Part for PartTwo {
-        fn add_cups(&self, cups: &mut Vec<Label>) {
+        fn add_cups(cups: &mut Vec<Label>) {
             for i in (cups.len() + 1)..=1000000 {
                 cups.push(i.try_into().unwrap());
             }
         }
 
-        fn score(&self, one: &CupRef) -> u64 {
-            one.iter()
+        fn score(one: &NodeRef<Label>) -> u64 {
+            one.iter(true)
                 .skip(1)
                 .take(2)
-                .map(|cr| u64::from(cr.label()))
+                .map(|nr| u64::try_from(*nr.value()).unwrap())
                 .product()
         }
     }
@@ -184,33 +86,15 @@ mod solution {
     ///
     /// This is also an [`Iterator`] over the move numbers that the crab makes,
     /// with the arrangement of the cups changing accordingly.
-    pub struct Cups {
-        /// All the cups with strong references so that this is effectively their owner.
-        ///
-        /// NOTE: We need the [`RefCell`] here to complete the circle.
-        cups: Box<[Rc<RefCell<Cup>>]>,
-        /// A map of the labels to the cups.
-        ///
-        /// NOTE: This is needed to speed things up for part two.
-        lookup: HashMap<Label, CupRef>,
-        /// Reference to the current cup in the game.
-        current: CupRef,
-        /// The next move number.
-        next_move: usize,
+    #[derive(Debug)]
+    pub struct Cups<P: Part> {
+        cups: CircularList<Label>,
+        _phantom: PhantomData<P>,
     }
-    impl fmt::Debug for Cups {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            write!(
-                f,
-                "{}",
-                (self.current.iter().map(|cr| format!("{cr:?}")).join(", "))
-            )
-        }
-    }
-    impl Cups {
+    impl<P: Part> Cups<P> {
         /// Parses the cups from text input.
-        pub fn from_str(s: &str, part: &dyn Part) -> AocResult<Self> {
-            let mut cups: Vec<u32> = many1::<_, _, NomParseError, _>(single_digit)(s)
+        pub fn from_str(s: &str) -> AocResult<Self> {
+            let mut cups: Vec<Label> = many1::<_, _, NomParseError, _>(single_digit)(s)
                 .finish()
                 .discard_input()?
                 .into_iter()
@@ -241,74 +125,79 @@ mod solution {
             }
 
             // Add additional cups based on the part
-            part.add_cups(&mut cups);
+            P::add_cups(&mut cups);
 
             // Created owned slice
-            let cups = cups
-                .into_iter()
-                .map(|l| Rc::new(RefCell::new(Cup::new(l, None))))
-                .collect_vec()
-                .into_boxed_slice();
-
-            // Create lookup table
-            let lookup: HashMap<Label, CupRef> = cups
-                .iter()
-                .map(|rc| (rc.borrow().label, CupRef::from(rc)))
-                .collect();
-
-            // Now create circle of references
-            for win in cups.windows(2) {
-                win[0].borrow_mut().next = Some(CupRef::from(&win[1]));
-            }
-            cups.last().unwrap().borrow_mut().next = Some(CupRef::from(&cups[0]));
-            let current = CupRef::from(&cups[0]);
+            let cups = CircularList::new(cups.into_iter()).unwrap();
 
             Ok(Cups {
                 cups,
-                lookup,
-                current,
-                next_move: 0,
+                _phantom: PhantomData,
             })
         }
 
-        /// Calculates the score for the current arrangement of cups.
-        pub fn score(&self, part: &dyn Part) -> u64 {
-            part.score(&self.lookup[&1])
+        pub fn start_game(&self) -> Game<P> {
+            Game {
+                list: &self.cups,
+                lookup: self.cups.iter_const().map(|nr| (*nr.value(), nr)).collect(),
+                current: self.cups.iter_const().next().unwrap(),
+                _phantom: PhantomData,
+            }
         }
     }
-    impl Iterator for Cups {
-        type Item = usize;
+
+    pub struct Game<'a, P: Part> {
+        list: &'a CircularList<Label>,
+        /// A map of the labels to the cups.
+        ///
+        /// NOTE: This is needed to speed things up for part two.
+        lookup: HashMap<Label, NodeRef<'a, Label>>,
+        /// Reference to the current cup in the game.
+        current: NodeRef<'a, Label>,
+        _phantom: PhantomData<P>,
+    }
+    impl<'a, P: Part> Iterator for Game<'a, P> {
+        type Item = NodeRef<'a, Label>;
 
         fn next(&mut self) -> Option<Self::Item> {
-            let next_move = self.next_move;
+            // First remove the next three cups
+            let mut three = self.current.iter(true).skip(1).take(3).collect_vec();
+            for nr in three.iter_mut() {
+                nr.remove();
+            }
+            println!("TODO removed: {three:?}");
 
-            if next_move > 0 {
-                // First remove the next three cups
-                let three = self.current.next().unwrap();
-                self.current
-                    .set_next(three.iter().iterations(3).unwrap().set_next(None));
+            // Search for the destination cup
+            let mut dest_label = OffsetNum::new(*self.current.value(), self.list.original_len(), 1);
+            let mut dest = loop {
+                // Decrement the destination cup and ensure it was not just picked up
+                dest_label -= 1;
+                if three
+                    .iter()
+                    .find(|nr| *nr.value() == dest_label.a())
+                    .is_none()
+                {
+                    break self.lookup[&dest_label.a()].clone();
+                }
+            };
+            println!("TDO dest: {dest:?}");
 
-                // Search for the destination cup
-                let mut dest_label =
-                    OffsetNum::new(self.current.label(), self.cups.len().try_into().unwrap(), 1);
-                let dest = loop {
-                    // Decrement the destination cup and ensure it was not just picked up
-                    dest_label -= 1;
-                    if three.iter().all(|cr| cr.label() != dest_label.a()) {
-                        break &self.lookup[&dest_label.a()];
-                    }
-                };
-
-                // Insert the three cups back after the destination cup
-                three.iter().last().unwrap().set_next(dest.next());
-                dest.set_next(Some(three));
-
-                // Lastly, select the new current cup
-                self.current = self.current.next().unwrap();
+            // Insert the three cups back after the destination cup
+            for nr in three {
+                println!("TODO adding {:?} after {:?}", nr, dest);
+                dest.insert_after(nr.clone());
+                dest = nr;
             }
 
-            self.next_move += 1;
-            Some(next_move)
+            // Lastly, select the new current cup
+            self.current = self.current.next().unwrap();
+            Some(self.current.clone())
+        }
+    }
+    impl<P: Part> Game<'_, P> {
+        /// Calculates the score for the current arrangement of cups.
+        pub fn score(&self) -> u64 {
+            P::score(&self.lookup[&1])
         }
     }
 }
@@ -324,22 +213,28 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let part = &PartOne;
-            let mut cups = Cups::from_str(input.expect_input()?, part)?;
+            let cups: Cups<PartOne> = Cups::from_str(input.expect_input()?)?;
+            let mut game = cups.start_game();
 
             // Process
-            cups.find(|m| *m == 100);
-            Ok(cups.score(part).into())
+            game.iterations(100);
+            Ok(game.score().into())
+
+            // TODO
+            /* for fck in game.take(10) {
+                println!("TODO WTF: {:?}\n", fck.iter(true));
+            }
+            Ok(Answer::Unsigned(0)) */
         },
         // Part two
         |input| {
             // Generation
-            let part = &PartTwo;
-            let mut cups = Cups::from_str(input.expect_input()?, part)?;
+            let cups: Cups<PartTwo> = Cups::from_str(input.expect_input()?)?;
+            let mut game = cups.start_game();
 
             // Process
-            cups.find(|m| *m == 10000000);
-            Ok(cups.score(part).into())
+            game.iterations(10000000);
+            Ok(game.score().into())
         },
     ],
 };

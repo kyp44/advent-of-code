@@ -10,6 +10,7 @@
 #![feature(impl_trait_in_assoc_type)]
 #![warn(clippy::missing_docs_in_private_items)]
 
+pub mod circular_list;
 pub mod evolver;
 pub mod grid;
 pub mod iter;
