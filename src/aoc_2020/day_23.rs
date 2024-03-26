@@ -22,21 +22,13 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::{
-        circular_list::{CircularList, NodeRef},
+        circular_list::{CircularList, NodeRef, SinglyLinked},
         parse::single_digit,
     };
     use bare_metal_modulo::{MNum, OffsetNum};
-    use derive_new::new;
     use itertools::Itertools;
     use nom::{multi::many1, Finish};
-    use std::{
-        cell::RefCell,
-        collections::HashMap,
-        convert::TryInto,
-        fmt,
-        marker::PhantomData,
-        rc::{Rc, Weak},
-    };
+    use std::{collections::HashMap, convert::TryInto, marker::PhantomData};
 
     /// The labels for the cups.
     type Label = usize;
@@ -46,7 +38,7 @@ mod solution {
         /// Adds any additional cups labels to the initially parsed labels.
         fn add_cups(cups: &mut Vec<Label>);
         /// Calculates the score starting at what should be the cup labeled 1.
-        fn score(one: &NodeRef<Label>) -> u64;
+        fn score(one: &NodeRef<SinglyLinked<Label>>) -> u64;
     }
 
     /// Behavior for part one.
@@ -54,7 +46,7 @@ mod solution {
     impl Part for PartOne {
         fn add_cups(_cups: &mut Vec<Label>) {}
 
-        fn score(one: &NodeRef<Label>) -> u64 {
+        fn score(one: &NodeRef<SinglyLinked<Label>>) -> u64 {
             one.iter(true)
                 .skip(1)
                 .map(|nr| nr.value().to_string())
@@ -73,7 +65,7 @@ mod solution {
             }
         }
 
-        fn score(one: &NodeRef<Label>) -> u64 {
+        fn score(one: &NodeRef<SinglyLinked<Label>>) -> u64 {
             one.iter(true)
                 .skip(1)
                 .take(2)
@@ -88,7 +80,7 @@ mod solution {
     /// with the arrangement of the cups changing accordingly.
     #[derive(Debug)]
     pub struct Cups<P: Part> {
-        cups: CircularList<Label>,
+        cups: CircularList<SinglyLinked<Label>>,
         _phantom: PhantomData<P>,
     }
     impl<P: Part> Cups<P> {
@@ -147,25 +139,24 @@ mod solution {
     }
 
     pub struct Game<'a, P: Part> {
-        list: &'a CircularList<Label>,
+        list: &'a CircularList<SinglyLinked<Label>>,
         /// A map of the labels to the cups.
         ///
         /// NOTE: This is needed to speed things up for part two.
-        lookup: HashMap<Label, NodeRef<'a, Label>>,
+        lookup: HashMap<Label, NodeRef<'a, SinglyLinked<Label>>>,
         /// Reference to the current cup in the game.
-        current: NodeRef<'a, Label>,
+        current: NodeRef<'a, SinglyLinked<Label>>,
         _phantom: PhantomData<P>,
     }
     impl<'a, P: Part> Iterator for Game<'a, P> {
-        type Item = NodeRef<'a, Label>;
+        type Item = NodeRef<'a, SinglyLinked<Label>>;
 
         fn next(&mut self) -> Option<Self::Item> {
             // First remove the next three cups
-            let mut three = self.current.iter(true).skip(1).take(3).collect_vec();
-            for nr in three.iter_mut() {
-                nr.remove();
-            }
-            println!("TODO removed: {three:?}");
+            let mut three = Vec::new();
+            three.push(self.current.remove_next());
+            three.push(self.current.remove_next());
+            three.push(self.current.remove_next());
 
             // Search for the destination cup
             let mut dest_label = OffsetNum::new(*self.current.value(), self.list.original_len(), 1);
@@ -180,17 +171,15 @@ mod solution {
                     break self.lookup[&dest_label.a()].clone();
                 }
             };
-            println!("TDO dest: {dest:?}");
 
             // Insert the three cups back after the destination cup
             for nr in three {
-                println!("TODO adding {:?} after {:?}", nr, dest);
                 dest.insert_after(nr.clone());
                 dest = nr;
             }
 
             // Lastly, select the new current cup
-            self.current = self.current.next().unwrap();
+            self.current = self.current.next();
             Some(self.current.clone())
         }
     }
@@ -219,12 +208,6 @@ pub const SOLUTION: Solution = Solution {
             // Process
             game.iterations(100);
             Ok(game.score().into())
-
-            // TODO
-            /* for fck in game.take(10) {
-                println!("TODO WTF: {:?}\n", fck.iter(true));
-            }
-            Ok(Answer::Unsigned(0)) */
         },
         // Part two
         |input| {

@@ -23,7 +23,7 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::circular_list::CircularList;
+    use aoc::circular_list::{CircularList, DoublyLinked};
     use nom::Finish;
 
     pub struct File {
@@ -57,7 +57,7 @@ mod solution {
 
     pub trait Part {
         fn new(file: &File) -> Self;
-        fn buffer(&self) -> &CircularList<i64>;
+        fn buffer(&self) -> &CircularList<DoublyLinked<i64>>;
 
         fn solve(&self) -> i64;
 
@@ -81,7 +81,7 @@ mod solution {
     }
 
     pub struct PartOne {
-        buffer: CircularList<i64>,
+        buffer: CircularList<DoublyLinked<i64>>,
     }
     impl Part for PartOne {
         fn new(file: &File) -> Self {
@@ -90,7 +90,7 @@ mod solution {
             }
         }
 
-        fn buffer(&self) -> &CircularList<i64> {
+        fn buffer(&self) -> &CircularList<DoublyLinked<i64>> {
             &self.buffer
         }
 
@@ -104,7 +104,7 @@ mod solution {
     const DECRYPTION_KEY: i64 = 811589153;
 
     pub struct PartTwo {
-        buffer: CircularList<i64>,
+        buffer: CircularList<DoublyLinked<i64>>,
     }
     impl Part for PartTwo {
         fn new(file: &File) -> Self {
@@ -114,7 +114,7 @@ mod solution {
             }
         }
 
-        fn buffer(&self) -> &CircularList<i64> {
+        fn buffer(&self) -> &CircularList<DoublyLinked<i64>> {
             &self.buffer
         }
 

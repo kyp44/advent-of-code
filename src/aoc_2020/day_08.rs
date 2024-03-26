@@ -97,7 +97,7 @@ mod solution {
     #[derive(Debug)]
     pub enum ProgramEndStatus {
         /// Jumped outside the bounds of the program instructions.
-        JumpedOut(AccumulatorRegister),
+        JumpedOut,
         /// Terminated normally.
         Terminated(AccumulatorRegister),
         /// In an infinite loop.
@@ -138,7 +138,7 @@ mod solution {
                 if let Instruction::Jmp(d) = inst {
                     ipc += d;
                     if ipc < 0 || ipc > self.instructions.len().try_into().unwrap() {
-                        break ProgramEndStatus::JumpedOut(acc);
+                        break ProgramEndStatus::JumpedOut;
                     }
                 } else {
                     acc.apply(inst);
