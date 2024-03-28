@@ -28,7 +28,7 @@ mod solution {
     use bare_metal_modulo::{MNum, OffsetNum};
     use itertools::Itertools;
     use nom::{multi::many1, Finish};
-    use std::{collections::HashMap, convert::TryInto, marker::PhantomData};
+    use std::{collections::HashMap, marker::PhantomData};
 
     /// The labels for the cups.
     type Label = usize;
@@ -61,7 +61,7 @@ mod solution {
     impl Part for PartTwo {
         fn add_cups(cups: &mut Vec<Label>) {
             for i in (cups.len() + 1)..=1000000 {
-                cups.push(i.try_into().unwrap());
+                cups.push(i);
             }
         }
 
@@ -80,7 +80,9 @@ mod solution {
     /// with the arrangement of the cups changing accordingly.
     #[derive(Debug)]
     pub struct Cups<P: Part> {
+        /// The circular list of cups labels.
         cups: CircularList<SinglyLinked<Label>>,
+        /// Needed to have the [`Part`] parameter `P`.
         _phantom: PhantomData<P>,
     }
     impl<P: Part> Cups<P> {
@@ -101,12 +103,7 @@ mod solution {
             }
 
             // Ensure that the cups have consecutive labels starting with 1
-            if cups
-                .iter()
-                .map(|l| -> usize { (*l).try_into().unwrap() })
-                .sorted()
-                .ne(1..=cups.len())
-            {
+            if cups.iter().copied().sorted().ne(1..=cups.len()) {
                 return Err(AocError::InvalidInput(
                     format!(
                         "The {} cups do not have valid, consecutive labels",
@@ -120,7 +117,7 @@ mod solution {
             P::add_cups(&mut cups);
 
             // Created owned slice
-            let cups = CircularList::new(cups.into_iter()).unwrap();
+            let cups = CircularList::new(cups);
 
             Ok(Cups {
                 cups,
@@ -128,6 +125,12 @@ mod solution {
             })
         }
 
+        /// Returns an [`Iterator`] over the moves of the game.
+        ///
+        /// Note that the first element of the iterator is *after* the first move, not
+        /// the original state of the cups.
+        /// The iterator yields the *new* current cup selected at the end of each
+        /// move.
         pub fn start_game(&self) -> Game<P> {
             Game {
                 list: &self.cups,
@@ -138,14 +141,20 @@ mod solution {
         }
     }
 
+    /// An [`Iterator`] over the moves of the cup game.
+    ///
+    /// See [`Cups::start_game`] for more information.
     pub struct Game<'a, P: Part> {
+        /// A reference to the circular list of cups, which will be mutated as
+        /// the game proceeds.
         list: &'a CircularList<SinglyLinked<Label>>,
         /// A map of the labels to the cups.
         ///
-        /// NOTE: This is needed to speed things up for part two.
+        /// This is needed to speed things up for part two.
         lookup: HashMap<Label, NodeRef<'a, SinglyLinked<Label>>>,
         /// Reference to the current cup in the game.
         current: NodeRef<'a, SinglyLinked<Label>>,
+        /// Needed to have the [`Part`] parameter `P`.
         _phantom: PhantomData<P>,
     }
     impl<'a, P: Part> Iterator for Game<'a, P> {
@@ -153,21 +162,14 @@ mod solution {
 
         fn next(&mut self) -> Option<Self::Item> {
             // First remove the next three cups
-            let mut three = Vec::new();
-            three.push(self.current.remove_next());
-            three.push(self.current.remove_next());
-            three.push(self.current.remove_next());
+            let three = (0..3).map(|_| self.current.remove_next()).collect_vec();
 
             // Search for the destination cup
             let mut dest_label = OffsetNum::new(*self.current.value(), self.list.original_len(), 1);
             let mut dest = loop {
                 // Decrement the destination cup and ensure it was not just picked up
                 dest_label -= 1;
-                if three
-                    .iter()
-                    .find(|nr| *nr.value() == dest_label.a())
-                    .is_none()
-                {
+                if three.iter().all(|nr| *nr.value() != dest_label.a()) {
                     break self.lookup[&dest_label.a()].clone();
                 }
             };

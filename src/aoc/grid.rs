@@ -115,7 +115,9 @@ pub trait AnyGridPointExt<U> {
     /// use itertools::Itertools;
     ///
     /// assert_eq!(
-    ///     AnyGridPoint::<GridSpace>::new(0, 0).all_neighbor_points(true, true).collect_vec(),
+    ///     AnyGridPoint::<GridSpace>::new(0, 0)
+    ///         .all_neighbor_points(true, true)
+    ///         .collect_vec(),
     ///     vec![
     ///         AnyGridPoint::new(-1, -1),
     ///         AnyGridPoint::new(0, -1),
@@ -129,7 +131,9 @@ pub trait AnyGridPointExt<U> {
     ///     ],
     /// );
     /// assert_eq!(
-    ///     AnyGridPoint::<GridSpace>::new(-4, -2).all_neighbor_points(true, false).collect_vec(),
+    ///     AnyGridPoint::<GridSpace>::new(-4, -2)
+    ///         .all_neighbor_points(true, false)
+    ///         .collect_vec(),
     ///     vec![
     ///         AnyGridPoint::new(-5, -3),
     ///         AnyGridPoint::new(-4, -3),
@@ -142,7 +146,9 @@ pub trait AnyGridPointExt<U> {
     ///     ],
     /// );
     /// assert_eq!(
-    ///     AnyGridPoint::<GridSpace>::new(5, 6).all_neighbor_points(false, false).collect_vec(),
+    ///     AnyGridPoint::<GridSpace>::new(5, 6)
+    ///         .all_neighbor_points(false, false)
+    ///         .collect_vec(),
     ///     vec![
     ///         AnyGridPoint::new(5, 5),
     ///         AnyGridPoint::new(4, 6),
@@ -211,7 +217,10 @@ impl<T: Default + Clone, U> Grid<T, U> {
     /// # use aoc::prelude::*;
     /// let grid = Grid::<u8>::default(GridSize::new(3, 3));
     ///
-    /// assert_eq!(grid, Grid::from_data(vec![vec![0, 0, 0], vec![0, 0, 0], vec![0, 0, 0]]).unwrap());
+    /// assert_eq!(
+    ///     grid,
+    ///     Grid::from_data(vec![vec![0, 0, 0], vec![0, 0, 0], vec![0, 0, 0]]).unwrap()
+    /// );
     /// ```
     pub fn default(size: GridSize<U>) -> Self {
         size.validate();
@@ -251,11 +260,7 @@ impl<T, U> Grid<T, U> {
     /// # use aoc::prelude::*;
     /// assert_matches!(Grid::<u8>::from_data(vec![]), Err(AocError::Other(_)));
     ///
-    /// let result = Grid::from_data(vec![
-    ///     vec![1, 2, 3],
-    ///     vec![4, 5],
-    ///     vec![6],
-    /// ]);
+    /// let result = Grid::from_data(vec![vec![1, 2, 3], vec![4, 5], vec![6]]);
     /// assert_matches!(result, Err(AocError::Other(_)));
     /// ```
     pub fn from_data(data: Vec<Vec<T>>) -> AocResult<Self> {
@@ -418,7 +423,7 @@ impl<T, U> Grid<T, U> {
     /// let point = GridPoint::new(1, 1);
     ///
     /// assert_eq!(*grid.element_at(&point), 4);
-    /// *grid.element_at(&point) =  21;
+    /// *grid.element_at(&point) = 21;
     /// assert_eq!(*grid.element_at(&point), 21);
     /// ```
     pub fn element_at(&mut self, point: &GridPoint<U>) -> &mut T {
@@ -436,8 +441,14 @@ impl<T, U> Grid<T, U> {
     /// # use aoc::prelude::*;
     /// let grid = Grid::<bool>::default(GridSize::new(2, 3));
     ///
-    /// assert_eq!(grid.bounded_point(&AnyGridPoint::new(0, 1)), Some(GridPoint::new(0, 1)));
-    /// assert_eq!(grid.bounded_point(&AnyGridPoint::new(1, 2)), Some(GridPoint::new(1, 2)));
+    /// assert_eq!(
+    ///     grid.bounded_point(&AnyGridPoint::new(0, 1)),
+    ///     Some(GridPoint::new(0, 1))
+    /// );
+    /// assert_eq!(
+    ///     grid.bounded_point(&AnyGridPoint::new(1, 2)),
+    ///     Some(GridPoint::new(1, 2))
+    /// );
     /// assert_eq!(grid.bounded_point(&AnyGridPoint::new(0, -1)), None);
     /// assert_eq!(grid.bounded_point(&AnyGridPoint::new(2, 0)), None);
     /// ```
@@ -562,33 +573,36 @@ impl<T, U> Grid<T, U> {
     ///
     /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]).unwrap();
     /// assert_eq!(
-    ///     grid.neighbor_points(&GridPoint::new(0, 0), true, true).collect_vec(),
+    ///     grid.neighbor_points(&GridPoint::new(0, 0), true, true)
+    ///         .collect_vec(),
     ///     vec![
     ///         GridPoint::new(0, 0),
     ///         GridPoint::new(1, 0),
     ///         GridPoint::new(0, 1),
     ///         GridPoint::new(1, 1),
-    ///     ],    
+    ///     ],
     /// );
     /// assert_eq!(
-    ///     grid.neighbor_points(&GridPoint::new(1, 1), false, true).collect_vec(),
+    ///     grid.neighbor_points(&GridPoint::new(1, 1), false, true)
+    ///         .collect_vec(),
     ///     vec![
     ///         GridPoint::new(1, 0),
     ///         GridPoint::new(0, 1),
     ///         GridPoint::new(1, 1),
     ///         GridPoint::new(2, 1),
     ///         GridPoint::new(1, 2),
-    ///     ],    
+    ///     ],
     /// );
     /// assert_eq!(
-    ///     grid.neighbor_points(&GridPoint::new(1, 2), true, false).collect_vec(),
+    ///     grid.neighbor_points(&GridPoint::new(1, 2), true, false)
+    ///         .collect_vec(),
     ///     vec![
     ///         GridPoint::new(0, 1),
     ///         GridPoint::new(1, 1),
     ///         GridPoint::new(2, 1),
     ///         GridPoint::new(0, 2),
     ///         GridPoint::new(2, 2),
-    ///     ],    
+    ///     ],
     /// );
     /// ```
     pub fn neighbor_points<'a>(
@@ -619,15 +633,24 @@ impl<T, U> Grid<T, U> {
     /// let grid = Grid::<u8>::from_data(vec![vec![1, 2, 3], vec![4, 5, 6], vec![7, 8, 9]]).unwrap();
     ///
     /// assert_eq!(
-    ///     grid.sub_grid(&GridBox::<GridSpace>::from_origin_and_size(GridPoint::new(0, 0), GridSize::new(2, 3))),
+    ///     grid.sub_grid(&GridBox::<GridSpace>::from_origin_and_size(
+    ///         GridPoint::new(0, 0),
+    ///         GridSize::new(2, 3)
+    ///     )),
     ///     Grid::from_data(vec![vec![1, 2], vec![4, 5], vec![7, 8]]).unwrap(),
     /// );
     /// assert_eq!(
-    ///     grid.sub_grid(&GridBox::<GridSpace>::from_origin_and_size(GridPoint::new(1, 0), GridSize::new(2, 2))),
+    ///     grid.sub_grid(&GridBox::<GridSpace>::from_origin_and_size(
+    ///         GridPoint::new(1, 0),
+    ///         GridSize::new(2, 2)
+    ///     )),
     ///     Grid::from_data(vec![vec![2, 3], vec![5, 6]]).unwrap(),
     /// );
     /// assert_eq!(
-    ///     grid.sub_grid(&GridBox::<GridSpace>::from_origin_and_size(GridPoint::new(1, 2), GridSize::new(2, 1))),
+    ///     grid.sub_grid(&GridBox::<GridSpace>::from_origin_and_size(
+    ///         GridPoint::new(1, 2),
+    ///         GridSize::new(2, 1)
+    ///     )),
     ///     Grid::from_data(vec![vec![8, 9]]).unwrap(),
     /// );
     /// ```
@@ -668,7 +691,7 @@ impl<T: Clone> Grid<T> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// use itertools::{Itertools, iproduct};
+    /// use itertools::{iproduct, Itertools};
     /// use petgraph::{graph::DefaultIx, Directed};
     ///
     /// // Create a grid of numbers.
@@ -768,18 +791,21 @@ impl<T: From<bool> + Default + Clone, U> Grid<T, U> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// let grid = Grid::<u8>::from_coordinates([
-    ///     AnyGridPoint::new(-2, -2),
-    ///     AnyGridPoint::new(-1, -1),
-    ///     AnyGridPoint::new(0, 0),
-    ///     AnyGridPoint::new(1, 0),
-    ///     AnyGridPoint::new(2, -1),
-    ///     AnyGridPoint::new(3, -2),
-    ///     AnyGridPoint::new(-1, 1),
-    ///     AnyGridPoint::new(-2, 2),
-    ///     AnyGridPoint::new(2, 1),
-    ///     AnyGridPoint::new(3, 2),
-    /// ].iter());
+    /// let grid = Grid::<u8>::from_coordinates(
+    ///     [
+    ///         AnyGridPoint::new(-2, -2),
+    ///         AnyGridPoint::new(-1, -1),
+    ///         AnyGridPoint::new(0, 0),
+    ///         AnyGridPoint::new(1, 0),
+    ///         AnyGridPoint::new(2, -1),
+    ///         AnyGridPoint::new(3, -2),
+    ///         AnyGridPoint::new(-1, 1),
+    ///         AnyGridPoint::new(-2, 2),
+    ///         AnyGridPoint::new(2, 1),
+    ///         AnyGridPoint::new(3, 2),
+    ///     ]
+    ///     .iter(),
+    /// );
     /// let values = vec![
     ///     vec![1, 0, 0, 0, 0, 1],
     ///     vec![0, 1, 0, 0, 1, 0],
@@ -879,7 +905,7 @@ impl<T: Into<bool> + Clone, U> Grid<T, U> {
 /// use Direction::*;
 /// impl TryFrom<char> for Direction {
 ///     type Error = ();
-///     
+///
 ///     fn try_from(value: char) -> Result<Self, Self::Error> {
 ///         match value {
 ///             'U' => Ok(Up),
@@ -898,7 +924,8 @@ impl<T: Into<bool> + Clone, U> Grid<T, U> {
 ///     vec![Up, Down, Left, Right, Up],
 ///     vec![Down, Left, Right, Up, Down],
 ///     vec![Left, Right, Up, Down, Left],
-/// ]).unwrap();
+/// ])
+/// .unwrap();
 ///
 /// assert_eq!(Grid::from_str(string).unwrap(), grid);
 /// ```
@@ -917,7 +944,7 @@ impl<T: Into<bool> + Clone, U> Grid<T, U> {
 /// use Correctness::*;
 /// impl TryFrom<char> for Correctness {
 ///     type Error = ();
-///     
+///
 ///     fn try_from(value: char) -> Result<Self, Self::Error> {
 ///         match value {
 ///             'W' => Ok(Wrong),
@@ -930,7 +957,10 @@ impl<T: Into<bool> + Clone, U> Grid<T, U> {
 /// let string = "WRRW
 /// RWWX";
 ///
-/// assert_matches!(Grid::<Correctness>::from_str(string), Err(AocError::Other(_)));
+/// assert_matches!(
+///     Grid::<Correctness>::from_str(string),
+///     Err(AocError::Other(_))
+/// );
 /// ```
 impl<T: TryFrom<char>> FromStr for Grid<T> {
     type Err = AocError;
@@ -1023,11 +1053,9 @@ impl<T: TryFrom<char>, O: From<Grid<T>>> FromGridStr<T> for O {
 /// let string = ".#..
 /// #.##
 /// .#.#";
-/// let grid = Grid::<StdBool>::from_data(vec![
-///     vec![f, t, f, f],
-///     vec![t, f, t, t],
-///     vec![f, t, f, t],
-/// ]).unwrap();
+/// let grid =
+///     Grid::<StdBool>::from_data(vec![vec![f, t, f, f], vec![t, f, t, t], vec![f, t, f, t]])
+///         .unwrap();
 ///
 /// assert_eq!(Grid::from_str(string).unwrap(), grid);
 /// ```
@@ -1073,7 +1101,8 @@ impl fmt::Debug for StdBool {
 ///     vec![4.into(), 5.into()],
 ///     vec![6.into(), 7.into()],
 ///     vec![8.into(), 9.into()],
-/// ]).unwrap();
+/// ])
+/// .unwrap();
 ///
 /// assert_eq!(Grid::from_str(string).unwrap(), grid);
 /// ```

@@ -13,8 +13,8 @@ use std::{marker::PhantomData, rc::Rc};
 /// # Examples
 /// Basic usage:
 /// ```
-/// use aoc::prelude::*;
 /// use aoc::grid::StdBool;
+/// use aoc::prelude::*;
 /// use std::str::FromStr;
 ///
 /// #[derive(Clone, Debug, PartialEq, Eq)]

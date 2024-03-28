@@ -381,8 +381,8 @@ pub mod extension {
             /// Basic usage:
             /// ```
             /// # use aoc::prelude::*;
-            /// use itertools::Itertools;
             /// use euclid::default::{Box2D, Box3D, Point2D, Point3D, Size2D, Size3D};
+            /// use itertools::Itertools;
             ///
             /// assert_eq!(
             ///     Size2D::new(2, 3).all_points().collect_vec(),
@@ -413,7 +413,9 @@ pub mod extension {
             ///     ],
             /// );
             /// assert_eq!(
-            ///     Box2D::from_origin_and_size(Point2D::new(3, 4), Size2D::new(2, 3)).all_points().collect_vec(),
+            ///     Box2D::from_origin_and_size(Point2D::new(3, 4), Size2D::new(2, 3))
+            ///         .all_points()
+            ///         .collect_vec(),
             ///     vec![
             ///         Point2D::new(3, 4),
             ///         Point2D::new(4, 4),
@@ -424,7 +426,9 @@ pub mod extension {
             ///     ],
             /// );
             /// assert_eq!(
-            ///     Box3D::from_origin_and_size(Point3D::new(3, 4, 5), Size3D::new(2, 2, 3)).all_points().collect_vec(),
+            ///     Box3D::from_origin_and_size(Point3D::new(3, 4, 5), Size3D::new(2, 2, 3))
+            ///         .all_points()
+            ///         .collect_vec(),
             ///     vec![
             ///         Point3D::new(3, 4, 5),
             ///         Point3D::new(4, 4, 5),
@@ -625,7 +629,10 @@ pub mod solution {
         /// # use std::assert_matches::assert_matches;
         /// # use aoc::prelude::*;
         /// assert_eq!(SolverInput::Text("test").expect_input().unwrap(), "test");
-        /// assert_matches!(SolverInput::Data(Box::new(7)).expect_input(), Err(AocError::InvalidInput(_)));
+        /// assert_matches!(
+        ///     SolverInput::Data(Box::new(7)).expect_input(),
+        ///     Err(AocError::InvalidInput(_))
+        /// );
         /// ```
         pub fn expect_input(&self) -> AocResult<&'a str> {
             if let Self::Text(s) = self {
@@ -646,9 +653,20 @@ pub mod solution {
         /// # #![feature(assert_matches)]
         /// # use std::assert_matches::assert_matches;
         /// # use aoc::prelude::*;
-        /// assert_eq!(SolverInput::Data(Box::new(6u8)).expect_data::<u8>().unwrap(), &6);
-        /// assert_matches!(SolverInput::Text("text").expect_data::<u8>(), Err(AocError::InvalidInput(_)));
-        /// assert_matches!(SolverInput::Data(Box::new(6u16)).expect_data::<u8>(), Err(AocError::InvalidInput(_)));
+        /// assert_eq!(
+        ///     SolverInput::Data(Box::new(6u8))
+        ///         .expect_data::<u8>()
+        ///         .unwrap(),
+        ///     &6
+        /// );
+        /// assert_matches!(
+        ///     SolverInput::Text("text").expect_data::<u8>(),
+        ///     Err(AocError::InvalidInput(_))
+        /// );
+        /// assert_matches!(
+        ///     SolverInput::Data(Box::new(6u16)).expect_data::<u8>(),
+        ///     Err(AocError::InvalidInput(_))
+        /// );
         /// ```
         pub fn expect_data<T: 'static>(&self) -> AocResult<&T> {
             if let Self::Data(obj) = self {

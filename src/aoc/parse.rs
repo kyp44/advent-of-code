@@ -130,8 +130,14 @@ pub trait Parsable<'a> {
     /// # #![feature(assert_matches)]
     /// # use std::assert_matches::assert_matches;
     /// # use aoc::prelude::*;
-    /// assert_eq!(u8::gather(vec!["43", "22", "5", "8"].into_iter()), Ok(vec![43, 22, 5, 8]));
-    /// assert_matches!(u8::gather(vec!["43", "22", "5", "text"].into_iter()), Err(_));
+    /// assert_eq!(
+    ///     u8::gather(vec!["43", "22", "5", "8"].into_iter()),
+    ///     Ok(vec![43, 22, 5, 8])
+    /// );
+    /// assert_matches!(
+    ///     u8::gather(vec!["43", "22", "5", "text"].into_iter()),
+    ///     Err(_)
+    /// );
     /// ```
     fn gather(strs: impl Iterator<Item = &'a str>) -> Result<Vec<Self>, NomParseError>
     where
@@ -232,11 +238,26 @@ where
 /// # use std::assert_matches::assert_matches;
 /// # use aoc::prelude::*;
 /// # use aoc::parse::single_alphanumeric;
-/// assert_eq!(single_alphanumeric::<_, NomParseError>("test").discard_input(), Ok('t'));
-/// assert_eq!(single_alphanumeric::<_, NomParseError>("67").discard_input(), Ok('6'));
-/// assert_eq!(single_alphanumeric::<_, NomParseError>("TEST").discard_input(), Ok('T'));
-/// assert_matches!(single_alphanumeric::<_, NomParseError>("-67").discard_input(), Err(_));
-/// assert_matches!(single_alphanumeric::<_, NomParseError>("&").discard_input(), Err(_));
+/// assert_eq!(
+///     single_alphanumeric::<_, NomParseError>("test").discard_input(),
+///     Ok('t')
+/// );
+/// assert_eq!(
+///     single_alphanumeric::<_, NomParseError>("67").discard_input(),
+///     Ok('6')
+/// );
+/// assert_eq!(
+///     single_alphanumeric::<_, NomParseError>("TEST").discard_input(),
+///     Ok('T')
+/// );
+/// assert_matches!(
+///     single_alphanumeric::<_, NomParseError>("-67").discard_input(),
+///     Err(_)
+/// );
+/// assert_matches!(
+///     single_alphanumeric::<_, NomParseError>("&").discard_input(),
+///     Err(_)
+/// );
 /// ```
 pub fn single_alphanumeric<I, E>(input: I) -> IResult<I, char, E>
 where
@@ -415,7 +436,8 @@ where
 ///     Ok(4..=13)
 /// );
 /// assert_eq!(
-///     inclusive_range::<_, NomParseError>(nom::character::complete::i32)("-89765 - -1234").discard_input(),
+///     inclusive_range::<_, NomParseError>(nom::character::complete::i32)("-89765 - -1234")
+///         .discard_input(),
 ///     Ok(-89765..=-1234)
 /// );
 /// assert_matches!(

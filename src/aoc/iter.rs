@@ -26,7 +26,12 @@ pub trait IteratorExt<T> {
     /// ```
     /// # use aoc::prelude::*;
     /// assert_eq!(std::iter::empty::<u8>().filter_count::<usize>(|_| true), 0);
-    /// assert_eq!([-1, 3, 5, -7, 0, 8, -9, -2, 5].into_iter().filter_count::<u32>(|x| *x <= 0), 5);
+    /// assert_eq!(
+    ///     [-1, 3, 5, -7, 0, 8, -9, -2, 5]
+    ///         .into_iter()
+    ///         .filter_count::<u32>(|x| *x <= 0),
+    ///     5
+    /// );
     /// ```
     fn filter_count<O: TryFrom<usize>>(self, f: impl Fn(&T) -> bool) -> O
     where
@@ -43,7 +48,10 @@ pub trait IteratorExt<T> {
     /// # use aoc::prelude::*;
     /// assert_eq!(std::iter::empty::<u8>().range(), None);
     /// assert_eq!([5u8].into_iter().range(), Some(5..=5));
-    /// assert_eq!([-9, 4, 7, -11, 8, 5, -6, -3, 15].into_iter().range(), Some(-11..=15));
+    /// assert_eq!(
+    ///     [-9, 4, 7, -11, 8, 5, -6, -3, 15].into_iter().range(),
+    ///     Some(-11..=15)
+    /// );
     /// ```
     fn range(self) -> Option<RangeInclusive<T>>
     where
@@ -175,9 +183,18 @@ pub trait StrExt {
     /// let string = "The red fox jumps over the blue fox and lands on the yellow fox";
     /// let mut replacements = string.individual_replacements("fox", "dog");
     ///
-    /// assert_eq!(replacements.next().unwrap(), "The red dog jumps over the blue fox and lands on the yellow fox");
-    /// assert_eq!(replacements.next().unwrap(), "The red fox jumps over the blue dog and lands on the yellow fox");
-    /// assert_eq!(replacements.next().unwrap(), "The red fox jumps over the blue fox and lands on the yellow dog");
+    /// assert_eq!(
+    ///     replacements.next().unwrap(),
+    ///     "The red dog jumps over the blue fox and lands on the yellow fox"
+    /// );
+    /// assert_eq!(
+    ///     replacements.next().unwrap(),
+    ///     "The red fox jumps over the blue dog and lands on the yellow fox"
+    /// );
+    /// assert_eq!(
+    ///     replacements.next().unwrap(),
+    ///     "The red fox jumps over the blue fox and lands on the yellow dog"
+    /// );
     /// assert_eq!(replacements.next(), None);
     ///
     /// assert_eq!(string.individual_replacements("tiger", "dog").next(), None);
@@ -201,8 +218,14 @@ pub trait StrExt {
     ///
     /// assert_eq!("".split_runs().next(), None);
     /// assert_eq!("X".split_runs().collect_vec(), vec!["X"]);
-    /// assert_eq!("ABCDEF".split_runs().collect_vec(), vec!["A", "B", "C", "D", "E", "F"]);
-    /// assert_eq!("abbbcddddeefggg".split_runs().collect_vec(), vec!["a", "bbb", "c", "dddd", "ee", "f", "ggg"]);
+    /// assert_eq!(
+    ///     "ABCDEF".split_runs().collect_vec(),
+    ///     vec!["A", "B", "C", "D", "E", "F"]
+    /// );
+    /// assert_eq!(
+    ///     "abbbcddddeefggg".split_runs().collect_vec(),
+    ///     vec!["a", "bbb", "c", "dddd", "ee", "f", "ggg"]
+    /// );
     /// ```
     fn split_runs(&self) -> Runs;
 }
