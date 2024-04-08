@@ -1,4 +1,5 @@
 use aoc::prelude::*;
+use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -21,15 +22,16 @@ pppw: cczh / lfqf
 lgvd: ljgn * ptdq
 drzm: hmdt - zczc
 hmdt: 32";
-            answers = unsigned![123];
+            answers = unsigned![152];
         }
-        actual_answers = unsigned![123];
+        actual_answers = unsigned![54703080378102];
     }
 }
 
 /// Contains solution implementation items.
 mod solution {
-    use aoc::parse::{separated, trim};
+    use super::*;
+    use aoc::parse::trim;
     use nom::{
         branch::alt,
         bytes::complete::tag,
@@ -37,11 +39,11 @@ mod solution {
         combinator::map,
         sequence::{separated_pair, tuple},
     };
+    use std::collections::HashMap;
 
-    use super::*;
+    type Num = u64;
 
-    type Num = u32;
-
+    #[derive(Debug)]
     enum Operation {
         Add,
         Subtract,
@@ -49,11 +51,11 @@ mod solution {
         Divide,
     }
     impl Operation {
-        pub fn apply(&self, a: Num, b: Num) -> AocResult<u32> {
+        pub fn apply(&self, a: Num, b: Num) -> AocResult<Num> {
             Ok(match self {
                 Operation::Add => a + b,
                 Operation::Subtract => {
-                    if a <= b {
+                    if a >= b {
                         a - b
                     } else {
                         return Err(AocError::Process(
@@ -85,6 +87,7 @@ mod solution {
         }
     }
 
+    #[derive(Debug)]
     enum MonkeyAction<S> {
         Yell(Num),
         Math { operation: Operation, a: S, b: S },
@@ -92,12 +95,24 @@ mod solution {
     impl<'a> Parsable<'a> for MonkeyAction<&'a str> {
         fn parser(input: &'a str) -> NomParseResult<&str, Self> {
             alt((
-                map(nom::character::complete::u32, |n| Self::Yell(n)),
+                map(nom::character::complete::u64, Self::Yell),
                 map(
                     tuple((alpha1, Operation::parser, alpha1)),
                     |(a, operation, b)| Self::Math { operation, a, b },
                 ),
             ))(input)
+        }
+    }
+    impl From<MonkeyAction<&str>> for MonkeyAction<String> {
+        fn from(value: MonkeyAction<&str>) -> Self {
+            match value {
+                MonkeyAction::Yell(n) => MonkeyAction::Yell(n),
+                MonkeyAction::Math { operation, a, b } => MonkeyAction::Math {
+                    operation,
+                    a: a.to_string(),
+                    b: b.to_string(),
+                },
+            }
         }
     }
 
@@ -113,6 +128,60 @@ mod solution {
             )(input)
         }
     }
+
+    #[derive(Debug)]
+    pub struct Riddle {
+        monkeys: HashMap<String, MonkeyAction<String>>,
+    }
+    impl FromStr for Riddle {
+        type Err = AocError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            Ok(Self {
+                monkeys: MonkeyParse::gather(s.lines())?
+                    .into_iter()
+                    .map(|m| (m.name.to_string(), m.action.into()))
+                    .collect(),
+            })
+        }
+    }
+    impl Riddle {
+        fn monkey_not_found(name: &str) -> String {
+            format!("Monkey '{name}' not found")
+        }
+
+        pub fn solve(&self) -> AocResult<u64> {
+            let mut values = HashMap::new();
+
+            fn solve_rec<'a>(
+                monkeys: &'a HashMap<String, MonkeyAction<String>>,
+                values: &mut HashMap<&'a str, Num>,
+                evaluate: &'a str,
+            ) -> AocResult<Num> {
+                if let Some(n) = values.get(evaluate) {
+                    return Ok(*n);
+                }
+
+                let action = monkeys
+                    .get(evaluate)
+                    .ok_or_else(|| AocError::Process(Riddle::monkey_not_found(evaluate).into()))?;
+
+                match action {
+                    MonkeyAction::Yell(n) => {
+                        let n = *n;
+                        values.insert(evaluate, n);
+                        Ok(n)
+                    }
+                    MonkeyAction::Math { operation, a, b } => operation.apply(
+                        solve_rec(monkeys, values, a)?,
+                        solve_rec(monkeys, values, b)?,
+                    ),
+                }
+            }
+
+            solve_rec(&self.monkeys, &mut values, "root")
+        }
+    }
 }
 
 use solution::*;
@@ -126,9 +195,10 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
+            let riddle = Riddle::from_str(input.expect_input()?)?;
 
             // Process
-            Ok(0u64.into())
+            Ok(riddle.solve()?.into())
         },
     ],
 };
