@@ -35,10 +35,10 @@ derive_more = "0.99"
 enum-as-inner = "0.6"
 enum-map = "2.7"
 enum_dispatch = "0.3"
-# TODO: Use released version if/when changes get incorporated:
-# Status: The pull request was accepted, but a new version has not yet been released.
+# TODO: Use released version when crates.io is updated:
+# Status: The pull request was merged, but a new version has not yet been released.
 # https://github.com/servo/euclid/pull/520
-euclid = {git = "https://github.com/kyp44/euclid.git"}
+euclid = {git = "https://github.com/servo/euclid.git"}
 #euclid = "0.22"
 gat-lending-iterator = "0.1"
 gcollections = "1.5"

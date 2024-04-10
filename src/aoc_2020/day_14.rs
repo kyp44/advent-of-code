@@ -152,7 +152,7 @@ mod solution {
     impl Default for MaskV1 {
         fn default() -> Self {
             MaskV1 {
-                reset_mask: std::u64::MAX,
+                reset_mask: u64::MAX,
                 set_mask: 0,
             }
         }
@@ -199,7 +199,7 @@ mod solution {
     impl Default for MaskV2 {
         fn default() -> Self {
             MaskV2 {
-                reset_mask: std::u64::MAX,
+                reset_mask: u64::MAX,
                 set_masks: vec![0],
             }
         }
