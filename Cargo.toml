@@ -38,6 +38,8 @@ enum_dispatch = "0.3"
 # TODO: Use released version when crates.io is updated:
 # Status: The pull request was merged, but a new version has not yet been released.
 # https://github.com/servo/euclid/pull/520
+# The latest released version without the fix is 0.22.9
+# https://crates.io/crates/euclid
 euclid = {git = "https://github.com/servo/euclid.git"}
 #euclid = "0.22"
 gat-lending-iterator = "0.1"

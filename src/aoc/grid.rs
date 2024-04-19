@@ -205,36 +205,10 @@ pub struct Grid<T, U = GridSpace> {
     /// the grid.
     data: Box<[Box<[T]>]>,
 }
-impl<T: Default + Clone, U> Grid<T, U> {
-    /// Creates a default grid of a particular `size` with default values.
-    ///
-    /// # Panics
-    /// This will panic if the `size` is invalid, that is it contains zero in either dimension.
-    ///
-    /// # Examples
-    /// Basic usage:
-    /// ```
-    /// # use aoc::prelude::*;
-    /// let grid = Grid::<u8>::default(GridSize::new(3, 3));
-    ///
-    /// assert_eq!(
-    ///     grid,
-    ///     Grid::from_data(vec![vec![0, 0, 0], vec![0, 0, 0], vec![0, 0, 0]]).unwrap()
-    /// );
-    /// ```
-    pub fn default(size: GridSize<U>) -> Self {
-        size.validate();
-        Self {
-            size,
-            data: vec![vec![T::default(); size.width].into_boxed_slice(); size.height]
-                .into_boxed_slice(),
-        }
-    }
-}
 impl<T, U> Grid<T, U> {
     /// Creates a grid from raw data.
     ///
-    /// The raw data should be a [`Vec`] for rows, with each row being
+    /// The raw data should be a [`Vec`] of rows, with each row being
     /// itself a [`Vec`] of the same length. Returns an [`AocError::Other`]
     /// if either the passed data is empty, or if there are rows with different
     /// lengths.
@@ -264,22 +238,18 @@ impl<T, U> Grid<T, U> {
     /// assert_matches!(result, Err(AocError::Other(_)));
     /// ```
     pub fn from_data(data: Vec<Vec<T>>) -> AocResult<Self> {
-        // Verify that we have at least one row
-        let height = data.len();
-        if height < 1 {
-            return Err(AocError::Other("The grid has no content!".into()));
-        }
+        // Verify that the data has content
+        let size = Self::data_size(&data)?;
 
         // Verify that all the row widths are the same
-        let width = data[0].len();
         let data = process_results(
             data.into_iter().map(|row| {
-                if row.len() != width {
+                if row.len() != size.width {
                     Err(AocError::Other(
                         format!(
                             "Grid row has a length of {} instead of the expected {}",
                             row.len(),
-                            width
+                            size.width
                         )
                         .into(),
                     ))
@@ -290,10 +260,7 @@ impl<T, U> Grid<T, U> {
             |iter| iter.collect(),
         )?;
 
-        Ok(Self {
-            size: GridSize::new(width, height),
-            data,
-        })
+        Ok(Self { size, data })
     }
 
     /// Returns the size the grid.
@@ -618,6 +585,168 @@ impl<T, U> Grid<T, U> {
             .filter_map(|p| self.bounded_point(&p))
     }
 
+    /// Parses grid data from an array of characters.
+    fn parse_data(s: &str) -> AocResult<Vec<Vec<T>>>
+    where
+        T: TryFrom<char>,
+    {
+        s.lines()
+            .map(|line| {
+                line.chars()
+                    .map(|c| {
+                        T::try_from(c).map_err(|_| {
+                            AocError::Other(format!("Invalid character found: '{c}'").into())
+                        })
+                    })
+                    .collect()
+            })
+            .collect()
+    }
+
+    /// Verifies that the data is not empty and returns the smallest grid
+    /// size into which the data will fit.
+    fn data_size(data: &Vec<Vec<T>>) -> AocResult<GridSize<U>> {
+        let width = data
+            .iter()
+            .map(|r| r.len())
+            .max()
+            .and_then(|m| (m != 0).then_some(m))
+            .ok_or(AocError::Other("The grid has no content!".into()))?;
+
+        Ok(GridSize::new(width, data.len()))
+    }
+}
+
+// Additional methods for elements that have default values.
+impl<T: Default + Clone, U> Grid<T, U> {
+    /// Creates a default grid of a particular `size` with default values.
+    ///
+    /// # Panics
+    /// This will panic if the `size` is invalid, that is it contains zero in either dimension.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// let grid = Grid::<u8>::default(GridSize::new(3, 3));
+    ///
+    /// assert_eq!(
+    ///     grid,
+    ///     Grid::from_data(vec![vec![0, 0, 0], vec![0, 0, 0], vec![0, 0, 0]]).unwrap()
+    /// );
+    /// ```
+    pub fn default(size: GridSize<U>) -> Self {
+        size.validate();
+        Self {
+            size,
+            data: vec![vec![T::default(); size.width].into_boxed_slice(); size.height]
+                .into_boxed_slice(),
+        }
+    }
+
+    /// Creates a grid from raw data, filling in missing elements with the default
+    /// value.
+    ///
+    /// The raw data should be a [`Vec`] of rows, with each row being
+    /// itself a [`Vec`].
+    /// If a `size` is not passed, then the grid size will be determined from
+    /// the `data`, with the height being the number of rows and the width being
+    /// the length of the longest row.
+    /// If a `size` is passed, then the grid will have that size, with extraneous
+    /// data discarded.
+    /// In either case, any missing items in the data will be filled with the default
+    /// value, noting that passed values in any shorter rows will all be on the left
+    /// side of the grid followed by any default values on the right.
+    /// Returns an [`AocError::Other`]
+    /// if the passed data is empty.
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// // This is a grid with the following values:
+    /// // 0 1 0
+    /// // 2 3 4
+    /// // 4 0 0
+    /// let grid =
+    ///     Grid::<u8>::from_data_default(vec![vec![0, 1], vec![2, 3, 4], vec![4]], None).unwrap();
+    /// assert_eq!(*grid.size(), GridSize::new(3, 3));
+    ///
+    /// // This is a grid with the following values:
+    /// // 0 1 0 0
+    /// // 2 3 4 0
+    /// // 4 0 0 0
+    /// // 0 0 0 0
+    /// // 0 0 0 0
+    /// let grid = Grid::<u8>::from_data_default(
+    ///     vec![vec![0, 1], vec![2, 3, 4], vec![4]],
+    ///     Some(GridSize::new(4, 5)),
+    /// )
+    /// .unwrap();
+    /// assert_eq!(*grid.size(), GridSize::new(4, 5));
+    ///
+    /// // This is a grid with the following values:
+    /// // 0 1 7
+    /// // 2 3 4
+    /// let grid = Grid::<u8>::from_data_default(
+    ///     vec![vec![0, 1, 7], vec![2, 3, 4, 8], vec![4, 3]],
+    ///     Some(GridSize::new(3, 2)),
+    /// )
+    /// .unwrap();
+    /// assert_eq!(*grid.size(), GridSize::new(3, 2));
+    ///
+    /// /// // This is a grid with the following values:
+    /// // 1 0
+    /// // 0 0
+    /// // 4,3
+    /// let grid = Grid::<u8>::from_data_default(
+    ///     vec![vec![1], vec![], vec![4, 3, 8], vec![5]],
+    ///     Some(GridSize::new(2, 3)),
+    /// )
+    /// .unwrap();
+    /// assert_eq!(*grid.size(), GridSize::new(2, 3));
+    /// ```
+    ///
+    /// Invalid usage:
+    /// ```
+    /// # #![feature(assert_matches)]
+    /// # use std::assert_matches::assert_matches;
+    /// # use aoc::prelude::*;
+    /// assert_matches!(
+    ///     Grid::<u8>::from_data_default(vec![], None),
+    ///     Err(AocError::Other(_))
+    /// );
+    /// ```
+    pub fn from_data_default(mut data: Vec<Vec<T>>, size: Option<GridSize<U>>) -> AocResult<Self> {
+        // Determine the grid size
+        let size = match size {
+            Some(s) => s,
+            None => Self::data_size(&data)?,
+        };
+
+        // Add or remove elements to each row if necessary
+        for row in data.iter_mut() {
+            if size.width >= row.len() {
+                for _ in 0..(size.width - row.len()) {
+                    row.push(T::default());
+                }
+            } else {
+                row.truncate(size.width)
+            }
+        }
+
+        // Add or remove rows if necessary
+        if size.height >= data.len() {
+            for _ in 0..(size.height - data.len()) {
+                data.push(vec![T::default(); size.width]);
+            }
+        } else {
+            data.truncate(size.height)
+        }
+
+        Self::from_data(data)
+    }
+
     /// Creates a sub-grid by cloning the applicable elements of this grid.
     ///
     /// The sub-grid location is given by the `sub_grid_box`.
@@ -654,10 +783,7 @@ impl<T, U> Grid<T, U> {
     ///     Grid::from_data(vec![vec![8, 9]]).unwrap(),
     /// );
     /// ```
-    pub fn sub_grid(&self, sub_grid_box: &GridBox<U>) -> Self
-    where
-        T: Default + Clone,
-    {
+    pub fn sub_grid(&self, sub_grid_box: &GridBox<U>) -> Self {
         let size = sub_grid_box.size();
         // Note that this will validate the size
         let mut out = Self::default(size);
@@ -667,7 +793,97 @@ impl<T, U> Grid<T, U> {
         }
         out
     }
+
+    /// Parses the grid from a string, filling in missing values with defaults.
+    ///
+    /// Identical to [`Grid::from_str`] except that rows of variable lengths are
+    /// allowed, with missing values being filled in with default values as is done
+    /// when using [`Grid::from_data_default`].
+    ///
+    /// # Examples
+    /// Basic usage:
+    /// ```
+    /// # use aoc::prelude::*;
+    /// # use std::str::FromStr;
+    /// #[derive(Debug, Default, Clone, PartialEq, Eq)]
+    /// enum Direction {
+    ///     Up,
+    ///     Down,
+    ///     Left,
+    ///     Right,
+    ///     #[default]
+    ///     Default,
+    /// }
+    /// use Direction::*;
+    /// impl TryFrom<char> for Direction {
+    ///     type Error = ();
+    ///
+    ///     fn try_from(value: char) -> Result<Self, Self::Error> {
+    ///         match value {
+    ///             'U' => Ok(Up),
+    ///             'D' => Ok(Down),
+    ///             'L' => Ok(Left),
+    ///             'R' => Ok(Right),
+    ///             _ => Err(()),
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// let string = "UDL
+    ///
+    /// DLRUD
+    /// LR";
+    /// let grid = Grid::from_data(vec![
+    ///     vec![Up, Down, Left, Default, Default],
+    ///     vec![Default, Default, Default, Default, Default],
+    ///     vec![Down, Left, Right, Up, Down],
+    ///     vec![Left, Right, Default, Default, Default],
+    /// ])
+    /// .unwrap();
+    ///
+    /// assert_eq!(Grid::from_str_default(string).unwrap(), grid);
+    /// ```
+    ///
+    /// Invalid usage:
+    /// ```
+    /// # #![feature(assert_matches)]
+    /// # use std::assert_matches::assert_matches;
+    /// # use aoc::prelude::*;
+    /// # use std::str::FromStr;
+    /// #[derive(Debug, PartialEq, Eq)]
+    /// enum Correctness {
+    ///     Wrong,
+    ///     Right,
+    /// }
+    /// use Correctness::*;
+    /// impl TryFrom<char> for Correctness {
+    ///     type Error = ();
+    ///
+    ///     fn try_from(value: char) -> Result<Self, Self::Error> {
+    ///         match value {
+    ///             'W' => Ok(Wrong),
+    ///             'R' => Ok(Right),
+    ///             _ => Err(()),
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// let string = "WR
+    /// RWWX";
+    ///
+    /// assert_matches!(
+    ///     Grid::<Correctness>::from_str(string),
+    ///     Err(AocError::Other(_))
+    /// );
+    /// ```
+    pub fn from_str_default(s: &str) -> AocResult<Self>
+    where
+        T: TryFrom<char>,
+    {
+        Self::parse_data(s).and_then(|data| Self::from_data_default(data, None))
+    }
 }
+
 // Additional methods for clone-able elements.
 impl<T: Clone> Grid<T> {
     /// Creates a [`Graph`] representation of the grid.
@@ -966,19 +1182,7 @@ impl<T: TryFrom<char>> FromStr for Grid<T> {
     type Err = AocError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let data = s
-            .lines()
-            .map(|line| {
-                line.chars()
-                    .map(|c| {
-                        T::try_from(c).map_err(|_| {
-                            AocError::Other(format!("Invalid character found: '{c}'").into())
-                        })
-                    })
-                    .collect()
-            })
-            .collect::<Result<_, _>>()?;
-        Self::from_data(data)
+        Self::parse_data(s).and_then(Self::from_data)
     }
 }
 /// Debug display for a [`Grid`] whose elements implement [`Debug`].
