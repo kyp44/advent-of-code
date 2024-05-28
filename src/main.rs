@@ -12,6 +12,7 @@
 #![feature(step_trait)]
 #![feature(ascii_char)]
 #![feature(ascii_char_variants)]
+#![feature(try_blocks)]
 #![feature(iter_array_chunks)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(extend_one)]

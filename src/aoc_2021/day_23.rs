@@ -41,8 +41,7 @@ mod solution {
         prelude::StableUnGraph,
     };
     use std::{collections::BTreeSet, fmt, iter::repeat_with, marker::PhantomData};
-    use strum::IntoEnumIterator;
-    use strum_macros::EnumIter;
+    use strum::{EnumIter, IntoEnumIterator};
 
     /// Behavior specific to one particular part of the problem.
     pub trait Part: Clone + Eq + std::hash::Hash {

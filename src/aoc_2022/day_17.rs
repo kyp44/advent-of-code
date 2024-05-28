@@ -25,8 +25,7 @@ mod solution {
     use itertools::Itertools;
     use num::{integer::lcm, Integer};
     use std::collections::HashSet;
-    use strum::{EnumCount, IntoEnumIterator};
-    use strum_macros::{EnumCount, EnumIter};
+    use strum::{EnumCount, EnumIter, IntoEnumIterator};
 
     /// Rock shape constants.
     mod rock_shapes {

@@ -44,8 +44,7 @@ mod solution {
         multi::many1,
     };
     use std::{collections::HashSet, convert::TryInto, fmt, str::FromStr};
-    use strum::IntoEnumIterator;
-    use strum_macros::EnumIter;
+    use strum::{EnumIter, IntoEnumIterator};
 
     /// Coordinates of a tile on the floor.
     ///

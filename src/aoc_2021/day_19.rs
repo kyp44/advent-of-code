@@ -171,8 +171,7 @@ mod solution {
         rc::Rc,
     };
     use std::{hash::Hash, ops::Add};
-    use strum::IntoEnumIterator;
-    use strum_macros::EnumIter;
+    use strum::{EnumIter, IntoEnumIterator};
 
     /// A 3D vector over the field of integers.
     type Vector = Vector3D<i32>;

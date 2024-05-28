@@ -3,6 +3,9 @@
 //! Contains the main [`Grid`] struct, associated traits, and some useful
 //! grid element types.
 
+// TODO: Discovered the `grid` crate, should we switch to this under the hood? It claims to be very efficient.
+// This can be a wrapper around that with the interface for code that uses it.
+
 use super::prelude::*;
 use core::slice::SlicePattern;
 use derive_more::{Add, AddAssign, Deref, From, Into, Not, Sub, SubAssign};
@@ -1186,7 +1189,7 @@ impl<T: TryFrom<char>> FromStr for Grid<T> {
     }
 }
 /// Debug display for a [`Grid`] whose elements implement [`Debug`].
-impl<T: fmt::Debug> fmt::Debug for Grid<T> {
+impl<T: fmt::Debug, U> fmt::Debug for Grid<T, U> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let size = self.size();
         for y in 0..size.height {

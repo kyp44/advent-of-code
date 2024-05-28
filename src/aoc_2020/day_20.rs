@@ -136,9 +136,9 @@ mod solution {
         sequence::{delimited, pair},
         Finish,
     };
+    use strum::{Display, EnumIter};
     use std::rc::Rc;
     use std::{cmp::Ordering, fmt};
-    use strum_macros::{Display, EnumIter};
 
     /// An edge of an image.
     #[derive(Debug, Enum)]

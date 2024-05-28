@@ -22,8 +22,7 @@ mod tests {
 mod solution {
     use super::*;
     use aoc::grid::Digit;
-    use strum::IntoEnumIterator;
-    use strum_macros::EnumIter;
+    use strum::{EnumIter, IntoEnumIterator};
 
     /// A cardinal direction to look relative to a tree in the patch.
     #[derive(Debug, Clone, Copy, EnumIter)]

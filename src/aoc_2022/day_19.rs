@@ -44,8 +44,7 @@ mod solution {
     };
     use num::rational::Ratio;
     use std::{collections::HashMap, hash::Hash};
-    use strum::IntoEnumIterator;
-    use strum_macros::EnumIter;
+    use strum::{EnumIter, IntoEnumIterator};
 
     /// The number of different robots that can be built.
     const NUM_ROBOTS: usize = 4;

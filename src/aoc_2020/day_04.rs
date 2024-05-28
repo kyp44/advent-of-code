@@ -69,8 +69,7 @@ mod solution {
         sequence::{pair, preceded, separated_pair},
     };
     use std::collections::HashMap;
-    use strum::IntoEnumIterator;
-    use strum_macros::{EnumIter, EnumString};
+    use strum::{EnumIter, EnumString, IntoEnumIterator};
 
     /// Possible passport fields, which can be parsed from text input.
     #[derive(PartialEq, Eq, Hash, Debug, EnumString, EnumIter)]
