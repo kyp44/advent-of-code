@@ -25,8 +25,8 @@ turn off 499,499 through 500,500";
 mod solution {
     use super::*;
     use aoc::grid::{Digit, StdBool};
+    use derive_more::{From, Into};
     use euclid::point2;
-    use itertools::iproduct;
     use nom::{
         branch::alt,
         bytes::complete::tag,
@@ -68,13 +68,9 @@ mod solution {
     }
 
     /// A Rectangle of lights that can be parsed from text input.
-    struct Rect {
-        /// Lower left corner of the rectangle (inclusive).
-        lower_left: GridPoint,
-        /// Upper right corner of the rectangle (inclusive).
-        upper_right: GridPoint,
-    }
-    impl Parsable<'_> for Rect {
+    #[derive(Into)]
+    pub struct ParseRect(GridBox);
+    impl Parsable<'_> for ParseRect {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map_opt(
                 separated_pair(
@@ -86,23 +82,10 @@ mod solution {
                     if ll.x > ur.x || ll.y > ur.y {
                         None
                     } else {
-                        Some(Rect {
-                            lower_left: ll,
-                            upper_right: ur,
-                        })
+                        Some(ParseRect(GridBox::new_inclusive(ll, ur)))
                     }
                 },
             )(input)
-        }
-    }
-    impl Rect {
-        /// Returns an [`Iterator`] of points contained in the rectangle.
-        fn iter(&self) -> impl Iterator<Item = GridPoint> {
-            iproduct!(
-                self.lower_left.x..=self.upper_right.x,
-                self.lower_left.y..=self.upper_right.y
-            )
-            .map(|(x, y)| GridPoint::new(x, y))
         }
     }
 
@@ -111,15 +94,18 @@ mod solution {
     /// Can be parsed from text input.
     pub struct Instruction {
         /// Action to perform on all of the lights.
-        action: Action,
+        pub action: Action,
         /// Rectangle of lights over which to perform the action.
-        rect: Rect,
+        pub rect: GridBox,
     }
     impl Parsable<'_> for Instruction {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
-                separated_pair(Action::parser, space1, Rect::parser),
-                |(a, r)| Instruction { action: a, rect: r },
+                separated_pair(Action::parser, space1, ParseRect::parser),
+                |(a, r)| Instruction {
+                    action: a,
+                    rect: r.into(),
+                },
             )(input.trim())
         }
     }
@@ -152,29 +138,20 @@ mod solution {
     }
 
     /// Grid of lights.
-    pub struct LightGrid<T> {
-        /// Actual grid.
-        grid: Grid<T>,
-    }
+    #[derive(From)]
+    pub struct LightGrid<T>(Grid<T>);
     impl<T: Clone + Part + Default> LightGrid<T> {
         /// Creates a new square grid of lights of the given size.
         pub fn new(size: usize) -> Self {
-            LightGrid {
-                grid: Grid::default(GridSize::new(size, size)),
-            }
-        }
-    }
-    impl<T: Part> From<Grid<T>> for LightGrid<T> {
-        fn from(value: Grid<T>) -> Self {
-            Self { grid: value }
+            LightGrid(Grid::default(GridSize::new(size, size)))
         }
     }
     impl<T: Part> LightGrid<T> {
         /// Executes a list of instructions on the given light grid.
         pub fn execute_instruction(&mut self, instructions: &[Instruction]) {
             for inst in instructions {
-                for point in inst.rect.iter() {
-                    self.grid.element_at(&point).update(&inst.action);
+                for point in inst.rect.all_points() {
+                    self.0.get_mut(&point).update(&inst.action);
                 }
             }
         }
@@ -183,14 +160,14 @@ mod solution {
     impl LightGrid<StdBool> {
         /// Determines the number of lights that are lit.
         pub fn number_lit(&self) -> usize {
-            self.grid.all_values().filter_count(|b| ***b)
+            self.0.all_values().filter_count(|b| ***b)
         }
     }
 
     impl LightGrid<Digit> {
         /// Calculates the total brightness across all of the lights.
         pub fn total_brightness(&self) -> u64 {
-            self.grid
+            self.0
                 .all_values()
                 .copied()
                 .map::<u64, _>(|v| u64::from(*v))

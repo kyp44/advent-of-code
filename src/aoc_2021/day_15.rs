@@ -101,10 +101,10 @@ mod solution {
             let mut base_rows: Vec<Box<[RiskLevel]>> = Vec::new();
 
             // First add all the additional columns for the first major row
-            for row in self.grid.rows_iter() {
+            for row in self.grid.underlying_grid().iter_rows() {
                 base_rows.push(
                     (0..n)
-                        .flat_map(|i| row.iter().map(move |r| *r + i.into()))
+                        .flat_map(|i| row.clone().map(move |r| *r + i.into()))
                         .collect(),
                 );
             }

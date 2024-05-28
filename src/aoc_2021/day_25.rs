@@ -117,11 +117,11 @@ mod solution {
 
                 for point in self.specific_points(&cucumber) {
                     let moved_point =
-                        (point + direction).wrapped_grid_point(new_trench.grid.size());
+                        (point + direction).wrapped_grid_point(&new_trench.grid.size());
                     // Move if the adjacent space is free
                     if !check_trench.grid.get(&moved_point).occupied() {
                         new_trench.grid.set(
-                            &point.wrapped_grid_point(new_trench.grid.size()),
+                            &point.wrapped_grid_point(&new_trench.grid.size()),
                             Location::Empty,
                         );
                         new_trench.grid.set(&moved_point, cucumber);

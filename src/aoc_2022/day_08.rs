@@ -84,7 +84,8 @@ mod solution {
                 CardinalDirection::Left => {
                     let mut v: Vec<_> = self
                         .grid
-                        .row_iter(tree.y)
+                        .underlying_grid()
+                        .iter_row(tree.y)
                         .copied()
                         .take(tree.x + if include_self { 1 } else { 0 })
                         .collect();
@@ -100,7 +101,8 @@ mod solution {
                 CardinalDirection::Right => {
                     let mut v: Vec<_> = self
                         .grid
-                        .row_iter(tree.y)
+                        .underlying_grid()
+                        .iter_row(tree.y)
                         .skip(tree.x + if include_self { 0 } else { 1 })
                         .copied()
                         .collect();
@@ -116,7 +118,8 @@ mod solution {
                 CardinalDirection::Up => {
                     let mut v: Vec<_> = self
                         .grid
-                        .column_iter(tree.x)
+                        .underlying_grid()
+                        .iter_col(tree.x)
                         .take(tree.y + if include_self { 1 } else { 0 })
                         .copied()
                         .collect();
@@ -132,7 +135,8 @@ mod solution {
                 CardinalDirection::Down => {
                     let mut v: Vec<_> = self
                         .grid
-                        .column_iter(tree.x)
+                        .underlying_grid()
+                        .iter_col(tree.x)
                         .skip(tree.y + if include_self { 0 } else { 1 })
                         .copied()
                         .collect();

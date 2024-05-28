@@ -72,7 +72,7 @@ mod solution {
         fn next(&mut self) -> Option<Self::Item> {
             // Fist pass to increment all energies
             for point in self.octopi.grid.all_points() {
-                *self.octopi.grid.element_at(&point) += 1.into();
+                *self.octopi.grid.get_mut(&point) += 1.into();
             }
 
             // Now repeated passes to look for flashes
@@ -90,7 +90,7 @@ mod solution {
                             .neighbor_points(&point, true, false)
                             .collect();
                         for fp in fps {
-                            *self.octopi.grid.element_at(&fp) += 1.into();
+                            *self.octopi.grid.get_mut(&fp) += 1.into();
                         }
 
                         // Add flash
@@ -106,7 +106,7 @@ mod solution {
 
             // Lastly, reset all energies that flashed
             for point in flashes.iter() {
-                *self.octopi.grid.element_at(point) = 0.into();
+                *self.octopi.grid.get_mut(point) = 0.into();
             }
 
             Some(flashes.len().try_into().unwrap())

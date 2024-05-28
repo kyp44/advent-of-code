@@ -155,7 +155,7 @@ mod solution {
     impl FloorMap {
         /// Increments the number for a point.
         fn increment_point(&mut self, point: &GridPoint) {
-            *self.grid.element_at(point) += 1.into();
+            *self.grid.get_mut(point) += 1.into();
         }
 
         /// Counts the number of integer points that have more than one vent

@@ -93,7 +93,7 @@ mod solution {
     impl Image {
         /// Returns the size of the next enhanced image, which will be a bit larger.
         fn enhanced_size(&self) -> GridSize {
-            *self.grid.size() + GridSize::new(2, 2)
+            self.grid.size() + GridSize::new(2, 2)
         }
 
         /// Counts the number of lit pixels in the image.

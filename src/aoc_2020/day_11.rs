@@ -165,7 +165,7 @@ mod solution {
         type Point = GridPoint;
 
         fn next_default(other: &Self) -> Self {
-            Area::new(other.part, Grid::default(*other.grid.size()))
+            Area::new(other.part, Grid::default(other.grid.size()))
         }
 
         fn set_element(&mut self, point: &Self::Point, value: Seat) {

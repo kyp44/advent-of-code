@@ -136,9 +136,9 @@ mod solution {
         sequence::{delimited, pair},
         Finish,
     };
-    use strum::{Display, EnumIter};
     use std::rc::Rc;
     use std::{cmp::Ordering, fmt};
+    use strum::{Display, EnumIter};
 
     /// An edge of an image.
     #[derive(Debug, Enum)]
@@ -208,41 +208,23 @@ mod solution {
     impl Image {
         /// Returns this image rotated 90 degrees counter-clockwise.
         fn rot_90(&self) -> Self {
-            let size = self.pixels.size();
-            let mut out = Image::default(*size);
-            for point in self.pixels.all_points() {
-                out.pixels.set(
-                    &point2(point.y, size.width - 1 - point.x),
-                    *self.pixels.get(&point),
-                );
-            }
-            out
+            let mut pixels = self.pixels.clone().into_underlying_grid();
+            pixels.rotate_left();
+            Self::new(pixels.into())
         }
 
         /// Returns this image flipped horizontally.
         fn flip_hor(&self) -> Self {
-            let size = self.pixels.size();
-            let mut out = Image::default(*size);
-            for point in self.pixels.all_points() {
-                out.pixels.set(
-                    &point2(size.width - 1 - point.x, point.y),
-                    *self.pixels.get(&point),
-                )
-            }
-            out
+            let mut pixels = self.pixels.clone().into_underlying_grid();
+            pixels.flip_cols();
+            Self::new(pixels.into())
         }
 
         /// Returns this image flipped vertically.
         fn flip_ver(&self) -> Self {
-            let size = self.pixels.size();
-            let mut out = Image::default(*size);
-            for point in self.pixels.all_points() {
-                out.pixels.set(
-                    &point2(point.x, size.height - 1 - point.y),
-                    *self.pixels.get(&point),
-                )
-            }
-            out
+            let mut pixels = self.pixels.clone().into_underlying_grid();
+            pixels.flip_rows();
+            Self::new(pixels.into())
         }
 
         /// Returns this image with some transformation applied.
@@ -323,7 +305,7 @@ mod solution {
             .filter(|point| {
                 let sub_image = self
                     .pixels
-                    .sub_grid(&Box2D::from_origin_and_size(*point, *image_size));
+                    .sub_grid(&Box2D::from_origin_and_size(*point, image_size));
 
                 // It is very strange to me that we need to use assign variable here, but we get a compiler
                 // error if we do not.
@@ -429,11 +411,12 @@ mod solution {
             )));
 
             // Pull out the edges
+            let pixel_grid = full_image.pixels.underlying_grid();
             let edges: EnumMap<_, Vec<bool>> = enum_map! {
-                Edge::Top => full_image.pixels.row_iter(0).map(|sb| **sb).collect(),
-                Edge::Bottom => full_image.pixels.row_iter(full_image.pixels.size().height-1).map(|sb| **sb).collect(),
-                Edge::Left => full_image.pixels.column_iter(0).map(|sb| **sb).collect(),
-                Edge::Right => full_image.pixels.column_iter(full_image.pixels.size().width - 1).map(|sb| **sb).collect(),
+                Edge::Top => pixel_grid.iter_row(0).map(|sb| **sb).collect(),
+                Edge::Bottom => pixel_grid.iter_row(full_image.pixels.size().height-1).map(|sb| **sb).collect(),
+                Edge::Left => pixel_grid.iter_col(0).map(|sb| **sb).collect(),
+                Edge::Right => pixel_grid.iter_col(full_image.pixels.size().width - 1).map(|sb| **sb).collect(),
             };
             let mut edges_reversed = EnumMap::default();
             for (k, v) in edges.iter() {
@@ -574,16 +557,15 @@ mod solution {
     }
     impl fmt::Debug for TileMap {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            for row in self.slots.rows_iter() {
+            for row in self.slots.underlying_grid().iter_rows() {
                 writeln!(
                     f,
                     "{}",
-                    row.iter()
-                        .map(|slot| match slot {
-                            Some(t) => format!("{} {}", t.tile.id, t.transform),
-                            None => "-".to_string(),
-                        })
-                        .join(" | "),
+                    row.map(|slot| match slot {
+                        Some(t) => format!("{} {}", t.tile.id, t.transform),
+                        None => "-".to_string(),
+                    })
+                    .join(" | "),
                 )?;
             }
             Ok(())
@@ -634,15 +616,15 @@ mod solution {
 
             Ok(self
                 .slots
-                .rows_iter()
+                .underlying_grid()
+                .iter_rows()
                 .map(|row| {
-                    row.iter()
-                        .map(|slot| {
-                            let slot = slot.as_ref().unwrap();
-                            slot.tile.image.transformed(slot.transform)
-                        })
-                        .reduce(|left, right| left.adjoin_right(&right))
-                        .unwrap()
+                    row.map(|slot| {
+                        let slot = slot.as_ref().unwrap();
+                        slot.tile.image.transformed(slot.transform)
+                    })
+                    .reduce(|left, right| left.adjoin_right(&right))
+                    .unwrap()
                 })
                 .reduce(|upper, lower| upper.adjoin_below(&lower))
                 .unwrap())

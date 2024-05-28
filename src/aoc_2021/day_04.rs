@@ -87,7 +87,7 @@ mod solution {
         /// Calls a number, marking the hit cells.
         fn call(&mut self, number: u8) -> bool {
             for point in self.grid.all_points() {
-                let cell = self.grid.element_at(&point);
+                let cell = self.grid.get_mut(&point);
                 if cell.number == number {
                     cell.hit = true;
                 }
@@ -99,15 +99,20 @@ mod solution {
         /// hit cells in any complete row or column (diagonals don't count).
         fn check_win(&self) -> bool {
             // Check rows first
-            for row in self.grid.rows_iter() {
-                if row.iter().all(|c| c.hit) {
+            for mut row in self.grid.underlying_grid().iter_rows() {
+                if row.all(|c| c.hit) {
                     return true;
                 }
             }
 
             // Check columns
             for col in 0..self.grid.size().width {
-                if self.grid.column_iter(col).all(|cell| cell.hit) {
+                if self
+                    .grid
+                    .underlying_grid()
+                    .iter_col(col)
+                    .all(|cell| cell.hit)
+                {
                     return true;
                 }
             }
@@ -151,7 +156,7 @@ mod solution {
 
             // Verify boards
             for (board_num, board) in boards.iter().enumerate() {
-                if *board.grid.size() != GridSize::new(5, 5) {
+                if board.grid.size() != GridSize::new(5, 5) {
                     return Err(AocError::InvalidInput(
                         format!("Board {board_num} is not 5 x 5").into(),
                     ));

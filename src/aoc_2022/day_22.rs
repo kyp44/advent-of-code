@@ -612,7 +612,7 @@ mod solution {
             };
 
             let transformation = GridTransformations(face_size);
-            let mut unfolded_grid = Grid::default((*size / face_size).cast_unit());
+            let mut unfolded_grid = Grid::default((size / face_size).cast_unit());
 
             for unfolded_point in unfolded_grid.all_points() {
                 if !grid
