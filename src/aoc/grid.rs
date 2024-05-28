@@ -237,7 +237,7 @@ impl<T, U> Grid<T, U> {
     /// # use aoc::prelude::*;
     /// assert_matches!(Grid::<u8>::from_data(vec![]), Err(AocError::Other(_)));
     ///
-    /// let result = Grid::from_data(vec![vec![1, 2, 3], vec![4, 5], vec![6]]);
+    /// let result = Grid::<_, GridSpace>::from_data(vec![vec![1, 2, 3], vec![4, 5], vec![6]]);
     /// assert_matches!(result, Err(AocError::Other(_)));
     /// ```
     pub fn from_data(data: Vec<Vec<T>>) -> AocResult<Self> {
@@ -608,7 +608,7 @@ impl<T, U> Grid<T, U> {
 
     /// Verifies that the data is not empty and returns the smallest grid
     /// size into which the data will fit.
-    fn data_size(data: &Vec<Vec<T>>) -> AocResult<GridSize<U>> {
+    fn data_size(data: &[Vec<T>]) -> AocResult<GridSize<U>> {
         let width = data
             .iter()
             .map(|r| r.len())
@@ -836,7 +836,7 @@ impl<T: Default + Clone, U> Grid<T, U> {
     ///
     /// DLRUD
     /// LR";
-    /// let grid = Grid::from_data(vec![
+    /// let grid = Grid::<_, GridSpace>::from_data(vec![
     ///     vec![Up, Down, Left, Default, Default],
     ///     vec![Default, Default, Default, Default, Default],
     ///     vec![Down, Left, Right, Up, Down],

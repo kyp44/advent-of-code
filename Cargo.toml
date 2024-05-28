@@ -42,7 +42,7 @@ hex = "0.4"
 indexmap = "2.2"
 infinitable = "1.6"
 intervallum = "1.4"
-# TODO: The latest is 1.13 but we cannot upgrade due to a bug in `strum` that is not yet merged.
+# TODO: The latest is 0.13 but we cannot upgrade due to a bug in `strum` that is not yet merged.
 # See: https://github.com/Peternator7/strum/pull/357
 itertools = "0.12"
 lazy_static = "1.4"
