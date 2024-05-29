@@ -89,7 +89,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let delivery = Delivery::new(usize::from_str(input.expect_input()?)?, 10, None);
+            let delivery = Delivery::new(usize::from_str(input.expect_text()?)?, 10, None);
 
             // Process
             /*for h in 1..10 {
@@ -101,7 +101,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let delivery = Delivery::new(usize::from_str(input.expect_input()?)?, 11, Some(50));
+            let delivery = Delivery::new(usize::from_str(input.expect_text()?)?, 11, Some(50));
 
             // Process
             /*for h in 1..30 {

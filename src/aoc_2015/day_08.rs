@@ -110,7 +110,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let list = List::from_str(input.expect_input()?);
+            let list = List::from_str(input.expect_text()?);
 
             // Process
             Ok(Answer::Unsigned(
@@ -122,7 +122,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let list = List::from_str(input.expect_input()?);
+            let list = List::from_str(input.expect_text()?);
 
             // Process
             Ok(Answer::Unsigned(

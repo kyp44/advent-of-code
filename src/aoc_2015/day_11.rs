@@ -104,7 +104,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let mut passwords = LexOrder::valid(input.expect_input()?.trim());
+            let mut passwords = LexOrder::valid(input.expect_text()?.trim());
 
             // Process
             Ok(passwords.next().unwrap().into())
@@ -112,7 +112,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let mut passwords = LexOrder::valid(input.expect_input()?.trim());
+            let mut passwords = LexOrder::valid(input.expect_text()?.trim());
 
             // Process
             Ok(passwords.iterations(2).unwrap().into())

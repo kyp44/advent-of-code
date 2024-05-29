@@ -144,7 +144,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let problem = Problem::from_str(input.expect_input()?)?;
+            let problem = Problem::from_str(input.expect_text()?)?;
 
             // Process
             Ok(problem.shortest_distance().into())
@@ -152,7 +152,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let problem = Problem::from_str(input.expect_input()?)?;
+            let problem = Problem::from_str(input.expect_text()?)?;
 
             // Process
             Ok(problem.longest_distance().into())

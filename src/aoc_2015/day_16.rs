@@ -123,7 +123,7 @@ mod solution {
     /// Solves a part of the problem.
     pub fn solve<P: Part>(input: &SolverInput) -> AocResult<Answer> {
         // Generation
-        let problem = Problem::from_str(input.expect_input()?)?;
+        let problem = Problem::from_str(input.expect_text()?)?;
 
         // Process
         let mut matches = problem.matches::<P>();

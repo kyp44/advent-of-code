@@ -287,7 +287,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let problem = Problem::from_str(input.expect_input()?, &PartOne)?;
+            let problem = Problem::from_str(input.expect_text()?, &PartOne)?;
 
             // Process
             Ok(problem.count_valid()?.into())
@@ -295,7 +295,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let problem = Problem::from_str(input.expect_input()?, &PartTwo)?;
+            let problem = Problem::from_str(input.expect_text()?, &PartTwo)?;
 
             // Process
             Ok(problem.count_valid()?.into())

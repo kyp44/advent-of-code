@@ -628,13 +628,13 @@ pub mod solution {
         /// # #![feature(assert_matches)]
         /// # use std::assert_matches::assert_matches;
         /// # use aoc::prelude::*;
-        /// assert_eq!(SolverInput::Text("test").expect_input().unwrap(), "test");
+        /// assert_eq!(SolverInput::Text("test").expect_text().unwrap(), "test");
         /// assert_matches!(
-        ///     SolverInput::Data(Box::new(7)).expect_input(),
+        ///     SolverInput::Data(Box::new(7)).expect_text(),
         ///     Err(AocError::InvalidInput(_))
         /// );
         /// ```
-        pub fn expect_input(&self) -> AocResult<&'a str> {
+        pub fn expect_text(&self) -> AocResult<&'a str> {
             if let Self::Text(s) = self {
                 Ok(s)
             } else {

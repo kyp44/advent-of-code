@@ -83,7 +83,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation and process
-            Ok(Simulation::from_str(input.expect_input()?)?
+            Ok(Simulation::from_str(input.expect_text()?)?
                 .nth(80)
                 .unwrap()
                 .into())
@@ -91,7 +91,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation and process
-            Ok(Simulation::from_str(input.expect_input()?)?
+            Ok(Simulation::from_str(input.expect_text()?)?
                 .nth(256)
                 .unwrap()
                 .into())

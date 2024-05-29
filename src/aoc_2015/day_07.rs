@@ -274,7 +274,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let mut circuit = Circuit::from_str(input.expect_input()?)?;
+            let mut circuit = Circuit::from_str(input.expect_text()?)?;
 
             // Process
             Ok(Answer::Unsigned(circuit.determine_signal("a")?.into()))
@@ -282,7 +282,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let mut circuit = Circuit::from_str(input.expect_input()?)?;
+            let mut circuit = Circuit::from_str(input.expect_text()?)?;
 
             // Find Part one solution an override
             let a = circuit.determine_signal("a")?;

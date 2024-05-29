@@ -180,7 +180,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let problem = Problem::from_str(input.expect_input()?)?;
+            let problem = Problem::from_str(input.expect_text()?)?;
 
             // Process
             Ok(problem.best_arrangement()?.into())
@@ -188,7 +188,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let mut problem = Problem::from_str(input.expect_input()?)?;
+            let mut problem = Problem::from_str(input.expect_text()?)?;
 
             // Process
             problem.add_attendee("Self");

@@ -87,7 +87,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(Answer::Unsigned(
                 input
-                    .expect_input()?
+                    .expect_text()?
                     .lines()
                     .filter_count(Nice::<PartOne>::is_nice),
             ))
@@ -97,7 +97,7 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(Answer::Unsigned(
                 input
-                    .expect_input()?
+                    .expect_text()?
                     .lines()
                     .filter_count(Nice::<PartTwo>::is_nice),
             ))

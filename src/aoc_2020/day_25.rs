@@ -112,7 +112,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let problem: Problem = input.expect_input()?.parse()?;
+            let problem: Problem = input.expect_text()?.parse()?;
 
             // Process
             Ok(problem.solve()?.into())

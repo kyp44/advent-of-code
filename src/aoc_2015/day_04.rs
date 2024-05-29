@@ -69,8 +69,8 @@ pub const SOLUTION: Solution = Solution {
     preprocessor: None,
     solvers: &[
         // Part one
-        |input| Ok(solve::<PartOne>(input.expect_input()?).into()),
+        |input| Ok(solve::<PartOne>(input.expect_text()?).into()),
         // Part two
-        |input| Ok(solve::<PartTwo>(input.expect_input()?).into()),
+        |input| Ok(solve::<PartTwo>(input.expect_text()?).into()),
     ],
 };

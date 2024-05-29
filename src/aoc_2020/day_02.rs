@@ -135,7 +135,7 @@ mod solution {
     /// Solves a part of the problem by reading in policies and passwords and counting those that are valid.
     pub fn solve<P: PasswordPolicy>(input: &SolverInput) -> AocResult<Answer> {
         // Generation
-        let passwords = Password::<P>::gather(input.expect_input()?.lines())?;
+        let passwords = Password::<P>::gather(input.expect_text()?.lines())?;
 
         // Processing
         Ok(Answer::Unsigned(

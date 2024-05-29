@@ -204,7 +204,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let cups: Cups<PartOne> = Cups::from_str(input.expect_input()?)?;
+            let cups: Cups<PartOne> = Cups::from_str(input.expect_text()?)?;
             let mut game = cups.start_game();
 
             // Process
@@ -214,7 +214,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let cups: Cups<PartTwo> = Cups::from_str(input.expect_input()?)?;
+            let cups: Cups<PartTwo> = Cups::from_str(input.expect_text()?)?;
             let mut game = cups.start_game();
 
             // Process

@@ -142,7 +142,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let grid = LightGrid::<PartOne>::from_str(input.expect_input()?)?;
+            let grid = LightGrid::<PartOne>::from_str(input.expect_text()?)?;
 
             // Process
             solve(&grid)
@@ -150,7 +150,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let grid = LightGrid::<PartTwo>::from_str(input.expect_input()?)?;
+            let grid = LightGrid::<PartTwo>::from_str(input.expect_text()?)?;
 
             /*for grid in grid.evolutions().take(5) {
                 println!("{:?}", grid);

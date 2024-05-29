@@ -573,7 +573,7 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let pos: Position<PartOne> = Position::from_str(input.expect_input()?)?;
+            let pos: Position<PartOne> = Position::from_str(input.expect_text()?)?;
 
             // Process
             Ok(pos.minimal_energy()?.into())
@@ -581,7 +581,7 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let pos: Position<PartTwo> = Position::from_str(input.expect_input()?)?;
+            let pos: Position<PartTwo> = Position::from_str(input.expect_text()?)?;
 
             // Process
             Ok(pos.minimal_energy()?.into())

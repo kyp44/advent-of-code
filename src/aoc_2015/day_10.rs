@@ -64,9 +64,9 @@ pub const SOLUTION: Solution = Solution {
     solvers: &[
         // Part one
         |input| {
-            //println!("{}", Sequence::from_str(input.expect_input()?)?.nth(40).unwrap().len());
+            //println!("{}", Sequence::from_str(input.expect_text()?)?.nth(40).unwrap().len());
             Ok(Answer::Unsigned(
-                Sequence::from_str(input.expect_input()?)?
+                Sequence::from_str(input.expect_text()?)?
                     .nth(40)
                     .unwrap()
                     .len()
@@ -76,9 +76,9 @@ pub const SOLUTION: Solution = Solution {
         },
         // Part two
         |input| {
-            //println!("{}", Sequence::from_str(input.expect_input()?)?.nth(50).unwrap().len());
+            //println!("{}", Sequence::from_str(input.expect_text()?)?.nth(50).unwrap().len());
             Ok(Answer::Unsigned(
-                Sequence::from_str(input.expect_input()?)?
+                Sequence::from_str(input.expect_text()?)?
                     .nth(50)
                     .unwrap()
                     .len()
