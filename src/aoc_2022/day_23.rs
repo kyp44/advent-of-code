@@ -14,7 +14,7 @@ mod tests {
 .....
 ..##.
 .....";
-            answers = unsigned![123];
+            answers = unsigned![25, 4];
         }
         example {
             input = "....#..
@@ -24,36 +24,40 @@ mod tests {
 #.###..
 ##.#.##
 .#..#..";
-            answers = unsigned![110];
+            answers = unsigned![110, 20];
         }
-        actual_answers = unsigned![123];
+        actual_answers = unsigned![4241, 1079];
     }
 }
 
 /// Contains solution implementation items.
 mod solution {
+    use super::*;
+    use aoc::grid::StdBool;
+    use euclid::default::{Box2D, Point2D, Vector2D};
+    use gat_lending_iterator::LendingIterator;
+    use multiset::HashMultiSet;
     use std::{
         collections::{HashSet, VecDeque},
         sync::LazyLock,
     };
-
-    use super::*;
-    use aoc::grid::StdBool;
-    use euclid::default::{Point2D, Vector2D};
-    use gat_lending_iterator::LendingIterator;
-    use itertools::Itertools;
-    use multiset::HashMultiSet;
     use strum::{EnumIter, IntoEnumIterator};
 
+    /// The cardinal directions in which elves can move.
     #[derive(Clone, Copy, Debug, Default, EnumIter)]
     enum Move {
+        /// North / Up.
         #[default]
         North,
+        /// South / Down.
         South,
+        /// West / Left.
         West,
+        /// East / Right.
         East,
     }
     impl Move {
+        /// Returns a displacement vector to move one tile in this direction.
         pub fn as_vector(&self) -> Vector2D<isize> {
             match self {
                 Move::North => -ElfVector::unit_y(),
@@ -63,7 +67,11 @@ mod solution {
             }
         }
 
+        /// Returns a slice of displacement vectors for adjacent tiles that must be
+        /// checked for the absence of elves before an elf can propose to move in
+        /// this direction.
         pub fn checked_position_displacements(&self) -> &'static [ElfVector] {
+            /// Displacement vectors for moving north.
             static NORTH_VECS: LazyLock<[ElfVector; 3]> = LazyLock::new(|| {
                 [
                     Move::North.as_vector() + Move::West.as_vector(),
@@ -71,6 +79,7 @@ mod solution {
                     Move::North.as_vector() + Move::East.as_vector(),
                 ]
             });
+            /// Displacement vectors for moving south.
             static SOUTH_VECS: LazyLock<[ElfVector; 3]> = LazyLock::new(|| {
                 [
                     Move::South.as_vector() + Move::West.as_vector(),
@@ -78,6 +87,7 @@ mod solution {
                     Move::South.as_vector() + Move::East.as_vector(),
                 ]
             });
+            /// Displacement vectors for moving west.
             static WEST_VECS: LazyLock<[ElfVector; 3]> = LazyLock::new(|| {
                 [
                     Move::West.as_vector() + Move::South.as_vector(),
@@ -85,6 +95,7 @@ mod solution {
                     Move::West.as_vector() + Move::North.as_vector(),
                 ]
             });
+            /// Displacement vectors for moving east.
             static EAST_VECS: LazyLock<[ElfVector; 3]> = LazyLock::new(|| {
                 [
                     Move::East.as_vector() + Move::South.as_vector(),
@@ -102,22 +113,35 @@ mod solution {
         }
     }
 
+    /// An elf's location.
     type ElfPoint = Point2D<isize>;
+    /// Can be added to [`ElfPoint`] to change it.
     type ElfVector = Vector2D<isize>;
 
-    #[derive(Debug)]
+    /// Represents an elf.
+    #[derive(Clone, Debug)]
     struct Elf {
+        /// The elf's position.
         position: ElfPoint,
+        /// The elf's proposed next move, if any.
         proposed_move: Option<Move>,
     }
     impl Elf {
+        /// Returns the new position proposed by the elf, if any.
         pub fn proposed_position(&self) -> Option<ElfPoint> {
             self.proposed_move.map(|m| self.position + m.as_vector())
         }
     }
 
+    /// The overall grove, which can be parsed from text.
+    ///
+    /// This is a [`LendingIterator`] over the rounds of elf movement. The first item
+    /// yielded is the grove after the first round, not the initial state.
+    #[derive(Clone)]
     pub struct Grove {
+        /// The current order of directions to check for move proposal.
         move_order: VecDeque<Move>,
+        /// All of the elves.
         elves: Box<[Elf]>,
     }
     impl FromStr for Grove {
@@ -147,24 +171,32 @@ mod solution {
     }
     impl std::fmt::Debug for Grove {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let positions = self.as_coordinates().map(|p| p.cast_unit()).collect_vec();
+            let coordinates = self.as_grid_coordinates();
 
             write!(
                 f,
                 "{:?}",
-                Grid::<StdBool>::from_coordinates(positions.iter())
+                Grid::<StdBool>::from_coordinates(coordinates.iter())
             )
         }
     }
     impl Grove {
-        fn as_coordinates<'a>(&'a self) -> impl Iterator<Item = ElfPoint> + 'a {
+        /// Returns an iterator over the positions of the elves.
+        fn positions(&self) -> impl Iterator<Item = ElfPoint> + '_ {
             self.elves.iter().map(|e| e.position)
         }
 
-        // Uses current `move_order` and does not alter it, making this yield the same results
-        // if called more than once.
+        /// Returns a list of the elf positions as points on a grid.
+        fn as_grid_coordinates(&self) -> Vec<AnyGridPoint> {
+            self.positions().map(|p| p.cast_unit()).collect()
+        }
+
+        /// Proposes the next move for every elf.
+        ///
+        /// This uses the current `move_order` and does not alter it, making
+        /// this yield the same proposals if called more than once.
         fn propose_moves(&mut self) {
-            let positions: HashSet<_> = self.as_coordinates().collect();
+            let positions: HashSet<_> = self.positions().collect();
 
             for elf in self.elves.iter_mut() {
                 // If there are no neighboring elves, do nothing
@@ -186,20 +218,20 @@ mod solution {
                             break;
                         }
                     }
-                    if new_move.is_none() {
-                        panic!("The elf at {:?} has no move to propose", elf.position);
-                    }
 
                     new_move
                 } else {
                     None
                 };
             }
+        }
 
-            println!("TODO proposed moves:");
-            for elf in self.elves.iter() {
-                println!("{elf:?}");
-            }
+        /// Returns the number of empty tiles in the smallest rectangular patch
+        /// of grove that contains every elf.
+        pub fn empty_tiles(&self) -> u64 {
+            let bounds = Box2D::from_points_inclusive(self.positions());
+
+            u64::try_from(bounds.area()).unwrap() - u64::try_from(self.elves.len()).unwrap()
         }
     }
     impl LendingIterator for Grove {
@@ -241,20 +273,23 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 23,
     name: "Unstable Diffusion",
-    preprocessor: None,
+    preprocessor: Some(|input| Ok(Box::new(Grove::from_str(input)?).into())),
     solvers: &[
         // Part one
         |input| {
-            // Generation
-            let mut grove = Grove::from_str(input.expect_text()?)?;
-
-            println!("TODO initial:\n{grove:?}");
-            grove.take(10).for_each(|g| {
-                println!("\nTODO\n{g:?}");
-            });
+            let mut grove = input.expect_data::<Grove>()?.clone();
 
             // Process
-            Ok(123u64.into())
+            grove.iterations(10);
+
+            Ok(grove.empty_tiles().into())
+        },
+        // Part two
+        |input| {
+            let grove = input.expect_data::<Grove>()?.clone();
+
+            // Process
+            Ok(u64::try_from(grove.count() + 1).unwrap().into())
         },
     ],
 };
