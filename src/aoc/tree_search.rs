@@ -13,7 +13,7 @@
 use crate::error::{AocError, AocResult};
 use derive_more::{Add, From};
 use derive_new::new;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 /// Action to take by a tree search algorithm after processing a particular node.
 pub enum NodeAction<N> {
@@ -198,6 +198,12 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
     /// sub-tree.
     /// This obviates the need to recurse past each node more than once, which can vastly reduce
     /// the algorithm execution time.
+    /// Because of this, the nodes must implement [`Hash`](std::hash::Hash) and [`Eq`], for which
+    /// two nodes should be equivalent if they would have the same optimum path past that point.
+    ///
+    /// Due to built-in optimizations, care must be taken when defining node equality, and/or when
+    /// causing tree branches to end early. These can cause the optimizations to fail to work correctly,
+    /// causing problems that are difficult to debug.
     ///
     /// # Panics
     /// This will panic if any node returns an empty array of children.
@@ -218,6 +224,16 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
             best_cost_state: &mut BestCostState<N>,
             mut current_node: BestCostNode<N>,
         ) -> BestCostReturn<N> {
+            // If our cumulative cost is already worse than the best cost, we need not proceed further
+            if let Some(bc) = best_cost_state.best_cost
+                && bc.is_better(&current_node.cumulative_cost)
+            {
+                return BestCostReturn {
+                    complete: false,
+                    best_cost: None,
+                };
+            }
+
             // If we already know the best cost to add for this node and its sub-tree, then exit early
             if let Some(bc) = best_cost_state
                 .node_best_costs
@@ -308,7 +324,7 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
 }
 
 /// A [`Metric`] that counts steps between node.
-#[derive(Clone, Copy, Default, Add, From)]
+#[derive(Clone, Copy, Debug, Default, Add, From)]
 struct Step(usize);
 impl Metric for Step {
     fn is_better(&self, other: &Self) -> bool {
@@ -353,6 +369,9 @@ pub trait LeastStepsTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
     ///
     /// Returns the least number of steps to a successful terminal node, or
     /// [`AocError::NoSolution`] if no successful terminal nodes were encountered.
+    ///
+    /// The caveats that apply to [`BestCostTreeNode::traverse_tree`] apply here as well
+    /// in terms of defining node equality and implementing premature tree branch trimming.
     fn traverse_tree(self) -> AocResult<usize> {
         LeastStepsNode(self).traverse_tree().map(|s| s.0)
     }

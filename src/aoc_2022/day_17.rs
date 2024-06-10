@@ -122,27 +122,27 @@ mod solution {
     #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, EnumIter, EnumCount)]
     enum RockShape {
         /// Horizontal line.
-        /// ```[text]
+        /// ```text
         /// ####
         /// ```
         #[default]
         LineHorizontal,
         /// Plus.
-        /// ```[text]
+        /// ```text
         /// .#.
         /// ###
         /// .#.
         /// ```
         Plus,
         /// Right angle.
-        /// ```[text]
+        /// ```text
         /// ..#
         /// ..#
         /// ###
         /// ```
         RightAngle,
         /// Vertical line.
-        /// ```[text]
+        /// ```text
         /// #
         /// #
         /// #
@@ -150,7 +150,7 @@ mod solution {
         /// ```
         LineVertical,
         /// Square.
-        /// ```[text]
+        /// ```text
         /// ##
         /// ##
         /// ```

@@ -1282,7 +1282,7 @@ impl fmt::Debug for StdBool {
     PartialOrd,
     Ord,
 )]
-pub struct Digit(u8);
+pub struct Digit(pub u8);
 impl TryFrom<char> for Digit {
     type Error = ();
 

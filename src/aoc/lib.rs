@@ -23,7 +23,9 @@ pub mod prelude {
         error::{AocError, AocResult},
         evolver::Evolver,
         extension::{
-            euclid::{AllPoints, BoxInclusive, ConversionExt, ManhattanLen, UnitVectors},
+            euclid::{
+                AllPoints, BoxInclusive, CenterInteger, ConversionExt, ManhattanLen, UnitVectors,
+            },
             RangeExt,
         },
         grid::{
@@ -94,7 +96,10 @@ pub mod extension {
 
     /// Extension traits for items in the `euclid` geometry crate.
     pub mod euclid {
-        use std::borrow::Borrow;
+        use std::{
+            borrow::Borrow,
+            ops::{Add, Div, Sub},
+        };
 
         use euclid::{
             num::{One, Zero},
@@ -360,6 +365,61 @@ pub mod extension {
                     let bounds = Self::from_points(points);
                     Self::new_inclusive(bounds.min, bounds.max)
                 }
+            }
+        }
+
+        /// The built-in `center` method of `euclid` boxes does not work
+        /// correctly for integer components on account of the boxes
+        /// being exclusive in the `max` point.
+        ///
+        /// This corrects the problem for such boxes.
+        pub trait CenterInteger {
+            /// The type of the points that define the box.
+            type Point;
+
+            /// Returns the center point of the box, rounded down.
+            ///
+            /// # Examples
+            /// Basic usage:
+            /// ```
+            /// # use aoc::prelude::*;
+            /// use euclid::default::{Box2D, Box3D, Point2D, Point3D, Size2D, Size3D};
+            ///
+            /// assert_eq!(
+            ///     Box2D::from_origin_and_size(Point2D::new(1, 1), Size2D::new(3, 5)).center_integer(),
+            ///     Point2D::new(2, 3),
+            /// );
+            /// assert_eq!(
+            ///     Box3D::from_origin_and_size(Point3D::new(-1, -1, -1), Size3D::new(3, 5, 7))
+            ///         .center_integer(),
+            ///     Point3D::new(0, 1, 2),
+            /// );
+            /// ```
+            fn center_integer(&self) -> Self::Point;
+        }
+        impl<T, U> CenterInteger for Box2D<T, U>
+        where
+            T: Copy + One + Add<Output = T> + Sub<Output = T> + Div<Output = T> + std::iter::Step,
+        {
+            type Point = Point2D<T, U>;
+
+            fn center_integer(&self) -> Self::Point {
+                let two = T::one() + T::one();
+
+                (self.min + self.max.to_vector() - Vector2D::new(T::one(), T::one())) / two
+            }
+        }
+        impl<T, U> CenterInteger for Box3D<T, U>
+        where
+            T: Copy + One + Add<Output = T> + Sub<Output = T> + Div<Output = T> + std::iter::Step,
+        {
+            type Point = Point3D<T, U>;
+
+            fn center_integer(&self) -> Self::Point {
+                let two = T::one() + T::one();
+
+                (self.min + self.max.to_vector() - Vector3D::new(T::one(), T::one(), T::one()))
+                    / two
             }
         }
 
