@@ -21,24 +21,38 @@ mod tests {
 122";
             answers = string!["2=-1=0"];
         }
-        actual_answers = unsigned![123];
+        actual_answers = string!["2----0=--1122=0=0021"];
     }
 }
 
 /// Contains solution implementation items.
 mod solution {
+    use std::iter::Sum;
+
     use aoc::parse::trim;
     use derive_more::{Add, From, Sub};
-    use nom::{branch::alt, bytes::complete::tag, combinator::map, multi::many1};
+    use nom::{
+        branch::alt,
+        bytes::complete::tag,
+        combinator::{all_consuming, map},
+        multi::many1,
+    };
 
     use super::*;
 
+    /// A single digit in a SNAFU number, which can be parsed from text
+    /// input.
     #[derive(Clone, Copy)]
     enum SnafuDigit {
+        /// Zero (`0`).
         Zero,
+        /// One (`1`).
         One,
+        /// Two (`2`).
         Two,
+        /// Double minus (`=`).
         DoubleMinus,
+        /// Minus (`-`).
         Minus,
     }
     impl Parsable<'_> for SnafuDigit {
@@ -84,6 +98,10 @@ mod solution {
         }
     }
     impl SnafuDigit {
+        /// Returns the value of the digit, given its `place` in the SNAFU number.
+        ///
+        /// A `place` of `0` is the rightmost (ones) digit while a `place` of `n-1`
+        /// is the leftmost digit if the number has `n` digits.
         pub fn value(&self, place: usize) -> i64 {
             5i64.pow(place.try_into().unwrap())
                 * match self {
@@ -95,23 +113,25 @@ mod solution {
                 }
         }
 
+        /// Returns whether the digit has a negative value, that is, whether it is
+        /// [`SnafuDigit::Minus`] or [`SnafuDigit::DoubleMinus`].
         pub fn is_negative_digit(&self) -> bool {
-            match self {
-                Self::DoubleMinus | Self::Minus => true,
-                _ => false,
-            }
+            matches!(self, Self::DoubleMinus | Self::Minus)
         }
     }
 
+    /// A single SNAFU number, which can be parsed from text input.
     #[derive(Debug, Add, Sub, From)]
     pub struct SnafuNumber(i64);
     impl Parsable<'_> for SnafuNumber {
         fn parser(input: &'_ str) -> NomParseResult<&str, Self> {
-            // TODO: Verify that this works for negative SNAFU numbers.
-            map(trim(false, many1(SnafuDigit::parser)), |mut digs| {
-                digs.reverse();
-                Self(digs.into_iter().enumerate().map(|(p, d)| d.value(p)).sum())
-            })(input)
+            map(
+                trim(false, all_consuming(many1(SnafuDigit::parser))),
+                |mut digs| {
+                    digs.reverse();
+                    Self(digs.into_iter().enumerate().map(|(p, d)| d.value(p)).sum())
+                },
+            )(input)
         }
     }
     impl std::fmt::Display for SnafuNumber {
@@ -119,20 +139,16 @@ mod solution {
             let mut value = self.0;
             let mut digits = Vec::new();
             loop {
-                // TODO: Need to get this working with negative numbers too.
-                let digit = SnafuDigit::try_from(value.rem_euclid(5)).unwrap();
-                println!(
-                    "{} step {}: {value} mod 5 {}",
-                    self.0,
-                    digits.len(),
-                    value.rem_euclid(5)
-                );
-                value /= 5;
-                println!("{} step {}: {value} div 5 {}", self.0, digits.len(), value);
+                let (d, m) = num_integer::div_mod_floor(value, 5);
+                let digit = SnafuDigit::try_from(m).unwrap();
+
+                value = d;
+
                 if digit.is_negative_digit() {
                     // Need to increment the next digit
                     value += 1;
                 }
+
                 digits.push(digit);
                 if value == 0 {
                     // Nothing left
@@ -144,6 +160,17 @@ mod solution {
                 write!(f, "{d}")?;
             }
             Ok(())
+        }
+    }
+    impl SnafuNumber {
+        /// Returns the numeric value of the number.
+        pub fn n(&self) -> i64 {
+            self.0
+        }
+    }
+    impl Sum for SnafuNumber {
+        fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+            iter.reduce(|a, b| a + b).unwrap_or(0.into())
         }
     }
 }
@@ -159,14 +186,11 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let x = SnafuNumber::from_str("1121-1110-1=0")?;
-            println!("TODO: {x:?}");
-
-            let x = SnafuNumber::from(-13);
-            println!("TODO: {x}");
+            let numbers = SnafuNumber::gather(input.expect_text()?.lines())?;
 
             // Process
-            Ok(0u64.into())
+            let sum: SnafuNumber = numbers.into_iter().sum();
+            Ok(sum.to_string().into())
         },
     ],
 };

@@ -33,6 +33,7 @@ dependencies = [
  "multiset",
  "nom",
  "num",
+ "num-integer",
  "petgraph",
  "serde_json",
  "strum",
