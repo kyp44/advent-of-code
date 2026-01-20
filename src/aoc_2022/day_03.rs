@@ -23,7 +23,7 @@ CrZsJsPPZsGzwwsLwLmpwMDw";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use itertools::{process_results, Itertools};
+    use itertools::{Itertools, process_results};
     use std::ascii::Char as AsciiChar;
     use std::collections::HashSet;
     use std::str::FromStr;
@@ -143,7 +143,7 @@ mod solution {
         /// priority determined.
         /// These priorities are then summed over all the groups.
         pub fn badge_priority_sum(&self) -> AocResult<u64> {
-            if self.rucksacks.len() % 3 != 0 {
+            if !self.rucksacks.len().is_multiple_of(3) {
                 return Err(AocError::Process(
                     "The number of rucksacks is not divisible by 3!".into(),
                 ));

@@ -1,6 +1,6 @@
 [package]
 authors = ["Dan Whitman <dwhitman44@gmail.com>"]
-edition = "2021"
+edition = "2024"
 name = "advent-of-code"
 version = "0.1.0"
 
@@ -27,35 +27,36 @@ anyhow = "1.0"
 bare_metal_modulo = "1.2"
 bimap = "0.6"
 bitbuffer = "0.11"
-circular-buffer = "0.1"
+circular-buffer = "1.2"
 clap = {version = "4.5", features = ["derive", "string"]}
-colored = "2.1"
-derive-new = "0.6"
-derive_more = "0.99"
+colored = "3.1"
+derive-new = "0.7"
+derive_more = {version = "2.1", features = ["full"]}
 enum-as-inner = "0.6"
 enum-map = "2.7"
 enum_dispatch = "0.3"
 euclid = "0.22"
 gat-lending-iterator = "0.1"
 gcollections = "1.5"
-grid = "0.14"
+grid = "1.0"
 hex = "0.4"
-indexmap = "2.2"
+indexmap = "2.13"
 infinitable = "1.6"
 intervallum = "1.4"
-itertools = "0.13"
-lazy_static = "1.4"
+itertools = "0.14"
+lazy_static = "1.5"
 maplit = "1.0"
-md5 = "0.7"
+md5 = "0.8"
 multiset = "0.0.5"
-nom = "7.1"
+nom = "8.0"
+nom-language = "0.1.0"
 num = "0.4"
 num-integer = "0.1"
-petgraph = "0.6"
+petgraph = "0.8"
 serde_json = "1.0"
-strum = {version = "0.26", features = ["derive"]}
+strum = {version = "0.27", features = ["derive"]}
 takeable = "0.2"
-thiserror = "1.0"
+thiserror = "2.0"
 
 [features]
 expensive = []

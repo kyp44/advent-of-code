@@ -8,7 +8,7 @@ use derive_more::{Add, AddAssign, Deref, From, Into, Not, Sub, SubAssign};
 use euclid::{Box2D, Point2D, Size2D, Vector2D};
 use itertools::iproduct;
 use num::FromPrimitive;
-use petgraph::{graph::NodeIndex, stable_graph::IndexType, EdgeType, Graph};
+use petgraph::{EdgeType, Graph, graph::NodeIndex, stable_graph::IndexType};
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, marker::PhantomData, str::FromStr};
 
 /// A grid coordinate system in which the origin is the in upper left of the grid
@@ -220,7 +220,7 @@ impl<T, U> Grid<T, U> {
     /// Invalid usage:
     /// ```
     /// # #![feature(assert_matches)]
-    /// # use std::assert_matches::assert_matches;
+    /// # use std::assert_matches;
     /// # use aoc::prelude::*;
     /// assert_matches!(Grid::<u8>::from_data(vec![]), Err(AocError::Other(_)));
     ///
@@ -297,7 +297,7 @@ impl<T, U> Grid<T, U> {
     /// Basic usage:
     /// ```
     /// # #![feature(assert_matches)]
-    /// # use std::assert_matches::assert_matches;
+    /// # use std::assert_matches;
     /// # use aoc::prelude::*;
     /// let grid = Grid::<u8>::from_data(vec![vec![1, 2], vec![3, 4], vec![5, 6]]).unwrap();
     ///
@@ -345,7 +345,7 @@ impl<T, U> Grid<T, U> {
     /// Basic usage:
     /// ```
     /// # #![feature(assert_matches)]
-    /// # use std::assert_matches::assert_matches;
+    /// # use std::assert_matches;
     /// # use aoc::prelude::*;
     /// let mut grid = Grid::<u8>::from_data(vec![vec![1, 2], vec![3, 4], vec![5, 6]]).unwrap();
     /// let point = AnyGridPoint::new(1, 1);
@@ -438,7 +438,7 @@ impl<T, U> Grid<T, U> {
     ///
     /// assert_eq!(grid.all_points().collect_vec(), points);
     /// ```
-    pub fn all_points(&self) -> impl Iterator<Item = GridPoint<U>> {
+    pub fn all_points(&self) -> impl Iterator<Item = GridPoint<U>> + 'static {
         self.size().all_points()
     }
 
@@ -654,7 +654,7 @@ impl<T: Default + Clone, U> Grid<T, U> {
     /// Invalid usage:
     /// ```
     /// # #![feature(assert_matches)]
-    /// # use std::assert_matches::assert_matches;
+    /// # use std::assert_matches;
     /// # use aoc::prelude::*;
     /// assert_matches!(
     ///     Grid::<u8>::from_data_default(vec![], None),
@@ -791,7 +791,7 @@ impl<T: Default + Clone, U> Grid<T, U> {
     /// Invalid usage:
     /// ```
     /// # #![feature(assert_matches)]
-    /// # use std::assert_matches::assert_matches;
+    /// # use std::assert_matches;
     /// # use aoc::prelude::*;
     /// # use std::str::FromStr;
     /// #[derive(Debug, PartialEq, Eq)]
@@ -851,8 +851,8 @@ impl<T: Clone> Grid<T> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// use itertools::{iproduct, Itertools};
-    /// use petgraph::{graph::DefaultIx, Directed};
+    /// use itertools::{Itertools, iproduct};
+    /// use petgraph::{Directed, graph::DefaultIx};
     ///
     /// // Create a grid of numbers.
     /// let grid = Grid::from_data(vec![vec![2, 2, 3], vec![3, 1, 2], vec![4, 5, 1]]).unwrap();
@@ -897,11 +897,13 @@ impl<T: Clone> Grid<T> {
     /// ];
     ///
     /// // Check the node weights.
-    /// assert!(nodes
-    ///     .iter()
-    ///     .map(|n| graph.node_weight(*n).unwrap())
-    ///     .copied()
-    ///     .eq([2, 2, 3, 3, 1, 2, 4, 5, 1]));
+    /// assert!(
+    ///     nodes
+    ///         .iter()
+    ///         .map(|n| graph.node_weight(*n).unwrap())
+    ///         .copied()
+    ///         .eq([2, 2, 3, 3, 1, 2, 4, 5, 1])
+    /// );
     ///
     /// // Check every possible pair of nodes for the expected edges.
     /// for (a, b) in iproduct!(nodes.iter(), nodes.iter()).map(|(a, b)| (*a, *b)) {
@@ -1105,7 +1107,7 @@ impl<T: Into<bool> + Clone, U> Grid<T, U> {
 /// Invalid usage:
 /// ```
 /// # #![feature(assert_matches)]
-/// # use std::assert_matches::assert_matches;
+/// # use std::assert_matches;
 /// # use aoc::prelude::*;
 /// # use std::str::FromStr;
 /// #[derive(Debug, PartialEq, Eq)]

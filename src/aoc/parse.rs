@@ -4,15 +4,14 @@
 
 use nom::bytes::complete::tag;
 use nom::character::complete::{multispace0, satisfy, space0, space1};
-use nom::character::is_alphanumeric;
-use nom::error::VerboseErrorKind;
 use nom::sequence::{delimited, separated_pair};
+use nom::{AsChar, Compare, Input, Parser};
+use nom::{Finish, IResult, error::ErrorKind};
 use nom::{character::complete::digit1, combinator::map};
-use nom::{error::ErrorKind, error::VerboseError, Finish, IResult};
-use nom::{AsChar, InputIter, InputTakeAtPosition, Slice};
+use nom_language::error::{VerboseError, VerboseErrorKind};
 use num::Unsigned;
 use std::fmt;
-use std::ops::{RangeFrom, RangeInclusive};
+use std::ops::RangeInclusive;
 use std::str::FromStr;
 
 use crate::prelude::{AocError, AocResult};
@@ -105,7 +104,7 @@ impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
 /// Trait for types that can be parsed from text with [`nom`].
 pub trait Parsable<'a> {
     /// Needs to parse the text using [`nom`] and return the parsed item.
-    fn parser(input: &'a str) -> NomParseResult<&str, Self>
+    fn parser(input: &'a str) -> NomParseResult<&'a str, Self>
     where
         Self: Sized;
 
@@ -128,7 +127,7 @@ pub trait Parsable<'a> {
     /// Basic usage:
     /// ```
     /// # #![feature(assert_matches)]
-    /// # use std::assert_matches::assert_matches;
+    /// # use std::assert_matches;
     /// # use aoc::prelude::*;
     /// assert_eq!(
     ///     u8::gather(vec!["43", "22", "5", "8"].into_iter()),
@@ -149,11 +148,14 @@ pub trait Parsable<'a> {
     /// Gathers a [`Vec`] of items from a single string in which each item string
     /// is separated by commas.
     ///
+    /// No whitespace is allowed between items, but this can be enabled by
+    /// wrapping the item parser in the [`trim`] parser.
+    ///
     /// # Examples
     /// Basic usage:
     /// ```
     /// # #![feature(assert_matches)]
-    /// # use std::assert_matches::assert_matches;
+    /// # use std::assert_matches;
     /// # use aoc::prelude::*;
     /// assert_eq!(u8::from_csv("21,27,82,7"), Ok(vec![21, 27, 82, 7]));
     /// assert_matches!(u8::from_csv("21,-56,82,7"), Err(_));
@@ -172,7 +174,8 @@ impl<T: Unsigned + FromStr> Parsable<'_> for T {
         map(digit1, |ns: &str| match ns.parse() {
             Ok(v) => v,
             Err(_) => panic!("nom did not parse a numeric value correctly"),
-        })(input.trim())
+        })
+        .parse(input.trim())
     }
 }
 
@@ -184,7 +187,7 @@ impl<T: Unsigned + FromStr> Parsable<'_> for T {
 /// Basic usage:
 /// ```
 /// # #![feature(assert_matches)]
-/// # use std::assert_matches::assert_matches;
+/// # use std::assert_matches;
 /// # use aoc::prelude::*;
 /// # use aoc::parse::trim;
 /// assert_matches!(
@@ -192,7 +195,8 @@ impl<T: Unsigned + FromStr> Parsable<'_> for T {
 ///     Err(_)
 /// );
 /// assert_eq!(
-///     trim::<_, _, _, NomParseError>(false, nom::character::complete::i32)("   -45   ")
+///     trim(false, nom::character::complete::i32::<_, NomParseError>)
+///         .parse("   -45   ")
 ///         .discard_input(),
 ///     Ok(-45)
 /// );
@@ -201,22 +205,26 @@ impl<T: Unsigned + FromStr> Parsable<'_> for T {
 ///     Err(_)
 /// );
 /// assert_matches!(
-///     trim::<_, _, _, NomParseError>(false, nom::character::complete::i32)("\n67\n")
+///     trim(false, nom::character::complete::i32::<_, NomParseError>)
+///         .parse("\n67\n")
 ///         .discard_input(),
 ///     Err(_)
 /// );
 /// assert_eq!(
-///     trim::<_, _, _, NomParseError>(true, nom::character::complete::i32)("\n67\n")
+///     trim(true, nom::character::complete::i32::<_, NomParseError>)
+///         .parse("\n67\n")
 ///         .discard_input(),
 ///     Ok(67)
 /// );
 /// ```
-pub fn trim<I, F, O, E>(include_newlines: bool, inner: F) -> impl FnMut(I) -> IResult<I, O, E>
+pub fn trim<I, F>(
+    include_newlines: bool,
+    inner: F,
+) -> impl Parser<I, Error = F::Error, Output = F::Output>
 where
-    I: InputTakeAtPosition,
-    <I as InputTakeAtPosition>::Item: AsChar + Clone,
-    F: FnMut(I) -> IResult<I, O, E>,
-    E: nom::error::ParseError<I>,
+    I: Input,
+    <I as Input>::Item: AsChar + Clone,
+    F: Parser<I>,
 {
     let space_parser = if include_newlines {
         multispace0
@@ -235,7 +243,7 @@ where
 /// Basic usage:
 /// ```
 /// # #![feature(assert_matches)]
-/// # use std::assert_matches::assert_matches;
+/// # use std::assert_matches;
 /// # use aoc::prelude::*;
 /// # use aoc::parse::single_alphanumeric;
 /// assert_eq!(
@@ -261,17 +269,11 @@ where
 /// ```
 pub fn single_alphanumeric<I, E>(input: I) -> IResult<I, char, E>
 where
-    I: Slice<RangeFrom<usize>> + InputIter,
-    <I as InputIter>::Item: AsChar,
+    I: Input,
+    <I as Input>::Item: AsChar,
     E: nom::error::ParseError<I>,
 {
-    satisfy(|c| {
-        if let Ok(b) = c.try_into() {
-            is_alphanumeric(b)
-        } else {
-            false
-        }
-    })(input)
+    satisfy(|c| c.is_alphanum())(input)
 }
 
 /// Requires whitespace around a parser.
@@ -284,44 +286,51 @@ where
 /// Basic usage:
 /// ```
 /// # #![feature(assert_matches)]
-/// # use std::assert_matches::assert_matches;
+/// # use std::assert_matches;
 /// # use aoc::prelude::*;
 /// # use aoc::parse::separated;
 /// assert_matches!(
-///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)("64").discard_input(),
+///     separated(nom::character::complete::i32::<_, NomParseError>)
+///         .parse("64")
+///         .discard_input(),
 ///     Err(_)
 /// );
 /// assert_eq!(
-///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)(" 64 ").discard_input(),
+///     separated(nom::character::complete::i32::<_, NomParseError>)
+///         .parse(" 64 ")
+///         .discard_input(),
 ///     Ok(64)
 /// );
 /// assert_eq!(
-///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)("    64  ")
+///     separated(nom::character::complete::i32::<_, NomParseError>)
+///         .parse("    64  ")
 ///         .discard_input(),
 ///     Ok(64)
 /// );
 /// assert_matches!(
-///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)("\n64\n")
+///     separated(nom::character::complete::i32::<_, NomParseError>)
+///         .parse("\n64\n")
 ///         .discard_input(),
 ///     Err(_)
 /// );
 /// assert_matches!(
-///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)("\n  64  \n")
+///     separated(nom::character::complete::i32::<_, NomParseError>)
+///         .parse("\n  64  \n")
 ///         .discard_input(),
 ///     Err(_)
 /// );
 /// assert_matches!(
-///     separated::<_, _, _, NomParseError>(nom::character::complete::i32)("   \n64\n  ")
+///     separated(nom::character::complete::i32::<_, NomParseError>)
+///         .parse("   \n64\n  ")
 ///         .discard_input(),
 ///     Err(_)
 /// );
 /// ```
-pub fn separated<I, F, O, E>(inner: F) -> impl FnMut(I) -> IResult<I, O, E>
+pub fn separated<I, F>(inner: F) -> impl Parser<I, Error = F::Error, Output = F::Output>
 where
-    I: InputTakeAtPosition,
-    <I as InputTakeAtPosition>::Item: AsChar + Clone,
-    F: FnMut(I) -> IResult<I, O, E>,
-    E: nom::error::ParseError<I>,
+    I: Input,
+    <I as Input>::Item: AsChar + Clone,
+    F: Parser<I>,
 {
     delimited(space1, inner, space1)
 }
@@ -334,7 +343,7 @@ where
 /// Basic usage:
 /// ```
 /// # #![feature(assert_matches)]
-/// # use std::assert_matches::assert_matches;
+/// # use std::assert_matches;
 /// # use aoc::prelude::*;
 /// # use aoc::parse::single_digit;
 /// assert_eq!(
@@ -356,8 +365,8 @@ where
 /// ```
 pub fn single_digit<I, E>(input: I) -> IResult<I, u8, E>
 where
-    I: Slice<RangeFrom<usize>> + InputIter,
-    <I as InputIter>::Item: AsChar + Copy,
+    I: Input,
+    <I as Input>::Item: AsChar + Copy,
     E: nom::error::ParseError<I>,
 {
     match input
@@ -365,7 +374,7 @@ where
         .next()
         .map(|c| (c, c.as_char().to_digit(10)))
     {
-        Some((c, Some(d))) => Ok((input.slice(c.len()..), d.try_into().unwrap())),
+        Some((c, Some(d))) => Ok((input.take_from(c.len()), d.try_into().unwrap())),
         _ => Err(nom::Err::Error(E::from_error_kind(
             input,
             ErrorKind::NoneOf,
@@ -382,37 +391,41 @@ where
 /// Basic usage:
 /// ```
 /// # #![feature(assert_matches)]
-/// # use std::assert_matches::assert_matches;
+/// # use std::assert_matches;
 /// # use aoc::prelude::*;
 /// # use aoc::parse::field_line_parser;
 /// assert_eq!(
-///     field_line_parser::<_, _, NomParseError>("name:", nom::character::complete::u8)(
-///         "name:        47"
-///     )
-///     .discard_input(),
+///     field_line_parser("name:", nom::character::complete::u8::<_, NomParseError>)
+///         .parse("name:        47")
+///         .discard_input(),
 ///     Ok(47)
 /// );
 /// assert_eq!(
-///     field_line_parser::<_, _, NomParseError>("job =", nom::character::complete::alpha1)(
-///         "job =electrician"
+///     field_line_parser(
+///         "job =",
+///         nom::character::complete::alpha1::<_, NomParseError>
 ///     )
+///     .parse("job =electrician")
 ///     .discard_input(),
 ///     Ok("electrician")
 /// );
 /// assert_matches!(
-///     field_line_parser::<_, _, NomParseError>("class:", nom::character::complete::alpha1)(
-///         "class = mage"
-///     ),
+///     field_line_parser(
+///         "class:",
+///         nom::character::complete::alpha1::<_, NomParseError>
+///     )
+///     .parse("class = mage"),
 ///     Err(_)
 /// );
 /// ```
-pub fn field_line_parser<'a, F, O, E>(
+pub fn field_line_parser<I, F>(
     label: &'static str,
     inner: F,
-) -> impl FnMut(&'a str) -> IResult<&'a str, O, E>
+) -> impl Parser<I, Error = F::Error, Output = F::Output>
 where
-    E: nom::error::ParseError<&'a str>,
-    F: FnMut(&'a str) -> IResult<&'a str, O, E>,
+    I: Input + Compare<&'static str>,
+    <I as Input>::Item: AsChar,
+    F: Parser<I>,
 {
     delimited(tag(label), trim(false, inner), multispace0)
 }
@@ -428,28 +441,33 @@ where
 /// Basic usage:
 /// ```
 /// # #![feature(assert_matches)]
-/// # use std::assert_matches::assert_matches;
+/// # use std::assert_matches;
 /// # use aoc::prelude::*;
 /// # use aoc::parse::inclusive_range;
 /// assert_eq!(
-///     inclusive_range::<_, NomParseError>(nom::character::complete::u8)("4-13").discard_input(),
+///     inclusive_range(nom::character::complete::u8::<_, NomParseError>)
+///         .parse("4-13")
+///         .discard_input(),
 ///     Ok(4..=13)
 /// );
 /// assert_eq!(
-///     inclusive_range::<_, NomParseError>(nom::character::complete::i32)("-89765 - -1234")
+///     inclusive_range(nom::character::complete::i32::<_, NomParseError>)
+///         .parse("-89765 - -1234")
 ///         .discard_input(),
 ///     Ok(-89765..=-1234)
 /// );
 /// assert_matches!(
-///     inclusive_range::<_, NomParseError>(nom::character::complete::u16)("1-xyz"),
+///     inclusive_range(nom::character::complete::u16::<_, NomParseError>).parse("1-xyz"),
 ///     Err(_)
 /// );
 /// ```
-pub fn inclusive_range<'a, O, E>(
-    inner: fn(&'a str) -> IResult<&'a str, O, E>,
-) -> impl FnMut(&'a str) -> IResult<&'a str, RangeInclusive<O>, E>
+pub fn inclusive_range<'a, I, F>(
+    inner: F,
+) -> impl Parser<I, Error = F::Error, Output = RangeInclusive<F::Output>>
 where
-    E: nom::error::ParseError<&'a str>,
+    I: Input + Compare<&'a str>,
+    <I as Input>::Item: AsChar,
+    F: Parser<I> + Copy,
 {
     map(
         separated_pair(inner, delimited(space0, tag("-"), space0), inner),
@@ -469,7 +487,7 @@ pub trait Sections {
     /// Basic usage:
     /// ```
     /// # #![feature(assert_matches)]
-    /// # use std::assert_matches::assert_matches;
+    /// # use std::assert_matches;
     /// # use aoc::prelude::*;
     /// assert_eq!(
     ///     "section 1\n\nsection 2\n\nsection 3".sections(3),

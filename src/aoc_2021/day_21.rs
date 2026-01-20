@@ -109,7 +109,8 @@ mod solution {
                     field_line_parser("starting position:", nom::character::complete::u32),
                 ),
                 |(_, pos)| Self::new(pos),
-            )(input.trim())
+            )
+            .parse(input.trim())
         }
     }
 

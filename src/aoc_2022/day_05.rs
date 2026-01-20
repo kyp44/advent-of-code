@@ -29,12 +29,12 @@ mod solution {
     use aoc::parse::{separated, trim};
     use indexmap::IndexMap;
     use nom::{
+        Finish,
         branch::alt,
         bytes::complete::tag,
         combinator::map,
         multi::separated_list1,
-        sequence::{delimited, preceded, tuple},
-        Finish,
+        sequence::{delimited, preceded},
     };
     use std::str::FromStr;
 
@@ -60,7 +60,8 @@ mod solution {
                     delimited(tag(" "), nom::character::complete::u8, tag(" ")),
                     StackCell::Label,
                 ),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -79,7 +80,8 @@ mod solution {
             let mut rows = s
                 .lines()
                 .map(|line| {
-                    separated_list1(tag(" "), StackCell::parser)(line)
+                    separated_list1(tag(" "), StackCell::parser)
+                        .parse(line)
                         .finish()
                         .discard_input()
                 })
@@ -149,17 +151,18 @@ mod solution {
     impl Parsable<'_> for Move {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
-                tuple((
+                (
                     preceded(tag("move"), separated(nom::character::complete::u8)),
                     preceded(tag("from"), separated(nom::character::complete::u8)),
                     preceded(tag("to"), trim(false, nom::character::complete::u8)),
-                )),
+                ),
                 |(n, from, to)| Self {
                     number: n.into(),
                     from,
                     to,
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
 

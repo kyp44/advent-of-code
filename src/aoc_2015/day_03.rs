@@ -2,8 +2,8 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -62,7 +62,8 @@ mod solution {
                 'v' => South,
                 '<' => West,
                 _ => panic!(),
-            })(input)
+            })
+            .parse(input)
         }
     }
     impl Direction {
@@ -132,7 +133,8 @@ mod solution {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(many1(Direction::parser), |directions| Directions {
                 directions,
-            })(input)
+            })
+            .parse(input)
         }
     }
     impl Directions {

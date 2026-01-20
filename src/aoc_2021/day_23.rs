@@ -33,10 +33,10 @@ mod solution {
         character::complete::{line_ending, one_of},
         combinator::map,
         multi::{count, many1, separated_list1},
-        sequence::{delimited, terminated, tuple},
+        sequence::{delimited, terminated},
     };
     use petgraph::{
-        algo::{bellman_ford, FloatMeasure},
+        algo::{FloatMeasure, bellman_ford},
         graph::NodeIndex,
         prelude::StableUnGraph,
     };
@@ -168,6 +168,14 @@ mod solution {
         fn infinite() -> Self {
             Self(Infinitable::Infinity)
         }
+
+        fn from_f32(_val: f32) -> Self {
+            panic!()
+        }
+
+        fn from_f64(_val: f64) -> Self {
+            panic!()
+        }
     }
 
     /// The type of the graph used to model the board.
@@ -298,18 +306,19 @@ mod solution {
                         ),
                     ),
                     line_ending,
-                )(input)
+                )
+                .parse(input)
             };
 
             map(
                 delimited(
-                    tuple((
+                    (
                         terminated(count(tag(BORDER_DISP), 13), line_ending),
                         terminated(
                             delimited(tag(BORDER_DISP), count(tag("."), 11), tag(BORDER_DISP)),
                             line_ending,
                         ),
-                    )),
+                    ),
                     count(amphipod_line, 2),
                     trim(false, count(tag(BORDER_DISP), 9)),
                 ),
@@ -335,7 +344,8 @@ mod solution {
                         _phantom: Default::default(),
                     }
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl<P: Part + 'static> fmt::Debug for Position<P> {

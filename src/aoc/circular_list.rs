@@ -763,7 +763,7 @@ impl<L: Links> CircularList<L> {
     ///     vec![1, 2, 3, 4, 5, 6]
     /// );
     /// ```
-    pub fn iter_const(&self) -> impl Iterator<Item = NodeRef<L>> + '_ {
+    pub fn iter_const(&self) -> impl Iterator<Item = NodeRef<'_, L>> + '_ {
         self.nodes.iter().map(|n| NodeRef {
             list: self,
             raw: n.clone(),

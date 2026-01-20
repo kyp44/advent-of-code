@@ -29,12 +29,11 @@ mod solution {
     use super::*;
     use aoc::parse::trim;
     use bare_metal_modulo::{MNum, ModNum};
-    use itertools::{process_results, Itertools, ProcessResults};
+    use itertools::{Itertools, ProcessResults, process_results};
     use nom::{
         branch::alt,
         bytes::complete::{tag, take_until},
         combinator::map,
-        sequence::tuple,
     };
     use std::collections::HashSet;
 
@@ -49,9 +48,9 @@ mod solution {
         change: i64,
     }
     impl<'a> Parsable<'a> for SeatingPreference<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self> {
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
             map(
-                tuple((
+                (
                     take_until(" "),
                     trim(false, tag("would")),
                     alt((tag("gain"), tag("lose"))),
@@ -59,13 +58,14 @@ mod solution {
                     trim(false, tag("happiness units by sitting next to")),
                     take_until("."),
                     tag("."),
-                )),
+                ),
                 |(person, _, gl, c, _, next_to, _)| SeatingPreference {
                     person,
                     next_to,
                     change: if gl == "lose" { -c } else { c },
                 },
-            )(input.trim())
+            )
+            .parse(input.trim())
         }
     }
 

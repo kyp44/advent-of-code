@@ -43,7 +43,8 @@ mod solution {
                     inclusive_range(nom::character::complete::u8),
                 ),
                 |(elf_1, elf_2)| Self { elf_1, elf_2 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Assignment {

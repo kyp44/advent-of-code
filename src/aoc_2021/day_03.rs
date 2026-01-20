@@ -50,7 +50,8 @@ mod solution {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(many1(one_of("01")), |v| Self {
                 bit_vec: v.into_iter().map(|b| b == '1').collect(),
-            })(input)
+            })
+            .parse(input)
         }
     }
     impl FromIterator<bool> for ReportLine {

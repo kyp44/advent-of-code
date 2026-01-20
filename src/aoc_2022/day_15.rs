@@ -41,7 +41,7 @@ mod solution {
     use derive_more::Deref;
     use euclid::Point2D;
     use gcollections::ops::{Bounded, Cardinality, Difference, Empty, IsEmpty};
-    use interval::{ops::Range, Interval, IntervalSet};
+    use interval::{Interval, IntervalSet, ops::Range};
     use nom::{
         bytes::complete::tag,
         combinator::map,
@@ -60,7 +60,8 @@ mod solution {
                     preceded(tag("y="), nom::character::complete::i32),
                 ),
                 |t| Self(Point2D::from(t).to_isize()),
-            )(input)
+            )
+            .parse(input)
         }
     }
 
@@ -84,7 +85,8 @@ mod solution {
                     sensor: *s,
                     nearest_beacon: *b,
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl SensorReport {
@@ -145,11 +147,7 @@ mod solution {
             let mut row_ints = IntervalSet::empty();
             row_ints.extend(self.reports.iter().filter_map(|sr| {
                 let int = sr.coverage_row(row);
-                if int.is_empty() {
-                    None
-                } else {
-                    Some(int)
-                }
+                if int.is_empty() { None } else { Some(int) }
             }));
 
             row_ints

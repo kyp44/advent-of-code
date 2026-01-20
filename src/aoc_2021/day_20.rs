@@ -56,7 +56,8 @@ mod solution {
                     let table = v.try_into().unwrap();
                     Self { table }
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Algorithm {

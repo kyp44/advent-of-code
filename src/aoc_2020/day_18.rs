@@ -142,7 +142,8 @@ mod solution {
                     original: input.to_string(),
                     elements,
                 },
-            ))(input.trim())
+            ))
+            .parse(input.trim())
         }
     }
     impl Expression {
@@ -217,10 +218,10 @@ mod solution {
                         }
                     },
                     Element::Operator(op) => {
-                        if let Some(Element::Operator(pop)) = stack.last() {
-                            if op.cmp(pop, part).is_le() {
-                                postfix.push(stack.pop().unwrap());
-                            }
+                        if let Some(Element::Operator(pop)) = stack.last()
+                            && op.cmp(pop, part).is_le()
+                        {
+                            postfix.push(stack.pop().unwrap());
                         }
                         stack.push(e);
                     }

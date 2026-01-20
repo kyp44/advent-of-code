@@ -3,8 +3,8 @@ use std::{collections::HashSet, str::FromStr};
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -88,7 +88,8 @@ mod solution {
                     from: f.to_string(),
                     to: t.to_string(),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl fmt::Debug for Replacement {

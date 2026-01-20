@@ -2,8 +2,8 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -46,7 +46,7 @@ mod solution {
         character::complete::{multispace1, space0},
         combinator::map,
         multi::separated_list1,
-        sequence::{separated_pair, tuple},
+        sequence::separated_pair,
     };
     use num::integer::gcd;
     use std::convert::TryInto;
@@ -74,7 +74,7 @@ mod solution {
                 separated_pair(
                     nom::character::complete::u64,
                     multispace1,
-                    separated_list1(tuple((space0, tag(","), space0)), is_not(", \t\n\r")),
+                    separated_list1((space0, tag(","), space0), is_not(", \t\n\r")),
                 ),
                 |(earliest_time, vs): (u64, Vec<&str>)| Schedule {
                     earliest_time,
@@ -83,7 +83,8 @@ mod solution {
                         .map(|s| s.parse().ok().map(|id| ModNum::new(0, id)))
                         .collect(),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Schedule {

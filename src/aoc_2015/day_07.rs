@@ -27,12 +27,12 @@ mod solution {
     use aoc::parse::separated;
     use derive_new::new;
     use nom::{
+        IResult,
         branch::alt,
         bytes::complete::tag,
         character::complete::alpha1,
         combinator::{map, value},
         sequence::{preceded, separated_pair},
-        IResult,
     };
     use std::{collections::HashMap, convert::TryInto};
 
@@ -45,11 +45,12 @@ mod solution {
         Wire(&'a str),
     }
     impl<'a> Parsable<'a> for Input<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self> {
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
             alt((
                 map(nom::character::complete::u16, Input::Value),
                 map(alpha1, Input::Wire),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -90,20 +91,20 @@ mod solution {
         Or(Binary<'a>),
     }
     impl<'a> Parsable<'a> for Element<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self> {
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
             /// This is a [`nom`] parser for the input/output separator.
-            fn io_sep<'a, E>(input: &'a str) -> IResult<&str, (), E>
+            fn io_sep<'a, E>(input: &'a str) -> IResult<&'a str, (), E>
             where
                 E: nom::error::ParseError<&'a str>,
             {
-                value((), separated(tag("->")))(input)
+                value((), separated(tag("->"))).parse(input)
             }
 
             /// This is a [`nom`] parser for the shift element.
             fn shift<'a>(
                 keyword: &'static str,
                 mapper: fn(Unary<'a>, usize) -> Element<'a>,
-            ) -> impl FnMut(&'a str) -> IResult<&'a str, Element<'a>, NomParseError> {
+            ) -> impl Parser<&'a str, Output = Element<'a>, Error = NomParseError> {
                 map(
                     separated_pair(
                         separated_pair(
@@ -122,7 +123,7 @@ mod solution {
             fn binary<'a>(
                 keyword: &'static str,
                 mapper: fn(Binary<'a>) -> Element<'a>,
-            ) -> impl FnMut(&'a str) -> IResult<&'a str, Element<'a>, NomParseError> {
+            ) -> impl Parser<&'a str, Output = Element<'a>, Error = NomParseError> {
                 map(
                     separated_pair(
                         separated_pair(Input::parser, separated(tag(keyword)), Input::parser),
@@ -145,7 +146,8 @@ mod solution {
                 shift("RSHIFT", Element::ShiftRight),
                 binary("AND", Element::And),
                 binary("OR", Element::Or),
-            ))(input.trim())
+            ))
+            .parse(input.trim())
         }
     }
     impl Element<'_> {

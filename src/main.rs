@@ -8,7 +8,6 @@
 //! The document is in the `notes` directory and includes a `Makefile`.
 #![feature(hash_set_entry)]
 #![feature(type_alias_impl_trait)]
-#![feature(let_chains)]
 #![feature(step_trait)]
 #![feature(ascii_char)]
 #![feature(ascii_char_variants)]
@@ -20,6 +19,7 @@
 #![warn(clippy::missing_docs_in_private_items)]
 
 mod aoc_2015;
+mod aoc_2016;
 mod aoc_2020;
 mod aoc_2021;
 mod aoc_2022;
@@ -51,6 +51,7 @@ fn main() -> anyhow::Result<()> {
 
     let all_year_solutions = vec![
         &aoc_2015::YEAR_SOLUTIONS,
+        &aoc_2016::YEAR_SOLUTIONS,
         &aoc_2020::YEAR_SOLUTIONS,
         &aoc_2021::YEAR_SOLUTIONS,
         &aoc_2022::YEAR_SOLUTIONS,
@@ -82,7 +83,11 @@ fn main() -> anyhow::Result<()> {
             .ok_or(AocError::NoYear(year))?;
         let day_range = 1..=25;
         if !day_range.contains(&day) {
-            return Err(AocError::DayRange(day, day_range).into());
+            return Err(AocError::DayRange {
+                day,
+                range: day_range,
+            }
+            .into());
         }
         let solution = year_solutions.get_day(day).ok_or(AocError::NoDay(day))?;
 

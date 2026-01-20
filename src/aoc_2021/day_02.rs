@@ -51,7 +51,8 @@ mod solution {
                     field_line_parser("up", nom::character::complete::u8),
                     Direction::Up,
                 ),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 

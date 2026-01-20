@@ -41,7 +41,7 @@ mod solution {
         distance: u64,
     }
     impl<'a> Parsable<'a> for Distance<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self> {
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
             map(
                 separated_pair(
                     separated_pair(take_until(" "), separated(tag("to")), take_until(" ")),
@@ -53,7 +53,8 @@ mod solution {
                     destination,
                     distance,
                 },
-            )(input.trim())
+            )
+            .parse(input.trim())
         }
     }
 

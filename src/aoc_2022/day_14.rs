@@ -24,7 +24,7 @@ mod solution {
     use aoc::parse::trim;
     use derive_more::Deref;
     use derive_new::new;
-    use euclid::{vec2, Point2D};
+    use euclid::{Point2D, vec2};
     use gat_lending_iterator::LendingIterator;
     use itertools::process_results;
     use nom::{
@@ -43,7 +43,8 @@ mod solution {
                     nom::character::complete::u16,
                 ),
                 |t| ParsePoint(Point2D::from(t).to_isize()),
-            )(input)
+            )
+            .parse(input)
         }
     }
 
@@ -63,7 +64,8 @@ mod solution {
                 |pps| Self {
                     segment_points: pps.into_iter().map(|pp| *pp).collect(),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl RockLine {
@@ -107,9 +109,10 @@ mod solution {
     }
 
     /// A cell in the grid representation of the cave chamber.
-    #[derive(Clone)]
+    #[derive(Clone, Default)]
     enum Cell {
         /// The cell is empty, containing only air.
+        #[default]
         Air,
         /// The cell contains rock.
         Rock,
@@ -118,18 +121,9 @@ mod solution {
         /// The cell is the source of the sand into the chamber.
         Source,
     }
-    impl Default for Cell {
-        fn default() -> Self {
-            Self::Air
-        }
-    }
     impl From<bool> for Cell {
         fn from(value: bool) -> Self {
-            if value {
-                Self::Rock
-            } else {
-                Self::default()
-            }
+            if value { Self::Rock } else { Self::default() }
         }
     }
     impl std::fmt::Debug for Cell {
@@ -234,7 +228,8 @@ mod solution {
         source: AnyGridPoint,
     }
     impl LendingIterator for SimulationState {
-        type Item<'a> = &'a SimulationState
+        type Item<'a>
+            = &'a SimulationState
         where
             Self: 'a;
 

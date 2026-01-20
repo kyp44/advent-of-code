@@ -36,7 +36,7 @@ wseweeenwnesenwwwswnew";
 mod solution {
     use super::*;
     use euclid::default::{Point2D, Vector2D};
-    use itertools::{iproduct, Itertools};
+    use itertools::{Itertools, iproduct};
     use nom::{
         branch::alt,
         bytes::complete::tag,
@@ -96,7 +96,8 @@ mod solution {
                     "nw" => NorthWest,
                     _ => panic!(),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl From<Direction> for Vector2D<i32> {
@@ -123,7 +124,8 @@ mod solution {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(all_consuming(many1(Direction::parser)), |vec| Route {
                 directions: vec.into_boxed_slice(),
-            })(input)
+            })
+            .parse(input)
         }
     }
     impl Route {
@@ -219,11 +221,11 @@ mod solution {
 
             let mut last_y: Option<i32> = None;
             for point in self.next_iter() {
-                if let Some(y) = last_y {
-                    if y != point.y {
-                        rows.push(row);
-                        row = Vec::new();
-                    }
+                if let Some(y) = last_y
+                    && y != point.y
+                {
+                    rows.push(row);
+                    row = Vec::new();
                 }
                 last_y = Some(point.y);
 

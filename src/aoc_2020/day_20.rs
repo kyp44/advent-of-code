@@ -127,14 +127,14 @@ mod solution {
     use aoc::tree_search::{BasicSolutionState, GlobalStateTreeNode, NodeAction};
     use derive_more::{Deref, From, Into};
     use derive_new::new;
-    use enum_map::{enum_map, Enum, EnumMap};
-    use euclid::{point2, size2, Box2D};
-    use itertools::{iproduct, Itertools};
+    use enum_map::{Enum, EnumMap, enum_map};
+    use euclid::{Box2D, point2, size2};
+    use itertools::{Itertools, iproduct};
     use nom::{
+        Finish,
         bytes::complete::tag,
         character::complete::line_ending,
         sequence::{delimited, pair},
-        Finish,
     };
     use std::rc::Rc;
     use std::{cmp::Ordering, fmt};
@@ -307,15 +307,11 @@ mod solution {
                     .pixels
                     .sub_grid(&Box2D::from_origin_and_size(*point, image_size));
 
-                // It is very strange to me that we need to use assign variable here, but we get a compiler
-                // error if we do not.
-                let keep = image
+                image
                     .pixels
                     .all_values()
                     .zip(sub_image.all_values())
-                    .all(|(pi, ps)| !**pi || **ps);
-
-                keep
+                    .all(|(pi, ps)| !**pi || **ps)
             })
             .collect()
         }
@@ -388,11 +384,12 @@ mod solution {
         type Err = AocError;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
-            let (image_str, id) = delimited::<_, _, _, _, NomParseError, _, _, _>(
+            let (image_str, id) = delimited::<_, _, NomParseError, _, _, _>(
                 tag("Tile "),
                 nom::character::complete::u64,
                 pair(tag(":"), line_ending),
-            )(s)
+            )
+            .parse(s)
             .finish()?;
             let full_image = Image::from_grid_str(image_str)?;
 

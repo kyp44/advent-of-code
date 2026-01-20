@@ -101,7 +101,8 @@ mod solution {
                     '>' => ChunkSymbol::new(Angle, Close),
                     _ => panic!(),
                 }
-            })(input)
+            })
+            .parse(input)
         }
     }
 
@@ -141,7 +142,8 @@ mod solution {
                 |chunks| Self {
                     chunks: chunks.into_boxed_slice(),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Line {

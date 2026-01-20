@@ -35,7 +35,7 @@ mod solution {
     };
     use derive_new::new;
     use euclid::default::{Box3D, Point3D, Vector3D};
-    use itertools::{iproduct, Itertools};
+    use itertools::{Itertools, iproduct};
     use nom::{bytes::complete::tag, combinator::map, multi::separated_list1};
     use std::{collections::HashSet, marker::PhantomData};
 
@@ -60,7 +60,8 @@ mod solution {
                 |v| Cube {
                     location: Point::new(v[0], v[1], v[2]),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl From<Point> for Cube {
@@ -154,7 +155,7 @@ mod solution {
         }
 
         /// Returns an iterator over every cube within the droplet bounding box.
-        fn all_cubes(&self) -> impl Iterator<Item = Cube> {
+        fn all_cubes(&self) -> impl Iterator<Item = Cube> + 'static {
             self.bounds.all_points().map(|location| Cube { location })
         }
 

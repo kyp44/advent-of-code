@@ -104,7 +104,8 @@ mod solution {
                 map(nom::character::complete::u8, Self::WalkForward),
                 map(tag("L"), |_| Self::TurnLeft),
                 map(tag("R"), |_| Self::TurnRight),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -112,7 +113,7 @@ mod solution {
     struct ParsePath(Vec<Step>);
     impl Parsable<'_> for ParsePath {
         fn parser(input: &'_ str) -> NomParseResult<&str, Self> {
-            map(many1(Step::parser), ParsePath)(input)
+            map(many1(Step::parser), ParsePath).parse(input)
         }
     }
 
@@ -601,9 +602,9 @@ mod solution {
             let size = grid.size();
 
             // Determine the size of each cube face
-            let face_size = if size.width % 3 == 0 && size.height % 4 == 0 {
+            let face_size = if size.width.is_multiple_of(3) && size.height.is_multiple_of(4) {
                 size.width / 3
-            } else if size.width % 4 == 0 && size.height % 3 == 0 {
+            } else if size.width.is_multiple_of(4) && size.height.is_multiple_of(3) {
                 size.width / 4
             } else {
                 return Err(AocError::Process(

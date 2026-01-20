@@ -3,8 +3,8 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -39,13 +39,13 @@ mod solution {
     use bimap::hash::BiHashMap;
     use derive_new::new;
     use nom::{
+        Finish,
         bytes::complete::{is_not, tag, take_until},
         character::complete::space1,
         combinator::map,
         error::context,
         multi::separated_list0,
-        sequence::{separated_pair, tuple},
-        Finish,
+        sequence::separated_pair,
     };
     use std::collections::HashSet;
 
@@ -105,12 +105,12 @@ mod solution {
                         tag(" bags contain "),
                         separated_list0(
                             tag(", "),
-                            tuple((
+                            (
                                 nom::character::complete::u8,
                                 space1,
                                 take_until(" bag"),
                                 is_not(",."),
-                            )),
+                            ),
                         ),
                     ),
                     |(bs, vec)| BagRule {
@@ -124,7 +124,8 @@ mod solution {
                             .collect(),
                     },
                 ),
-            )(input.trim())
+            )
+            .parse(input.trim())
             .finish()
             .map(|(_, r)| r)
         }

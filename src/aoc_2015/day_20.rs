@@ -53,10 +53,10 @@ mod solution {
                         break;
                     }
                     count += 1;
-                    if let Some(l) = house_limit {
-                        if count > l {
-                            break;
-                        }
+                    if let Some(l) = house_limit
+                        && count > l
+                    {
+                        break;
                     }
                 }
             }

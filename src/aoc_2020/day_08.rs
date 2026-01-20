@@ -60,7 +60,8 @@ mod solution {
                         _ => panic!(),
                     },
                 ),
-            )(input)
+            )
+            .parse(input)
         }
     }
 
@@ -153,7 +154,7 @@ mod solution {
         }
 
         /// Returns a [`ProgramVariations`] iterator over variations on the program.
-        pub fn variations(&self) -> ProgramVariations {
+        pub fn variations(&self) -> ProgramVariations<'_> {
             ProgramVariations {
                 original: self,
                 iter: self

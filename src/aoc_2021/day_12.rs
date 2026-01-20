@@ -150,11 +150,12 @@ mod solution {
                 cave2: &'a str,
             }
             impl<'a> Parsable<'a> for RawPassage<'a> {
-                fn parser(input: &'a str) -> NomParseResult<&str, Self> {
+                fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
                     map(
                         separated_pair(alphanumeric1, tag("-"), alphanumeric1),
                         |(cave1, cave2)| Self { cave1, cave2 },
-                    )(input)
+                    )
+                    .parse(input)
                 }
             }
 

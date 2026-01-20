@@ -20,8 +20,8 @@ mod solution {
     use super::*;
     use aoc::parse::field_line_parser;
     use derive_new::new;
-    use itertools::{iproduct, Itertools, MinMaxResult};
-    use nom::{combinator::map, sequence::tuple};
+    use itertools::{Itertools, MinMaxResult, iproduct};
+    use nom::combinator::map;
     use std::{iter::Sum, ops::Add};
 
     /// Stats for a character.
@@ -118,13 +118,14 @@ mod solution {
             Self: Sized,
         {
             map(
-                tuple((
+                (
                     field_line_parser("Hit Points:", nom::character::complete::u32),
                     field_line_parser("Damage:", nom::character::complete::u32),
                     field_line_parser("Armor:", nom::character::complete::u32),
-                )),
+                ),
                 |(hp, d, a)| Character::new(hp, Stats::new(d, a)),
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Character {

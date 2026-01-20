@@ -4,8 +4,8 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::{String, Unsigned};
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -64,7 +64,8 @@ mod solution {
                         None => HashSet::new(),
                     },
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Food {

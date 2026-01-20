@@ -35,7 +35,7 @@ CN -> C";
 mod solution {
     use super::*;
     use aoc::parse::{single_alphanumeric, trim};
-    use itertools::{iproduct, Itertools};
+    use itertools::{Itertools, iproduct};
     use maplit::hashset;
     use nom::{
         bytes::complete::tag,
@@ -58,7 +58,8 @@ mod solution {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(alphanumeric1, |s: &str| Self {
                 elements: s.chars().collect(),
-            })(input)
+            })
+            .parse(input)
         }
     }
     impl std::fmt::Debug for Formula {
@@ -99,7 +100,8 @@ mod solution {
                     right: lr.1,
                     insert,
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl PairInsertion {

@@ -153,7 +153,8 @@ mod solution {
                     other_shape: pair.0,
                     your_shape: pair.1,
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Round {

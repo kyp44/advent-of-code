@@ -156,14 +156,14 @@ mod solution {
     use derive_more::{Deref, From};
     use derive_new::new;
     use euclid::default::{Point3D, Rotation3D, Vector3D};
-    use itertools::{iproduct, Itertools};
+    use itertools::{Itertools, iproduct};
     use maplit::hashset;
     use nom::{
+        Finish,
         bytes::complete::tag,
         combinator::map,
         multi::separated_list1,
         sequence::{delimited, preceded},
-        Finish,
     };
     use std::{
         collections::{HashMap, HashSet},
@@ -184,7 +184,8 @@ mod solution {
             map(
                 separated_list1(tag(","), trim(false, nom::character::complete::i32)),
                 |v| Self(Point3D::new(v[0], v[1], v[2])),
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl From<Point> for Rotation3D<i32> {
@@ -392,14 +393,15 @@ mod solution {
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             let sep = "---";
-            let (s, number) = delimited::<_, _, _, _, NomParseError, _, _, _>(
+            let (s, number) = delimited::<_, _, NomParseError, _, _, _>(
                 tag(sep),
                 trim(
                     false,
                     preceded(tag("scanner "), nom::character::complete::u8),
                 ),
                 tag(sep),
-            )(s)
+            )
+            .parse(s)
             .finish()?;
 
             let points = Point::gather(s.trim().lines())?.into_boxed_slice();

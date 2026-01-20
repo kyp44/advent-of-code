@@ -32,13 +32,13 @@ mod solution {
     };
     use derive_more::From;
     use derive_new::new;
-    use itertools::{iproduct, Itertools};
+    use itertools::{Itertools, iproduct};
     use nom::{
         bytes::complete::tag,
         character::complete::alphanumeric1,
         combinator::{map, opt},
         multi::separated_list1,
-        sequence::{preceded, tuple},
+        sequence::preceded,
     };
     use num::rational::Ratio;
     use petgraph::{
@@ -75,27 +75,28 @@ mod solution {
     impl Parsable<'_> for ParseValve {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
-                tuple((
+                (
                     preceded(tag("Valve"), trim(false, alphanumeric1::<&str, _>)),
                     preceded(tag("has flow rate="), nom::character::complete::u8),
                     preceded(
-                        tuple((
+                        (
                             tag("; tunnel"),
                             opt(tag("s")),
                             tag(" lead"),
                             opt(tag("s")),
                             tag(" to valve"),
                             opt(tag("s")),
-                        )),
+                        ),
                         trim(false, separated_list1(tag(","), trim(false, alphanumeric1))),
                     ),
-                )),
+                ),
                 |(label, flow_rate, tunnels)| Self {
                     label: label.to_string(),
                     flow_rate,
                     tunnels: tunnels.into_iter().map(String::from).collect(),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
 

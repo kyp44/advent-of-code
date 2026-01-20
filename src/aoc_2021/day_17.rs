@@ -50,7 +50,8 @@ mod solution {
                             ),
                         ),
                         |(a, b)| a..=b,
-                    )(input)
+                    )
+                    .parse(input)
                 }
             }
             map(
@@ -63,7 +64,8 @@ mod solution {
                     ),
                 ),
                 |(range_x, range_y)| Self { range_x, range_y },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl TargetArea {

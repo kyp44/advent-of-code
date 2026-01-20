@@ -68,7 +68,8 @@ mod solution {
                 map(tag("clay"), |_| Self::Clay),
                 map(tag("obsidian"), |_| Self::Obsidian),
                 map(tag("geode"), |_| Self::Geode),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -85,7 +86,8 @@ mod solution {
             map(
                 separated_pair(nom::character::complete::u8, space1, Material::parser),
                 |(cost, material)| Self { material, cost },
-            )(input)
+            )
+            .parse(input)
         }
     }
 
@@ -112,7 +114,8 @@ mod solution {
                     robot_type: robot,
                     cost,
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
 
@@ -148,7 +151,8 @@ mod solution {
                         .map(|prc| (prc.robot_type, prc.cost))
                         .collect(),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Blueprint {
@@ -253,15 +257,14 @@ mod solution {
 
         fn recurse_action(mut self, global_state: &mut Self::GlobalState) -> NodeAction<Self> {
             // Wait to build our current robot
-            if let Some(ref ttb) = self.to_build_next {
-                if let Err(gc) = self
+            if let Some(ref ttb) = self.to_build_next
+                && let Err(gc) = self
                     .time_tracker
                     .wait_to_build_robot(ttb)
                     .and_then(|_| self.time_tracker.time_up())
-                {
-                    global_state.most_geodes_cracked.update_if_better(gc);
-                    return NodeAction::Stop;
-                }
+            {
+                global_state.most_geodes_cracked.update_if_better(gc);
+                return NodeAction::Stop;
             }
 
             // See which robots we can and should build next
@@ -359,7 +362,8 @@ mod solution {
             map(
                 separated_list1(trim(false, tag("and")), ParseCost::parser),
                 |costs| costs.into(),
-            )(input)
+            )
+            .parse(input)
         }
     }
 

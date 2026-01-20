@@ -3,8 +3,8 @@ use std::{collections::HashSet, str::FromStr};
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -62,7 +62,8 @@ mod solution {
                 map(tag("R"), |_| Self::Right),
                 map(tag("U"), |_| Self::Up),
                 map(tag("D"), |_| Self::Down),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
     impl Direction {
@@ -92,7 +93,8 @@ mod solution {
             map(
                 separated_pair(Direction::parser, space1, nom::character::complete::u8),
                 |(direction, spaces)| Move { direction, spaces },
-            )(input)
+            )
+            .parse(input)
         }
     }
 

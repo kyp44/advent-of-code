@@ -2,8 +2,8 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -120,7 +120,8 @@ mod solution {
                     let res: NomParseResult<&str, (u32, &str)> = all_consuming(pair(
                         nom::character::complete::u32,
                         alt((tag("cm"), tag("in"))),
-                    ))(value);
+                    ))
+                    .parse(value);
                     match res {
                         Ok((_, (h, u))) => match u {
                             "cm" => (150..=193).contains(&h),
@@ -133,7 +134,8 @@ mod solution {
                     let res: NomParseResult<&str, &str> = all_consuming(preceded(
                         tag("#"),
                         take_while_m_n(6, 6, |c: char| c.is_ascii_hexdigit()),
-                    ))(value);
+                    ))
+                    .parse(value);
                     res.is_ok()
                 }
                 EyeColor => {
@@ -145,12 +147,14 @@ mod solution {
                         tag("grn"),
                         tag("hzl"),
                         tag("oth"),
-                    )))(value);
+                    )))
+                    .parse(value);
                     res.is_ok()
                 }
                 PassportId => {
                     let res: NomParseResult<&str, &str> =
-                        all_consuming(take_while_m_n(9, 9, |c: char| c.is_ascii_digit()))(value);
+                        all_consuming(take_while_m_n(9, 9, |c: char| c.is_ascii_digit()))
+                            .parse(value);
                     res.is_ok()
                 }
                 CountryId => true,
@@ -165,7 +169,8 @@ mod solution {
             map(take_until(":"), |s: &str| {
                 s.parse()
                     .unwrap_or_else(|_| panic!("Unknown passport field: {s}"))
-            })(input)
+            })
+            .parse(input)
         }
     }
 
@@ -216,7 +221,8 @@ mod solution {
                 |vec| Self {
                     field_map: vec.into_iter().map(|(k, v)| (k, v.to_string())).collect(),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Passport {

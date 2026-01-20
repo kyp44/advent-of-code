@@ -38,11 +38,11 @@ mod solution {
     use super::*;
     use itertools::Itertools;
     use nom::{
+        Finish,
         bytes::complete::tag,
         character::complete::multispace1,
         combinator::map,
         sequence::{delimited, preceded},
-        Finish,
     };
     use std::{convert::TryInto, str::FromStr};
 
@@ -73,7 +73,8 @@ mod solution {
                     delimited(multispace1, nom::character::complete::u64, multispace1),
                 ),
                 |n| n.try_into().unwrap(),
-            )(input)
+            )
+            .parse(input)
             .finish()?;
             let numbers = Number::gather(input.lines())?;
             Ok(XmasPacket {

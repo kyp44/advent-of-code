@@ -2,8 +2,8 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -115,7 +115,7 @@ mod solution {
         bytes::complete::tag,
         character::complete::space1,
         combinator::map,
-        sequence::{separated_pair, terminated, tuple},
+        sequence::{separated_pair, terminated},
     };
 
     /// A cuboid region defined by a box in 3D.
@@ -136,22 +136,24 @@ mod solution {
                     nom::character::complete::i32,
                     tag(".."),
                     nom::character::complete::i32,
-                )(input)
+                )
+                .parse(input)
             }
 
             map(
-                tuple((
+                (
                     field_line_parser("x=", terminated(parse_range, tag(","))),
                     field_line_parser("y=", terminated(parse_range, tag(","))),
                     field_line_parser("z=", parse_range),
-                )),
+                ),
                 |(xr, yr, zr)| Self {
                     bounding_box: Box3D::new_inclusive(
                         Point3D::new(xr.0, yr.0, zr.0),
                         Point3D::new(xr.1, yr.1, zr.1),
                     ),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Cuboid {
@@ -195,7 +197,8 @@ mod solution {
                     "on" => Self::On(cub),
                     _ => Self::Off(cub),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
 

@@ -2,8 +2,8 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -55,7 +55,8 @@ mod solution {
                                 .collect();
                             u32::from_str_radix(&bs, 2).unwrap()
                         },
-                    )(input)
+                    )
+                    .parse(input)
                 }
             }
 
@@ -65,7 +66,8 @@ mod solution {
                     all_consuming(pair(binary_parser('F', 'B', 7), binary_parser('L', 'R', 3))),
                     |(row, column)| Seat { row, column },
                 ),
-            )(input.trim())
+            )
+            .parse(input.trim())
         }
     }
     impl Seat {

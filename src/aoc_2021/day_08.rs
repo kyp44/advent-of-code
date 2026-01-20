@@ -53,7 +53,8 @@ mod solution {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(many1(one_of("abcdefg")), |chars| Digit {
                 segments: chars.into_iter().collect(),
-            })(input)
+            })
+            .parse(input)
         }
     }
     impl std::hash::Hash for Digit {
@@ -134,7 +135,8 @@ mod solution {
                     digits: digs.into_boxed_slice(),
                     output: out.into_boxed_slice(),
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Entry {

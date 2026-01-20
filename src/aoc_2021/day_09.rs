@@ -88,7 +88,7 @@ mod solution {
     }
     impl FloorMap {
         /// Returns an [`Iterator`] over all of the basins on the cave floor.
-        pub fn basins(&self) -> impl Iterator<Item = Basin> {
+        pub fn basins(&self) -> impl Iterator<Item = Basin<'_>> {
             self.grid
                 .all_points()
                 .filter(|point| {

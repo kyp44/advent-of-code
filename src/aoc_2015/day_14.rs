@@ -22,7 +22,6 @@ mod solution {
     use nom::{
         bytes::complete::{tag, take_until},
         combinator::map,
-        sequence::tuple,
     };
     use std::{cmp::min, collections::HashMap};
 
@@ -40,7 +39,7 @@ mod solution {
     impl Parsable<'_> for Reindeer {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
-                tuple((
+                (
                     take_until::<_, &str, _>(" "),
                     trim(false, tag("can fly")),
                     trim(false, nom::character::complete::u64),
@@ -49,14 +48,15 @@ mod solution {
                     trim(false, tag("seconds, but then must rest for")),
                     trim(false, nom::character::complete::u64),
                     trim(false, tag("seconds.")),
-                )),
+                ),
                 |(name, _, fly_speed, _, fly_time, _, rest_time, _)| Reindeer {
                     name: name.to_string(),
                     fly_speed,
                     fly_time,
                     rest_time,
                 },
-            )(input.trim())
+            )
+            .parse(input.trim())
         }
     }
     impl Reindeer {

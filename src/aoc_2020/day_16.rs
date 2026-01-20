@@ -3,8 +3,8 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -46,12 +46,12 @@ nearby tickets:
 mod solution {
     use super::*;
     use nom::{
+        Finish,
         bytes::complete::{is_not, tag},
         character::complete::multispace1,
         combinator::{map, rest},
         multi::separated_list1,
-        sequence::{pair, preceded, separated_pair, tuple},
-        Finish,
+        sequence::{pair, preceded, separated_pair},
     };
     use std::{collections::HashSet, hash::Hash, ops::RangeInclusive};
 
@@ -76,7 +76,8 @@ mod solution {
                     name: name.to_string(),
                     valid_ranges: v.into_iter().map(|(sa, sb)| sa..=sb).collect(),
                 },
-            )(input.trim())
+            )
+            .parse(input.trim())
         }
     }
     impl Field {
@@ -147,15 +148,15 @@ mod solution {
             };
 
             // Parse your ticket and verify the number of fields
-            let your_ticket =
-                preceded(tuple((tag("your ticket:"), multispace1)), Ticket::parser)(sections[1])
-                    .finish()
-                    .discard_input()?;
+            let your_ticket = preceded((tag("your ticket:"), multispace1), Ticket::parser)
+                .parse(sections[1])
+                .finish()
+                .discard_input()?;
             verify_fields("Your", &your_ticket)?;
 
             // Parse nearby tickets and verify the number of fields
             let result: NomParseResult<&str, _> =
-                preceded(pair(tag("nearby tickets:"), multispace1), rest)(sections[2]);
+                preceded(pair(tag("nearby tickets:"), multispace1), rest).parse(sections[2]);
             let nearby_tickets = result
                 .finish()
                 .discard_input()?

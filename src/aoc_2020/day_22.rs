@@ -2,8 +2,8 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -72,7 +72,8 @@ mod solution {
                     cards.reverse();
                     Deck { player, cards }
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Deck {

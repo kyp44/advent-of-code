@@ -56,12 +56,14 @@ mod solution {
                         nom::character::complete::u16,
                     ),
                     |(x, y)| GridPoint::new(x.into(), y.into()),
-                )(input)
+                )
+                .parse(input)
             }
             map(
                 separated_pair(point_parser, separated(tag("->")), point_parser),
                 |(from, to)| Line { from, to },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Line {

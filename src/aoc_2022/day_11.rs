@@ -52,7 +52,7 @@ mod solution {
         bytes::complete::tag,
         combinator::map,
         multi::separated_list1,
-        sequence::{delimited, preceded, tuple},
+        sequence::{delimited, preceded},
     };
     use std::ops::{Add, Mul};
 
@@ -72,7 +72,8 @@ mod solution {
                     map(tag("+"), |_| Self::Add),
                     map(tag("*"), |_| Self::Multiply),
                 )),
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Operator {
@@ -98,7 +99,8 @@ mod solution {
             alt((
                 map(tag("old"), |_| Self::Old),
                 map(nom::character::complete::u64, Self::Number),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
     impl Operand {
@@ -124,13 +126,14 @@ mod solution {
             map(
                 preceded(
                     preceded(tag("new"), trim(false, tag("="))),
-                    tuple((Operand::parser, Operator::parser, Operand::parser)),
+                    (Operand::parser, Operator::parser, Operand::parser),
                 ),
                 |(a, op, b)| Self {
                     operands: [a, b],
                     operation: op,
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Operation {
@@ -153,7 +156,7 @@ mod solution {
     impl Parsable<'_> for Test {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
-                tuple((
+                (
                     trim(
                         true,
                         preceded(tag("divisible by "), nom::character::complete::u64),
@@ -172,19 +175,20 @@ mod solution {
                             nom::character::complete::u8,
                         ),
                     ),
-                )),
+                ),
                 |(div_by, if_true, if_false)| Self {
                     div_by,
                     if_true,
                     if_false,
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Test {
         /// Evaluates the test given the `worry_level`, returning the monkey number to which to throw the item.
         pub fn evaluate(&self, worry_level: u64) -> u8 {
-            if worry_level % self.div_by == 0 {
+            if worry_level.is_multiple_of(self.div_by) {
                 self.if_true
             } else {
                 self.if_false
@@ -193,7 +197,6 @@ mod solution {
     }
 
     /// Represents the throwing of a particular item to a particular monkey.
-
     struct Thrown {
         /// Monkey number to which to throw the item.
         to_monkey: u8,
@@ -218,7 +221,7 @@ mod solution {
     impl Parsable<'_> for Monkey {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
-                tuple((
+                (
                     delimited(tag("Monkey "), nom::character::complete::u8, tag(":")),
                     preceded(
                         trim(true, tag("Starting items:")),
@@ -226,7 +229,7 @@ mod solution {
                     ),
                     preceded(trim(true, tag("Operation:")), Operation::parser),
                     preceded(trim(true, tag("Test:")), Test::parser),
-                )),
+                ),
                 |(number, item_worry_levels, operation, test)| Self {
                     number,
                     item_worry_levels,
@@ -234,7 +237,8 @@ mod solution {
                     test,
                     inspected_items: 0,
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl std::fmt::Display for Monkey {
@@ -344,7 +348,8 @@ mod solution {
         }
     }
     impl LendingIterator for Monkeys {
-        type Item<'a> = &'a Monkeys
+        type Item<'a>
+            = &'a Monkeys
         where
             Self: 'a;
 

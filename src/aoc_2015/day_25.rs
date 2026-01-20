@@ -20,9 +20,9 @@ mod solution {
 
     use super::*;
     use nom::{
+        Finish,
         bytes::complete::{tag, take_until},
         sequence::preceded,
-        Finish,
     };
     use std::str::FromStr;
 
@@ -37,17 +37,19 @@ mod solution {
         type Err = AocError;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
-            let row = preceded::<_, _, _, NomParseError, _, _>(
+            let row = preceded::<_, _, NomParseError, _, _>(
                 take_until("row"),
                 preceded(tag("row"), trim(false, nom::character::complete::u64)),
-            )(s)
+            )
+            .parse(s)
             .finish()
             .discard_input()?;
 
-            let col = preceded::<_, _, _, NomParseError, _, _>(
+            let col = preceded::<_, _, NomParseError, _, _>(
                 take_until("column"),
                 preceded(tag("column"), trim(false, nom::character::complete::u64)),
-            )(s)
+            )
+            .parse(s)
             .finish()
             .discard_input()?;
 

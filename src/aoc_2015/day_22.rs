@@ -25,7 +25,7 @@ mod solution {
     use derive_new::new;
     use enum_dispatch::enum_dispatch;
     use itertools::Itertools;
-    use nom::{combinator::map, sequence::tuple};
+    use nom::combinator::map;
     use std::{fmt, hash::Hash};
 
     /// Interface for spells.
@@ -294,12 +294,13 @@ mod solution {
             Self: Sized,
         {
             map(
-                tuple((
+                (
                     field_line_parser("Hit Points:", nom::character::complete::u32),
                     field_line_parser("Damage:", nom::character::complete::u32),
-                )),
+                ),
                 |(hp, d)| Character::new(hp, d, 0, 0),
-            )(input)
+            )
+            .parse(input)
         }
     }
 

@@ -42,7 +42,6 @@ mod solution {
     use super::*;
     use nom::{
         bytes::complete::tag, character::complete::space0, combinator::map, multi::separated_list1,
-        sequence::tuple,
     };
     use std::convert::TryInto;
 
@@ -54,12 +53,10 @@ mod solution {
     impl Parsable<'_> for Game {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
-                separated_list1(
-                    tuple((space0, tag(","), space0)),
-                    nom::character::complete::u64,
-                ),
+                separated_list1((space0, tag(","), space0), nom::character::complete::u64),
                 |starting| Game { starting },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Game {

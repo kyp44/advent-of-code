@@ -76,7 +76,8 @@ mod solution {
                         SnailfishNumber { stack: vec }
                     },
                 ),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
     impl std::fmt::Debug for SnailfishNumber {

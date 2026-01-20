@@ -63,7 +63,8 @@ mod solution {
                 map(tag("2"), |_| Self::Two),
                 map(tag("="), |_| Self::DoubleMinus),
                 map(tag("-"), |_| Self::Minus),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
     impl TryFrom<i64> for SnafuDigit {
@@ -126,12 +127,16 @@ mod solution {
     impl Parsable<'_> for SnafuNumber {
         fn parser(input: &'_ str) -> NomParseResult<&str, Self> {
             map(
-                trim(false, all_consuming(many1(SnafuDigit::parser))),
+                trim(
+                    false,
+                    all_consuming::<_, NomParseError, _>(many1(SnafuDigit::parser)),
+                ),
                 |mut digs| {
                     digs.reverse();
                     Self(digs.into_iter().enumerate().map(|(p, d)| d.value(p)).sum())
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl std::fmt::Display for SnafuNumber {
@@ -160,12 +165,6 @@ mod solution {
                 write!(f, "{d}")?;
             }
             Ok(())
-        }
-    }
-    impl SnafuNumber {
-        /// Returns the numeric value of the number.
-        pub fn n(&self) -> i64 {
-            self.0
         }
     }
     impl Sum for SnafuNumber {

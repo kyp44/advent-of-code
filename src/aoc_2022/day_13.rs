@@ -72,7 +72,8 @@ mod solution {
                     delimited(tag("["), separated_list0(tag(","), Self::parser), tag("]")),
                     |v| Self::List(v.into_boxed_slice()),
                 ),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
     impl PartialOrd for Element {
@@ -112,7 +113,8 @@ mod solution {
                     trim(false, Element::parser),
                 ),
                 |(left, right)| Self { left, right },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl PacketPair {

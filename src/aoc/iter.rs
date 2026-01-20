@@ -79,7 +79,7 @@ pub trait IteratorExt<T> {
     /// Basic usage:
     /// ```
     /// # #![feature(assert_matches)]
-    /// # use std::assert_matches::assert_matches;
+    /// # use std::assert_matches;
     /// # use aoc::prelude::*;
     /// let mut iter = (1..=5).into_iter();
     /// assert_matches!(iter.expect_next(), Ok(1));
@@ -111,11 +111,7 @@ impl<T, I: Iterator<Item = T>> IteratorExt<T> for I {
     }
 
     fn iterations(&mut self, n: usize) -> Option<T> {
-        if n > 0 {
-            self.nth(n - 1)
-        } else {
-            None
-        }
+        if n > 0 { self.nth(n - 1) } else { None }
     }
 
     fn expect_next(&mut self) -> AocResult<T> {
@@ -154,11 +150,7 @@ impl<I: LendingIterator + Sized> LendingIteratorExt for I {
     }
 
     fn iterations(&mut self, n: usize) -> Option<Self::Item<'_>> {
-        if n > 0 {
-            self.nth(n - 1)
-        } else {
-            None
-        }
+        if n > 0 { self.nth(n - 1) } else { None }
     }
 
     fn expect_next(&mut self) -> AocResult<Self::Item<'_>> {
@@ -227,7 +219,7 @@ pub trait StrExt {
     ///     vec!["a", "bbb", "c", "dddd", "ee", "f", "ggg"]
     /// );
     /// ```
-    fn split_runs(&self) -> Runs;
+    fn split_runs(&self) -> Runs<'_>;
 }
 impl StrExt for str {
     fn individual_replacements<'a, 'b, 'c>(
@@ -243,7 +235,7 @@ impl StrExt for str {
         }
     }
 
-    fn split_runs(&self) -> Runs {
+    fn split_runs(&self) -> Runs<'_> {
         Runs { remaining: self }
     }
 }

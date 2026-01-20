@@ -53,7 +53,7 @@ mod w 2";
 
 /// Contains solution implementation items.
 mod solution {
-    use enum_map::{enum_map, Enum, EnumMap};
+    use enum_map::{Enum, EnumMap, enum_map};
     use itertools::Itertools;
     use nom::{
         branch::alt,
@@ -82,7 +82,7 @@ mod solution {
         Z,
     }
     impl<'a> Parsable<'a> for Register {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self>
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self>
         where
             Self: Sized,
         {
@@ -92,7 +92,8 @@ mod solution {
                 'y' => Self::Y,
                 'z' => Self::Z,
                 _ => panic!(),
-            })(input)
+            })
+            .parse(input)
         }
     }
 
@@ -105,14 +106,15 @@ mod solution {
         Number(Number),
     }
     impl<'a> Parsable<'a> for Operand {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self>
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self>
         where
             Self: Sized,
         {
             alt((
                 map(Register::parser, Self::Register),
                 map(nom::character::complete::i64, Self::Number),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -133,7 +135,7 @@ mod solution {
         Equal(Register, Operand),
     }
     impl<'a> Parsable<'a> for Instruction {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self>
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self>
         where
             Self: Sized,
         {
@@ -144,7 +146,8 @@ mod solution {
                 preceded(
                     space1,
                     pair(Register::parser, opt(preceded(space1, Operand::parser))),
-                )(input)
+                )
+                .parse(input)
             }
 
             alt((
@@ -166,7 +169,8 @@ mod solution {
                 map(pair(tag("eql"), operands_parser), |(_, op)| {
                     Self::Equal(op.0, op.1.unwrap())
                 }),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 

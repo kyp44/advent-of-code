@@ -42,7 +42,8 @@ mod solution {
             map(
                 separated_list1(multispace1, nom::character::complete::u32),
                 |items| Self { items },
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Elf {

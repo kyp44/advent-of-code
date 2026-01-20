@@ -49,7 +49,8 @@ mod solution {
             alt((
                 map(tag("a"), |_| Register::A),
                 map(tag("b"), |_| Register::B),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -110,7 +111,8 @@ mod solution {
                     ),
                     |(r, o)| Instruction::JumpIfOne(r, o),
                 ),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
     impl Instruction {

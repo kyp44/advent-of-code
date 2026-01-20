@@ -67,7 +67,8 @@ mod solution {
                     |(_, s)| CommandItem::ChangeDir(s.to_string()),
                 ),
                 map(trim(false, tag("ls")), |_| CommandItem::List),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -98,7 +99,8 @@ mod solution {
                     ),
                     |(s, _)| ListingItem::File(s),
                 ),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -118,7 +120,8 @@ mod solution {
                     |(_, ci)| TerminalItem::Command(ci),
                 ),
                 map(ListingItem::parser, TerminalItem::Listing),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -254,7 +257,7 @@ mod solution {
     }
     impl Directory {
         /// Returns a recursive [`Iterator`] over all directories, starting with this one.
-        pub fn all_directories(&self) -> DirectoryTraversal {
+        pub fn all_directories(&self) -> DirectoryTraversal<'_> {
             DirectoryTraversal {
                 current: Takeable::new(self),
                 contents: self.contents.iter(),
@@ -339,11 +342,7 @@ pub const SOLUTION: Solution = Solution {
                     .filter_map(|d| {
                         let ds = d.size();
 
-                        if ds <= 100000 {
-                            Some(ds)
-                        } else {
-                            None
-                        }
+                        if ds <= 100000 { Some(ds) } else { None }
                     })
                     .sum(),
             ))
@@ -367,11 +366,7 @@ pub const SOLUTION: Solution = Solution {
                     .filter_map(|d| {
                         let ds = d.size();
 
-                        if ds >= need_to_free {
-                            Some(ds)
-                        } else {
-                            None
-                        }
+                        if ds >= need_to_free { Some(ds) } else { None }
                     })
                     .min()
                     .ok_or(AocError::NoSolution)?,

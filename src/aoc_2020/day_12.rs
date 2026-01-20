@@ -55,7 +55,8 @@ mod solution {
                         _ => panic!(),
                     }
                 },
-            )(input.trim())
+            )
+            .parse(input.trim())
         }
     }
 

@@ -3,8 +3,8 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -76,7 +76,7 @@ mod solution {
     use super::*;
     use bitbuffer::{BigEndian, BitReadBuffer, BitWriteStream};
     use hex::decode;
-    use nom::{bits::complete::take, multi::count, Finish};
+    use nom::{Finish, bits::complete::take, multi::count};
 
     /// An operation.
     #[derive(Debug)]
@@ -198,7 +198,7 @@ mod solution {
                         // Number of subsequent packets is in the next 11 bits
                         let (i, num_packets): (BitInput, u16) = take(11usize)(i)?;
                         taken_bits += 11;
-                        let (i, packets) = count(Packet::parser, num_packets.into())(i)?;
+                        let (i, packets) = count(Packet::parser, num_packets.into()).parse(i)?;
                         taken_bits += packets.iter().map(|t| t.1).sum::<usize>();
                         (
                             i,

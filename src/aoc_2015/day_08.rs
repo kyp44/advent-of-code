@@ -19,15 +19,15 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use itertools::{process_results, ProcessResults};
+    use itertools::{ProcessResults, process_results};
     use nom::{
+        Finish,
         branch::alt,
         bytes::complete::tag,
         character::complete::{anychar, none_of},
         combinator::value,
         multi::many0,
-        sequence::{delimited, preceded, tuple},
-        Finish,
+        sequence::{delimited, preceded},
     };
 
     /// Extension trait to escape or encode a string.
@@ -47,13 +47,14 @@ mod solution {
                         alt((
                             value('\\', tag("\\")),
                             value('"', tag("\"")),
-                            value('-', tuple((tag("x"), anychar, anychar))),
+                            value('-', (tag("x"), anychar, anychar)),
                         )),
                     ),
                     none_of("\""),
                 ))),
                 tag("\""),
-            )(self)
+            )
+            .parse(self)
             .finish()
             .discard_input()
             .map(|s| s.into_iter().collect())

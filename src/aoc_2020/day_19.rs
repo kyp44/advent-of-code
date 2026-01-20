@@ -2,8 +2,8 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -81,13 +81,13 @@ mod solution {
     use aoc::parse::trim;
     use itertools::process_results;
     use nom::{
+        Finish,
         branch::alt,
         bytes::complete::{is_not, tag},
         character::complete::space1,
         combinator::map,
         multi::{many1, separated_list1},
         sequence::{delimited, preceded, separated_pair},
-        Finish,
     };
     use std::collections::HashMap;
     use std::convert::TryInto;
@@ -101,7 +101,7 @@ mod solution {
         Seq(Vec<Vec<usize>>),
     }
     impl<'a> Parsable<'a> for Rule<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self> {
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
             let quote = "\"";
             alt((
                 map(
@@ -121,7 +121,8 @@ mod solution {
                         )
                     },
                 ),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -164,7 +165,8 @@ mod solution {
             let mut rules = HashMap::new();
             for line in s.lines() {
                 let (n, rule) =
-                    separated_pair(nom::character::complete::u32, tag(":"), Rule::parser)(line)
+                    separated_pair(nom::character::complete::u32, tag(":"), Rule::parser)
+                        .parse(line)
                         .finish()
                         .discard_input()?;
                 let n: usize = n.try_into().unwrap();

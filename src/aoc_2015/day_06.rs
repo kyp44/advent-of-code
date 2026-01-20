@@ -2,8 +2,8 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -32,7 +32,7 @@ mod solution {
         bytes::complete::tag,
         character::complete::space1,
         combinator::{map, map_opt, value},
-        sequence::{separated_pair, tuple},
+        sequence::separated_pair,
     };
 
     /// An action that can occur for a light.
@@ -52,7 +52,8 @@ mod solution {
                 value(TurnOn, tag("turn on")),
                 value(Toggle, tag("toggle")),
                 value(TurnOff, tag("turn off")),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -64,7 +65,8 @@ mod solution {
         use nom::character::complete::u64 as cu64;
         map(separated_pair(cu64, tag(","), cu64), |(x, y)| {
             point2(x, y).to_usize()
-        })(input)
+        })
+        .parse(input)
     }
 
     /// A Rectangle of lights that can be parsed from text input.
@@ -73,11 +75,7 @@ mod solution {
     impl Parsable<'_> for ParseRect {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map_opt(
-                separated_pair(
-                    point_parser,
-                    tuple((space1, tag("through"), space1)),
-                    point_parser,
-                ),
+                separated_pair(point_parser, (space1, tag("through"), space1), point_parser),
                 |(ll, ur)| {
                     if ll.x > ur.x || ll.y > ur.y {
                         None
@@ -85,7 +83,8 @@ mod solution {
                         Some(ParseRect(GridBox::new_inclusive(ll, ur)))
                     }
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
 
@@ -106,7 +105,8 @@ mod solution {
                     action: a,
                     rect: r.into(),
                 },
-            )(input.trim())
+            )
+            .parse(input.trim())
         }
     }
 

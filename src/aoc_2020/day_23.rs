@@ -2,8 +2,8 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -27,7 +27,7 @@ mod solution {
     };
     use bare_metal_modulo::{MNum, OffsetNum};
     use itertools::Itertools;
-    use nom::{multi::many1, Finish};
+    use nom::{Finish, multi::many1};
     use std::{collections::HashMap, marker::PhantomData};
 
     /// The labels for the cups.
@@ -88,7 +88,8 @@ mod solution {
     impl<P: Part> Cups<P> {
         /// Parses the cups from text input.
         pub fn from_str(s: &str) -> AocResult<Self> {
-            let mut cups: Vec<Label> = many1::<_, _, NomParseError, _>(single_digit)(s)
+            let mut cups: Vec<Label> = many1(single_digit::<_, NomParseError>)
+                .parse(s)
                 .finish()
                 .discard_input()?
                 .into_iter()
@@ -131,7 +132,7 @@ mod solution {
         /// the original state of the cups.
         /// The iterator yields the *new* current cup selected at the end of each
         /// move.
-        pub fn start_game(&self) -> Game<P> {
+        pub fn start_game(&self) -> Game<'_, P> {
             Game {
                 list: &self.cups,
                 lookup: self.cups.iter_const().map(|nr| (*nr.value(), nr)).collect(),

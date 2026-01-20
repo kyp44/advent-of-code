@@ -20,7 +20,6 @@ mod solution {
     use nom::{
         bytes::complete::{tag, take_until},
         combinator::map,
-        sequence::tuple,
     };
     use std::{
         convert::TryInto,
@@ -90,7 +89,7 @@ mod solution {
     impl Parsable<'_> for Ingredient {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(
-                tuple((
+                (
                     take_until(":"),
                     tag(": capacity "),
                     nom::character::complete::i64,
@@ -102,7 +101,7 @@ mod solution {
                     nom::character::complete::i64,
                     tag(", calories "),
                     nom::character::complete::i64,
-                )),
+                ),
                 |(_, _, capacity, _, durability, _, flavor, _, texture, _, calories)| Ingredient {
                     capacity,
                     durability,
@@ -110,7 +109,8 @@ mod solution {
                     texture,
                     calories,
                 },
-            )(input.trim())
+            )
+            .parse(input.trim())
         }
     }
     impl Add for Ingredient {

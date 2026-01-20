@@ -64,7 +64,8 @@ mod solution {
                     nom::character::complete::i32,
                 ),
                 |(x, y)| Self(Point2D::new(x, y).to_isize()),
-            )(input)
+            )
+            .parse(input)
         }
     }
     impl Dot {
@@ -148,7 +149,8 @@ mod solution {
                         _ => Self::Horizontal(val),
                     }
                 },
-            )(input)
+            )
+            .parse(input)
         }
     }
 
@@ -175,7 +177,7 @@ mod solution {
         /// Applies the complete sequence of folds.
         ///
         /// Returns an [`Iterator`] of pages after each fold is made.
-        pub fn apply_folds(&self) -> FoldedPages {
+        pub fn apply_folds(&self) -> FoldedPages<'_> {
             FoldedPages {
                 page: Rc::new(self.page.clone()),
                 folds: self.folds.iter(),

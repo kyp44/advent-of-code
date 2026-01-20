@@ -46,7 +46,8 @@ mod solution {
                     ),
                     |(r, s)| Self::new(r, s),
                 ),
-            )(input.trim())
+            )
+            .parse(input.trim())
         }
     }
 
@@ -111,9 +112,10 @@ mod solution {
         password: &'a str,
     }
     impl<'a, P: PasswordPolicy> Parsable<'a> for Password<'a, P> {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self> {
-            context("password", separated_pair(P::parser, tag(": "), rest))(input.trim()).map(
-                |(next, res)| {
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+            context("password", separated_pair(P::parser, tag(": "), rest))
+                .parse(input.trim())
+                .map(|(next, res)| {
                     (
                         next,
                         Password {
@@ -121,8 +123,7 @@ mod solution {
                             password: res.1,
                         },
                     )
-                },
-            )
+                })
         }
     }
     impl<P: PasswordPolicy> Password<'_, P> {

@@ -62,11 +62,8 @@ mod solution {
     use super::*;
     use aoc::parse::trim;
     use nom::{
-        branch::alt,
-        bytes::complete::tag,
-        character::complete::alpha1,
-        combinator::map,
-        sequence::{separated_pair, tuple},
+        branch::alt, bytes::complete::tag, character::complete::alpha1, combinator::map,
+        sequence::separated_pair,
     };
     use std::{borrow::Cow, collections::HashMap};
 
@@ -124,7 +121,7 @@ mod solution {
                 Operation::Equals => {
                     return Err(AocError::Process(
                         "Cannot apply the equality operation".into(),
-                    ))
+                    ));
                 }
             })
         }
@@ -136,7 +133,8 @@ mod solution {
                 map(trim(false, tag("-")), |_| Self::Subtract),
                 map(trim(false, tag("*")), |_| Self::Multiply),
                 map(trim(false, tag("/")), |_| Self::Divide),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -158,14 +156,14 @@ mod solution {
         },
     }
     impl<'a> Parsable<'a> for MonkeyAction<&'a str> {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self> {
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
             alt((
                 map(nom::character::complete::i64, MonkeyAction::Yell),
-                map(
-                    tuple((alpha1, Operation::parser, alpha1)),
-                    |(a, operation, b)| Self::Arithmetic { operation, a, b },
-                ),
-            ))(input)
+                map((alpha1, Operation::parser, alpha1), |(a, operation, b)| {
+                    Self::Arithmetic { operation, a, b }
+                }),
+            ))
+            .parse(input)
         }
     }
     impl From<MonkeyAction<&str>> for MonkeyAction<String> {
@@ -190,11 +188,12 @@ mod solution {
         action: MonkeyAction<&'a str>,
     }
     impl<'a> Parsable<'a> for MonkeyParse<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self> {
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
             map(
                 separated_pair(alpha1, trim(false, tag(":")), MonkeyAction::parser),
                 |(name, action)| Self { name, action },
-            )(input)
+            )
+            .parse(input)
         }
     }
 
@@ -438,7 +437,7 @@ mod solution {
                     _ => {
                         return Err(AocError::Process(
                             "'root' is not an arithmetic operation".into(),
-                        ))
+                        ));
                     }
                 },
                 _ => Cow::Borrowed(action),

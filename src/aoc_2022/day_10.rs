@@ -3,8 +3,8 @@ use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::{Signed, Unsigned};
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -193,7 +193,8 @@ mod solution {
                     separated_pair(tag("addx"), space1, nom::character::complete::i64),
                     |(_, n)| Self::Add(n),
                 ),
-            ))(input)
+            ))
+            .parse(input)
         }
     }
 
@@ -214,7 +215,7 @@ mod solution {
     }
     impl Program {
         /// Returns an [`Executor`] iterator to execute the program.
-        pub fn execute(&self) -> Executor {
+        pub fn execute(&self) -> Executor<'_> {
             Executor {
                 instructions: self.instructions.iter(),
                 cpu_state: Default::default(),

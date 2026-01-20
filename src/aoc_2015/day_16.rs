@@ -32,7 +32,7 @@ mod solution {
         compounds: HashMap<&'a str, u8>,
     }
     impl<'a> Parsable<'a> for Sue<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&str, Self> {
+        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
             map(
                 separated_pair(
                     preceded(tag("Sue "), nom::character::complete::u16),
@@ -46,7 +46,8 @@ mod solution {
                     number,
                     compounds: cs.into_iter().collect(),
                 },
-            )(input.trim())
+            )
+            .parse(input.trim())
         }
     }
 

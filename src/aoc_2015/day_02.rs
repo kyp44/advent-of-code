@@ -22,7 +22,7 @@ mod tests {
 mod solution {
     use super::*;
     use itertools::Itertools;
-    use nom::{bytes::complete::tag, multi::separated_list1, Finish};
+    use nom::{Finish, bytes::complete::tag, multi::separated_list1};
 
     /// A present with specific dimensions.
     struct Present {
@@ -35,12 +35,11 @@ mod solution {
         type Err = AocError;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
-            let mut dimensions = separated_list1::<_, _, _, NomParseError, _, _>(
-                tag("x"),
-                nom::character::complete::u64,
-            )(s)
-            .finish()
-            .discard_input()?;
+            let mut dimensions =
+                separated_list1::<_, NomParseError, _, _>(tag("x"), nom::character::complete::u64)
+                    .parse(s)
+                    .finish()
+                    .discard_input()?;
 
             if dimensions.len() != 3 {
                 return Err(AocError::InvalidInput(

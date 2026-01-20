@@ -58,7 +58,7 @@ mod solution {
     }
     impl Parsable<'_> for BoardCell {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
-            map(nom::character::complete::u8, Self::from)(input)
+            map(nom::character::complete::u8, Self::from).parse(input)
         }
     }
 
@@ -73,7 +73,8 @@ mod solution {
             let (input, rows) = separated_list1(
                 line_ending,
                 trim(false, separated_list1(space1, BoardCell::parser)),
-            )(input)?;
+            )
+            .parse(input)?;
 
             Ok((
                 input,

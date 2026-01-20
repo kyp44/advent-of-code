@@ -34,7 +34,8 @@ mod solution {
         fn parser(input: &str) -> NomParseResult<&str, Self> {
             map(digit1, |ds: &str| Sequence {
                 current: ds.to_string().into(),
-            })(input.trim())
+            })
+            .parse(input.trim())
         }
     }
     impl Iterator for Sequence {

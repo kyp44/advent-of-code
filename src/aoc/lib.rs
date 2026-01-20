@@ -4,7 +4,6 @@
 #![feature(slice_pattern)]
 #![feature(assert_matches)]
 #![warn(missing_docs)]
-#![feature(let_chains)]
 #![feature(step_trait)]
 #![feature(associated_type_defaults)]
 #![feature(impl_trait_in_assoc_type)]
@@ -23,10 +22,10 @@ pub mod prelude {
         error::{AocError, AocResult},
         evolver::Evolver,
         extension::{
+            RangeExt,
             euclid::{
                 AllPoints, BoxInclusive, CenterInteger, ConversionExt, ManhattanLen, UnitVectors,
             },
-            RangeExt,
         },
         grid::{
             AnyGridPoint, AnyGridPointExt, FromGridStr, Grid, GridBox, GridDefault, GridPoint,
@@ -36,6 +35,7 @@ pub mod prelude {
         parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parsable, Sections},
         solution::{Answer, Solution, SolverInput, YearSolutions},
     };
+    pub use nom::Parser;
 }
 
 /// Prelude for the tests, mainly when using [`solution_tests`].
@@ -62,8 +62,13 @@ pub mod error {
         #[error("Day {0} is not yet solved")]
         NoDay(u8),
         /// The day is out of range.
-        #[error("Day {0} is not in the range of {} to {}", .1.start(), .1.end())]
-        DayRange(u8, RangeInclusive<u8>),
+        #[error("Day {day} is not in the range of {} to {}", range.start(), range.end())]
+        DayRange {
+            /// The day.
+            day: u8,
+            /// The range the day is out of.
+            range: RangeInclusive<u8>,
+        },
         /// Could not parse the problem input.
         #[error("Could not parse input")]
         NomParse(
@@ -102,8 +107,8 @@ pub mod extension {
         };
 
         use euclid::{
-            num::{One, Zero},
             Box2D, Box3D, Point2D, Point3D, Size2D, Size3D, Vector2D, Vector3D,
+            num::{One, Zero},
         };
         use itertools::iproduct;
         use num::{NumCast, Signed};
@@ -507,9 +512,9 @@ pub mod extension {
             /// ```
             fn all_points(&self) -> Self::AllPointsIterator;
         }
-        impl<T: Copy + std::iter::Step + euclid::num::Zero, U> AllPoints for Size2D<T, U> {
+        impl<T: Copy + std::iter::Step + euclid::num::Zero + 'static, U> AllPoints for Size2D<T, U> {
             type Point = Point2D<T, U>;
-            type AllPointsIterator = impl Iterator<Item = Self::Point>;
+            type AllPointsIterator = impl Iterator<Item = Self::Point> + 'static;
 
             fn all_points(&self) -> Self::AllPointsIterator {
                 iproduct!(T::zero()..self.height, T::zero()..self.width)
@@ -538,9 +543,9 @@ pub mod extension {
                     .map(|(y, x)| Self::Point::new(x, y))
             }
         }
-        impl<T: Copy + std::iter::Step, U> AllPoints for Box3D<T, U> {
+        impl<T: Copy + std::iter::Step + 'static, U> AllPoints for Box3D<T, U> {
             type Point = Point3D<T, U>;
-            type AllPointsIterator = impl Iterator<Item = Self::Point>;
+            type AllPointsIterator = impl Iterator<Item = Self::Point> + 'static;
 
             fn all_points(&self) -> Self::AllPointsIterator {
                 iproduct!(
@@ -686,7 +691,7 @@ pub mod solution {
         /// Basic usage:
         /// ```
         /// # #![feature(assert_matches)]
-        /// # use std::assert_matches::assert_matches;
+        /// # use std::assert_matches;
         /// # use aoc::prelude::*;
         /// assert_eq!(SolverInput::Text("test").expect_text().unwrap(), "test");
         /// assert_matches!(
@@ -711,7 +716,7 @@ pub mod solution {
         /// Basic usage:
         /// ```
         /// # #![feature(assert_matches)]
-        /// # use std::assert_matches::assert_matches;
+        /// # use std::assert_matches;
         /// # use aoc::prelude::*;
         /// assert_eq!(
         ///     SolverInput::Data(Box::new(6u8))

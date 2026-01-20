@@ -2,8 +2,8 @@ use aoc::prelude::*;
 
 #[cfg(test)]
 mod tests {
-    use aoc::prelude_test::*;
     use Answer::Unsigned;
+    use aoc::prelude_test::*;
 
     solution_tests! {
         example {
@@ -29,12 +29,8 @@ mod solution {
     use super::*;
     use itertools::Itertools;
     use nom::{
-        branch::alt,
-        bytes::complete::tag,
-        character::complete::one_of,
-        combinator::map,
-        multi::many_m_n,
-        sequence::{preceded, tuple},
+        branch::alt, bytes::complete::tag, character::complete::one_of, combinator::map,
+        multi::many_m_n, sequence::preceded,
     };
     use std::{collections::HashMap, str::FromStr};
 
@@ -106,11 +102,11 @@ mod solution {
                         Operation::SetMask(v.into_iter().rev().map(MaskBit::from).collect())
                     },
                 ),
-                map(
-                    tuple((tag("mem["), cu64, tag("] = "), cu64)),
-                    |(_, a, _, v)| Operation::SetMemory(Assignment::new(a, v)),
-                ),
-            ))(input.trim())
+                map((tag("mem["), cu64, tag("] = "), cu64), |(_, a, _, v)| {
+                    Operation::SetMemory(Assignment::new(a, v))
+                }),
+            ))
+            .parse(input.trim())
         }
     }
 
