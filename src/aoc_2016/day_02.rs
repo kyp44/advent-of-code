@@ -13,7 +13,7 @@ LURDL
 UUUUD";
             answers = string!["1985", "5DB3"];
         }
-        actual_answers = string!["69642"];
+        actual_answers = string!["69642", "8CB23"];
     }
 }
 
