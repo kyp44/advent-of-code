@@ -104,12 +104,8 @@ mod solution {
         /// characters.
         fn build_name_chars(&self) -> Vec<NameChar> {
             // Add all characters to a multi set
-            let mut chars = HashMultiSet::new();
-            for c in self.name.chars() {
-                if c.is_ascii_alphabetic() {
-                    chars.insert(c)
-                }
-            }
+            let chars =
+                HashMultiSet::from_iter(self.name.chars().filter(|c| c.is_ascii_alphabetic()));
 
             // Build the vec from the multiset
             chars
