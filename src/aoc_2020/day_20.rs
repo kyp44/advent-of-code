@@ -208,23 +208,23 @@ mod solution {
     impl Image {
         /// Returns this image rotated 90 degrees counter-clockwise.
         fn rot_90(&self) -> Self {
-            let mut pixels = self.pixels.clone().into_underlying_grid();
-            pixels.rotate_left();
-            Self::new(pixels.into())
+            let mut pixels = self.pixels.clone();
+            pixels.underlying_grid_mut().rotate_left();
+            Self::new(pixels)
         }
 
         /// Returns this image flipped horizontally.
         fn flip_hor(&self) -> Self {
-            let mut pixels = self.pixels.clone().into_underlying_grid();
-            pixels.flip_cols();
-            Self::new(pixels.into())
+            let mut pixels = self.pixels.clone();
+            pixels.underlying_grid_mut().flip_cols();
+            Self::new(pixels)
         }
 
         /// Returns this image flipped vertically.
         fn flip_ver(&self) -> Self {
-            let mut pixels = self.pixels.clone().into_underlying_grid();
-            pixels.flip_rows();
-            Self::new(pixels.into())
+            let mut pixels = self.pixels.clone();
+            pixels.underlying_grid_mut().flip_rows();
+            Self::new(pixels)
         }
 
         /// Returns this image with some transformation applied.

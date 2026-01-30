@@ -13,11 +13,14 @@
 #![feature(ascii_char_variants)]
 #![feature(try_blocks)]
 #![feature(iter_array_chunks)]
+#![feature(iterator_try_collect)]
+#![feature(generic_const_exprs)]
 #![feature(bool_to_result)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(extend_one)]
 #![warn(missing_docs)]
 #![warn(clippy::missing_docs_in_private_items)]
+#![allow(incomplete_features)]
 
 mod aoc_2015;
 mod aoc_2016;

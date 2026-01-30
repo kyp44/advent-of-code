@@ -466,9 +466,10 @@ impl<T, U> Grid<T, U> {
         &self.0
     }
 
-    /// Consumes the object and returns the [`grid::Grid`].
-    pub fn into_underlying_grid(self) -> grid::Grid<T> {
-        self.0
+    /// Returns the underlying [`grid::Grid`] object that is multable, which
+    /// features additional useful methods.
+    pub fn underlying_grid_mut(&mut self) -> &mut grid::Grid<T> {
+        &mut self.0
     }
 
     /// Returns an [`Iterator`] over the neighboring points around a `point`
