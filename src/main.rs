@@ -14,6 +14,7 @@
 #![feature(try_blocks)]
 #![feature(iter_array_chunks)]
 #![feature(iterator_try_collect)]
+#![feature(generic_const_exprs)]
 #![feature(bool_to_result)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(extend_one)]

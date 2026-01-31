@@ -11,9 +11,16 @@ mod tests {
 abcd[bddb]xyyx
 aaaa[qwer]tyui
 ioxxoj[asdfgh]zxcvbn";
-            answers = unsigned![2];
+            answers = unsigned![2, 0];
         }
-        actual_answers = unsigned![105];
+        example {
+            input = "aba[bab]xyz
+xyx[xyx]xyx
+aaa[kek]eke
+zazbz[bzb]cdb";
+            answers = unsigned![0, 3];
+        }
+        actual_answers = unsigned![105, 258];
     }
 }
 
@@ -21,12 +28,11 @@ ioxxoj[asdfgh]zxcvbn";
 mod solution {
     use super::*;
     use aoc::parse::trim;
-    use gat_lending_iterator::{LendingIterator, ToLendingIterator};
     use nom::{
         branch::alt, bytes::complete::tag, character::complete::alpha1, combinator::map,
         multi::many1, sequence::delimited,
     };
-    use std::ops::Neg;
+    use std::{collections::HashSet, ops::Neg};
 
     #[derive(Debug)]
     enum AddressSeq<T> {
@@ -41,28 +47,23 @@ mod solution {
             }
         }
 
-        pub fn process_abbas(&self) -> Vec<AddressSeq<AbbaSection>> {
-            /* let abbas = self
-                .as_str()
-                .chars()
-                .collect::<Vec<_>>()
-                .windows(4)
-                .filter_map(|cs: &[char]| AbbaSection::from_chars(cs.try_into().unwrap()));
+        pub fn process_pattern<P>(&self) -> Vec<AddressSeq<P>>
+        where
+            P: Pattern,
+            [(); P::SIZE]:,
+        {
+            let build = |f: fn(P) -> AddressSeq<P>| -> Vec<AddressSeq<P>> {
+                let chars: Vec<_> = self.as_str().chars().collect();
+                chars
+                    .windows(P::SIZE)
+                    .filter_map(|cs: &[char]| P::from_chars(cs.try_into().unwrap()).map(f))
+                    .collect()
+            };
 
             match self {
-                AddressSeq::Supernet(_) => abbas.map(|a| AddressSeq::Supernet(a)).collect(),
-                AddressSeq::Hypernet(_) => abbas.map(|a| AddressSeq::Hypernet(a)).collect(),
-            } */
-            let chars: Vec<_> = "What the fuck".chars().collect();
-            let abbas: Vec<_> = chars
-                .windows(4)
-                .filter_map(|cs: &[char]| -> Option<AbbaSection> {
-                    let a: [char; 4] = cs.try_into().unwrap();
-                    AbbaSection::from_chars(a)
-                })
-                .collect();
-
-            todo!()
+                AddressSeq::Supernet(_) => build(AddressSeq::Supernet),
+                AddressSeq::Hypernet(_) => build(AddressSeq::Hypernet),
+            }
         }
     }
 
@@ -74,21 +75,50 @@ mod solution {
     }
     impl AddressStatus for Raw {}
 
-    #[derive(Debug)]
-    struct AbbaSection {
-        chars: [char; 4],
+    trait Pattern: Sized {
+        const SIZE: usize;
+
+        fn from_chars(chars: [char; Self::SIZE]) -> Option<Self>;
     }
-    impl AbbaSection {
-        pub fn from_chars(chars: [char; 4]) -> Option<Self> {
+
+    #[derive(Debug)]
+    struct AbbaPattern {
+        _chars: [char; 4],
+    }
+    impl Pattern for AbbaPattern {
+        const SIZE: usize = 4;
+
+        fn from_chars(chars: [char; Self::SIZE]) -> Option<Self> {
             (chars[0] != chars[1] && chars[0] == chars[3] && chars[1] == chars[2])
-                .then(|| Self { chars })
+                .then(|| Self { _chars: chars })
+        }
+    }
+
+    #[derive(Debug, PartialEq, Eq, Hash)]
+    struct AbaPattern {
+        chars: [char; 3],
+    }
+    impl Pattern for AbaPattern {
+        const SIZE: usize = 3;
+
+        fn from_chars(chars: [char; Self::SIZE]) -> Option<Self> {
+            (chars[0] != chars[1] && chars[0] == chars[2]).then(|| Self { chars })
+        }
+    }
+    impl Neg for &AbaPattern {
+        type Output = AbaPattern;
+
+        fn neg(self) -> Self::Output {
+            let a = self.chars[0];
+            let b = self.chars[1];
+            AbaPattern { chars: [b, a, b] }
         }
     }
 
     #[derive(Debug)]
     pub struct Processed {
-        abba_sequences: Vec<AddressSeq<AbbaSection>>,
-        //aba_sequences: Vec<AddressSeq>,
+        abba_sequences: Vec<AddressSeq<AbbaPattern>>,
+        aba_sequences: Vec<AddressSeq<AbaPattern>>,
     }
     impl AddressStatus for Processed {}
 
@@ -116,36 +146,23 @@ mod solution {
         }
     }
     impl IpAddress<Raw> {
-        fn ascii_windows(s: &str, n: usize) -> impl Iterator<Item = &str> {
-            (0..=s.len().saturating_sub(n)).map(move |i| &s[i..i + n])
-        }
-
         pub fn process(self) -> AocResult<IpAddress<Processed>> {
-            let mut abba_sequences = Vec::new();
-            //let mut aba_sequences = Vec::new();
-
-            for seq in self.status.sequences.into_iter() {
-                seq.is_ascii().ok_or(AocError::Process(
-                    "There is a sequence that is not ASCII".into(),
-                ))?;
-
-                let abbas =
-                    Self::ascii_windows(seq.as_str(), 4).filter_map(|s| AbbaSection::from_str(s));
-
-                match seq {
-                    AddressSeq::Supernet(_) => {
-                        abba_sequences.extend(abbas.map(|a| AddressSeq::Supernet(a)))
-                    }
-                    AddressSeq::Hypernet(_) => {
-                        abba_sequences.extend(abbas.map(|a| AddressSeq::Hypernet(a)))
-                    }
-                }
+            fn build<P>(addr: &IpAddress<Raw>) -> Vec<AddressSeq<P>>
+            where
+                P: Pattern,
+                [(); P::SIZE]:,
+            {
+                addr.status
+                    .sequences
+                    .iter()
+                    .flat_map(|seq| seq.process_pattern::<P>())
+                    .collect()
             }
 
             Ok(IpAddress {
                 status: Processed {
-                    abba_sequences,
-                    //aba_sequences,
+                    abba_sequences: build::<AbbaPattern>(&self),
+                    aba_sequences: build::<AbaPattern>(&self),
                 },
             })
         }
@@ -161,6 +178,28 @@ mod solution {
             }
 
             super_abba
+        }
+
+        pub fn supports_ssl(&self) -> bool {
+            // First split out the sections, which is a little obnoxious
+            let mut supernets = HashSet::new();
+            let mut hypernets = HashSet::new();
+
+            for seq in self.status.aba_sequences.iter() {
+                match seq {
+                    AddressSeq::Supernet(aba) => supernets.insert(aba),
+                    AddressSeq::Hypernet(aba) => hypernets.insert(aba),
+                };
+            }
+
+            // Now, for each supernet ABA see if the corresponding BAB is in the hypernet
+            for aba in supernets.into_iter() {
+                if hypernets.contains(&-aba) {
+                    return true;
+                }
+            }
+
+            false
         }
     }
 
@@ -182,6 +221,10 @@ mod solution {
     impl IpAddresses {
         pub fn num_support_tls(&self) -> u64 {
             self.addresses.iter().filter_count(|a| a.supports_tls())
+        }
+
+        pub fn num_support_ssl(&self) -> u64 {
+            self.addresses.iter().filter_count(|a| a.supports_ssl())
         }
     }
 
@@ -253,23 +296,12 @@ pub const SOLUTION: Solution = Solution {
             Ok(addresses.num_support_tls().into())
         },
         // Part two
-        /* |input| {
+        |input| {
             // Generation
-            let addresses = input
-                .expect_text()?
-                .lines()
-                .map(|s| IpAddress::from_str(s))
-                .collect::<AocResult<Vec<_>>>()?;
+            let addresses = IpAddresses::from_str(input.expect_text()?)?;
 
             // Process
-            let mut count = 0u64;
-            for addr in addresses.iter() {
-                if addr.supports_tls()? {
-                    count += 1;
-                }
-            }
-
-            Ok(count.into())
-        }, */
+            Ok(addresses.num_support_ssl().into())
+        },
     ],
 };
