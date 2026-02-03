@@ -64,8 +64,20 @@ impl nom::error::ParseError<BitInput<'_>> for NomParseError {
         }
     }
 }
-impl nom::error::ContextError<&str> for NomParseError {}
-impl nom::error::ContextError<BitInput<'_>> for NomParseError {}
+impl nom::error::ContextError<&str> for NomParseError {
+    fn add_context(_input: &str, _ctx: &'static str, other: Self) -> Self {
+        Self {
+            verbose_error: VerboseError::add_context(_input.into(), _ctx, other.verbose_error),
+        }
+    }
+}
+impl nom::error::ContextError<BitInput<'_>> for NomParseError {
+    fn add_context(_input: BitInput<'_>, _ctx: &'static str, other: Self) -> Self {
+        Self {
+            verbose_error: VerboseError::add_context(BITS_STR.into(), _ctx, other.verbose_error),
+        }
+    }
+}
 impl fmt::Display for NomParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(&self.verbose_error, f)
