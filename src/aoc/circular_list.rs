@@ -225,8 +225,8 @@ impl<'a, L: Links> NodeRef<'a, L> {
         f(self.raw.borrow().deref())
     }
 
-    /// Runs a closure to which a direct, mutable reference to the [`CircularListNode`]
-    /// is passed.
+    /// Runs a closure to which a direct, mutable reference to the
+    /// [`CircularListNode`] is passed.
     fn with_mut<R>(&self, f: impl FnOnce(&mut CircularListNode<L>) -> R) -> R {
         f(self.raw.borrow_mut().deref_mut())
     }
@@ -293,7 +293,8 @@ impl<'a, L: Links> NodeRef<'a, L> {
         }
     }
 
-    /// Returns a reference to the next node, panicking if this node is unlinked.
+    /// Returns a reference to the next node, panicking if this node is
+    /// unlinked.
     pub fn next(&self) -> NodeRef<'a, L> {
         self.with_ref(|n| n.links.next().map(|r| NodeRef::from_weak(self.list, r)))
             .expect("cannot return the next node because this node is unlinked")
@@ -322,7 +323,8 @@ impl<'a, L: Links> NodeRef<'a, L> {
     /// [`CircularList::iter_const`].
     ///
     /// # Panics
-    /// This will panic if this node is unlinked or it is the sole remaining node.
+    /// This will panic if this node is unlinked or it is the sole remaining
+    /// node.
     ///
     /// # Examples
     /// Basic usage:
@@ -360,8 +362,9 @@ impl<'a, L: Links> NodeRef<'a, L> {
     /// Inserts a node after this one in the list.
     ///
     /// # Panics
-    /// This will panic if the nodes are from different [`CircularList`] objects,
-    /// if the insertion node is still linked, or if this node is unlinked.
+    /// This will panic if the nodes are from different [`CircularList`]
+    /// objects, if the insertion node is still linked, or if this node is
+    /// unlinked.
     ///
     /// # Examples
     /// Basic usage:
@@ -408,7 +411,8 @@ impl<'a, L: Links> NodeRef<'a, L> {
     /// size prior to following the links.
     ///
     /// # Panics
-    /// This will panic if this node is unlinked or it is the sole remaining node.
+    /// This will panic if this node is unlinked or it is the sole remaining
+    /// node.
     ///
     /// # Examples
     /// Basic usage:
@@ -480,7 +484,8 @@ impl<'a, L: Links> NodeRef<'a, L> {
     }
 }
 impl<'a, T> NodeRef<'a, DoublyLinked<T>> {
-    /// Returns a reference to the previous node, panicking if this node is unlinked.
+    /// Returns a reference to the previous node, panicking if this node is
+    /// unlinked.
     pub fn previous(&self) -> NodeRef<'a, DoublyLinked<T>> {
         self.with_ref(|n| n.links.previous().map(|r| NodeRef::from_weak(self.list, r)))
             .expect("cannot return the previous node because this node is unlinked")
@@ -555,8 +560,8 @@ where
     }
 }
 impl<'a, L: Links> CircularListNodeIterator<'a, L> {
-    /// Returns the next node, if any, given a closure `which` that selects the next
-    /// node from the the [`Link`] implementor.
+    /// Returns the next node, if any, given a closure `which` that selects the
+    /// next node from the the [`Link`] implementor.
     fn fetch_next(
         &mut self,
         which: impl FnOnce(&L) -> Option<NodeRefWeak<L>>,
@@ -624,8 +629,8 @@ where
 impl<L: Links> CircularList<L> {
     /// Creates a new circular list from the items yielded from `iter`.
     ///
-    /// The initial list is in the same order as `iter` but is of course circular
-    /// with the first and last items joined.
+    /// The initial list is in the same order as `iter` but is of course
+    /// circular with the first and last items joined.
     ///
     /// # Panics
     /// This will panic if `iter` is empty as the circular list must always have
@@ -681,8 +686,8 @@ impl<L: Links> CircularList<L> {
         }
     }
 
-    /// Returns the length of the original circular list, that is the size of the `iter` passed
-    /// to [`new`](CircularList::new).
+    /// Returns the length of the original circular list, that is the size of
+    /// the `iter` passed to [`new`](CircularList::new).
     ///
     /// Once the list is created, this will forever be constant.
     ///
@@ -705,8 +710,9 @@ impl<L: Links> CircularList<L> {
         self.nodes.len()
     }
 
-    /// Returns the current length of the list, which will be less than or equal to
-    /// [`original_len`](CircularList::original_len), and will always be at least one.
+    /// Returns the current length of the list, which will be less than or equal
+    /// to [`original_len`](CircularList::original_len), and will always be
+    /// at least one.
     ///
     /// # Examples
     /// Basic usage:
@@ -738,8 +744,8 @@ impl<L: Links> CircularList<L> {
     /// Returns an [`Iterator`] of node references over the *original*, constant
     /// list.
     ///
-    /// This can always be used to retrieve nodes that were removed from the list
-    /// and then discarded.
+    /// This can always be used to retrieve nodes that were removed from the
+    /// list and then discarded.
     ///
     /// # Examples
     /// Basic usage:

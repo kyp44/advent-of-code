@@ -11,8 +11,8 @@ use num::FromPrimitive;
 use petgraph::{EdgeType, Graph, graph::NodeIndex, stable_graph::IndexType};
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, marker::PhantomData, str::FromStr};
 
-/// A grid coordinate system in which the origin is the in upper left of the grid
-/// and increasing `y` moves down in the grid.
+/// A grid coordinate system in which the origin is the in upper left of the
+/// grid and increasing `y` moves down in the grid.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct GridSpace;
 
@@ -48,7 +48,8 @@ pub trait GridSizeExt<U>: Sized {
         }
     }
 
-    /// Creates a size and verifies that it is valid, see [`GridSizeExt::is_valid`].
+    /// Creates a size and verifies that it is valid, see
+    /// [`GridSizeExt::is_valid`].
     fn new_valid(width: usize, height: usize) -> Option<Self>;
 }
 impl<U> GridSizeExt<U> for GridSize<U> {
@@ -64,21 +65,22 @@ impl<U> GridSizeExt<U> for GridSize<U> {
 
 /// Extension trait for [`AnyGridPoint`].
 pub trait AnyGridPointExt<U> {
-    /// The iterator type returned from [`AnyGridPointExt::all_neighbor_points`].
+    /// The iterator type returned from
+    /// [`AnyGridPointExt::all_neighbor_points`].
     ///
     /// This is needed due to a
     /// [limitation of RPITIT](https://users.rust-lang.org/t/fully-owned-iterator-causing-lifetime-problems/107677).
     type NeighborPoints: Iterator<Item = AnyGridPoint<U>>;
 
-    /// Converts an infinitely repeating grid point into the actual addressable point
-    /// for a given grid size.
+    /// Converts an infinitely repeating grid point into the actual addressable
+    /// point for a given grid size.
     ///
-    /// This is effectively just a modulo operation in both dimensions using the `size`
-    /// values as the modulo.
+    /// This is effectively just a modulo operation in both dimensions using the
+    /// `size` values as the modulo.
     ///
     /// # Panics
-    /// This will panic if any of the conversions fail from signed to unsigned types
-    /// and vice versa.
+    /// This will panic if any of the conversions fail from signed to unsigned
+    /// types and vice versa.
     ///
     /// # Examples
     /// Basic usage:
@@ -103,9 +105,9 @@ pub trait AnyGridPointExt<U> {
     /// Returns an [`Iterator`] over all the neighboring points around a `point`
     /// in row-major order.
     ///
-    /// The set of points may optionally include the four diagonal neighbor points
-    /// as well as this `point` itself. These options will dictate the length of
-    /// the [`Iterator`].
+    /// The set of points may optionally include the four diagonal neighbor
+    /// points as well as this `point` itself. These options will dictate
+    /// the length of the [`Iterator`].
     ///
     /// # Examples
     /// Basic usage:
@@ -191,8 +193,9 @@ impl<U> AnyGridPointExt<U> for AnyGridPoint<U> {
 /// A 2D grid of values.
 ///
 /// The values are addressed by a [`GridPoint`].
-/// Conceptually, the origin point (0, 0) is in the upper-left corner of the grid
-/// with increasing `x` moving to the right, and increasing `y` moving down.
+/// Conceptually, the origin point (0, 0) is in the upper-left corner of the
+/// grid with increasing `x` moving to the right, and increasing `y` moving
+/// down.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct Grid<T, U = GridSpace>(grid::Grid<T>, PhantomData<U>);
 impl<T, U> Grid<T, U> {
@@ -267,8 +270,8 @@ impl<T, U> Grid<T, U> {
     /// Gets a reference to the element at a location.
     ///
     /// # Panics
-    /// This will panic if the location is out of the bounds of the grid based on
-    /// its size.
+    /// This will panic if the location is out of the bounds of the grid based
+    /// on its size.
     ///
     /// # Examples
     /// Basic usage:
@@ -286,12 +289,12 @@ impl<T, U> Grid<T, U> {
             .expect("Grid point is out of bounds")
     }
 
-    /// Gets a reference to the element at any location, if the location is within
-    /// the bounds of the grid.
+    /// Gets a reference to the element at any location, if the location is
+    /// within the bounds of the grid.
     ///
     /// # Panics
-    /// This will panic if the `point` is within the grid bounds but cannot be converted to a
-    /// [`GridPoint`].
+    /// This will panic if the `point` is within the grid bounds but cannot be
+    /// converted to a [`GridPoint`].
     ///
     /// # Examples
     /// Basic usage:
@@ -313,8 +316,8 @@ impl<T, U> Grid<T, U> {
     /// Sets the element at a location.
     ///
     /// # Panics
-    /// This will panic if the location is out of the bounds of the grid based on
-    /// its size.
+    /// This will panic if the location is out of the bounds of the grid based
+    /// on its size.
     ///
     /// # Examples
     /// Basic usage:
@@ -338,8 +341,8 @@ impl<T, U> Grid<T, U> {
     /// If this was the case, then the element will have been set.
     ///
     /// # Panics
-    /// This will panic if the `point` is within the grid bounds but cannot be converted to a
-    /// [`GridPoint`].
+    /// This will panic if the `point` is within the grid bounds but cannot be
+    /// converted to a [`GridPoint`].
     ///
     /// # Examples
     /// Basic usage:
@@ -368,8 +371,8 @@ impl<T, U> Grid<T, U> {
     /// Gets a mutable reference to an element.
     ///
     /// # Panics
-    /// This will panic if the location is out of the bounds of the grid based on
-    /// its size.
+    /// This will panic if the location is out of the bounds of the grid based
+    /// on its size.
     ///
     /// # Examples
     /// Basic usage:
@@ -388,10 +391,12 @@ impl<T, U> Grid<T, U> {
             .expect("Grid point out of bounds")
     }
 
-    /// Verifies that any grid point is in the bounds of the grid and converts it if so.
+    /// Verifies that any grid point is in the bounds of the grid and converts
+    /// it if so.
     ///
     /// If the signed `point` is out bounds, then `None` will be returned.
-    /// If it is in bounds then the corresponding unsigned point will be returned.
+    /// If it is in bounds then the corresponding unsigned point will be
+    /// returned.
     ///
     /// # Examples
     /// Basic usage:
@@ -475,11 +480,11 @@ impl<T, U> Grid<T, U> {
     /// Returns an [`Iterator`] over the neighboring points around a `point`
     /// in row-major order such that all the points are bounded in the grid.
     ///
-    /// The length of the [`Iterator`] will depend on the location of the `point`.
-    /// For example, points on the edge of the grid will have fewer neighboring
-    /// points than the points in the middle of the grid. The set of points may
-    /// optionally include the (up to) four diagonal neighbor points as well as
-    /// this `point` itself.
+    /// The length of the [`Iterator`] will depend on the location of the
+    /// `point`. For example, points on the edge of the grid will have fewer
+    /// neighboring points than the points in the middle of the grid. The
+    /// set of points may optionally include the (up to) four diagonal
+    /// neighbor points as well as this `point` itself.
     ///
     /// # Examples
     /// Basic usage:
@@ -571,7 +576,8 @@ impl<T: Default + Clone, U> Grid<T, U> {
     /// Creates a default grid of a particular `size` with default values.
     ///
     /// # Panics
-    /// This will panic if the `size` is invalid, that is it contains zero in either dimension.
+    /// This will panic if the `size` is invalid, that is it contains zero in
+    /// either dimension.
     ///
     /// # Examples
     /// Basic usage:
@@ -589,20 +595,20 @@ impl<T: Default + Clone, U> Grid<T, U> {
         Self(grid::Grid::new(size.height, size.width), Default::default())
     }
 
-    /// Creates a grid from raw data, filling in missing elements with the default
-    /// value.
+    /// Creates a grid from raw data, filling in missing elements with the
+    /// default value.
     ///
     /// The raw data should be a [`Vec`] of rows, with each row being
     /// itself a [`Vec`].
     /// If a `size` is not passed, then the grid size will be determined from
     /// the `data`, with the height being the number of rows and the width being
     /// the length of the longest row.
-    /// If a `size` is passed, then the grid will have that size, with extraneous
-    /// data discarded.
-    /// In either case, any missing items in the data will be filled with the default
-    /// value, noting that passed values in any shorter rows will all be on the left
-    /// side of the grid followed by any default values on the right.
-    /// Returns an [`AocError::Other`]
+    /// If a `size` is passed, then the grid will have that size, with
+    /// extraneous data discarded.
+    /// In either case, any missing items in the data will be filled with the
+    /// default value, noting that passed values in any shorter rows will
+    /// all be on the left side of the grid followed by any default values
+    /// on the right. Returns an [`AocError::Other`]
     /// if the passed data is empty.
     ///
     /// # Examples
@@ -698,7 +704,8 @@ impl<T: Default + Clone, U> Grid<T, U> {
     ///
     /// # Panics
     /// This will panic if any part of the sub-grid is out of the bounds of this
-    /// grid, or if `sub_grid_box` has an invalid size, see [`GridSizeExt::is_valid`].
+    /// grid, or if `sub_grid_box` has an invalid size, see
+    /// [`GridSizeExt::is_valid`].
     ///
     /// # Examples
     /// Basic usage:
@@ -742,8 +749,8 @@ impl<T: Default + Clone, U> Grid<T, U> {
     /// Parses the grid from a string, filling in missing values with defaults.
     ///
     /// Identical to [`Grid::from_str`] except that rows of variable lengths are
-    /// allowed, with missing values being filled in with default values as is done
-    /// when using [`Grid::from_data_default`].
+    /// allowed, with missing values being filled in with default values as is
+    /// done when using [`Grid::from_data_default`].
     ///
     /// # Examples
     /// Basic usage:
@@ -833,20 +840,23 @@ impl<T: Default + Clone, U> Grid<T, U> {
 impl<T: Clone> Grid<T> {
     /// Creates a [`Graph`] representation of the grid.
     ///
-    /// This can be useful to, for example, find the shortest path from one point
-    /// to another using [`petgraph::algo::dijkstra`](petgraph::algo::dijkstra::dijkstra).
-    /// A node is created for each point in the grid, with the node weight being a
-    /// clone of the corresponding element in this grid.
+    /// This can be useful to, for example, find the shortest path from one
+    /// point to another using
+    /// [`petgraph::algo::dijkstra`](petgraph::algo::dijkstra::dijkstra).
+    /// A node is created for each point in the grid, with the node weight being
+    /// a clone of the corresponding element in this grid.
     ///
-    /// The `edge_creator` closure can be used to create edges between adjacent points.
-    /// For each point in the grid, the closure will be called for each neighbor of the point,
-    /// optionally including diagonal neighbors when `include_diagonals` is `true`.
-    /// The first argument of the closure will be the element of the main point, while the
+    /// The `edge_creator` closure can be used to create edges between adjacent
+    /// points. For each point in the grid, the closure will be called for
+    /// each neighbor of the point, optionally including diagonal neighbors
+    /// when `include_diagonals` is `true`. The first argument of the
+    /// closure will be the element of the main point, while the
     /// second argument is the element of the neighboring point.
     /// The closure should return an edge weight if an edge should be created.
     /// If [`None`] is returned, then an edge will not be created.
-    /// Note that the closure will be called twice for each pair of adjacent points, once
-    /// where one point is the main point, and again with other point as the main point.
+    /// Note that the closure will be called twice for each pair of adjacent
+    /// points, once where one point is the main point, and again with other
+    /// point as the main point.
     ///
     /// # Examples
     /// Basic usage:
@@ -944,7 +954,8 @@ impl<T: Clone> Grid<T> {
 /// Creates the grid from the underlying grid object, validating its size.
 ///
 /// # Panics
-/// This will panic if the size of the `value` is invalid, that is it contains zero in either dimension.
+/// This will panic if the size of the `value` is invalid, that is it contains
+/// zero in either dimension.
 impl<T, U> From<grid::Grid<T>> for Grid<T, U> {
     fn from(value: grid::Grid<T>) -> Self {
         GridSize::<GridSpace>::from(value.size()).validate();
@@ -955,12 +966,13 @@ impl<T, U> From<grid::Grid<T>> for Grid<T, U> {
 
 // Additional methods for grids with boolean-like elements.
 impl<T: From<bool> + Default + Clone, U> Grid<T, U> {
-    /// Builds a [`Grid`] from a set of [`AnyGridPoint`]s for any value type that can be
-    /// created from [`bool`] values.
+    /// Builds a [`Grid`] from a set of [`AnyGridPoint`]s for any value type
+    /// that can be created from [`bool`] values.
     ///
-    /// The size of the grid will automatically be determined in order to tightly
-    /// contain all of the elements that correspond to `true`. The order of the points
-    /// in the `points` [`Iterator`] makes no difference.
+    /// The size of the grid will automatically be determined in order to
+    /// tightly contain all of the elements that correspond to `true`. The
+    /// order of the points in the `points` [`Iterator`] makes no
+    /// difference.
     ///
     /// # Examples
     /// Basic usage:
@@ -1057,13 +1069,14 @@ impl<T: Into<bool> + Clone, U> Grid<T, U> {
     }
 }
 
-/// Parses a [`Grid`] from a string of characters with each row on a separate line.
+/// Parses a [`Grid`] from a string of characters with each row on a separate
+/// line.
 ///
-/// This can be done for element types that can be fallibly converted from characters.
-/// Note that the error type of the [`FromStr`] implementation for the element type
-/// does not matter so it is recommended just to use the unit type. An [`Err`] will
-/// be returns if not every row has the same number of characters, or if any of the
-/// characters is invalid.
+/// This can be done for element types that can be fallibly converted from
+/// characters. Note that the error type of the [`FromStr`] implementation for
+/// the element type does not matter so it is recommended just to use the unit
+/// type. An [`Err`] will be returns if not every row has the same number of
+/// characters, or if any of the characters is invalid.
 ///
 /// # Examples
 /// Basic usage:
@@ -1166,7 +1179,8 @@ pub trait GridDefault<T: Default + Clone>: From<Grid<T>> {
     /// Returns a default object from a default [`Grid`] of some `size`.
     ///
     /// # Panics
-    /// This will panic if the `size` is invalid, that is either dimension is zero.
+    /// This will panic if the `size` is invalid, that is either dimension is
+    /// zero.
     fn default(size: GridSize) -> Self {
         Grid::default(size).into()
     }
@@ -1179,8 +1193,9 @@ impl<T: Default + Clone, O: From<Grid<T>>> GridDefault<T> for O {
 
 /// Parse objects that can be created from a [`Grid`] from a grid of characters.
 ///
-/// This is a blanket implementation on implementors of `From<Grid<T>>` for some `T`.
-/// Note that we cannot just blanket implement [`FromStr`] due to the orphan rule.
+/// This is a blanket implementation on implementors of `From<Grid<T>>` for some
+/// `T`. Note that we cannot just blanket implement [`FromStr`] due to the
+/// orphan rule.
 pub trait FromGridStr<T>: Sized {
     /// The error type if the conversion fails.
     type Err;
@@ -1203,8 +1218,8 @@ impl<T: TryFrom<char>, O: From<Grid<T>>> FromGridStr<T> for O {
 /// Standard boolean [`Grid`] element that can be converted from characters,
 /// where '.' is false and '#' is true.
 ///
-/// This conversion allows grids of these elements to be parsed from strings using
-/// [`Grid::from_str`].
+/// This conversion allows grids of these elements to be parsed from strings
+/// using [`Grid::from_str`].
 ///
 /// # Examples
 /// Basic usage:
@@ -1241,11 +1256,11 @@ impl fmt::Debug for StdBool {
     }
 }
 
-/// Standard number digit [`Grid`] element that can be converted from characters,
-/// where the digits can be from `0` to `9`.
+/// Standard number digit [`Grid`] element that can be converted from
+/// characters, where the digits can be from `0` to `9`.
 ///
-/// This conversion allows grids of these elements to be parsed from strings using
-/// [`Grid::from_str`].
+/// This conversion allows grids of these elements to be parsed from strings
+/// using [`Grid::from_str`].
 ///
 /// # Examples
 /// Basic usage:

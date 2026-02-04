@@ -238,7 +238,7 @@ mod solution {
                 graph,
                 hall_spaces,
                 room_spaces,
-                _phantom: Default::default(),
+                _phantom: PhantomData,
             }
         }
     }
@@ -341,7 +341,7 @@ mod solution {
 
                     Position {
                         positions: position_map,
-                        _phantom: Default::default(),
+                        _phantom: PhantomData,
                     }
                 },
             )

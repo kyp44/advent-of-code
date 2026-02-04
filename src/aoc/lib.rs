@@ -1,6 +1,8 @@
-//! Support crate for the [Advent of Code solutions](../advent_of_code/index.html).
+//! Support crate for the [Advent of Code
+//! solutions](../advent_of_code/index.html).
 //!
-//! Contains useful abstractions are that are used for one more than one solution.
+//! Contains useful abstractions are that are used for one more than one
+//! solution.
 #![feature(slice_pattern)]
 #![feature(assert_matches)]
 #![warn(missing_docs)]
@@ -35,6 +37,7 @@ pub mod prelude {
         parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parsable, Sections},
         solution::{Answer, Solution, SolverInput, YearSolutions},
     };
+    pub use bool_ext::BoolExt;
     pub use nom::Parser;
 }
 
@@ -273,7 +276,8 @@ pub mod extension {
             /// The point type that defines the box.
             type Point;
 
-            /// Returns a new box with `min` and `max` points that are both contained in the box.
+            /// Returns a new box with `min` and `max` points that are both
+            /// contained in the box.
             ///
             /// # Examples
             /// Basic usage:
@@ -301,11 +305,12 @@ pub mod extension {
             /// ```
             fn new_inclusive(min: Self::Point, max: Self::Point) -> Self;
 
-            /// Returns the smallest box containing **all** of the provided points.
+            /// Returns the smallest box containing **all** of the provided
+            /// points.
             ///
             /// [`Box2D::from_points`] and [`Box3D::from_points`] will create
-            /// boxes that actually exclude one or more points on the back edges of
-            /// the box.
+            /// boxes that actually exclude one or more points on the back edges
+            /// of the box.
             /// I thought this may be a bug, but it turns out that this is the
             /// [intended behavior](https://github.com/servo/euclid/issues/519).
             ///
@@ -440,7 +445,8 @@ pub mod extension {
             /// [limitation of RPITIT](https://users.rust-lang.org/t/fully-owned-iterator-causing-lifetime-problems/107677).
             type AllPointsIterator: Iterator<Item = Self::Point>;
 
-            /// Returns an [`Iterator`] over all points contained in the item in row-major order.
+            /// Returns an [`Iterator`] over all points contained in the item in
+            /// row-major order.
             ///
             /// # Examples
             /// Basic usage:
@@ -652,6 +658,21 @@ pub mod solution {
             Answer::Unsigned(n)
         }
     }
+    impl From<u8> for Answer {
+        fn from(n: u8) -> Self {
+            Answer::Unsigned(n.into())
+        }
+    }
+    impl From<u16> for Answer {
+        fn from(n: u16) -> Self {
+            Answer::Unsigned(n.into())
+        }
+    }
+    impl From<u32> for Answer {
+        fn from(n: u32) -> Self {
+            Answer::Unsigned(n.into())
+        }
+    }
     impl From<i64> for Answer {
         fn from(n: i64) -> Self {
             Answer::Signed(n)
@@ -685,7 +706,8 @@ pub mod solution {
         Data(Box<dyn Any>),
     }
     impl<'a> SolverInput<'a> {
-        /// Returns the string input if selected, otherwise an [`AocError::InvalidInput`].
+        /// Returns the string input if selected, otherwise an
+        /// [`AocError::InvalidInput`].
         ///
         /// # Examples
         /// Basic usage:
@@ -709,8 +731,9 @@ pub mod solution {
             }
         }
 
-        /// Returns the data input of a particular type if selected and the data is the correct type,
-        /// otherwise an [`AocError::InvalidInput`].
+        /// Returns the data input of a particular type if selected and the data
+        /// is the correct type, otherwise an
+        /// [`AocError::InvalidInput`].
         ///
         /// # Examples
         /// Basic usage:
@@ -760,7 +783,8 @@ pub mod solution {
 
     /// A solver function for any parts of a day's problem.
     ///
-    /// Solvers will either return an [`Answer`] or an [`AocError`] if there is some kind of problem.
+    /// Solvers will either return an [`Answer`] or an [`AocError`] if there is
+    /// some kind of problem.
     pub type SolverFunc = fn(&SolverInput) -> AocResult<Answer>;
 
     /// The solution for a day's problem.
@@ -769,12 +793,13 @@ pub mod solution {
         pub day: u8,
         /// The name of the day's problem.
         pub name: &'static str,
-        /// An optional preprocessing function to parse the input text and possibly perform
-        /// other preprocessing only once.
+        /// An optional preprocessing function to parse the input text and
+        /// possibly perform other preprocessing only once.
         ///
         /// The output of this will be passed to all solvers as their input.
-        /// If not preprocessor is set, the raw problem input will be passed to all solvers.
-        /// This may also return an [`AocError`] if a problem is encountered.
+        /// If not preprocessor is set, the raw problem input will be passed to
+        /// all solvers. This may also return an [`AocError`] if a
+        /// problem is encountered.
         pub preprocessor: Option<fn(&str) -> AocResult<SolverInput>>,
         /// Solve functions for each part of the day's problem.
         pub solvers: &'static [SolverFunc],
@@ -787,7 +812,8 @@ pub mod solution {
 
         /// Runs the preprocessing function if applicable with the `input` text.
         ///
-        /// If no preprocessor is set, the `input` is just returned wrapped in a [`SolverInput::Text`].
+        /// If no preprocessor is set, the `input` is just returned wrapped in a
+        /// [`SolverInput::Text`].
         pub fn preprocess<'a>(&self, input: &'a str) -> AocResult<SolverInput<'a>> {
             if let Some(pf) = self.preprocessor {
                 pf(input)
@@ -796,11 +822,12 @@ pub mod solution {
             }
         }
 
-        /// Reads the input from the text file, runs the preprocessor if set, then runs the solvers
-        /// and prints their answers.
+        /// Reads the input from the text file, runs the preprocessor if set,
+        /// then runs the solvers and prints their answers.
         ///
-        /// If the preprocessor or any of the solvers return an [`AocError`], further processing will
-        /// stop and this will be returned. Otherwise the list of answers corresponding to each solver
+        /// If the preprocessor or any of the solvers return an [`AocError`],
+        /// further processing will stop and this will be returned.
+        /// Otherwise the list of answers corresponding to each solver
         /// are returned.
         pub fn run_and_print(&self, year: u16) -> anyhow::Result<Vec<Option<Answer>>> {
             // Read input for the problem
@@ -841,8 +868,8 @@ pub mod solution {
             self.solutions.iter().find(|s| s.day == day)
         }
 
-        /// Returns the list of the day's title solutions for every day as a newline-delimited
-        /// string.
+        /// Returns the list of the day's title solutions for every day as a
+        /// newline-delimited string.
         pub fn solution_list(&self) -> String {
             self.solutions
                 .iter()
@@ -882,7 +909,8 @@ pub mod solution {
 
     /// Wraps elements in [`Option::Some`] and evaluates to an answer slice.
     ///
-    /// This is mainly for use with the [`solution_results`](crate::solution_results) macro.
+    /// This is mainly for use with the
+    /// [`solution_results`](crate::solution_results) macro.
     #[macro_export]
     macro_rules! answers {
         [$($val: expr),+] => {
@@ -916,12 +944,14 @@ pub mod solution {
 
     /// Compares solution results with a vector.
     ///
-    /// This typically is not used directly, but rather by the [`solution_tests`](crate::solution_tests)
-    /// macro, and always in the context of a day's solution
-    /// module in which there is a constant [`Solution`] structure called `SOLUTION`
-    /// in the same scope. The `$input` should then be a static `&str` to pass as input
-    /// to the solvers, and the `$answers` should be be a [`Vec<Option<Answer>>`] of the
-    /// answers for each part for that `$input`.
+    /// This typically is not used directly, but rather by the
+    /// [`solution_tests`](crate::solution_tests) macro, and always in the
+    /// context of a day's solution module in which there is a constant
+    /// [`Solution`] structure called `SOLUTION` in the same scope. The
+    /// `$input` should then be a static `&str` to pass as input
+    /// to the solvers, and the `$answers` should be be a
+    /// [`Vec<Option<Answer>>`] of the answers for each part for that
+    /// `$input`.
     #[macro_export]
     macro_rules! solution_results {
         ($input: expr, $answers: expr) => {

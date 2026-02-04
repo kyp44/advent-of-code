@@ -1,7 +1,8 @@
 //! Collection of extension methods for various items that involve iteration.
 //!
-//! This includes the [`IteratorExt`] trait, which provides iterator adapter methods,
-//! and the [`StrExt`] trait, which provides methods to iterate over strings.
+//! This includes the [`IteratorExt`] trait, which provides iterator adapter
+//! methods, and the [`StrExt`] trait, which provides methods to iterate over
+//! strings.
 
 use gat_lending_iterator::LendingIterator;
 use itertools::{Itertools, MinMaxResult};
@@ -11,15 +12,16 @@ use crate::prelude::{AocError, AocResult};
 
 /// Extension methods for [`Iterator`]s.
 pub trait IteratorExt<T> {
-    /// This is a convenience method to count the elements of an iterator after filtering by
-    /// some predicate.
+    /// This is a convenience method to count the elements of an iterator after
+    /// filtering by some predicate.
     ///
     /// The numeric return type is anything that can be fallibly
     /// converted from a [`usize`]. An empty iterator will of course return zero
     /// regardless of the predicate.
     ///
     /// # Panics
-    /// This will panic if the [`usize`] count cannot be converted into the numeric return type.
+    /// This will panic if the [`usize`] count cannot be converted into the
+    /// numeric return type.
     ///
     /// # Examples
     /// Basic usage:
@@ -37,10 +39,11 @@ pub trait IteratorExt<T> {
     where
         <O as TryFrom<usize>>::Error: Debug;
 
-    /// Returns an inclusive range for an [`Iterator`] over applicable ordered types.
+    /// Returns an inclusive range for an [`Iterator`] over applicable ordered
+    /// types.
     ///
-    /// Will return `None` if the iterator is empty, and the single-element range
-    /// `x..=x` if the iterator yields only a single element `x`.
+    /// Will return `None` if the iterator is empty, and the single-element
+    /// range `x..=x` if the iterator yields only a single element `x`.
     ///
     /// # Examples
     /// Basic usage:
@@ -57,11 +60,13 @@ pub trait IteratorExt<T> {
     where
         T: PartialOrd + Copy;
 
-    /// Advances the [`Iterator`] by some number of iterations and return the resulting item.
+    /// Advances the [`Iterator`] by some number of iterations and return the
+    /// resulting item.
     ///
-    /// Note that this is the same as [`Iterator::nth`], but just offset by one, which can
-    /// be more convenient in some situations. If `0` is passed then `None` will be returned
-    /// and likewise if the iterator is exhausted before `n` iterations.
+    /// Note that this is the same as [`Iterator::nth`], but just offset by one,
+    /// which can be more convenient in some situations. If `0` is passed
+    /// then `None` will be returned and likewise if the iterator is
+    /// exhausted before `n` iterations.
     ///
     /// # Examples
     /// Basic usage:
@@ -73,7 +78,8 @@ pub trait IteratorExt<T> {
     /// ```
     fn iterations(&mut self, n: usize) -> Option<T>;
 
-    /// Advances the [`Iterator`], returning the next item, or an error if there is none.
+    /// Advances the [`Iterator`], returning the next item, or an error if there
+    /// is none.
     ///
     /// # Examples
     /// Basic usage:
@@ -123,9 +129,10 @@ impl<T, I: Iterator<Item = T>> IteratorExt<T> for I {
 
 /// Extension methods for [`LendingIterator`]s.
 ///
-/// This is a mirror of [`IteratorExt`], but a distinct trait is unfortunately needed
-/// because Rust does not currently support blanket trait implementations for types
-/// having disjoint trait bounds, or, alternatively, specifying negative trait bounds.
+/// This is a mirror of [`IteratorExt`], but a distinct trait is unfortunately
+/// needed because Rust does not currently support blanket trait implementations
+/// for types having disjoint trait bounds, or, alternatively, specifying
+/// negative trait bounds.
 ///
 /// NOTE: Had trouble implementing this with the GAT, which was solved
 /// [here](https://users.rust-lang.org/t/trouble-writing-an-extension-trait-for-a-trait-that-includes-a-gat/107628).
@@ -162,11 +169,13 @@ impl<I: LendingIterator + Sized> LendingIteratorExt for I {
 
 /// Extension methods for iteration over strings.
 pub trait StrExt {
-    /// Returns an [`Iterator`] the performs substring replacements on a string, one replacement
-    /// at a time, yielding the resulting string after each replacement.
+    /// Returns an [`Iterator`] the performs substring replacements on a string,
+    /// one replacement at a time, yielding the resulting string after each
+    /// replacement.
     ///
-    /// The replacements are independent and not cumulative. If the `from` string is not found
-    /// in the string, then the [`Iterator`] will be empty.
+    /// The replacements are independent and not cumulative. If the `from`
+    /// string is not found in the string, then the [`Iterator`] will be
+    /// empty.
     ///
     /// # Examples
     /// Basic usage:
@@ -199,8 +208,8 @@ pub trait StrExt {
 
     /// Returns an [`Iterator`] over runs of repeated characters in a string.
     ///
-    /// The iterator yields substrings of one or more characters that are the same. Only if the
-    /// string is empty will the iterator also be empty.
+    /// The iterator yields substrings of one or more characters that are the
+    /// same. Only if the string is empty will the iterator also be empty.
     ///
     /// # Examples
     /// Basic usage:

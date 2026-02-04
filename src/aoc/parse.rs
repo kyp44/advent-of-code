@@ -103,8 +103,9 @@ pub type NomParseResult<I, U> = IResult<I, U, NomParseError>;
 ///
 /// This should be a part of the nom library in my opinion.
 pub trait DiscardInput<U, E> {
-    /// Discards the input portion of a [`nom`] result and returns a [`Result`] without
-    /// the input such that an [`Ok`] variant will contain only the parsed value.
+    /// Discards the input portion of a [`nom`] result and returns a [`Result`]
+    /// without the input such that an [`Ok`] variant will contain only the
+    /// parsed value.
     fn discard_input(self) -> Result<U, E>;
 }
 impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
@@ -120,11 +121,12 @@ pub trait Parsable<'a> {
     where
         Self: Sized;
 
-    /// Runs the parser and gets the result, stripping out the input from the nom parser.
+    /// Runs the parser and gets the result, stripping out the input from the
+    /// nom parser.
     ///
-    /// Note that we cannot blanket implement [`FromStr`] for types that implement this trait
-    /// because this potentially breaks the orphan rule.
-    /// See [here](https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299).
+    /// Note that we cannot blanket implement [`FromStr`] for types that
+    /// implement this trait because this potentially breaks the orphan
+    /// rule. See [here](https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299).
     fn from_str(input: &'a str) -> Result<Self, NomParseError>
     where
         Self: Sized,
@@ -132,8 +134,8 @@ pub trait Parsable<'a> {
         Self::parser(input).finish().discard_input()
     }
 
-    /// Gathers a [`Vec`] of items from an iterator with each item being a string
-    /// from which to parse the item.
+    /// Gathers a [`Vec`] of items from an iterator with each item being a
+    /// string from which to parse the item.
     ///
     /// # Examples
     /// Basic usage:
@@ -157,8 +159,8 @@ pub trait Parsable<'a> {
         strs.map(|l| Self::from_str(l)).collect()
     }
 
-    /// Gathers a [`Vec`] of items from a single string in which each item string
-    /// is separated by commas.
+    /// Gathers a [`Vec`] of items from a single string in which each item
+    /// string is separated by commas.
     ///
     /// No whitespace is allowed between items, but this can be enabled by
     /// wrapping the item parser in the [`trim`] parser.
@@ -394,10 +396,11 @@ where
     }
 }
 
-/// Parses a label followed by another parser with potential whitespace in between.
+/// Parses a label followed by another parser with potential whitespace in
+/// between.
 ///
-/// This is a [`nom`] parser that will also consume any whitespace (including newlines)
-/// after the `inner` parser.
+/// This is a [`nom`] parser that will also consume any whitespace (including
+/// newlines) after the `inner` parser.
 ///
 /// # Examples
 /// Basic usage:

@@ -8,7 +8,8 @@ use std::{marker::PhantomData, rc::Rc};
 /// addressable cells.
 ///
 /// For example, a [Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life) simulation.
-/// Each cell has a value of type `T`. An basic example of this using the Toad oscillator is provided below.
+/// Each cell has a value of type `T`. An basic example of this using the Toad
+/// oscillator is provided below.
 ///
 /// # Examples
 /// Basic usage:
@@ -92,7 +93,8 @@ pub trait Evolver<T> {
     /// cell array.
     ///
     /// This is used to create the initial cell array for the next step before
-    /// actually setting each cell to the new value using [`Evolver::next_cell`].
+    /// actually setting each cell to the new value using
+    /// [`Evolver::next_cell`].
     fn next_default(other: &Self) -> Self;
 
     /// Sets the cell value at the specified address.
@@ -105,7 +107,8 @@ pub trait Evolver<T> {
     /// next step using the [`Evolver::next_cell`] method.
     fn next_iter(&self) -> impl Iterator<Item = Self::Point>;
 
-    /// Returns an [`Iterator`] over the steps in the evolution of the cell array.
+    /// Returns an [`Iterator`] over the steps in the evolution of the cell
+    /// array.
     ///
     /// The first element will be the next evolution, not the current array.
     fn evolutions(&self) -> EvolverIter<Self, T>

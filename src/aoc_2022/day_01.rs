@@ -65,15 +65,13 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Process
-            Ok(u64::from(
-                input
-                    .expect_data::<Vec<Elf>>()?
-                    .iter()
-                    .map(|e| e.total())
-                    .max()
-                    .unwrap(),
-            )
-            .into())
+            Ok(input
+                .expect_data::<Vec<Elf>>()?
+                .iter()
+                .map(|e| e.total())
+                .max()
+                .unwrap()
+                .into())
         },
         // Part two
         |input| {
@@ -86,7 +84,7 @@ pub const SOLUTION: Solution = Solution {
             totals.sort();
             totals.reverse();
 
-            Ok(u64::from(totals.iter().take(3).sum::<u32>()).into())
+            Ok(totals.iter().take(3).sum::<u32>().into())
         },
     ],
 };

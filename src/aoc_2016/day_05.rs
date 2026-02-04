@@ -123,7 +123,7 @@ mod solution {
             Self {
                 door_id,
                 index: 0,
-                _phant: Default::default(),
+                _phant: PhantomData,
             }
         }
     }
