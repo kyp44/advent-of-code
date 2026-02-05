@@ -28,7 +28,7 @@ mod solution {
     };
     use euclid::{Box2D, Point2D, Translation2D, Vector2D};
     use itertools::Itertools;
-    use std::collections::{hash_map::Entry, HashMap};
+    use std::collections::{HashMap, hash_map::Entry};
 
     /// The point type used for blizzard space.
     type Point<U> = Point2D<isize, U>;
@@ -60,8 +60,8 @@ mod solution {
 
         /// Returns the optimum move order for a given `goal`.
         ///
-        /// For example, for [`Goal::Entrance`], we are generally tying to move up
-        /// and left, so these are the first two moves in the order.
+        /// For example, for [`Goal::Entrance`], we are generally tying to move
+        /// up and left, so these are the first two moves in the order.
         pub fn move_order(goal: Goal) -> impl Iterator<Item = Self> {
             match goal {
                 Goal::Entrance => [Self::Up, Self::Left, Self::Down, Self::Right].into_iter(),
@@ -131,8 +131,8 @@ mod solution {
         Exit,
     }
 
-    /// A single blizzard, which is used when tracking blizzards to construct the
-    /// blizzard states.
+    /// A single blizzard, which is used when tracking blizzards to construct
+    /// the blizzard states.
     struct Blizzard {
         /// The direction in which the blizzard moves.
         direction: Direction,
@@ -227,8 +227,8 @@ mod solution {
         }
     }
     impl Valley {
-        /// Returns the debug grid to be displayed, which does not include the location
-        /// of the expedition.
+        /// Returns the debug grid to be displayed, which does not include the
+        /// location of the expedition.
         fn _debug_grid(
             &self,
             blizzard_state: &BlizzardState,
@@ -269,8 +269,9 @@ mod solution {
             grid
         }
 
-        /// Uses tree searches to calculate the minimal amount of time (in minutes)
-        /// to traverse the valley multiple times given a list of subsequent `goals`.
+        /// Uses tree searches to calculate the minimal amount of time (in
+        /// minutes) to traverse the valley multiple times given a list
+        /// of subsequent `goals`.
         pub fn minimal_time(&self, goals: &[Goal]) -> AocResult<u64> {
             let mut total_time = 0;
 
@@ -287,7 +288,8 @@ mod solution {
     struct NodeData<'a> {
         /// The valley we are traversing.
         valley: &'a Valley,
-        /// The time that has elapsed to get to the current location of the expedition.
+        /// The time that has elapsed to get to the current location of the
+        /// expedition.
         time: usize,
         /// The current location of the expedition.
         expedition: Point<Blizzard>,
@@ -295,8 +297,9 @@ mod solution {
         goal: Goal,
     }
     impl<'a> NodeData<'a> {
-        /// Initializes a new node data for a given `goal` and an initial `start_time`
-        /// in minutes, which simply determines the initial state of the blizzards.
+        /// Initializes a new node data for a given `goal` and an initial
+        /// `start_time` in minutes, which simply determines the initial
+        /// state of the blizzards.
         pub fn new(valley: &'a Valley, goal: Goal, start_time: usize) -> Self {
             Self {
                 time: start_time,
@@ -317,19 +320,21 @@ mod solution {
             }
         }
 
-        /// Returns the blizzard state `n` steps ahead of the current blizzard state.
+        /// Returns the blizzard state `n` steps ahead of the current blizzard
+        /// state.
         pub fn relative_blizzard_state(&self, n: usize) -> &'a BlizzardState {
             &self.valley.blizzard_states[self.blizzard_idx(self.time + n)]
         }
 
-        /// Returns the periodic index in [`Valley::blizzard_states`] corresponding to the
-        /// elapsed `time` in minutes.
+        /// Returns the periodic index in [`Valley::blizzard_states`]
+        /// corresponding to the elapsed `time` in minutes.
         fn blizzard_idx(&self, time: usize) -> usize {
             time % self.valley.blizzard_states.len()
         }
 
-        /// Returns a new node data in which the expedition has moved one space in the
-        /// specified `direction` over a minute, if moving in this direction is possible.
+        /// Returns a new node data in which the expedition has moved one space
+        /// in the specified `direction` over a minute, if moving in
+        /// this direction is possible.
         pub fn move_expedition(&self, direction: Direction) -> Option<Self> {
             let new_point = self.expedition + direction.as_vector();
 
@@ -343,9 +348,10 @@ mod solution {
             })
         }
 
-        /// Returns a new node data for which the expedition stays in its current location
-        /// for a minute, if staying is possible, that is, staying will _not_ cause the expedition
-        /// to be caught in a blizzard that has moved here.
+        /// Returns a new node data for which the expedition stays in its
+        /// current location for a minute, if staying is possible, that
+        /// is, staying will _not_ cause the expedition to be caught in
+        /// a blizzard that has moved here.
         pub fn stay(&self) -> Option<Self> {
             (!self
                 .relative_blizzard_state(1)
@@ -394,8 +400,9 @@ mod solution {
         //path: Vec<NodeData<'a>>,
     }
     impl<'a> SearchNode<'a> {
-        /// Initializes a starting node for a tree search, given a `goal` and an initial `start_time`
-        /// in minutes, which simply determines the initial state of the blizzards.
+        /// Initializes a starting node for a tree search, given a `goal` and an
+        /// initial `start_time` in minutes, which simply determines the
+        /// initial state of the blizzards.
         pub fn new(valley: &'a Valley, goal: Goal, start_time: usize) -> Self {
             let data = NodeData::new(valley, goal, start_time);
 

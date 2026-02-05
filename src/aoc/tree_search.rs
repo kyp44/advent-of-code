@@ -35,10 +35,10 @@ pub enum NodeAction<N> {
 /// # Examples
 /// For examples of the usage of this tree search method, see the
 /// [2020 day 20
-/// problem](../../advent_of_code/aoc_2020/day_20/solution/struct.TileMap.html)
+/// problem](../../advent_of_code/aoc_2020/day_20/solution/index.html)
 /// or the
 /// [2021 day 12
-/// problem](../../advent_of_code/aoc_2021/day_12/solution/struct.PathTip.html).
+/// problem](../../advent_of_code/aoc_2021/day_12/solution/index.html).
 pub trait GlobalStateTreeNode: Sized {
     /// The type of the global state.
     type GlobalState;
@@ -92,7 +92,7 @@ pub trait GlobalStateTreeNode: Sized {
 /// be used more generally.
 ///
 /// Typically metrics are numeric, representing a cost to be minimized.
-pub trait Metric: Sized {
+pub trait Metric: Sized + Debug {
     /// Returns whether this metric is better than some `other` metric.
     fn is_better(&self, other: &Self) -> bool;
 
@@ -158,6 +158,9 @@ struct BestCostState<N: BestCostTreeNode> {
     /// Optimization table where the key is a node, and the value is the best
     /// cost of the node's sub-tree, that is, the best cost if starting at
     /// the node.
+    ///
+    /// A value of `None` means that the goal state cannot be reached by the
+    /// node.
     node_best_costs: HashMap<N, Option<N::Metric>>,
 }
 impl<N: BestCostTreeNode> BestCostState<N> {
@@ -195,12 +198,10 @@ struct BestCostNode<N: BestCostTreeNode> {
 /// # Examples
 /// For examples of the usage of this tree search method, see the
 /// [2015 day 22
-/// problem](../../advent_of_code/aoc_2015/day_22/solution/struct.Characters.
-/// html) or the
+/// problem](../../advent_of_code/aoc_2015/day_22/solution/index.html) or the
 /// [2021 day 23
-/// problem](../../advent_of_code/aoc_2021/day_23/solution/struct.Position.
-/// html).
-pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
+/// problem](../../advent_of_code/aoc_2021/day_23/solution/index.html).
+pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + Debug {
     /// The cost type, the default value should be initial or zero cost.
     type Metric: Metric + Clone + Default + Copy + std::ops::Add<Output = Self::Metric>;
 
@@ -298,7 +299,6 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
                     let mut best_cost = None;
 
                     for child in children {
-                        let child_cost = child.cost;
                         let mut bc_return = rec_traverse(
                             best_cost_state,
                             BestCostNode {
@@ -307,7 +307,7 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
                             },
                         );
 
-                        bc_return.best_cost = bc_return.best_cost.map(|c| c + child_cost);
+                        bc_return.best_cost = bc_return.best_cost.map(|c| c + child.cost);
 
                         if bc_return.complete {
                             return bc_return;
@@ -341,24 +341,25 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
                 cumulative_cost: Self::Metric::default(),
             },
         );
+
         initial_state.best_cost.ok_or(AocError::NoSolution)
     }
 }
 
 /// A [`Metric`] that counts steps between node.
 #[derive(Clone, Copy, Debug, Default, Add, From)]
-struct Step(usize);
-impl Metric for Step {
+struct Steps(usize);
+impl Metric for Steps {
     fn is_better(&self, other: &Self) -> bool {
         self.0 < other.0
     }
 }
 
 /// A tree node wrapper in a [`LeastStepsTreeNode`] search.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 struct LeastStepsNode<N: LeastStepsTreeNode>(N);
 impl<N: LeastStepsTreeNode> BestCostTreeNode for LeastStepsNode<N> {
-    type Metric = Step;
+    type Metric = Steps;
 
     fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>> {
         match self.0.recurse_action() {
@@ -382,9 +383,8 @@ impl<N: LeastStepsTreeNode> BestCostTreeNode for LeastStepsNode<N> {
 /// # Examples
 /// For examples of the usage of this tree search method, see the
 /// [2015 day 19
-/// problem](../../advent_of_code/aoc_2015/day_19/solution/struct.Molecule.
-/// html).
-pub trait LeastStepsTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
+/// problem](../../advent_of_code/aoc_2015/day_19/solution/index.html).
+pub trait LeastStepsTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + Debug {
     /// Determines the action to take by the search algorithm from the current
     /// node.
     fn recurse_action(&mut self) -> ApplyNodeAction<Self>;

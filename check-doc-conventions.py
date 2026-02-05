@@ -11,7 +11,8 @@ import argparse
 import os
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import List, Tuple
+from dataclasses import dataclass
+from typing import Tuple, Optional
 
 parser = argparse.ArgumentParser(
     description="Checks that Rust doc comments conform to the established conventions for the project.")
@@ -286,7 +287,7 @@ class CompleteSentencesLint(Lint):
 
 class CrossRefLint(Lint):
     """
-    All cross references must use the Markdown code font.
+    All cross references must be complete and use the Markdown code font.
     """
 
     def __init__(self):
@@ -294,6 +295,7 @@ class CrossRefLint(Lint):
         self.description = self.__class__.__doc__.strip()
 
     def check_file(self, source_file: SourceFile):
+        cross_refs = []
         lines = source_file.lines
 
         for ln, line in enumerate(lines):
@@ -302,11 +304,16 @@ class CrossRefLint(Lint):
                 while True:
                     idx = content.find("[")
                     if idx > -1:
+                        hanging_ref = True
                         # Found a cross reference
                         content = content[idx+1:]
+                        if content.find("]") < 0:
+                            # The reference does not end on this line, we should probably deal with this
+                            # but there is no nice solution so just ignore, ugh.
+                            break
                         split = content.split("]")
-                        if len(split) == 0 or not split[1].startswith("("):
-                            # Okay this is not an ordinary link.
+                        if len(split) == 1 or not split[1].startswith("("):
+                            # Okay this is an internal reference so should be checked.
                             if not split[0].startswith("`"):
                                 self.alert(source_file, ln)
                     else:

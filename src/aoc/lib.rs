@@ -1,10 +1,9 @@
-//! Support crate for the [Advent of Code
-//! solutions](../advent_of_code/index.html).
+//! Support crate for the
+//! [Advent of Code solutions](../advent_of_code/index.html).
 //!
 //! Contains useful abstractions are that are used for one more than one
 //! solution.
 #![feature(slice_pattern)]
-#![feature(assert_matches)]
 #![warn(missing_docs)]
 #![feature(step_trait)]
 #![feature(associated_type_defaults)]
@@ -686,6 +685,13 @@ pub mod solution {
     impl From<String> for Answer {
         fn from(s: String) -> Self {
             Answer::String(s.into())
+        }
+    }
+    impl TryFrom<usize> for Answer {
+        type Error = <u64 as TryFrom<usize>>::Error;
+
+        fn try_from(value: usize) -> Result<Self, Self::Error> {
+            u64::try_from(value).map(Self::Unsigned)
         }
     }
     impl std::fmt::Display for Answer {

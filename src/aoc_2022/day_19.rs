@@ -73,7 +73,8 @@ mod solution {
         }
     }
 
-    /// A build cost for for only one material, which can be parsed from text input.
+    /// A build cost for for only one material, which can be parsed from text
+    /// input.
     #[derive(Debug)]
     struct ParseCost {
         /// The material.
@@ -156,8 +157,9 @@ mod solution {
         }
     }
     impl Blueprint {
-        /// Determines and returns the largest number of geodes that can possibly be cracked open
-        /// using this blueprint when `time_allowed` minutes are allowed for building robots.
+        /// Determines and returns the largest number of geodes that can
+        /// possibly be cracked open using this blueprint when
+        /// `time_allowed` minutes are allowed for building robots.
         pub fn largest_geodes_cracked(&self, time_allowed: usize) -> u64 {
             let search_state = SearchNode::new(self, time_allowed)
                 .traverse_tree(SearchState::new(self, time_allowed));
@@ -170,18 +172,21 @@ mod solution {
     struct SearchState {
         /// The constant overall time allowed in minutes.
         time_allowed: usize,
-        /// The largest number of geodes that have been cracked so far for any recipe.
+        /// The largest number of geodes that have been cracked so far for any
+        /// recipe.
         most_geodes_cracked: GeodesCracked,
-        /// The maximum number of robots that we would ever need to support building
-        /// each robot type in a single minute.
+        /// The maximum number of robots that we would ever need to support
+        /// building each robot type in a single minute.
         max_robots_needed: RobotInventory,
-        /// For each robot type, the maximum number of minutes after which we would no
-        /// longer want to build that type of robot as doing so would not be able to
-        /// impact the number of geodes cracked by the time we must stop.
+        /// For each robot type, the maximum number of minutes after which we
+        /// would no longer want to build that type of robot as doing so
+        /// would not be able to impact the number of geodes cracked by
+        /// the time we must stop.
         max_build_time: HashMap<Material, usize>,
     }
     impl SearchState {
-        /// Creates a new search state for a particular `blueprint` and `time_allowed` in minutes.
+        /// Creates a new search state for a particular `blueprint` and
+        /// `time_allowed` in minutes.
         pub fn new(blueprint: &Blueprint, time_allowed: usize) -> Self {
             let mut max_robots_needed = RobotInventory::default();
             for rt in Material::iter() {
@@ -233,7 +238,8 @@ mod solution {
         to_build_next: Option<ToBuildNext>,
     }
     impl<'a> SearchNode<'a> {
-        /// Creates a new search node for a `blueprint` and `time_allowed` in minutes.
+        /// Creates a new search node for a `blueprint` and `time_allowed` in
+        /// minutes.
         ///
         /// This is initialized at zero time.
         fn new(blueprint: &'a Blueprint, time_allowed: usize) -> Self {
@@ -243,8 +249,8 @@ mod solution {
             }
         }
 
-        /// Duplicates this node to create a child that will wait to build the robot
-        /// specified in `to_build_next`.
+        /// Duplicates this node to create a child that will wait to build the
+        /// robot specified in `to_build_next`.
         fn duplicate(&self, to_build_next: ToBuildNext) -> Self {
             Self {
                 time_tracker: self.time_tracker.clone(),
@@ -299,7 +305,7 @@ mod solution {
     }
 
     /// A new type for the number of geodes cracked open.
-    #[derive(Default, Clone, Copy, Add, From)]
+    #[derive(Default, Debug, Clone, Copy, Add, From)]
     struct GeodesCracked(usize);
     impl Metric for GeodesCracked {
         fn is_better(&self, other: &Self) -> bool {
@@ -367,16 +373,16 @@ mod solution {
         }
     }
 
-    /// A total cost to build a robot, that is the number of each material required to
-    /// build it.
+    /// A total cost to build a robot, that is the number of each material
+    /// required to build it.
     type RobotCost = MultiSet<Material>;
     /// Inventory of materials that have been harvested.
     type MaterialInventory = MultiSet<Material>;
     /// Inventory of robots that have been built.
     type RobotInventory = MultiSet<Material>;
 
-    /// Tracks the passage of time, manages material and robot inventories, and handles the
-    /// harvesting of materials.
+    /// Tracks the passage of time, manages material and robot inventories, and
+    /// handles the harvesting of materials.
     #[derive(Debug, Clone)]
     struct TimeTracker<'a> {
         /// The cost of each type of robot.
@@ -463,7 +469,8 @@ mod solution {
             self.robots.insert(robot_type);
         }
 
-        /// Advances time by one minute, optionally building a robot during the minute.
+        /// Advances time by one minute, optionally building a robot during the
+        /// minute.
         ///
         /// This will panic if we cannot afford to build the robot.
         /// Does nothing if time is up and returns the final number
@@ -512,13 +519,13 @@ mod solution {
             }
         }
 
-        /// Calculates the time left in minutes until a given robot can be built,
-        /// taking into account the materials that will be gathered during the time
-        /// period.
+        /// Calculates the time left in minutes until a given robot can be
+        /// built, taking into account the materials that will be
+        /// gathered during the time period.
         ///
         /// This assumes that no other robots would be built during the time.
-        /// If the robot cannot be built at all given the currently available robots,
-        /// then [`Infinitable::Infinity`] is returned.
+        /// If the robot cannot be built at all given the currently available
+        /// robots, then [`Infinitable::Infinity`] is returned.
         pub fn time_to_build_robot(&self, to_build: &Material) -> Infinitable<usize> {
             let mut times = MultiSet::default();
 
@@ -558,8 +565,8 @@ mod solution {
         }
     }
     impl RobotFactory {
-        /// Returns the sum of quality levels after determining the most geodes that can be cracked using
-        /// each blueprint (part one).
+        /// Returns the sum of quality levels after determining the most geodes
+        /// that can be cracked using each blueprint (part one).
         ///
         /// Here 24 minutes are allowed in total.
         pub fn sum_of_quality_levels(&self) -> u64 {
@@ -569,8 +576,8 @@ mod solution {
                 .sum()
         }
 
-        /// Returns the product of the most geodes that can be cracked for each of the first three
-        /// blueprints (part two).
+        /// Returns the product of the most geodes that can be cracked for each
+        /// of the first three blueprints (part two).
         ///
         /// Here 32 minutes are allowed in total.
         pub fn product_of_most_geodes(&self) -> u64 {

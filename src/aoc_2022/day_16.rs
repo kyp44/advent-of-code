@@ -59,7 +59,8 @@ mod solution {
     const ELEPHANT_TEACHING_TIME: u8 = 4;
     /// Number of best tunnels at which to branch the search tree for you.
     const YOU_BEST_TUNNEL_DEPTH: usize = 3;
-    /// Number of best tunnels at which to branch the search tree for the elephant.
+    /// Number of best tunnels at which to branch the search tree for the
+    /// elephant.
     const ELEPHANT_BEST_TUNNEL_DEPTH: usize = 2;
 
     /// Valve information parsed from the text input.
@@ -69,7 +70,8 @@ mod solution {
         label: String,
         /// The flow rate of pressure released by opening the valve.
         flow_rate: u8,
-        /// List of tunnels leading to other valves with their labels, in no particular order.
+        /// List of tunnels leading to other valves with their labels, in no
+        /// particular order.
         tunnels: Vec<String>,
     }
     impl Parsable<'_> for ParseValve {
@@ -119,26 +121,29 @@ mod solution {
         /// Opens a valve with a particular `flow_rate`, adding it to the
         /// [`total_flow_per_minute`](PressureTracker::total_flow_per_minute).
         ///
-        /// Also advances time by the 1 minute it takes to open the valve, possibly
-        /// releasing more pressure.
+        /// Also advances time by the 1 minute it takes to open the valve,
+        /// possibly releasing more pressure.
         pub fn open_valve(&mut self, flow_rate: u8) {
             self.advance_time(1);
             self.total_flow_per_minute += u64::from(flow_rate);
         }
 
-        /// Advances time by some number of `minutes`, possibly releasing more pressure.
+        /// Advances time by some number of `minutes`, possibly releasing more
+        /// pressure.
         ///
-        /// Does not release more pressure than allowed even if the `minutes` would go
-        /// past the [`allowed_time`](PressureTracker::minutes_allowed), or if this is called
-        /// after time has run out.
+        /// Does not release more pressure than allowed even if the `minutes`
+        /// would go
+        /// past the [`allowed_time`](PressureTracker::minutes_allowed), or if
+        /// this is called after time has run out.
         pub fn advance_time(&mut self, minutes: u8) {
             let time = minutes.min(self.minutes_allowed - self.time_passed);
             self.cumulative_released += self.total_flow_per_minute * u64::from(time);
             self.time_passed += time;
         }
 
-        /// Runs out the clock, releasing all the pressure that will be released with
-        /// the currently open valves, returning the total pressure released.
+        /// Runs out the clock, releasing all the pressure that will be released
+        /// with the currently open valves, returning the total pressure
+        /// released.
         pub fn run_out_clock(&mut self) -> u64 {
             self.advance_time(self.minutes_allowed);
             self.cumulative_released
@@ -152,7 +157,7 @@ mod solution {
     }
 
     /// Wrapper for the total pressure released as a [`Metric`].
-    #[derive(Clone, Copy, From)]
+    #[derive(Debug, Clone, Copy, From)]
     struct TotalPressure(u64);
     impl Metric for TotalPressure {
         fn is_better(&self, other: &Self) -> bool {
@@ -181,8 +186,8 @@ mod solution {
         current_node: NodeIndex,
     }
     impl Opener {
-        /// Creates a new opener with a total of `minute_allowed` minutes until time
-        /// runs out, and who starts at the `starting_node`.
+        /// Creates a new opener with a total of `minute_allowed` minutes until
+        /// time runs out, and who starts at the `starting_node`.
         pub fn new(minutes_allowed: u8, starting_node: NodeIndex) -> Self {
             Self {
                 pressure_tracker: PressureTracker::new(minutes_allowed),
@@ -212,9 +217,10 @@ mod solution {
 
         /// Chooses a tunnel through which to travel next.
         ///
-        /// The `n`th best tunnel (with zero being the first) is chosen from the still-closed
-        /// valves in the `best_tunnel_map`, optionally excluding the tunnel in `exclude`.
-        /// Returns the requested tunnel if it exists.
+        /// The `n`th best tunnel (with zero being the first) is chosen from the
+        /// still-closed valves in the `best_tunnel_map`, optionally
+        /// excluding the tunnel in `exclude`. Returns the requested
+        /// tunnel if it exists.
         pub fn choose_tunnel<'a>(
             &self,
             closed_valves: &HashSet<NodeIndex>,
@@ -236,8 +242,8 @@ mod solution {
                 .nth(n)
         }
 
-        /// Creates a new [`Opener`] based on this one that has taken the time to
-        /// travel down the specified tunnel.
+        /// Creates a new [`Opener`] based on this one that has taken the time
+        /// to travel down the specified tunnel.
         pub fn travel_tunnel(&self, tunnel: &Tunnel) -> Self {
             let mut pressure_tracker = self.pressure_tracker.clone();
             pressure_tracker.advance_time(tunnel.travel_time);
@@ -249,22 +255,24 @@ mod solution {
     }
 
     /// The tree node for the search for the maximum pressure that can possibly
-    /// be released, which is not necessarily by simply following the tunnel with
-    /// the best score every time.
+    /// be released, which is not necessarily by simply following the tunnel
+    /// with the best score every time.
     struct SearchNode<'a> {
         /// The set of valve node indices that are still closed.
         closed_valves: HashSet<NodeIndex>,
         /// You who goes around opening valves (both parts).
         you: Opener,
-        /// The elephant who was trained to help you open valves (part two only).
+        /// The elephant who was trained to help you open valves (part two
+        /// only).
         elephant: Option<Opener>,
-        /// Phantom data to allow the struct to have a lifetime, which is needed because
-        /// the [`SearchState`] needs one.
+        /// Phantom data to allow the struct to have a lifetime, which is needed
+        /// because the [`SearchState`] needs one.
         _phantom: PhantomData<&'a u8>,
     }
     impl SearchNode<'_> {
-        /// Creates a new node for a set of `closed_valves`, starting at the `starting_node`
-        /// valve, and whether the search will include an elephant helping (`teach_elephant`).
+        /// Creates a new node for a set of `closed_valves`, starting at the
+        /// `starting_node` valve, and whether the search will include
+        /// an elephant helping (`teach_elephant`).
         pub fn new(
             closed_valves: HashSet<NodeIndex>,
             starting_node: NodeIndex,
@@ -392,8 +400,8 @@ mod solution {
         flow_rate: u8,
     }
     impl Valve {
-        /// Returns the [`Score`] if we were to open the valve next, given the `time` it would take to
-        /// travel to it.
+        /// Returns the [`Score`] if we were to open the valve next, given the
+        /// `time` it would take to travel to it.
         pub fn open_next_score(&self, time: u8) -> Score {
             Ratio::new(self.flow_rate, time)
         }
@@ -404,36 +412,40 @@ mod solution {
         }
     }
 
-    /// The type of the next valve scores, defined as the ratio of the valve's flow
-    /// rate to the time to travel to the valve.
+    /// The type of the next valve scores, defined as the ratio of the valve's
+    /// flow rate to the time to travel to the valve.
     type Score = Ratio<u8>;
 
-    /// A tunnel from one valve to another, which may include travel through other
-    /// valve rooms (without opening them).
+    /// A tunnel from one valve to another, which may include travel through
+    /// other valve rooms (without opening them).
     #[derive(Debug)]
     struct Tunnel {
         /// Node index of the destination valve.
         to: NodeIndex,
-        /// The [`Score`] quantifying the benefit of potentially traveling to and opening this valve next.
+        /// The [`Score`] quantifying the benefit of potentially traveling to
+        /// and opening this valve next.
         score: Score,
         /// The travel time to the destination valve, in minutes.
         travel_time: u8,
     }
 
-    /// Map of a valve node index to its list of tunnels, ordered by [`Score`] in descending
-    /// order.
+    /// Map of a valve node index to its list of tunnels, ordered by [`Score`]
+    /// in descending order.
     type BestTunnelMap = HashMap<NodeIndex, Vec<Tunnel>>;
 
     /// Represents the volcano and overall problem.
     #[derive(Debug)]
     pub struct Volcano {
-        /// The graph representing the valves that have nonzero flow rates (NZF).
+        /// The graph representing the valves that have nonzero flow rates
+        /// (NZF).
         ///
-        /// This features edges from every NZF valve to every other NZF valve, where
-        /// the edge weight is the minimal amount of time in minutes to get there.
-        /// The only valve with zero flow rate included is the starting valve.
+        /// This features edges from every NZF valve to every other NZF valve,
+        /// where the edge weight is the minimal amount of time in
+        /// minutes to get there. The only valve with zero flow rate
+        /// included is the starting valve.
         graph: DiGraph<Valve, u8, DefaultIx>,
-        /// The [`BestTunnelMap`] for all the valve nodes in the [`graph`](Volcano::graph).
+        /// The [`BestTunnelMap`] for all the valve nodes in the
+        /// [`graph`](Volcano::graph).
         best_tunnel_map: BestTunnelMap,
         /// The index of the starting valve in the [`graph`](Volcano::graph).
         starting_node: NodeIndex,
@@ -538,8 +550,9 @@ mod solution {
         }
     }
     impl Volcano {
-        /// Performs the tree search to find the maximum pressure that can be released,
-        /// optionally teaching an elephant to help you (part two).
+        /// Performs the tree search to find the maximum pressure that can be
+        /// released, optionally teaching an elephant to help you (part
+        /// two).
         ///
         /// The maximum pressure is returned if a solution was found.
         pub fn maximum_pressure_released(&self, teach_elephant: bool) -> AocResult<u64> {
