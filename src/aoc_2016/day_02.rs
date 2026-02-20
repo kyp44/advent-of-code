@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -19,13 +18,11 @@ UUUUD";
 
 /// Contains solution implementation items.
 mod solution {
+    use super::*;
     use aoc::{grid::Digit, parse::trim};
     use euclid::Vector2D;
     use itertools::join;
     use nom::{branch::alt, bytes::complete::tag, combinator::map, multi::many1};
-    use std::str::FromStr;
-
-    use super::*;
 
     /// A direction to move on a keypad.
     ///
@@ -41,8 +38,8 @@ mod solution {
         /// Right (positive `x`).
         Right,
     }
-    impl<'a> Parsable<'a> for Direction {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for Direction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(tag("U"), |_| Self::Up),
                 map(tag("D"), |_| Self::Down),
@@ -211,7 +208,8 @@ mod solution {
         point: GridPoint,
     }
     impl<K: Keypad> Clone for Key<'_, K> {
-        // Note that we cannot derive this because it stupidly requires that `K: Clone` even though references are always [`Clone`].
+        // Note that we cannot derive this because it stupidly requires that `K: Clone`
+        // even though references are always [`Clone`].
         fn clone(&self) -> Self {
             Self {
                 pad: self.pad,
@@ -244,8 +242,8 @@ mod solution {
         /// The sequence of directions to move.
         directions: Vec<Direction>,
     }
-    impl<'a> Parsable<'a> for MoveSet {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for MoveSet {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(trim(false, many1(Direction::parser)), |directions| Self {
                 directions,
             })
@@ -253,7 +251,8 @@ mod solution {
         }
     }
     impl MoveSet {
-        /// Applies this move set to a starting [`Key`] and returns the final [`Key`].
+        /// Applies this move set to a starting [`Key`] and returns the final
+        /// [`Key`].
         pub fn apply<'a, K: Keypad>(&self, starting_key: Key<'a, K>) -> Key<'a, K> {
             let mut key = starting_key;
             for dir in self.directions.iter() {

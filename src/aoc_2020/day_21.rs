@@ -1,6 +1,5 @@
 use aoc::prelude::*;
 use itertools::Itertools;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -43,11 +42,8 @@ mod solution {
         /// List of allergens contained in any of the ingredients for this food.
         allergens: StrSet,
     }
-    impl Parsable<'_> for Food {
-        fn parser(input: &str) -> NomParseResult<&str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Food {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 pair(
                     separated_list1(space1, alphanumeric1),
@@ -85,7 +81,8 @@ mod solution {
     pub struct PartialSolution {
         /// The problem definition that generated this partial solution.
         problem: Problem,
-        /// Map of allergens to the set ingredients that could possibly contain them.
+        /// Map of allergens to the set ingredients that could possibly contain
+        /// them.
         possibilities: HashMap<ProblemStr, StrSet>,
         /// Ingredients that definitely do not contain any allergens.
         safe_ingredients: StrSet,
@@ -101,8 +98,8 @@ mod solution {
             &self.safe_ingredients
         }
 
-        /// Completes the full problem solution by determining in which ingredient each allergen is contained
-        /// (needed for part two).
+        /// Completes the full problem solution by determining in which
+        /// ingredient each allergen is contained (needed for part two).
         pub fn finish_solve(&self) -> AocResult<FullSolution> {
             let mut final_ingredients = HashMap::new();
             let mut possibilities = self.possibilities.clone();
@@ -143,7 +140,8 @@ mod solution {
         }
     }
 
-    /// Full solution that maps each allergen to the ingredient that contains it.
+    /// Full solution that maps each allergen to the ingredient that contains
+    /// it.
     type FullSolution = HashMap<ProblemStr, ProblemStr>;
 
     /// Problem definition, which can be parsed from text input.
@@ -186,7 +184,8 @@ mod solution {
         }
     }
     impl Problem {
-        /// Solves the problem partially, consuming the problem definition itself.
+        /// Solves the problem partially, consuming the problem definition
+        /// itself.
         pub fn partial_solve(self) -> PartialSolution {
             // First setup up a map of each allergen to possible ingredients,
             // initializing to every ingredient.

@@ -24,7 +24,6 @@ mod solution {
         bytes::complete::{tag, take_until},
         sequence::preceded,
     };
-    use std::str::FromStr;
 
     /// Defines the problem, which can be parsed from text input.
     pub struct Problem {
@@ -58,7 +57,8 @@ mod solution {
     }
 
     impl Problem {
-        /// Solves a part of the problem by calculating the number at the correct position.
+        /// Solves a part of the problem by calculating the number at the
+        /// correct position.
         pub fn solve(&self) -> AocResult<u64> {
             let (row, col) = (self.row, self.col);
 

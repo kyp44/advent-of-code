@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -11,7 +10,7 @@ mod tests {
             input = "noop
 addx 3
 addx -5";
-            answers = &[Some(Signed(0)), None];
+            answers = signed![0];
         }
         example {
             input = "addx 15
@@ -168,25 +167,25 @@ noop";
 
 /// Contains solution implementation items.
 mod solution {
-    use std::slice::Iter;
-
     use super::*;
     use aoc::grid::StdBool;
     use nom::{
         branch::alt, bytes::complete::tag, character::complete::space1, combinator::map,
         sequence::separated_pair,
     };
+    use std::slice::Iter;
 
     /// A single CPU instruction.
     #[derive(Debug)]
-    enum Instruction {
+    pub enum CpuInstruction {
         /// No operation, that is, do nothing for a single cycle.
         Noop,
-        /// Add something to the x register, takes two cycles before the number is actually added.
+        /// Add something to the x register, takes two cycles before the number
+        /// is actually added.
         Add(i64),
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for CpuInstruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(tag("noop"), |_| Self::Noop),
                 map(
@@ -198,37 +197,12 @@ mod solution {
         }
     }
 
-    /// A program for the CPU to execute.
-    #[derive(Debug)]
-    pub struct Program {
-        /// The list of instructions to execute.
-        instructions: Vec<Instruction>,
-    }
-    impl FromStr for Program {
-        type Err = AocError;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Ok(Self {
-                instructions: Instruction::gather(s.lines())?,
-            })
-        }
-    }
-    impl Program {
-        /// Returns an [`Executor`] iterator to execute the program.
-        pub fn execute(&self) -> Executor<'_> {
-            Executor {
-                instructions: self.instructions.iter(),
-                cpu_state: Default::default(),
-                current_add: None,
-            }
-        }
-    }
-
     /// The state of an add x instruction.
     struct AddInstruction {
         /// The number to add when complete.
         to_add: i64,
-        /// The number of cycles left before the instruction is complete and the number is added.
+        /// The number of cycles left before the instruction is complete and the
+        /// number is added.
         cycles_left: usize,
     }
     impl AddInstruction {
@@ -240,10 +214,17 @@ mod solution {
                 cycles_left: 2,
             }
         }
+
+        /// Ticks the cycle countdown and returns the `to_add` value if it is
+        /// time to apply the operation, or `None`otherwise.
+        pub fn tick(&mut self) -> Option<i64> {
+            self.cycles_left -= 1;
+            (self.cycles_left == 0).then_some(self.to_add)
+        }
     }
 
     /// A state of the CPU.
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     pub struct CpuState {
         /// The cycle that just completed.
         cycle: usize,
@@ -269,46 +250,60 @@ mod solution {
             self.register_x += n;
         }
 
-        /// Calculates the signal strength for this CPU state, that is the cycle number times the x register.
+        /// Calculates the signal strength for this CPU state, that is the cycle
+        /// number times the x register.
         pub fn signal_strength(&self) -> i64 {
             i64::try_from(self.cycle).unwrap() * self.register_x
         }
     }
 
-    /// An [`Iterator`] over the CPU states after each cycle as a program is executed.
+    /// An [`Iterator`] over the CPU states after each cycle as a program is
+    /// executed.
     ///
-    /// This should only be created using [`Program::execute`].
-    /// Note that the first state will be after the first cycle, not the initial state.
-    pub struct Executor<'a> {
+    /// Note that the first state will be after the first cycle, not the initial
+    /// state.
+    pub struct CycleExecutor<'a> {
         /// The list of instructions to execute.
-        instructions: Iter<'a, Instruction>,
+        instructions: Iter<'a, CpuInstruction>,
         /// The current CPU state.
         cpu_state: CpuState,
-        /// The current add instruction state if we are currently executing an add instruction.
+        /// The current add instruction state if we are currently executing an
+        /// add instruction.
         current_add: Option<AddInstruction>,
     }
-    impl Iterator for Executor<'_> {
+    impl<'a> CycleExecutor<'a> {
+        /// Returns a new executor for the given `program`.
+        pub fn new(program: &'a Program<CpuInstruction>) -> Self {
+            Self {
+                instructions: program.instructions().iter(),
+                cpu_state: CpuState::default(),
+                current_add: None,
+            }
+        }
+    }
+    impl Iterator for CycleExecutor<'_> {
         type Item = CpuState;
 
         fn next(&mut self) -> Option<Self::Item> {
             if let Some(ai) = self.current_add.as_mut() {
-                ai.cycles_left -= 1;
-
-                if ai.cycles_left == 0 {
-                    // Apply add, and we still want to fetch the next instruction below here
-                    self.cpu_state.add(ai.to_add);
-                    self.current_add = None;
-                } else {
-                    self.cpu_state.tick();
-                    return Some(self.cpu_state.clone());
+                match ai.tick() {
+                    Some(to_add) => {
+                        // Apply add, and we still want to fetch the next instruction below here
+                        self.cpu_state.add(to_add);
+                    }
+                    None => {
+                        self.cpu_state.tick();
+                        return Some(self.cpu_state.clone());
+                    }
                 }
             }
+            self.current_add = None;
 
             // Fetch the next instruction
             self.instructions.next().map(|inst| {
                 match inst {
-                    Instruction::Noop => {}
-                    Instruction::Add(n) => self.current_add = Some(AddInstruction::new(*n)),
+                    CpuInstruction::Noop => {}
+                    CpuInstruction::Add(n) => self.current_add = Some(AddInstruction::new(*n)),
                 }
                 self.cpu_state.tick();
                 self.cpu_state.clone()
@@ -317,11 +312,11 @@ mod solution {
     }
 
     /// Renders the CRT pixels generated from executing a given [`Program`].
-    pub fn render_crt(program: &Program) -> Grid<StdBool> {
+    pub fn render_crt(program: &Program<CpuInstruction>) -> Grid<StdBool> {
         let size = GridSize::new(40, 6);
         let mut pixels = Grid::default(size);
 
-        for (cpu, point) in program.execute().zip(pixels.all_points()) {
+        for (cpu, point) in CycleExecutor::new(program).zip(pixels.all_points()) {
             let sprite = (cpu.register_x - 1)..=(cpu.register_x + 1);
             if sprite.contains(&i64::try_from(point.x).unwrap()) {
                 pixels.set(&point, true.into());
@@ -338,15 +333,13 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 10,
     name: "Cathode-Ray Tube",
-    preprocessor: Some(|input| Ok(Box::new(Program::from_str(input)?).into())),
+    preprocessor: Some(|input| Ok(Box::new(Program::<CpuInstruction>::parse(input)?).into())),
     solvers: &[
         // Part one
         |input| {
             // Process
             Ok(Answer::Signed(
-                input
-                    .expect_data::<Program>()?
-                    .execute()
+                CycleExecutor::new(input.expect_data::<Program<CpuInstruction>>()?)
                     .skip(19)
                     .step_by(40)
                     .map(|cpu| cpu.signal_strength())
@@ -355,7 +348,7 @@ pub const SOLUTION: Solution = Solution {
         },
         // Part two
         |input| {
-            let pixels = render_crt(input.expect_data::<Program>()?);
+            let pixels = render_crt(input.expect_data::<Program<CpuInstruction>>()?);
 
             // This requires looking at letters in the folded image,
             // which cannot really be done in automated way easily.

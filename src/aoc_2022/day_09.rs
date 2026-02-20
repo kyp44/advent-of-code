@@ -55,8 +55,8 @@ mod solution {
         /// Move down.
         Down,
     }
-    impl Parsable<'_> for Direction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Direction {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(tag("L"), |_| Self::Left),
                 map(tag("R"), |_| Self::Right),
@@ -67,9 +67,11 @@ mod solution {
         }
     }
     impl Direction {
-        /// Returns the 2D displacement vector corresponding with this direction.
+        /// Returns the 2D displacement vector corresponding with this
+        /// direction.
         ///
-        /// This would be added to a position to move one space in the direction.
+        /// This would be added to a position to move one space in the
+        /// direction.
         pub fn as_vector(&self) -> Vector2D<isize> {
             match self {
                 Direction::Left => -Vector2D::<isize>::unit_x(),
@@ -88,8 +90,8 @@ mod solution {
         /// The number of spaces to move in the direction.
         spaces: u8,
     }
-    impl Parsable<'_> for Move {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Move {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(Direction::parser, space1, nom::character::complete::u8),
                 |(direction, spaces)| Move { direction, spaces },
@@ -103,7 +105,8 @@ mod solution {
 
     /// Represents the current state of a rope wth some number of knots.
     ///
-    /// Note that the rope is guaranteed to have at least two (a head and tail) knots.
+    /// Note that the rope is guaranteed to have at least two (a head and tail)
+    /// knots.
     #[derive(Clone)]
     pub struct Rope {
         /// The current coordinates of every knot on the rope.
@@ -126,7 +129,8 @@ mod solution {
         }
     }
     impl Rope {
-        /// Moves the head of the rope a single space in a particular `direction`.
+        /// Moves the head of the rope a single space in a particular
+        /// `direction`.
         ///
         /// The tails knots will also move following the tail movement rules.
         fn move_head(&mut self, direction: Direction) {
@@ -170,7 +174,8 @@ mod solution {
         }
     }
     impl MoveSet {
-        /// Creates an [`Executor`] for this move set using a [`Rope`] with the specified number of knots.
+        /// Creates an [`Executor`] for this move set using a [`Rope`] with the
+        /// specified number of knots.
         pub fn execute(
             &self,
             num_knots: usize,
@@ -184,11 +189,11 @@ mod solution {
         }
     }
 
-    /// An [`Iterator`] for executing a [`MoveSet`], that emits the last tail knot coordinates
-    /// after each singular move.
+    /// An [`Iterator`] for executing a [`MoveSet`], that emits the last tail
+    /// knot coordinates after each singular move.
     ///
-    /// The first element emitted is the starting coordinates of the last tail knot.
-    /// This can only be created by calling [`MoveSet::execute`].
+    /// The first element emitted is the starting coordinates of the last tail
+    /// knot. This can only be created by calling [`MoveSet::execute`].
     pub struct Executor<I> {
         /// Whether the initial tail coordinates have already been emitted.
         first_emitted: bool,

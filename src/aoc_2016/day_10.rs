@@ -23,7 +23,7 @@ value 2 goes to bot 2";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::parse::trim;
+    use aoc::{parse::trim, program::Executed};
     use itertools::process_results;
     use nom::{
         branch::alt,
@@ -47,8 +47,8 @@ mod solution {
         /// An output with its number.
         Output(Num),
     }
-    impl Parsable<'_> for Recipient {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for Recipient {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map((tag("bot "), pnum), |(_, n)| Self::Bot(n)),
                 map((tag("output "), pnum), |(_, n)| Self::Output(n)),
@@ -80,7 +80,7 @@ mod solution {
     ///
     /// Can be parsed from text input.
     #[derive(Debug, PartialEq, Eq, Hash)]
-    enum Instruction {
+    enum FactoryInstruction {
         /// A bot is to pick a chip.
         ChipToBot {
             /// The chip value to pick up.
@@ -100,8 +100,8 @@ mod solution {
             high_to: Recipient,
         },
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for FactoryInstruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             trim(
                 true,
                 alt((
@@ -132,44 +132,107 @@ mod solution {
             .parse(input)
         }
     }
-    impl PartialOrd for Instruction {
+    impl PartialOrd for FactoryInstruction {
         fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
             Some(self.cmp(other))
         }
     }
-    impl Ord for Instruction {
+    impl Ord for FactoryInstruction {
         fn cmp(&self, other: &Self) -> Ordering {
             match self {
-                Instruction::ChipToBot {
+                FactoryInstruction::ChipToBot {
                     chip_value: c1,
                     bot_num: b1,
                 } => match other {
-                    Instruction::ChipToBot {
+                    FactoryInstruction::ChipToBot {
                         chip_value: c2,
                         bot_num: b2,
                     } => (b1, c1).cmp(&(b2, c2)),
-                    Instruction::BotGive {
+                    FactoryInstruction::BotGive {
                         bot_num: _,
                         low_to: _,
                         high_to: _,
                     } => Ordering::Less,
                 },
-                Instruction::BotGive {
+                FactoryInstruction::BotGive {
                     bot_num: b1,
                     low_to: l1,
                     high_to: h1,
                 } => match other {
-                    Instruction::ChipToBot {
+                    FactoryInstruction::ChipToBot {
                         chip_value: _,
                         bot_num: _,
                     } => Ordering::Greater,
-                    Instruction::BotGive {
+                    FactoryInstruction::BotGive {
                         bot_num: b2,
                         low_to: l2,
                         high_to: h2,
                     } => (b1, l1, h1).cmp(&(b2, l2, h2)),
                 },
             }
+        }
+    }
+    impl Instruction for FactoryInstruction {
+        type Registers = Factory;
+        type YieldItem = bool;
+        type Error = AocError;
+
+        fn execute(
+            &self,
+            registers: &mut Self::Registers,
+        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+            Ok(Executed::no_jump(match self {
+                FactoryInstruction::ChipToBot {
+                    chip_value,
+                    bot_num,
+                } => {
+                    let bot = registers.get_bot(*bot_num);
+                    bot.add_chip(*chip_value)
+                }
+                FactoryInstruction::BotGive {
+                    bot_num,
+                    low_to,
+                    high_to,
+                } => {
+                    let bot = registers.get_bot(*bot_num);
+                    match bot.chips()? {
+                        Some(chips) => {
+                            // We can only complete this if both transactions can be completed.
+                            let mut new_factory = registers.clone();
+
+                            process_results(
+                                [low_to, high_to]
+                                    .into_iter()
+                                    .zip([chips.low, chips.high])
+                                    .map(|(recip, cv)| {
+                                        Ok(match recip {
+                                            Recipient::Bot(give_to) => {
+                                                if bot_num == give_to {
+                                                    return Err(AocError::Process(format!("Bot {bot_num} is trying to give a chip to itself!").into()))
+                                                }
+                                                new_factory.get_bot(*give_to).add_chip(cv)
+                                            }
+
+                                            Recipient::Output(output_num) => {
+                                                if let Some(v) = new_factory.outputs.get(output_num) {
+                                                    return Err(AocError::Process(format!("Output {output_num} already contains a chip of value {v}").into()))
+                                                }
+                                                new_factory.outputs.insert(*output_num, cv);
+                                                true
+                                            }
+                                        })
+                                    }),
+                                |mut iter| iter.all(std::convert::identity),
+                            )?.and_do(|| {
+                                // Everything passed so commit
+                                new_factory.get_bot(*bot_num).reset_chips();
+                                *registers = new_factory;
+                            })
+                        }
+                        None => false,
+                    }
+                }
+            }))
         }
     }
 
@@ -274,65 +337,6 @@ mod solution {
             }
             Ok(None)
         }
-
-        /// Executes a single instruction and returns whether or not it could be
-        /// executed right now.
-        ///
-        /// Fails if an invalid state is detected.
-        pub fn execute_instruction(&mut self, instruction: &Instruction) -> AocResult<bool> {
-            Ok(match instruction {
-                Instruction::ChipToBot {
-                    chip_value,
-                    bot_num,
-                } => {
-                    let bot = self.get_bot(*bot_num);
-                    bot.add_chip(*chip_value)
-                }
-                Instruction::BotGive {
-                    bot_num,
-                    low_to,
-                    high_to,
-                } => {
-                    let bot = self.get_bot(*bot_num);
-                    match bot.chips()? {
-                        Some(chips) => {
-                            // We can only complete this if both transactions can be completed.
-                            let mut new_factory = self.clone();
-
-                            process_results(
-                                [low_to, high_to]
-                                    .into_iter()
-                                    .zip([chips.low, chips.high])
-                                    .map(|(recip, cv)| {
-                                        Ok(match recip {
-                                            Recipient::Bot(give_to) => {
-                                                if bot_num == give_to {
-                                                    return Err(AocError::Process(format!("Bot {bot_num} is trying to give a chip to itself!").into()))
-                                                }
-                                                new_factory.get_bot(*give_to).add_chip(cv)
-                                            }
-
-                                            Recipient::Output(output_num) => {
-                                                if let Some(v) = new_factory.outputs.get(output_num) {
-                                                    return Err(AocError::Process(format!("Output {output_num} already contains a chip of value {v}").into()))
-                                                }
-                                                new_factory.outputs.insert(*output_num, cv);
-                                                true
-                                            }
-                                        })
-                                    }),
-                                |mut iter| iter.all(std::convert::identity),
-                            )?.and_do(|| {
-                                // Everything passed so commit
-                                new_factory.get_bot(*bot_num).reset_chips();
-                                *self = new_factory;
-                            })
-                        }
-                        None => false,
-                    }
-                }
-            })
-        }
     }
 
     /// The end result of the [`Factory`] after all instructions have been
@@ -348,7 +352,7 @@ mod solution {
     ///
     /// Can be parsed from text input.
     #[derive(Debug)]
-    pub struct InstructionSet {
+    pub struct FactoryInstructions {
         /// Which magic chips that need to be held by a bot to determine the
         /// [`FactoryOutput::magic_bot`].
         magic_chips: BotChips,
@@ -356,10 +360,10 @@ mod solution {
         /// [`FactoryOutput::output_product`].
         product_outputs: Vec<Num>,
         /// The set of instructions.
-        set: Vec<Instruction>,
+        set: Vec<FactoryInstruction>,
     }
-    impl Parsable<'_> for InstructionSet {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for FactoryInstructions {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     trim(true, (tag("magic chips "), pnum, tag(" "), pnum)),
@@ -367,7 +371,7 @@ mod solution {
                         true,
                         (tag("product outputs "), separated_list1(tag(" "), pnum)),
                     ),
-                    many1(Instruction::parser),
+                    many1(FactoryInstruction::parser),
                 ),
                 |((_, a, _, b), (_, product_outputs), set)| Self {
                     magic_chips: BotChips::new(a, b).unwrap(),
@@ -378,7 +382,7 @@ mod solution {
             .parse(input)
         }
     }
-    impl InstructionSet {
+    impl FactoryInstructions {
         /// Executes all instructions and returns the resulting
         /// [`FactoryOutput`].
         ///
@@ -397,7 +401,7 @@ mod solution {
                 // Try to execute all instructions and remove those that executed
                 self.set.retain(|inst| {
                     try {
-                        let executed = factory.execute_instruction(inst)?;
+                        let executed = inst.execute(&mut factory)?.yielded_item;
                         if executed {
                             inst_executed = true;
 
@@ -443,7 +447,9 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 10,
     name: "Balance Bots",
-    preprocessor: Some(|input| Ok(Box::new(InstructionSet::from_str(input)?.execute()?).into())),
+    preprocessor: Some(|input| {
+        Ok(Box::new(FactoryInstructions::from_str(input)?.execute()?).into())
+    }),
     solvers: &[
         // Part one
         |input| Ok(input.expect_data::<FactoryOutput>()?.magic_bot.into()),

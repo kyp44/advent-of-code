@@ -28,35 +28,35 @@ mod solution {
         branch::alt, bytes::complete::tag, character::complete::space1, combinator::map,
         error::context, sequence::separated_pair,
     };
+    use std::convert::TryInto;
     use std::iter::{Enumerate, Filter};
     use std::slice::Iter;
-    use std::str::FromStr;
-    use std::{collections::HashSet, convert::TryInto};
 
-    /// A single program instruction with operand, which can be parsed from text input.
+    /// A single program instruction with operand, which can be parsed from text
+    /// input.
     #[derive(Debug, Clone)]
-    enum Instruction {
+    pub enum AsmInstruction {
         /// `nop` instruction, which does nothing.
-        Nop(i32),
+        Nop(isize),
         /// `acc` instruction, which adds a value to the accumulator register.
-        Acc(i32),
+        Acc(isize),
         /// `jmp` instruction, which jumps to a relative instruction.
-        Jmp(i32),
+        Jmp(isize),
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for AsmInstruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             context(
                 "instruction",
                 map(
                     separated_pair(
                         alt((tag("nop"), tag("acc"), tag("jmp"))),
                         space1,
-                        nom::character::complete::i32,
+                        nom::character::complete::isize,
                     ),
                     |(iss, n)| match iss {
-                        "nop" => Instruction::Nop(n),
-                        "acc" => Instruction::Acc(n),
-                        "jmp" => Instruction::Jmp(n),
+                        "nop" => AsmInstruction::Nop(n),
+                        "acc" => AsmInstruction::Acc(n),
+                        "jmp" => AsmInstruction::Jmp(n),
                         _ => panic!(),
                     },
                 ),
@@ -64,21 +64,33 @@ mod solution {
             .parse(input)
         }
     }
+    impl Instruction for AsmInstruction {
+        type Registers = AccumulatorRegister;
+        type YieldItem = ();
+        type Error = AocError;
+
+        fn execute(
+            &self,
+            registers: &mut Self::Registers,
+        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+            Ok(Executed::only_jump(match self {
+                AsmInstruction::Nop(_) => None,
+                AsmInstruction::Acc(n) => {
+                    registers.value += *n;
+                    None
+                }
+                AsmInstruction::Jmp(d) => Some(Jump::Relative(*d)),
+            }))
+        }
+    }
 
     /// The accumulator register.
-    #[derive(Default, Debug)]
+    #[derive(Clone, Copy, Default, Debug)]
     pub struct AccumulatorRegister {
         /// The current value.
-        value: i32,
+        value: isize,
     }
     impl AccumulatorRegister {
-        /// Applies an instruction to the register, which may have no effect.
-        fn apply(&mut self, instruction: &Instruction) {
-            if let Instruction::Acc(v) = instruction {
-                self.value += v;
-            }
-        }
-
         /// Verifies that the register is positive and converts it.
         pub fn verify_positive(&self) -> AocResult<u32> {
             if self.value < 0 {
@@ -93,107 +105,66 @@ mod solution {
             Ok(self.value.try_into().unwrap())
         }
     }
-
-    /// Possible ways for a program to end, with the value of the accumulator register at this point.
-    #[derive(Debug)]
-    pub enum ProgramEndStatus {
-        /// Jumped outside the bounds of the program instructions.
-        JumpedOut,
-        /// Terminated normally.
-        Terminated(AccumulatorRegister),
-        /// In an infinite loop.
-        Infinite(AccumulatorRegister),
-    }
-
-    /// A complete program, which can be parsed from text input.
-    #[derive(Debug, Clone)]
-    pub struct Program {
-        /// The ordered list of instructions.
-        instructions: Vec<Instruction>,
-    }
-    impl FromStr for Program {
-        type Err = NomParseError;
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Ok(Program {
-                instructions: Instruction::gather(s.lines())?,
-            })
+    // These need to always be equal to each other since comparison is just used for
+    // compare program states and we just want equivalent states to just look at the
+    // program counter.
+    impl PartialEq for AccumulatorRegister {
+        fn eq(&self, _other: &Self) -> bool {
+            true
         }
     }
-    impl Program {
-        /// Executes the program, returning the end status.
-        pub fn execute(&self) -> ProgramEndStatus {
-            let mut pc = 0;
-            let mut acc = AccumulatorRegister::default();
-            let mut executed_pcs: HashSet<usize> = HashSet::new();
-            loop {
-                // Insert pc
-                if !executed_pcs.insert(pc) {
-                    // We previously executed this instruction, hence and infinite loop
-                    break ProgramEndStatus::Infinite(acc);
-                }
-                // Fetch the next instruction
-                let inst = self.instructions.get(pc).unwrap();
-
-                // Let instruction affect the program counter and accumulator
-                let mut ipc: i32 = pc.try_into().unwrap();
-                if let Instruction::Jmp(d) = inst {
-                    ipc += d;
-                    if ipc < 0 || ipc > self.instructions.len().try_into().unwrap() {
-                        break ProgramEndStatus::JumpedOut;
-                    }
-                } else {
-                    acc.apply(inst);
-                    ipc += 1;
-                }
-
-                pc = ipc.try_into().unwrap();
-                if pc == self.instructions.len() {
-                    break ProgramEndStatus::Terminated(acc);
-                }
-            }
-        }
-
-        /// Returns a [`ProgramVariations`] iterator over variations on the program.
-        pub fn variations(&self) -> ProgramVariations<'_> {
-            ProgramVariations {
-                original: self,
-                iter: self
-                    .instructions
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, inst)| matches!(inst, Instruction::Nop(_) | Instruction::Jmp(_))),
-            }
+    impl Eq for AccumulatorRegister {}
+    impl std::hash::Hash for AccumulatorRegister {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+            0.hash(state);
         }
     }
 
-    /// Type of the filter [`Iterator`] used by the [`ProgramVariations`] iterator.
+    /// Returns a [`ProgramVariations`] iterator over variations on the
+    /// program.
+    pub fn variations(original: &Program<AsmInstruction>) -> ProgramVariations<'_> {
+        ProgramVariations {
+            original,
+            iter: original
+                .instructions()
+                .iter()
+                .enumerate()
+                .filter(|(_, inst)| {
+                    matches!(inst, AsmInstruction::Nop(_) | AsmInstruction::Jmp(_))
+                }),
+        }
+    }
+
+    /// Type of the filter [`Iterator`] used by the [`ProgramVariations`]
+    /// iterator.
     type VariationsIterator<'a> =
-        Filter<Enumerate<Iter<'a, Instruction>>, fn(&(usize, &Instruction)) -> bool>;
+        Filter<Enumerate<Iter<'a, AsmInstruction>>, fn(&(usize, &AsmInstruction)) -> bool>;
 
     /// [`Iterator`] over variations of a program  with every `jmp` instruction
     /// replaced with a `nop` instruction and vice versa.
     pub struct ProgramVariations<'a> {
         /// Original program that is being varied.
-        original: &'a Program,
+        original: &'a Program<AsmInstruction>,
         /// [`Iterator`] over the `jmp` and `nop` instructions in the program.
         iter: VariationsIterator<'a>,
     }
     impl Iterator for ProgramVariations<'_> {
-        type Item = Program;
+        type Item = Program<AsmInstruction>;
 
         fn next(&mut self) -> Option<Self::Item> {
             // Look for the next NOP or JMP instruction
             self.iter.next().map(|(pc, inst)| {
-                use Instruction::*;
-                let mut new_program = (*self.original).clone();
+                use AsmInstruction::*;
 
-                new_program.instructions[pc] = match inst {
+                let mut new_instructions = self.original.instructions().to_vec();
+
+                new_instructions[pc] = match inst {
                     Nop(v) => Jmp(*v),
                     Jmp(v) => Nop(*v),
                     _ => panic!(),
                 };
 
-                new_program
+                Program::new(new_instructions)
             })
         }
     }
@@ -205,14 +176,18 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 8,
     name: "Handheld Halting",
-    preprocessor: Some(|input| Ok(Box::new(input.parse::<Program>()?).into())),
+    preprocessor: Some(|input| Ok(Box::new(Program::<AsmInstruction>::parse(input)?).into())),
     solvers: &[
         // Part one
         |input| {
             // Processing
+            let end = input
+                .expect_data::<Program<AsmInstruction>>()?
+                .execute_monitored(AccumulatorRegister::default())?;
+
             Ok(Answer::Unsigned(
-                match input.expect_data::<Program>()?.execute() {
-                    ProgramEndStatus::Infinite(acc) => acc.verify_positive()?,
+                match end.end_status {
+                    ProgramEndStatus::Infinite => end.registers().verify_positive()?,
                     _ => {
                         return Err(AocError::Process(
                             "Program execution did not result in an infinite loop".into(),
@@ -226,9 +201,11 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Processing
             let mut terminated_acc = None;
-            for prog in input.expect_data::<Program>()?.variations() {
-                if let ProgramEndStatus::Terminated(acc) = prog.execute() {
-                    terminated_acc = Some(acc.verify_positive()?);
+            for prog in variations(input.expect_data::<Program<AsmInstruction>>()?) {
+                let end = prog.execute_monitored(AccumulatorRegister::default())?;
+
+                if !matches!(end.end_status, ProgramEndStatus::Infinite) {
+                    terminated_acc = Some(end.registers().verify_positive()?);
                     break;
                 }
             }

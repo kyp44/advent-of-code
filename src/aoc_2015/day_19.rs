@@ -50,9 +50,10 @@ HOHOHO";
 /// Contains solution implementation items.
 ///
 /// I dislike this problem because a solution in a reasonable amount of time
-/// depends on the specific input of the problem. In particular there are special
-/// characters that can be transformed into their "meanings" when turning all the
-/// element names into single characters for ease of understanding.
+/// depends on the specific input of the problem. In particular there are
+/// special characters that can be transformed into their "meanings" when
+/// turning all the element names into single characters for ease of
+/// understanding.
 ///
 /// For a discussion of the properties of the input that allow this see
 /// [this reddit post](https://www.reddit.com/r/adventofcode/comments/3xflz8/day_19_solutions/).
@@ -77,11 +78,8 @@ mod solution {
         /// Element with which to replace.
         to: String,
     }
-    impl Parsable<'_> for Replacement {
-        fn parser(input: &str) -> NomParseResult<&str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Replacement {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(alpha1, trim(false, tag("=>")), alpha1),
                 |(f, t): (&str, &str)| Replacement {
@@ -123,8 +121,8 @@ mod solution {
         }
     }
     impl<'a> Molecule<'a> {
-        /// Returns the initial molecule, which is the molecule we want to make, for a given
-        /// `start_molecule` and molecule making `machine`.
+        /// Returns the initial molecule, which is the molecule we want to make,
+        /// for a given `start_molecule` and molecule making `machine`.
         fn start(start_molecule: &'static str, machine: &'a Machine) -> Self {
             Molecule {
                 machine,
@@ -236,15 +234,16 @@ mod solution {
         }
     }
     impl Machine {
-        /// Returns an [`Iterator`] over each individual molecule replacement in an input molecule.
+        /// Returns an [`Iterator`] over each individual molecule replacement in
+        /// an input molecule.
         pub fn replace_iter<'a>(&'a self, input: &'a str) -> impl Iterator<Item = String> + 'a {
             self.replacements
                 .iter()
                 .flat_map(|r| input.individual_replacements(&r.from, &r.to))
         }
 
-        /// Counts the number of replacement steps required to create a target molecule
-        /// from a starting molecule.
+        /// Counts the number of replacement steps required to create a target
+        /// molecule from a starting molecule.
         pub fn number_of_steps(&self, starting_molecule: &'static str) -> AocResult<u64> {
             Molecule::start(starting_molecule, self)
                 .traverse_tree()

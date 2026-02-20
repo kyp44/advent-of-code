@@ -111,8 +111,10 @@ mod solution {
         /// The actual password.
         password: &'a str,
     }
-    impl<'a, P: PasswordPolicy> Parsable<'a> for Password<'a, P> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl<P: PasswordPolicy> Parsable for Password<'_, P> {
+        type Parsed<'a> = Password<'a, P>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             context("password", separated_pair(P::parser, tag(": "), rest))
                 .parse(input.trim())
                 .map(|(next, res)| {
@@ -133,7 +135,8 @@ mod solution {
         }
     }
 
-    /// Solves a part of the problem by reading in policies and passwords and counting those that are valid.
+    /// Solves a part of the problem by reading in policies and passwords and
+    /// counting those that are valid.
     pub fn solve<P: PasswordPolicy>(input: &SolverInput) -> AocResult<Answer> {
         // Generation
         let passwords = Password::<P>::gather(input.expect_text()?.lines())?;

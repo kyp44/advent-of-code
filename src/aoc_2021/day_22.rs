@@ -126,8 +126,8 @@ mod solution {
         /// The exclusive bounding box that defines the cuboid.
         bounding_box: Box3D<i32>,
     }
-    impl Parsable<'_> for Cuboid {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Cuboid {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             /// This is a [`nom`] parser that parses an inclusive range.
             ///
             /// This is an internal function of [`Cuboid::parser`].
@@ -157,16 +157,16 @@ mod solution {
         }
     }
     impl Cuboid {
-        /// Returns a cubic region in which the range of every dimension is the same,
-        /// from `a` to `b` inclusive.
+        /// Returns a cubic region in which the range of every dimension is the
+        /// same, from `a` to `b` inclusive.
         pub fn cube(a: i32, b: i32) -> Self {
             Cuboid {
                 bounding_box: Box3D::new_inclusive(Point3D::new(a, a, a), Point3D::new(b, b, b)),
             }
         }
 
-        /// Returns the intersection of this and another cuboid, which is itself also a
-        /// cuboid region.
+        /// Returns the intersection of this and another cuboid, which is itself
+        /// also a cuboid region.
         ///
         /// If the cuboids are disjoint, then `None` is returned.
         fn intersection(&self, other: &Cuboid) -> Option<Cuboid> {
@@ -189,8 +189,8 @@ mod solution {
         /// Turn a cuboid region off.
         Off(Cuboid),
     }
-    impl Parsable<'_> for RebootStep {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for RebootStep {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(alt((tag("on"), tag("off"))), space1, Cuboid::parser),
                 |(w, cub)| match w {
@@ -202,16 +202,16 @@ mod solution {
         }
     }
 
-    /// A set of points in 3D integer space represented as various combinations of cuboid
-    /// regions.
+    /// A set of points in 3D integer space represented as various combinations
+    /// of cuboid regions.
     #[derive(Clone, Debug)]
     pub enum Set {
         /// The empty set with no points.
         Empty,
         /// The set of points contained in a basic cuboid region.
         Basic(Cuboid),
-        /// The difference between two sets, which is the first set with the second set
-        /// removed if they intersect.
+        /// The difference between two sets, which is the first set with the
+        /// second set removed if they intersect.
         Difference(Box<Set>, Box<Set>),
         /// The union of two other sets.
         Union(Box<Set>, Box<Set>),
@@ -244,8 +244,8 @@ mod solution {
             }
         }
 
-        /// Returns the difference of this set and another, that is this set with the
-        /// points of the other set removed if they intersect.
+        /// Returns the difference of this set and another, that is this set
+        /// with the points of the other set removed if they intersect.
         fn difference(self, other: Self) -> Self {
             if self.is_empty() {
                 Self::Empty

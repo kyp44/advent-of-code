@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -54,13 +53,14 @@ mod solution {
     /// A command item from the terminal output.
     #[derive(Debug, EnumAsInner)]
     enum CommandItem {
-        /// Change the current directory with the directory name to which to change.
+        /// Change the current directory with the directory name to which to
+        /// change.
         ChangeDir(String),
         /// List the contents of the current directory.
         List,
     }
-    impl Parsable<'_> for CommandItem {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for CommandItem {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(
                     separated_pair(tag("cd"), space1::<&str, _>, take_till(char::is_whitespace)),
@@ -80,8 +80,8 @@ mod solution {
         /// A file with its size.
         File(u64),
     }
-    impl Parsable<'_> for ListingItem {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for ListingItem {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(
                     separated_pair(
@@ -112,8 +112,8 @@ mod solution {
         /// A listing output item.
         Listing(ListingItem),
     }
-    impl Parsable<'_> for TerminalItem {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for TerminalItem {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(
                     separated_pair(tag("$"), space1, CommandItem::parser),
@@ -148,7 +148,8 @@ mod solution {
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             /// Builds a directory from the parsed terminal output.
             ///
-            /// This is a recursive internal function of [`Directory::from_str`].
+            /// This is a recursive internal function of
+            /// [`Directory::from_str`].
             fn build(
                 item_iter: &mut Peekable<impl Iterator<Item = TerminalItem>>,
             ) -> AocResult<Directory> {
@@ -192,7 +193,8 @@ mod solution {
                     }
                 }
 
-                // Now that we have everything, we expect that each directory to be listed recursively
+                // Now that we have everything, we expect that each directory to be listed
+                // recursively
                 loop {
                     if dir_names.is_empty() {
                         break;
@@ -256,7 +258,8 @@ mod solution {
         }
     }
     impl Directory {
-        /// Returns a recursive [`Iterator`] over all directories, starting with this one.
+        /// Returns a recursive [`Iterator`] over all directories, starting with
+        /// this one.
         pub fn all_directories(&self) -> DirectoryTraversal<'_> {
             DirectoryTraversal {
                 current: Takeable::new(self),
@@ -281,13 +284,15 @@ mod solution {
     ///
     /// This should only ever be returned from [`Directory::all_directories`].
     pub struct DirectoryTraversal<'a> {
-        /// The current [`Directory`], indicating whether it has been emitted yet.
+        /// The current [`Directory`], indicating whether it has been emitted
+        /// yet.
         current: Takeable<&'a Directory>,
         /// The contents of the current directory as an [`Iterator`].
         contents: std::slice::Iter<'a, FileSystem>,
         /// The [`Iterator`] over the current sub-directory.
         ///
-        /// This will be set only if we are currently iterating over a sub-directory.
+        /// This will be set only if we are currently iterating over a
+        /// sub-directory.
         sub_iter: Option<Box<DirectoryTraversal<'a>>>,
     }
     impl<'a> Iterator for DirectoryTraversal<'a> {

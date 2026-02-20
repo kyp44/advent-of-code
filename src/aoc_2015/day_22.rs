@@ -241,7 +241,8 @@ mod solution {
             self.hit_points == 0
         }
 
-        /// Takes a turn in which this character casts a spell against an opponent.
+        /// Takes a turn in which this character casts a spell against an
+        /// opponent.
         ///
         /// Returns whether or not the spell could be and was cast.
         fn turn_cast(&mut self, spell: Spell, opponent: &mut Character) -> bool {
@@ -264,8 +265,8 @@ mod solution {
             true
         }
 
-        /// Takes a turn in which the character performs a physical attack against
-        /// an opponent.
+        /// Takes a turn in which the character performs a physical attack
+        /// against an opponent.
         fn turn_attack(&mut self, opponent: &mut Character) {
             // Apply effects
             self.apply_effects(opponent);
@@ -277,8 +278,8 @@ mod solution {
             }
         }
 
-        /// Applies the effects of any active spell both on this character as well
-        /// as on an opponent.
+        /// Applies the effects of any active spell both on this character as
+        /// well as on an opponent.
         fn apply_effects(&mut self, opponent: &mut Character) {
             let mut spells: Vec<Spell> = self.spells.drain(..).collect();
             for spell in spells.iter_mut() {
@@ -288,11 +289,8 @@ mod solution {
                 .extend(spells.into_iter().filter(|s| !s.expired()))
         }
     }
-    impl Parsable<'_> for Character {
-        fn parser(input: &str) -> NomParseResult<&str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Character {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     field_line_parser("Hit Points:", nom::character::complete::u32),
@@ -316,7 +314,8 @@ mod solution {
         boss: Character,
     }
     impl Characters {
-        /// Searches the game tree to determine the minimal mana cost in which the player wins.
+        /// Searches the game tree to determine the minimal mana cost in which
+        /// the player wins.
         pub fn minimal_mana_cost(mut self, hard_mode: bool) -> AocResult<u64> {
             self.hard_mode = hard_mode;
             self.traverse_tree().map(|m| m.0.into())

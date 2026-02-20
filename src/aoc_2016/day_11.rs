@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -71,16 +70,18 @@ mod solution {
             }
         }
     }
-    impl<'a> Parsable<'a> for ItemParse<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for ItemParse<'_> {
+        type Parsed<'a> = ItemParse<'a>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(
                     (tag("a "), alpha1, tag(" generator")),
-                    |(_, material, _)| Self::Generator(material),
+                    |(_, material, _)| ItemParse::Generator(material),
                 ),
                 map(
                     (tag("a "), alpha1, tag("-compatible microchip")),
-                    |(_, material, _)| Self::Microchip(material),
+                    |(_, material, _)| ItemParse::Microchip(material),
                 ),
             ))
             .parse(input)
@@ -110,8 +111,10 @@ mod solution {
             }
         }
     }
-    impl<'a> Parsable<'a> for FloorParse<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for FloorParse<'_> {
+        type Parsed<'a> = FloorParse<'a>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 trim(
                     true,
@@ -127,7 +130,7 @@ mod solution {
                         tag("."),
                     ),
                 ),
-                |((_, name, _), items, _)| Self {
+                |((_, name, _), items, _)| FloorParse {
                     name,
                     items: items.into_iter().collect(),
                 },

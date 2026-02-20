@@ -53,8 +53,8 @@ mod solution {
         /// West (left).
         West,
     }
-    impl Parsable<'_> for Direction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Direction {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             use Direction::*;
             map(one_of("^>v<"), |s| match s {
                 '^' => North,
@@ -81,7 +81,8 @@ mod solution {
 
     /// Behavior different for each part of the problem.
     pub trait Part {
-        /// Returns a set of all house coordinates that Santa will visit given the list of directions to move.
+        /// Returns a set of all house coordinates that Santa will visit given
+        /// the list of directions to move.
         fn visited_houses(directions: &[Direction]) -> HashSet<Point>;
     }
 
@@ -129,8 +130,8 @@ mod solution {
         /// The list of directions.
         directions: Vec<Direction>,
     }
-    impl Parsable<'_> for Directions {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Directions {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(many1(Direction::parser), |directions| Directions {
                 directions,
             })
@@ -138,7 +139,8 @@ mod solution {
         }
     }
     impl Directions {
-        /// Returns a set of all house coordinates that Santa will visit by following these directions.
+        /// Returns a set of all house coordinates that Santa will visit by
+        /// following these directions.
         pub fn visited_houses<P: Part>(&self) -> HashSet<Point> {
             P::visited_houses(&self.directions)
         }

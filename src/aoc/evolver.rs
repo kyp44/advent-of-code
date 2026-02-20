@@ -16,7 +16,6 @@ use std::{marker::PhantomData, rc::Rc};
 /// ```
 /// use aoc::grid::StdBool;
 /// use aoc::prelude::*;
-/// use std::str::FromStr;
 ///
 /// #[derive(Clone, Debug, PartialEq, Eq)]
 /// struct ConwayCells {

@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -29,15 +28,16 @@ mod solution {
     ///
     /// This can be parsed from text input.
     pub enum Direction {
-        /// Increase horizontal position (part one) or both this and depth (part two) by some amount.
+        /// Increase horizontal position (part one) or both this and depth (part
+        /// two) by some amount.
         Forward(u8),
         /// Increase depth (part one) or aim (part two) by some amount.
         Down(u8),
         /// Decrease depth (part one) or aim (part two) by some amount.
         Up(u8),
     }
-    impl Parsable<'_> for Direction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Direction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(
                     field_line_parser("forward", nom::character::complete::u8),
@@ -115,7 +115,8 @@ mod solution {
         }
     }
 
-    /// The course that the submarine takes, which can be parsed from text input.
+    /// The course that the submarine takes, which can be parsed from text
+    /// input.
     pub struct Course {
         /// Ordered list of directions to follow.
         directions: Box<[Direction]>,

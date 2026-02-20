@@ -31,7 +31,7 @@ mod solution {
     ///
     /// Can be parsed from text input.
     #[derive(Debug)]
-    enum Instruction {
+    pub enum ScreenInstruction {
         /// Draws a rectangle.
         Rect {
             /// Rectangle width in pixels.
@@ -54,8 +54,8 @@ mod solution {
             num: usize,
         },
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for ScreenInstruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             trim(
                 true,
                 alt((
@@ -76,6 +76,42 @@ mod solution {
             .parse(input)
         }
     }
+    impl Instruction for ScreenInstruction {
+        type Registers = Screen;
+        type YieldItem = ();
+        type Error = AocError;
+
+        fn execute(
+            &self,
+            registers: &mut Self::Registers,
+        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+            let grid = &mut registers.grid;
+
+            match self {
+                Self::Rect { width, height } => {
+                    for point in GridSize::new(*width, *height).all_points() {
+                        grid.set(&point, true.into())
+                    }
+                }
+                ScreenInstruction::RotateRow { y, num: by } => {
+                    let width = grid.size().width;
+                    let old_row: Vec<_> = grid.underlying_grid().iter_row(*y).copied().collect();
+                    for (x, v) in old_row.into_iter().enumerate() {
+                        grid.set(&GridPoint::new((x + by) % width, *y), v);
+                    }
+                }
+                ScreenInstruction::RotateCol { x, num: by } => {
+                    let height = grid.size().height;
+                    let old_col: Vec<_> = grid.underlying_grid().iter_col(*x).copied().collect();
+                    for (y, v) in old_col.into_iter().enumerate() {
+                        grid.set(&GridPoint::new(*x, (y + by) % height), v);
+                    }
+                }
+            }
+
+            Ok(Executed::default())
+        }
+    }
 
     /// A screen that can execute [`Instruction`]s.
     pub struct Screen {
@@ -88,37 +124,11 @@ mod solution {
         }
     }
     impl Screen {
-        /// Creates a new, blank screen of a given `size` with all pixels turned off.
+        /// Creates a new, blank screen of a given `size` with all pixels turned
+        /// off.
         pub fn new(size: GridSize) -> Self {
             Self {
                 grid: Grid::default(size),
-            }
-        }
-
-        /// Applies an [`Instruction`] to the screen, potentially altering pixels.
-        fn apply_instruction(&mut self, instruction: &Instruction) {
-            match instruction {
-                Instruction::Rect { width, height } => {
-                    for point in GridSize::new(*width, *height).all_points() {
-                        self.grid.set(&point, true.into())
-                    }
-                }
-                Instruction::RotateRow { y, num: by } => {
-                    let width = self.grid.size().width;
-                    let old_row: Vec<_> =
-                        self.grid.underlying_grid().iter_row(*y).copied().collect();
-                    for (x, v) in old_row.into_iter().enumerate() {
-                        self.grid.set(&GridPoint::new((x + by) % width, *y), v);
-                    }
-                }
-                Instruction::RotateCol { x, num: by } => {
-                    let height = self.grid.size().height;
-                    let old_col: Vec<_> =
-                        self.grid.underlying_grid().iter_col(*x).copied().collect();
-                    for (y, v) in old_col.into_iter().enumerate() {
-                        self.grid.set(&GridPoint::new(*x, (y + by) % height), v);
-                    }
-                }
             }
         }
 
@@ -134,19 +144,19 @@ mod solution {
     pub struct InstructionSet {
         /// The size of the [`Screen`] assumed for these instructions.
         size: GridSize,
-        /// The instructions, in order.
-        instructions: Vec<Instruction>,
+        /// The program.
+        program: Program<ScreenInstruction>,
     }
-    impl Parsable<'_> for InstructionSet {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for InstructionSet {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     (tag("size "), pusize, tag("x"), pusize),
-                    many1(Instruction::parser),
+                    many1(ScreenInstruction::parser),
                 ),
                 |((_, w, _, h), instructions)| Self {
                     size: GridSize::new(w, h),
-                    instructions,
+                    program: Program::new(instructions),
                 },
             )
             .parse(input)
@@ -155,15 +165,10 @@ mod solution {
     impl InstructionSet {
         /// Executes all the instructions starting from a blank screen,
         /// and returns the final state of the screen.
-        pub fn execute(&self) -> Screen {
-            let mut screen = Screen::new(self.size);
-
-            // Apply the instructions
-            for inst in self.instructions.iter() {
-                screen.apply_instruction(inst);
-            }
-
-            screen
+        pub fn execute(&self) -> Result<Screen, <ScreenInstruction as Instruction>::Error> {
+            self.program
+                .execute(Screen::new(self.size))
+                .map(|pe| pe.into_registers())
         }
     }
 }
@@ -174,7 +179,7 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 8,
     name: "Two-Factor Authentication",
-    preprocessor: Some(|input| Ok(Box::new(InstructionSet::from_str(input)?.execute()).into())),
+    preprocessor: Some(|input| Ok(Box::new(InstructionSet::from_str(input)?.execute()?).into())),
     solvers: &[
         // Part one
         |input| {

@@ -3,7 +3,6 @@ use euclid::{
     default::{Point2D, Vector2D},
     point2, vec2,
 };
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -25,33 +24,96 @@ F11";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use bare_metal_modulo::MNum;
+    use bare_metal_modulo::ModNumC;
     use nom::{character::complete::one_of, combinator::map, sequence::pair};
     use std::fmt::Debug;
 
+    /// The position type of the ship and waypoint.
+    type Point = Point2D<i32>;
+    /// The vector type to add to [`Point`]s.
+    type Vector = Vector2D<i32>;
+    /// The numeric form of a [`Direction`].
+    type DirectionNum = ModNumC<u8, 4>;
+    /// A number of turns.
+    type NumTurns = DirectionNum;
+
+    /// A cardinal direction.
+    #[derive(Clone, Copy, Debug)]
+    pub enum Direction {
+        /// Positive `y`.
+        North,
+        /// Negative `x`.
+        West,
+        /// Negative `y`.
+        South,
+        /// Positive `x`.
+        East,
+    }
+    impl From<DirectionNum> for Direction {
+        fn from(value: DirectionNum) -> Self {
+            match value.a() {
+                0 => Self::North,
+                1 => Self::West,
+                2 => Self::South,
+                3 => Self::East,
+                _ => unreachable!(),
+            }
+        }
+    }
+    impl From<Direction> for DirectionNum {
+        fn from(value: Direction) -> Self {
+            DirectionNum::new(match value {
+                Direction::North => 0,
+                Direction::West => 1,
+                Direction::South => 2,
+                Direction::East => 3,
+            })
+        }
+    }
+    impl Direction {
+        /// Returns the new direction after turning `num_turns`
+        /// counter-clockwise from this one.
+        pub fn turn(&self, num_turns: NumTurns) -> Self {
+            (DirectionNum::from(*self) + num_turns).into()
+        }
+
+        /// Returns the unit vector corresponding to this direction.
+        pub fn as_vector(&self) -> Vector {
+            match self {
+                Direction::North => Vector::unit_y(),
+                Direction::West => -Vector::unit_x(),
+                Direction::South => -Vector::unit_y(),
+                Direction::East => Vector::unit_x(),
+            }
+        }
+    }
+
     /// A single navigation instruction, which can be parsed from text input.
     #[derive(Debug)]
-    enum Instruction {
+    pub enum NavInstruction {
         /// Move the ship or waypoint by some relative displacement.
-        Move(Vector2D<i32>),
-        /// Turn by some angle or rotate the waypoint about the ship.
-        Turn(i32),
+        Move(Vector),
+        /// Turn by some number of turns or rotate the waypoint about the ship,
+        /// both counter-clockwise.
+        Turn(NumTurns),
         /// Move forward in the currently facing direction or to the waypoint.
         Forward(i32),
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for NavInstruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 pair(one_of("NSEWLRF"), nom::character::complete::i32),
                 |(c, n)| {
-                    use Instruction::*;
+                    let n8 = u8::try_from(n / 90).unwrap();
                     match c {
-                        'N' => Move(vec2(0, 1) * n),
-                        'S' => Move(vec2(0, -1) * n),
-                        'E' => Move(vec2(1, 0) * n),
-                        'W' => Move(vec2(-1, 0) * n),
-                        'L' => Turn(n / 90),
-                        'R' => Turn(-n / 90),
-                        'F' => Forward(n),
+                        'N' => NavInstruction::Move(vec2(0, 1) * n),
+                        'S' => NavInstruction::Move(vec2(0, -1) * n),
+                        'E' => NavInstruction::Move(vec2(1, 0) * n),
+                        'W' => NavInstruction::Move(vec2(-1, 0) * n),
+                        'L' => NavInstruction::Turn(NumTurns::new(n8)),
+                        'R' => NavInstruction::Turn(-NumTurns::new(n8)),
+                        'F' => NavInstruction::Forward(n),
                         _ => panic!(),
                     }
                 },
@@ -59,88 +121,93 @@ mod solution {
             .parse(input.trim())
         }
     }
-
-    impl Instruction {
-        /// Gets the new facing direction given the current one and turn distance.
-        fn turn(facing: i32, turn: i32) -> i32 {
-            (facing + turn).rem_euclid(4)
-        }
-
-        /// Gets translation vector given facing direction and distance.
-        fn go_forward(facing: i32, distance: i32) -> Vector2D<i32> {
-            let vec = match facing % 4 {
-                0 => vec2(1, 0),
-                1 => vec2(0, 1),
-                2 => vec2(-1, 0),
-                3 => vec2(0, -1),
-                _ => panic!(),
-            };
-            vec * distance
-        }
-
-        /// Rotates a point given a turn number.
-        fn rotate_point(turn: i32, point: &Point2D<i32>) -> Point2D<i32> {
-            match Instruction::turn(0, turn) {
-                0 => *point,
+    impl NavInstruction {
+        /// Rotates a point counter-clockwise about the origin given a number of
+        /// turns.
+        fn rotate_point(num_turns: NumTurns, point: Point) -> Point {
+            match num_turns.a() {
+                0 => point,
                 1 => point2(-point.y, point.x),
-                2 => -*point,
+                2 => -point,
                 3 => point2(point.y, -point.x),
-                _ => panic!(),
+                _ => unreachable!(),
             }
         }
     }
+    impl Instruction for NavInstruction {
+        type Registers = ShipState;
+        type YieldItem = ();
+        type Error = AocError;
 
-    /// A set of navigation instructions, which can be parsed from text input.
-    pub struct NavigationInstructions {
-        /// The list of instructions.
-        instructions: Vec<Instruction>,
-    }
-    impl FromStr for NavigationInstructions {
-        type Err = AocError;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Ok(Self {
-                instructions: Instruction::gather(s.lines())?,
-            })
+        fn execute(
+            &self,
+            registers: &mut Self::Registers,
+        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+            match registers {
+                ShipState::Basic { facing, position } => match self {
+                    NavInstruction::Move(dv) => *position += *dv,
+                    NavInstruction::Turn(a) => *facing = facing.turn(*a),
+                    NavInstruction::Forward(d) => *position += facing.as_vector() * *d,
+                },
+                ShipState::Waypoint {
+                    waypoint,
+                    ship: position,
+                } => match self {
+                    NavInstruction::Move(dv) => *waypoint += *dv,
+                    NavInstruction::Turn(a) => *waypoint = Self::rotate_point(*a, *waypoint),
+                    NavInstruction::Forward(d) => *position += waypoint.to_vector() * *d,
+                },
+            }
+            Ok(Executed::default())
         }
     }
-    impl NavigationInstructions {
-        /// Follows the instructions to determine the ship's final position.
-        ///
-        /// Optionally pass an initial waypoint location relative to the ship.
-        /// If no initial waypoint is specified the commands always act on the ship,
-        /// otherwise most commands act on the waypoint.
-        pub fn final_ship_position(&self, initial_waypoint: Option<&Point2D<i32>>) -> Point2D<i32> {
-            let mut position = Point2D::zero();
-            match initial_waypoint {
-                None => {
-                    let mut facing = 0;
-                    for inst in self.instructions.iter() {
-                        match inst {
-                            Instruction::Move(dv) => position += *dv,
-                            Instruction::Turn(a) => facing = Instruction::turn(facing, *a),
-                            Instruction::Forward(d) => {
-                                position += Instruction::go_forward(facing, *d)
-                            }
-                        }
-                        //println!("Instruction: {:?}, Facing: {:?}, Position {:?}", inst, facing, position);
-                    }
-                }
-                Some(wp) => {
-                    let mut waypoint = *wp;
-                    for inst in self.instructions.iter() {
-                        match inst {
-                            Instruction::Move(dv) => waypoint += *dv,
-                            Instruction::Turn(a) => {
-                                waypoint = Instruction::rotate_point(*a, &waypoint)
-                            }
-                            Instruction::Forward(d) => position += waypoint.to_vector() * *d,
-                        }
-                        //println!("Instruction: {:?}, Waypoint: {:?}, Position {:?}", inst, waypoint, position);
-                    }
-                }
+
+    /// A state for each part of the problem.
+    pub enum ShipState {
+        /// A basic state for part one.
+        Basic {
+            /// The direction the ship is facing.
+            facing: Direction,
+            /// The position of the ship.
+            position: Point,
+        },
+        /// The ship and waypoint states for part two.
+        Waypoint {
+            /// The position of the waypoint.
+            waypoint: Point,
+            /// The position of the ship.
+            ship: Point,
+        },
+    }
+    impl ShipState {
+        /// Returns the starting state for part one.
+        pub fn starting_basic() -> Self {
+            Self::Basic {
+                facing: Direction::East,
+                position: Point::zero(),
             }
-            position
+        }
+
+        /// Returns the starting state for part two.
+        pub fn starting_waypoint() -> Self {
+            Self::Waypoint {
+                waypoint: Point::new(10, 1),
+                ship: Point::zero(),
+            }
+        }
+
+        /// Returns the ship position for either part.        
+        pub fn ship_position(&self) -> Point {
+            match self {
+                ShipState::Basic {
+                    facing: _,
+                    position,
+                } => *position,
+                ShipState::Waypoint {
+                    waypoint: _,
+                    ship: position,
+                } => *position,
+            }
         }
     }
 }
@@ -151,15 +218,17 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 12,
     name: "Rain Risk",
-    preprocessor: Some(|input| Ok(Box::new(NavigationInstructions::from_str(input)?).into())),
+    preprocessor: Some(|input| Ok(Box::new(Program::<NavInstruction>::parse(input)?).into())),
     solvers: &[
         // Part one
         |input| {
             // Process
             Ok(Answer::Unsigned(
                 input
-                    .expect_data::<NavigationInstructions>()?
-                    .final_ship_position(None)
+                    .expect_data::<Program<NavInstruction>>()?
+                    .execute(ShipState::starting_basic())?
+                    .into_registers()
+                    .ship_position()
                     .to_vector()
                     .manhattan_len()
                     .try_into()
@@ -171,8 +240,10 @@ pub const SOLUTION: Solution = Solution {
             // Process
             Ok(Answer::Unsigned(
                 input
-                    .expect_data::<NavigationInstructions>()?
-                    .final_ship_position(Some(&point2(10, 1)))
+                    .expect_data::<Program<NavInstruction>>()?
+                    .execute(ShipState::starting_waypoint())?
+                    .into_registers()
+                    .ship_position()
                     .to_vector()
                     .manhattan_len()
                     .try_into()

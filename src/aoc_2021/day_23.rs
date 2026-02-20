@@ -45,13 +45,15 @@ mod solution {
 
     /// Behavior specific to one particular part of the problem.
     pub trait Part: Clone + Eq + std::hash::Hash {
-        /// The depth of the amphipod rooms, which is the number of spaces in each room.
+        /// The depth of the amphipod rooms, which is the number of spaces in
+        /// each room.
         const DEPTH: usize;
 
         /// Returns the board for this part.
         fn board() -> &'static Board<Self>;
 
-        /// Adds in additional amphipod positions from the folded part of the diagram.
+        /// Adds in additional amphipod positions from the folded part of the
+        /// diagram.
         fn add_folded(position_map: &mut PositionMap);
     }
 
@@ -293,8 +295,8 @@ mod solution {
         /// Phantom data for the part of the problem.
         _phantom: PhantomData<P>,
     }
-    impl<P: Part + 'static> Parsable<'_> for Position<P> {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl<P: Part + 'static> Parsable for Position<P> {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             let amphipod_line = move |input| -> NomParseResult<&str, Vec<Amphipod>> {
                 terminated(
                     trim(
@@ -435,14 +437,15 @@ mod solution {
         }
 
         /// Runs the tree search and returns the minimum energy needed
-        /// to solve from this position, that is to return all amphipods to their
-        /// home rooms.
+        /// to solve from this position, that is to return all amphipods to
+        /// their home rooms.
         pub fn minimal_energy(self) -> AocResult<u64> {
             self.traverse_tree().map(|c| c.0)
         }
     }
 
-    /// Wrapper structure that represents a relative or total cost to move amphipods.
+    /// Wrapper structure that represents a relative or total cost to move
+    /// amphipods.
     #[derive(Clone, Copy, Default, Add, From, Debug)]
     pub struct Cost(u64);
     impl Metric for Cost {
@@ -454,8 +457,9 @@ mod solution {
         type Metric = Cost;
 
         fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>> {
-            // NOTE: One principle we follow that is not a rule, we never move an amphipod only partially into
-            // a room, we always go as deep as possible. Likewise we never move an amphipod to a different space
+            // NOTE: One principle we follow that is not a rule, we never move an amphipod
+            // only partially into a room, we always go as deep as possible.
+            // Likewise we never move an amphipod to a different space
             // in the same room.
 
             if Amphipod::iter().all(|a| {
@@ -482,7 +486,8 @@ mod solution {
                 for own_space_node in self.positions[own_amph].iter() {
                     let own_space_type = P::board().graph.node_weight(*own_space_node).unwrap();
 
-                    // If we are already home (and it's filled with like amphipods) then we do not want to move
+                    // If we are already home (and it's filled with like amphipods) then we do not
+                    // want to move
                     if let SpaceType::Room(own_space_amph) = own_space_type
                         && *own_space_amph == own_amph
                         && home_good
@@ -502,9 +507,11 @@ mod solution {
                     for room_amph in Amphipod::iter() {
                         // Do we want to remove or keep this room?
                         if !match own_space_type {
-                            // If in the hall, we only want to keep our own room but only if it's filled with our kind
+                            // If in the hall, we only want to keep our own room but only if it's
+                            // filled with our kind
                             SpaceType::Hall => room_amph == own_amph && home_good,
-                            // Need to keep only the room we are in or our home room if it's filled with our kind
+                            // Need to keep only the room we are in or our home room if it's filled
+                            // with our kind
                             SpaceType::Room(own_space_amph) => {
                                 room_amph == *own_space_amph || (room_amph == own_amph && home_good)
                             }
@@ -518,7 +525,8 @@ mod solution {
 
                     //println!("Amph {} at {}", amphipod, space.index());
 
-                    // Determine shortest paths to all possible destination nodes and filter by those we actually might want to move to
+                    // Determine shortest paths to all possible destination nodes and filter by
+                    // those we actually might want to move to
                     let paths = bellman_ford(&graph, *own_space_node).unwrap();
                     for (distance, node) in graph.node_indices().filter_map(|node| {
                         let new_space_type = graph.node_weight(node).unwrap();

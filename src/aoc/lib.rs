@@ -15,6 +15,7 @@ pub mod evolver;
 pub mod grid;
 pub mod iter;
 pub mod parse;
+pub mod program;
 pub mod tree_search;
 
 /// The prelude.
@@ -34,10 +35,15 @@ pub mod prelude {
         },
         iter::{IteratorExt, LendingIteratorExt, StrExt},
         parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parsable, Sections},
+        program::{
+            Executed, Instruction, Jump, Program, ProgramEnd, ProgramEndStatus, ProgramState,
+            SimpleRegisters,
+        },
         solution::{Answer, Solution, SolverInput, YearSolutions},
     };
     pub use bool_ext::BoolExt;
     pub use nom::Parser;
+    pub use std::str::FromStr;
 }
 
 /// Prelude for the tests, mainly when using [`solution_tests`].

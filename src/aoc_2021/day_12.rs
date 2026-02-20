@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -78,7 +77,8 @@ mod solution {
         End,
         /// A big cave that can be visited any number of times.
         Big,
-        /// A small cave than can only be visited once (part one) or maybe twice (part two).
+        /// A small cave than can only be visited once (part one) or maybe twice
+        /// (part two).
         Small,
     }
     impl From<&str> for CaveType {
@@ -141,19 +141,22 @@ mod solution {
         type Err = AocError;
 
         fn from_str(s: &str) -> Result<Self, Self::Err> {
-            /// Sub-struct used when parsing a [`CaveSystem`], which is a passage
-            /// between caves and can be parsed from text input.
+            /// Sub-struct used when parsing a [`CaveSystem`], which is a
+            /// passage between caves and can be parsed from text
+            /// input.
             struct RawPassage<'a> {
                 /// Cave name at one end of the passage.
                 cave1: &'a str,
                 /// Cave name at the other end of passage.
                 cave2: &'a str,
             }
-            impl<'a> Parsable<'a> for RawPassage<'a> {
-                fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+            impl Parsable for RawPassage<'_> {
+                type Parsed<'a> = RawPassage<'a>;
+
+                fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
                     map(
                         separated_pair(alphanumeric1, tag("-"), alphanumeric1),
-                        |(cave1, cave2)| Self { cave1, cave2 },
+                        |(cave1, cave2)| RawPassage { cave1, cave2 },
                     )
                     .parse(input)
                 }
@@ -181,8 +184,8 @@ mod solution {
         }
     }
     impl CaveSystem {
-        /// Determines and returns the set of all possible paths through the cave system,
-        /// only ever visiting small caves at most once.
+        /// Determines and returns the set of all possible paths through the
+        /// cave system, only ever visiting small caves at most once.
         pub fn paths(&self, special_cave: Option<NodeIndex>) -> Paths<'_> {
             // Remaining visits for each cave
             let mut visits_left = HashMap::new();
@@ -216,9 +219,9 @@ mod solution {
             .traverse_tree(Paths::new())
         }
 
-        /// Determines and returns the set of all possible paths through the cave system,
-        /// only ever visiting small caves at most once except for a single small cave, which
-        /// may be visited twice.
+        /// Determines and returns the set of all possible paths through the
+        /// cave system, only ever visiting small caves at most once
+        /// except for a single small cave, which may be visited twice.
         pub fn paths_special(&self) -> HashSet<Vec<&Cave>> {
             let mut paths = HashSet::new();
             for special_cave in self
@@ -236,17 +239,19 @@ mod solution {
     /// The set of unique paths through the cave system.
     type Paths<'a> = HashSet<Vec<&'a Cave>>;
 
-    /// The end of a path through the cave system, which is a node in the tree search.
+    /// The end of a path through the cave system, which is a node in the tree
+    /// search.
     #[derive(Debug)]
     struct PathTip<'a> {
         /// The graph of the cave system.
         graph: &'a UnGraph<Cave, ()>,
         /// The graph node of the cave the ends the current path.
         tip: NodeIndex,
-        /// Maps the cave graph node to the number of visits remaining for that cave.
+        /// Maps the cave graph node to the number of visits remaining for that
+        /// cave.
         visits_left: HashMap<NodeIndex, Infinitable<usize>>,
-        /// The path through the cave system, which includes the current cave as the
-        /// last element.
+        /// The path through the cave system, which includes the current cave as
+        /// the last element.
         path: Vec<&'a Cave>,
     }
     impl<'a> GlobalStateTreeNode for PathTip<'a> {

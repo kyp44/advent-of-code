@@ -72,7 +72,8 @@ mod solution {
         }
     }
 
-    /// A cookie ingredient with its properties, which can be parsed from text input.
+    /// A cookie ingredient with its properties, which can be parsed from text
+    /// input.
     #[derive(Debug)]
     pub struct Ingredient {
         /// How well the cookie absorbs milk.
@@ -86,8 +87,8 @@ mod solution {
         /// How many calories it adds to the cookie.
         calories: i64,
     }
-    impl Parsable<'_> for Ingredient {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Ingredient {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     take_until(":"),
@@ -158,7 +159,8 @@ mod solution {
         }
     }
 
-    /// Recursive [`Iterator`] over all permutations of some number of numeric values that sum to a constant.
+    /// Recursive [`Iterator`] over all permutations of some number of numeric
+    /// values that sum to a constant.
     struct SumPermutations<T> {
         /// Number to which the permutations must sum.
         sum: T,
@@ -168,7 +170,8 @@ mod solution {
         first_iter: RangeInclusive<T>,
         /// Current first element.
         first: T,
-        /// Iterator over the sum permutations for the remaining elements after the first one.
+        /// Iterator over the sum permutations for the remaining elements after
+        /// the first one.
         rest_iter: Box<dyn Iterator<Item = Vec<T>>>,
     }
     impl<T: Copy + Step + num::Num + 'static> SumPermutations<T> {
@@ -206,7 +209,8 @@ mod solution {
         fn next(&mut self) -> Option<Self::Item> {
             match self.rest_iter.next() {
                 Some(mut perm) => {
-                    // There is another permutation for the rest, so just prepend the current first value
+                    // There is another permutation for the rest, so just prepend the current first
+                    // value
                     perm.insert(0, self.first);
                     Some(perm)
                 }
@@ -231,7 +235,8 @@ mod solution {
 
     /// Behavior specific to a particular problem part.
     pub trait Part {
-        /// Determines if a cookie with particular total ingredients is valid to consider for the part.
+        /// Determines if a cookie with particular total ingredients is valid to
+        /// consider for the part.
         fn valid_recipe(_ingredient: &Ingredient) -> bool {
             true
         }

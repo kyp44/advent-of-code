@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -63,7 +62,8 @@ mod solution {
     #[derive(new)]
     struct DiracDie;
     impl DiracDie {
-        /// Rolls the die some number of times and returns a multi-set of the sums of the rolls.
+        /// Rolls the die some number of times and returns a multi-set of the
+        /// sums of the rolls.
         fn roll(&self, num_rolls: usize) -> HashMultiSet<u32> {
             (0..num_rolls)
                 .map(|_| 1..=3)
@@ -73,7 +73,8 @@ mod solution {
         }
     }
 
-    /// The current state of a player, whose initial position can be parsed from text input.
+    /// The current state of a player, whose initial position can be parsed from
+    /// text input.
     #[derive(Debug, Clone)]
     struct Player {
         /// The current position on the board.
@@ -82,7 +83,8 @@ mod solution {
         score: u32,
     }
     impl Player {
-        /// Creates a new player with a particular starting position on the board.
+        /// Creates a new player with a particular starting position on the
+        /// board.
         fn new(position: u32) -> Self {
             Self {
                 position: OffsetNumC::new(position),
@@ -101,8 +103,8 @@ mod solution {
             self.position.a()
         }
     }
-    impl Parsable<'_> for Player {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Player {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 pair(
                     field_line_parser("Player", nom::character::complete::u32),
@@ -117,7 +119,8 @@ mod solution {
     /// The number of die rolls per turn.
     const NUM_ROLLS_PER_TURN: usize = 3;
 
-    /// The current state of a game, the initial state of which can be parsed from text input.
+    /// The current state of a game, the initial state of which can be parsed
+    /// from text input.
     #[derive(Debug, Clone)]
     pub struct Game {
         /// The current state of both players.
@@ -134,8 +137,8 @@ mod solution {
         }
     }
     impl Game {
-        /// Plays the game with the deterministic die and return the loser's score
-        /// times the number of rolls.
+        /// Plays the game with the deterministic die and return the loser's
+        /// score times the number of rolls.
         pub fn play_deterministic(&self) -> u32 {
             let mut game = self.clone();
             let mut die = DeterministicDie::new();
@@ -159,7 +162,8 @@ mod solution {
             }
         }
 
-        /// Plays the game with Dirac die and return the number of universes in which the winning player wins.
+        /// Plays the game with Dirac die and return the number of universes in
+        /// which the winning player wins.
         pub fn play_dirac(&self) -> u64 {
             let state = GameNode::from(self.clone()).traverse_tree(GameGlobalState::default());
             state.num_universes_wins[0].max(state.num_universes_wins[1])
@@ -171,8 +175,9 @@ mod solution {
     struct GameGlobalState {
         /// Number of universes in which each player wins.
         num_universes_wins: [u64; 2],
-        /// Constant multi set in which the elements are each die roll value, and the number of elements is
-        /// the number of universes in which that roll occurs.
+        /// Constant multi set in which the elements are each die roll value,
+        /// and the number of elements is the number of universes in
+        /// which that roll occurs.
         rolls: HashMultiSet<u32>,
     }
     impl Default for GameGlobalState {
@@ -191,7 +196,8 @@ mod solution {
         game: Game,
         /// The player number that just moved to arrive at this state.
         turn: usize,
-        /// The total number of universes in which the current state occurs in this branch.
+        /// The total number of universes in which the current state occurs in
+        /// this branch.
         num_universes: u64,
     }
     impl GameNode {

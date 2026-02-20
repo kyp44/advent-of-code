@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -29,13 +28,14 @@ mod solution {
     use aoc::parse::trim;
     use nom::combinator::map;
 
-    /// The lengths of three sides that may or may not be able to form a triangle.
+    /// The lengths of three sides that may or may not be able to form a
+    /// triangle.
     ///
     /// Can be parsed from text input, which are parsed from a single line.
     #[derive(Debug)]
     pub struct PossibleTriangle([u32; 3]);
-    impl Parsable<'_> for PossibleTriangle {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for PossibleTriangle {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     trim(false, nom::character::complete::u32),
@@ -60,15 +60,16 @@ mod solution {
         /// Returns an [`Iterator`] over [`PossibleTriangle`]s to be counted.
         fn get_triangles(&self) -> impl Iterator<Item = &PossibleTriangle>;
 
-        /// Counts the number of [`PossibleTriangle`]s returned by [`get_triangles`](TriangleCounter::get_triangles)
+        /// Counts the number of [`PossibleTriangle`]s returned by
+        /// [`get_triangles`](TriangleCounter::get_triangles)
         /// that can actually be triangles.
         fn count_triangles(&self) -> u64 {
             self.get_triangles().filter_count(|pt| pt.is_triangle())
         }
     }
 
-    /// Possible triangles that are parsed horizontally from text, with one triangle
-    /// per line as in part one.
+    /// Possible triangles that are parsed horizontally from text, with one
+    /// triangle per line as in part one.
     pub struct HorizontalTriangles {
         /// The list of possible triangles.
         triangles: Vec<PossibleTriangle>,
@@ -88,8 +89,8 @@ mod solution {
         }
     }
 
-    /// Possible triangles that are parsed vertically from text, with one triangle
-    /// taking a part of three lines as in part two.
+    /// Possible triangles that are parsed vertically from text, with one
+    /// triangle taking a part of three lines as in part two.
     pub struct VerticalTriangles {
         /// The list of possible triangles.
         triangles: Vec<PossibleTriangle>,

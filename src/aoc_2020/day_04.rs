@@ -161,11 +161,8 @@ mod solution {
             }
         }
     }
-    impl Parsable<'_> for PassportField {
-        fn parser(input: &str) -> NomParseResult<&str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for PassportField {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(take_until(":"), |s: &str| {
                 s.parse()
                     .unwrap_or_else(|_| panic!("Unknown passport field: {s}"))
@@ -208,11 +205,8 @@ mod solution {
         /// Map from fields to their values.
         field_map: PassportFieldMap,
     }
-    impl Parsable<'_> for Passport {
-        fn parser(input: &str) -> NomParseResult<&str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Passport {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_list1(
                     alt((space1, line_ending)),
@@ -245,7 +239,8 @@ mod solution {
             })
         }
 
-        /// Counts the number of passports in the list that are valid for a particular part of the problem.
+        /// Counts the number of passports in the list that are valid for a
+        /// particular part of the problem.
         pub fn count_valid<P: Part>(&self) -> u64 {
             self.passports.iter().filter_count(|p| p.validate::<P>())
         }

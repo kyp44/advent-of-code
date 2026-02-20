@@ -31,8 +31,8 @@ mod solution {
         /// Inclusive range of `y` values included in the target area.
         range_y: RangeInclusive<i32>,
     }
-    impl Parsable<'_> for TargetArea {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for TargetArea {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             /// This is a [`nom`] parser that parses a single inclusive range.
             ///
             /// This is an internal function of [`TargetArea::parser`].
@@ -69,8 +69,8 @@ mod solution {
         }
     }
     impl TargetArea {
-        /// Returns an [`Iterator`] over the peak `y` positions of the probe for each trajectory
-        /// for which the probe hits the target.
+        /// Returns an [`Iterator`] over the peak `y` positions of the probe for
+        /// each trajectory for which the probe hits the target.
         pub fn peaks(&self) -> impl Iterator<Item = i32> + '_ {
             // Go through every initial velocity that has a chance of hitting the target
             iproduct!(

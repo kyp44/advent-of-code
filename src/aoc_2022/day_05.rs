@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use aoc::prelude::*;
 
 #[cfg(test)]
@@ -36,7 +34,6 @@ mod solution {
         multi::separated_list1,
         sequence::{delimited, preceded},
     };
-    use std::str::FromStr;
 
     /// A cell when parsing the stack data as a grid.
     #[derive(Debug)]
@@ -48,8 +45,8 @@ mod solution {
         /// A numerical stack label.
         Label(u8),
     }
-    impl Parsable<'_> for StackCell {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for StackCell {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(tag("   "), |_| StackCell::Space),
                 map(
@@ -124,15 +121,16 @@ mod solution {
         }
     }
     impl Stacks {
-        /// Returns a mutable stack, or the appropriate error if the stack is not found.
+        /// Returns a mutable stack, or the appropriate error if the stack is
+        /// not found.
         pub fn get_stack(&mut self, num: u8) -> AocResult<&mut Vec<char>> {
             self.map
                 .get_mut(&num)
                 .ok_or_else(|| AocError::Process(format!("Stack '{}' not found", num).into()))
         }
 
-        /// Creates a string from the letters of the crates on the top of each stack,
-        /// in order.
+        /// Creates a string from the letters of the crates on the top of each
+        /// stack, in order.
         pub fn top_crates(&self) -> String {
             self.map.values().filter_map(|stack| stack.last()).collect()
         }
@@ -148,8 +146,8 @@ mod solution {
         /// The stack label to which to move the crates.
         to: u8,
     }
-    impl Parsable<'_> for Move {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Move {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     preceded(tag("move"), separated(nom::character::complete::u8)),
@@ -226,7 +224,8 @@ mod solution {
         }
     }
 
-    /// The problem definition, consisting of the crate stacks and list of moves.
+    /// The problem definition, consisting of the crate stacks and list of
+    /// moves.
     #[derive(Debug)]
     pub struct Problem {
         /// The stacks of crates.

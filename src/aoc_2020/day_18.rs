@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -64,7 +63,8 @@ mod solution {
             }
         }
 
-        /// Compares the operator based on the precedence defined in the [`Part`].
+        /// Compares the operator based on the precedence defined in the
+        /// [`Part`].
         fn cmp(&self, other: &Operator, part: &dyn Part) -> Ordering {
             part.precedence(self).cmp(&part.precedence(other))
         }
@@ -128,8 +128,8 @@ mod solution {
         /// The list of parsed elements.
         elements: Vec<Element>,
     }
-    impl Parsable<'_> for Expression {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Expression {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             all_consuming(map(
                 many1(alt((
                     map(trim(false, nom::character::complete::u64), Element::Number),
@@ -147,8 +147,8 @@ mod solution {
         }
     }
     impl Expression {
-        /// Verifies that an expression is valid and does not contain things like
-        /// two operands in a row or mismatched parenthesis.
+        /// Verifies that an expression is valid and does not contain things
+        /// like two operands in a row or mismatched parenthesis.
         fn is_valid(&self) -> bool {
             let mut depth: i32 = 0;
             let mut iter = self.elements.iter();

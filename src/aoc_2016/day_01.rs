@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -30,26 +29,28 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use aoc::parse::trim;
+    use itertools::Itertools;
     use nom::{branch::alt, bytes::complete::tag, combinator::map, sequence::pair};
-    use std::{collections::HashSet, str::FromStr};
+    use std::collections::HashSet;
 
     use super::*;
 
-    /// The vector type used for intersection positions between blocks where (0, 0) is the starting position.
+    /// The vector type used for intersection positions between blocks where (0,
+    /// 0) is the starting position.
     type Vector = euclid::default::Vector2D<i32>;
 
     /// A direction to turn.
     ///
     /// Can be parsed from text input.
-    #[derive(Clone, Copy)]
-    enum TurnDirection {
+    #[derive(Clone, Copy, Debug)]
+    pub enum TurnDirection {
         /// Turn to the left.
         Left,
         /// Turn to the right.
         Right,
     }
-    impl<'a> Parsable<'a> for TurnDirection {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for TurnDirection {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(tag("L"), |_| Self::Left),
                 map(tag("R"), |_| Self::Right),
@@ -58,17 +59,18 @@ mod solution {
         }
     }
 
-    /// A step in the [`Instructions`].
+    /// An instruction to turn and then walk some number of blocks.
     ///
     /// Can be parsed from text input.
-    struct Step {
+    #[derive(Debug)]
+    pub struct WalkingInstruction {
         /// The direction to turn before walking.
         pub turn_direction: TurnDirection,
-        /// The distance to walk after turning.
+        /// The number of blocks to walk after turning.
         pub distance: u16,
     }
-    impl<'a> Parsable<'a> for Step {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for WalkingInstruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 trim(
                     false,
@@ -82,11 +84,27 @@ mod solution {
             .parse(input)
         }
     }
+    impl Instruction for WalkingInstruction {
+        type Registers = Location;
+        type YieldItem = Vector;
+        type Error = AocError;
+
+        fn execute(
+            &self,
+            registers: &mut Self::Registers,
+        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+            registers.facing = registers.facing.turn(self.turn_direction);
+            registers.position += registers.facing.as_vector() * i32::from(self.distance);
+
+            Ok(Executed::no_jump(registers.position))
+        }
+    }
 
     /// A cardinal direction.
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Debug, Default)]
     enum Direction {
         /// North, or positive `y`.
+        #[default]
         North,
         /// East, or positive `x`.
         East,
@@ -127,7 +145,8 @@ mod solution {
             Self::from(dir)
         }
 
-        /// Returns a vector corresponding to walking one block in this direction.
+        /// Returns a vector corresponding to walking one block in this
+        /// direction.
         pub fn as_vector(&self) -> Vector {
             match self {
                 Direction::North => Vector::unit_y(),
@@ -137,11 +156,37 @@ mod solution {
             }
         }
 
-        /// Returns an [`Iterator`] over every intersection passed through when walking
-        /// this direction `distance` blocks from the `starting_position`.
+        /// Returns the direction and distance given a direction vector.
+        pub fn from_vector(v: Vector) -> Option<(Self, u16)> {
+            if v.y == 0 {
+                if v.x > 0 {
+                    Some(Self::East)
+                } else if v.x < 0 {
+                    Some(Self::West)
+                } else {
+                    None
+                }
+                .map(|dir| (dir, v.x.abs().try_into().unwrap()))
+            } else if v.x == 0 {
+                if v.y > 0 {
+                    Some(Self::North)
+                } else if v.y < 0 {
+                    Some(Self::South)
+                } else {
+                    None
+                }
+                .map(|dir| (dir, v.y.abs().try_into().unwrap()))
+            } else {
+                None
+            }
+        }
+
+        /// Returns an [`Iterator`] over every intersection passed through when
+        /// walking this direction `distance` blocks from the
+        /// `starting_position`.
         ///
-        /// NOTE: The `starting_position` is not the first item, which is one block
-        /// in this direction.
+        /// NOTE: The `starting_position` is not the first item, which is one
+        /// block in this direction.
         pub fn every_block(
             &self,
             starting_position: Vector,
@@ -154,62 +199,41 @@ mod solution {
         }
     }
 
-    /// A set of [`Step`]s in order.
+    /// Our current location.
+    #[derive(Default)]
+    pub struct Location {
+        /// The position of the block where we are.
+        position: Vector,
+        /// The direction we are facing.
+        facing: Direction,
+    }
+
+    /// Executes the instructions and returns the first intersection that is
+    /// visited twice, or `None` if no intersection is ever visited twice.
     ///
-    /// Can be parsed from text input.
-    pub struct Instructions {
-        /// The list of steps.
-        steps: Vec<Step>,
-    }
-    impl FromStr for Instructions {
-        type Err = NomParseError;
+    /// NOTE: This counts all intersections walked through, not just
+    /// intersections at the end of each step.
+    pub fn first_visited_twice(program: &Program<WalkingInstruction>) -> Option<Vector> {
+        let initial_location = Location::default();
+        let mut visited = HashSet::<Vector>::new();
 
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            Ok(Self {
-                steps: Step::from_csv(s)?,
-            })
-        }
-    }
-    impl Instructions {
-        /// Executes the instructions and return the final intersection at the end.
-        pub fn final_position(&self) -> Vector {
-            let mut position = Vector::zero();
-            let mut direction = Direction::North;
+        visited.insert(initial_location.position);
+        for (start, end) in (std::iter::once(initial_location.position)
+            .chain(program.executor(initial_location).map(|r| r.unwrap())))
+        .tuple_windows()
+        {
+            // Walk along the path block by block, adding each position to the visited set
+            let (dir, dist) = Direction::from_vector(end - start)?;
 
-            for step in self.steps.iter() {
-                direction = direction.turn(step.turn_direction);
-                position += direction.as_vector() * i32::from(step.distance);
-            }
-
-            position
-        }
-
-        /// Executes the instructions and returns the first intersection that is
-        /// visited twice, or `None` if no intersection is ever visited twice.
-        ///
-        /// NOTE: This counts all intersections walked through, not just intersections
-        /// at the end of each step.
-        pub fn first_visited_twice(&self) -> Option<Vector> {
-            let mut position = Vector::zero();
-            let mut visited = HashSet::<Vector>::new();
-            let mut direction = Direction::North;
-
-            visited.insert(position);
-            for step in self.steps.iter() {
-                // Walk along the path block by block, adding each position to the visited set
-                direction = direction.turn(step.turn_direction);
-
-                for pos in direction.every_block(position, step.distance) {
-                    // Have we been here before?
-                    if visited.replace(pos).is_some() {
-                        return Some(pos);
-                    }
-                    position = pos;
+            for pos in dir.every_block(start, dist) {
+                // Have we been here before?
+                if !visited.insert(pos) {
+                    return Some(pos);
                 }
             }
-
-            None
         }
+
+        None
     }
 }
 
@@ -219,15 +243,22 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 1,
     name: "No Time for a Taxicab",
-    preprocessor: Some(|input| Ok(Box::new(Instructions::from_str(input)?).into())),
+    preprocessor: Some(|input| {
+        Ok(Box::new(Program::<WalkingInstruction>::new(
+            WalkingInstruction::from_csv(input)?,
+        ))
+        .into())
+    }),
     solvers: &[
         // Part one
         |input| {
             // Process
             Ok(u64::try_from(
                 input
-                    .expect_data::<Instructions>()?
-                    .final_position()
+                    .expect_data::<Program<WalkingInstruction>>()?
+                    .execute(Location::default())?
+                    .last_yielded
+                    .unwrap()
                     .manhattan_len(),
             )
             .unwrap()
@@ -237,9 +268,7 @@ pub const SOLUTION: Solution = Solution {
         |input| {
             // Process
             Ok(u64::try_from(
-                input
-                    .expect_data::<Instructions>()?
-                    .first_visited_twice()
+                first_visited_twice(input.expect_data::<Program<WalkingInstruction>>()?)
                     .ok_or(AocError::NoSolution)?
                     .manhattan_len(),
             )

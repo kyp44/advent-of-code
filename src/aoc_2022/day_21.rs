@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -126,8 +125,8 @@ mod solution {
             })
         }
     }
-    impl Parsable<'_> for Operation {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Operation {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(trim(false, tag("+")), |_| Self::Add),
                 map(trim(false, tag("-")), |_| Self::Subtract),
@@ -155,12 +154,14 @@ mod solution {
             b: S,
         },
     }
-    impl<'a> Parsable<'a> for MonkeyAction<&'a str> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for MonkeyAction<&'_ str> {
+        type Parsed<'a> = MonkeyAction<&'a str>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(nom::character::complete::i64, MonkeyAction::Yell),
                 map((alpha1, Operation::parser, alpha1), |(a, operation, b)| {
-                    Self::Arithmetic { operation, a, b }
+                    MonkeyAction::Arithmetic { operation, a, b }
                 }),
             ))
             .parse(input)
@@ -187,11 +188,13 @@ mod solution {
         /// The action that the monkey takes in order to yell its number.
         action: MonkeyAction<&'a str>,
     }
-    impl<'a> Parsable<'a> for MonkeyParse<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for MonkeyParse<'_> {
+        type Parsed<'a> = MonkeyParse<'a>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(alpha1, trim(false, tag(":")), MonkeyAction::parser),
-                |(name, action)| Self { name, action },
+                |(name, action)| MonkeyParse { name, action },
             )
             .parse(input)
         }
@@ -244,7 +247,8 @@ mod solution {
         /// Creates the recursive `root` expression from a [`MonkeyMap`]
         /// for a particular [`Part`].
         pub fn from_monkeys<P: Part>(monkeys: &MonkeyMap) -> AocResult<Self> {
-            /// This is a recursive internal function of [`Expression::from_monkeys`].
+            /// This is a recursive internal function of
+            /// [`Expression::from_monkeys`].
             fn convert_rec<P: Part>(monkeys: &MonkeyMap, name: &str) -> AocResult<Expression> {
                 let action = P::get_monkey_action(monkeys, name)?;
 
@@ -264,8 +268,8 @@ mod solution {
 
         /// Attempts to recursively evaluate the expression to a single number.
         ///
-        /// Returns the final number if this is possible, or [`None`] if the expression
-        /// contains an [`Expression::Unknown`].
+        /// Returns the final number if this is possible, or [`None`] if the
+        /// expression contains an [`Expression::Unknown`].
         /// An error can also be returned if something goes wrong.
         pub fn try_to_reduce(&self) -> AocResult<Option<Num>> {
             Ok(match self {
@@ -327,8 +331,9 @@ mod solution {
             .and_then(|n| eo.unknown.solve_expression(n))
         }
 
-        /// Returns an [`ExpressionOperation`] for a arithmetic operation expression
-        /// in which exactly one operand contains an unknown variable.
+        /// Returns an [`ExpressionOperation`] for a arithmetic operation
+        /// expression in which exactly one operand contains an unknown
+        /// variable.
         ///
         /// An error is returned if the required conditions are not met.
         fn expression_operation(self) -> AocResult<ExpressionOperation> {
@@ -373,7 +378,8 @@ mod solution {
         /// Looks up the action, given the [`MonkeyMap`], for a monkey with a
         /// given `name` and returns it.
         ///
-        /// This allows for the injection of alternative actions for special monkeys.
+        /// This allows for the injection of alternative actions for special
+        /// monkeys.
         fn get_monkey_action<'a>(
             monkeys: &'a MonkeyMap,
             name: &str,

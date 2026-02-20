@@ -54,8 +54,10 @@ mod solution {
             data: &'a str,
         },
     }
-    impl<'a> Parsable<'a> for CompressedChunk<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for CompressedChunk<'_> {
+        type Parsed<'a> = CompressedChunk<'a>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             let (rem, which) = alt((
                 map(
                     trim(
@@ -75,12 +77,12 @@ mod solution {
             .parse(input)?;
 
             Ok(match which {
-                Either::Left(s) => (rem, Self::String(s)),
+                Either::Left(s) => (rem, CompressedChunk::String(s)),
                 Either::Right((nc, nr)) => {
                     let (rem, data) = take(nc).parse(rem)?;
                     (
                         rem,
-                        Self::Marker {
+                        CompressedChunk::Marker {
                             num_repeats: nr,
                             data,
                         },

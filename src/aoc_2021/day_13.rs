@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -52,11 +51,12 @@ mod solution {
     };
     use std::{collections::HashSet, fmt::Debug, rc::Rc};
 
-    /// A dot location on the transparent page, which can be parsed from text input.
+    /// A dot location on the transparent page, which can be parsed from text
+    /// input.
     #[derive(Deref, AsRef, PartialEq, Eq, Hash, Clone)]
     struct Dot(AnyGridPoint);
-    impl Parsable<'_> for Dot {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Dot {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
                     nom::character::complete::i32,
@@ -135,8 +135,8 @@ mod solution {
         /// Horizontal fold at the `y` coordinate of the horizontal line.
         Horizontal(isize),
     }
-    impl Parsable<'_> for Fold {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Fold {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 preceded(
                     preceded(tag("fold along"), multispace1),

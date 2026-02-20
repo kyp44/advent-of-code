@@ -1,8 +1,9 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
+    use std::collections::VecDeque;
+
     use super::*;
     use aoc::prelude_test::*;
 
@@ -31,12 +32,15 @@ mod x 2
 div w 2
 mod w 2";
 
-        let program = Program::from_str(input).unwrap();
+        let program = Program::<AluInstruction>::parse(input).unwrap();
 
         let check = |n: Number, regs: (Number, Number, Number, Number)| {
             assert_eq!(
-                program.execute(&[n]).unwrap(),
-                Registers::new(regs.0, regs.1, regs.2, regs.3)
+                program
+                    .execute(Registers::default([n].into_iter().collect()))
+                    .unwrap()
+                    .into_registers(),
+                Registers::new(regs.0, regs.1, regs.2, regs.3, VecDeque::default())
             );
         };
 
@@ -53,8 +57,11 @@ mod w 2";
 
 /// Contains solution implementation items.
 mod solution {
-    use enum_map::{Enum, EnumMap, enum_map};
+    use std::collections::{HashMap, VecDeque};
+
+    use enum_map::Enum;
     use itertools::Itertools;
+    use maplit::hashmap;
     use nom::{
         branch::alt,
         bytes::complete::tag,
@@ -62,15 +69,15 @@ mod solution {
         combinator::{map, opt},
         sequence::{pair, preceded},
     };
-    use std::str::FromStr;
 
     use super::*;
 
     /// Type to use for ALU numbers.
     pub type Number = i64;
 
-    /// Represents one of the ALU registers, which can be parsed from text input.
-    #[derive(Debug, Enum, Clone, Copy)]
+    /// Represents one of the ALU registers, which can be parsed from text
+    /// input.
+    #[derive(Debug, Enum, Clone, Copy, PartialEq, Eq, Hash)]
     pub enum Register {
         /// The `w` register.
         W,
@@ -81,11 +88,8 @@ mod solution {
         /// The `z` register.
         Z,
     }
-    impl<'a> Parsable<'a> for Register {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Register {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(one_of("wxyz"), |c| match c {
                 'w' => Self::W,
                 'x' => Self::X,
@@ -97,19 +101,56 @@ mod solution {
         }
     }
 
+    /// A set of registers on which instructions can operate.
+    #[derive(Debug, PartialEq, Eq, Clone)]
+    pub struct Registers {
+        /// Values stored in each register.
+        values: HashMap<Register, Number>,
+        /// Input values.
+        inputs: VecDeque<Number>,
+    }
+    impl Registers {
+        /// Creates a new set of registers with the specified values.
+        pub fn new(w: Number, x: Number, y: Number, z: Number, inputs: VecDeque<Number>) -> Self {
+            Self {
+                values: hashmap! {
+                    Register::W => w,
+                    Register::X => x,
+                    Register::Y => y,
+                    Register::Z => z,
+                },
+                inputs,
+            }
+        }
+
+        /// Returns the starting state of the registers.
+        pub fn default(inputs: VecDeque<Number>) -> Self {
+            Self::new(0, 0, 0, 0, inputs)
+        }
+    }
+    impl SimpleRegisters for Registers {
+        type Key = Register;
+        type Value = Number;
+
+        fn map(&self) -> &HashMap<Self::Key, Self::Value> {
+            &self.values
+        }
+
+        fn map_mut(&mut self) -> &mut HashMap<Self::Key, Self::Value> {
+            &mut self.values
+        }
+    }
+
     /// Represents an operand.
     #[derive(Debug)]
-    enum Operand {
+    pub enum Operand {
         /// A register.
         Register(Register),
         /// A number literal.
         Number(Number),
     }
-    impl<'a> Parsable<'a> for Operand {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Operand {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(Register::parser, Self::Register),
                 map(nom::character::complete::i64, Self::Number),
@@ -117,10 +158,19 @@ mod solution {
             .parse(input)
         }
     }
+    impl Operand {
+        /// Returns the operand value regardless of its type.
+        pub fn value(&self, registers: &Registers) -> Number {
+            match self {
+                Operand::Register(r) => *registers.get(r),
+                Operand::Number(n) => *n,
+            }
+        }
+    }
 
     /// Represents a single ALU instruction.
     #[derive(Debug)]
-    enum Instruction {
+    pub enum AluInstruction {
         /// `inp` read input instruction.
         ReadInput(Register),
         /// `add` addition instruction.
@@ -134,14 +184,12 @@ mod solution {
         /// `equ` equality test instruction.
         Equal(Register, Operand),
     }
-    impl<'a> Parsable<'a> for Instruction {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for AluInstruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             /// This is an internal function of [`Instruction::parser`].
             ///
-            /// [`nom`] parser to parse a pair of operands, or rather a [`Register`] then an [`Operand`].
+            /// [`nom`] parser to parse a pair of operands, or rather a
+            /// [`Register`] then an [`Operand`].
             fn operands_parser(input: &str) -> NomParseResult<&str, (Register, Option<Operand>)> {
                 preceded(
                     space1,
@@ -173,111 +221,33 @@ mod solution {
             .parse(input)
         }
     }
+    impl Instruction for AluInstruction {
+        type Registers = Registers;
+        type YieldItem = ();
+        type Error = AocError;
 
-    /// A set of registers on which instructions can operate.
-    #[derive(Debug, PartialEq, Eq)]
-    pub struct Registers {
-        /// Values stored in each register.
-        values: EnumMap<Register, Number>,
-    }
-    impl Registers {
-        /// Creates a new set of registers with the specified values.
-        pub fn new(w: Number, x: Number, y: Number, z: Number) -> Self {
-            Self {
-                values: enum_map! {
-                    Register::W => w,
-                    Register::X => x,
-                    Register::Y => y,
-                    Register::Z => z,
-                },
-            }
-        }
-
-        /// Gets the value in a register.
-        pub fn value(&self, reg: Register) -> Number {
-            self.values[reg]
-        }
-
-        /// Gets the value of an operand.
-        fn operand_value(&self, operand: &Operand) -> Number {
-            match operand {
-                Operand::Register(reg) => self.values[*reg],
-                Operand::Number(n) => *n,
-            }
-        }
-
-        /// Executes a single instruction, affecting the appropriate registers.
         fn execute(
-            &mut self,
-            instruction: &Instruction,
-            inputs: &mut impl Iterator<Item = Number>,
-        ) -> AocResult<()> {
-            match instruction {
-                Instruction::ReadInput(reg) => {
-                    self.values[*reg] = inputs
-                        .next()
-                        .ok_or(AocError::Process("Ran out of program inputs!".into()))?;
+            &self,
+            registers: &mut Self::Registers,
+        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+            match self {
+                AluInstruction::ReadInput(reg) => {
+                    let next_input = registers
+                        .inputs
+                        .pop_front()
+                        .expect("Ran out of program inputs!");
+                    registers.set(*reg, next_input);
                 }
-                Instruction::Add(reg, op) => self.values[*reg] += self.operand_value(op),
-                Instruction::Multiply(reg, op) => self.values[*reg] *= self.operand_value(op),
-                Instruction::Divide(reg, op) => self.values[*reg] /= self.operand_value(op),
-                Instruction::Modulo(reg, op) => self.values[*reg] %= self.operand_value(op),
-                Instruction::Equal(reg, op) => {
-                    self.values[*reg] = (self.values[*reg] == self.operand_value(op)).into()
+                AluInstruction::Add(reg, op) => *registers.get_mut(reg) += op.value(registers),
+                AluInstruction::Multiply(reg, op) => *registers.get_mut(reg) *= op.value(registers),
+                AluInstruction::Divide(reg, op) => *registers.get_mut(reg) /= op.value(registers),
+                AluInstruction::Modulo(reg, op) => *registers.get_mut(reg) %= op.value(registers),
+                AluInstruction::Equal(reg, op) => {
+                    registers.set(*reg, (*registers.get(reg) == op.value(registers)).into());
                 }
             }
 
-            Ok(())
-        }
-    }
-    impl Default for Registers {
-        fn default() -> Self {
-            Self::new(0, 0, 0, 0)
-        }
-    }
-
-    /// An ALU program that can be parsed from text input.
-    pub struct Program {
-        /// All the instructions in execution order.
-        instructions: Vec<Instruction>,
-    }
-    impl FromStr for Program {
-        type Err = AocError;
-
-        fn from_str(s: &str) -> Result<Self, Self::Err> {
-            let instructions = Instruction::gather(s.lines().filter_map(|line| {
-                let trimmed = line.trim();
-
-                // Filter out blank and comment lines
-                if trimmed.starts_with('#') || trimmed.is_empty() {
-                    None
-                } else {
-                    Some(trimmed)
-                }
-            }))?;
-
-            Ok(Self { instructions })
-        }
-    }
-    impl Program {
-        /// Executes the ALU program given a number of inputs.
-        pub fn execute(&self, inputs: &[Number]) -> AocResult<Registers> {
-            let mut registers = Registers::default();
-            let mut inputs = inputs.iter().copied();
-
-            // Run every instruction
-            for instruction in self.instructions.iter() {
-                registers.execute(instruction, &mut inputs)?;
-            }
-
-            // Ensure that every input was used
-            if inputs.count() > 0 {
-                Err(AocError::Process(
-                    "Not all inputs were used by the program".into(),
-                ))
-            } else {
-                Ok(registers)
-            }
+            Ok(Executed::default())
         }
     }
 
@@ -285,7 +255,7 @@ mod solution {
     ///
     /// Described further in the notes.
     pub fn find_solution(
-        program: &Program,
+        program: &Program<AluInstruction>,
         digit_iter: impl Iterator<Item = Number> + Clone,
     ) -> AocResult<Number> {
         /// This is an internal function of [`find_solution`].
@@ -311,8 +281,8 @@ mod solution {
 
         /// This is an internal function of [`find_solution`].
         ///
-        /// Converts an array of digits into a number with the first digit being the
-        /// least significant.
+        /// Converts an array of digits into a number with the first digit being
+        /// the least significant.
         fn digits_to_number(digits: &[Number]) -> Number {
             digits
                 .iter()
@@ -322,7 +292,8 @@ mod solution {
                 .sum()
         }
 
-        // Look for all potentially valid model numbers from the analysis (see the notes)
+        // Look for all potentially valid model numbers from the analysis (see the
+        // notes)
         for digs in (0..7).map(|_| digit_iter.clone()).multi_cartesian_product() {
             // Extract the digits
             let d1 = digs[0];
@@ -392,8 +363,14 @@ mod solution {
             // We should have a valid one!
             let digits = [d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14];
 
-            // Verify that it is in fact valid
-            assert_eq!(program.execute(&digits)?.value(Register::Z), 0);
+            // Run the program and verify that it is in fact valid
+            let registers = program
+                .execute(Registers::default(digits.iter().copied().collect()))?
+                .into_registers();
+            assert_eq!(*registers.get(&Register::Z), 0);
+            registers.inputs.is_empty().ok_or(AocError::Process(
+                "Not all inputs were used by the program".into(),
+            ))?;
 
             return Ok(digits_to_number(&digits));
         }
@@ -408,18 +385,21 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 24,
     name: "Arithmetic Logic Unit",
-    preprocessor: Some(|input| Ok(Box::new(Program::from_str(input)?).into())),
+    preprocessor: Some(|input| Ok(Box::new(Program::<AluInstruction>::parse(input)?).into())),
     solvers: &[
         // Part one
         |input| {
             // Process
-            find_solution(input.expect_data::<Program>()?, (1..=9).rev())
-                .map(|n| Answer::Unsigned(n.try_into().unwrap()))
+            find_solution(
+                input.expect_data::<Program<AluInstruction>>()?,
+                (1..=9).rev(),
+            )
+            .map(|n| Answer::Unsigned(n.try_into().unwrap()))
         },
         // Part one
         |input| {
             // Process
-            find_solution(input.expect_data::<Program>()?, 1..=9)
+            find_solution(input.expect_data::<Program<AluInstruction>>()?, 1..=9)
                 .map(|n| Answer::Unsigned(n.try_into().unwrap()))
         },
     ],

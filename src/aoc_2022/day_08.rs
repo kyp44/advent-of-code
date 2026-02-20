@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -61,17 +60,19 @@ mod solution {
         }
     }
     impl TreePatch {
-        /// Returns a list of the trees seen relative to a particular `tree`, in order.
+        /// Returns a list of the trees seen relative to a particular `tree`, in
+        /// order.
         ///
         /// The direction to look is `cardinal_dir`, but this has a different
         /// meaning depending on the `look_dir`.
-        /// If looking in from outside the patch the look from position is in the
-        /// `cardinal_dir` from the tree.
-        /// As an example, if `cardinal_dir` is [`CardinalDirection::Left`], then we
-        /// look right in at the tree from the outside to the left of the patch.
-        /// The order of the trees will be reversed whether looking in or looking out.
-        /// We include the `tree` itself in the list if `include_tree` is `true`, otherwise
-        /// it is not included.
+        /// If looking in from outside the patch the look from position is in
+        /// the `cardinal_dir` from the tree.
+        /// As an example, if `cardinal_dir` is [`CardinalDirection::Left`],
+        /// then we look right in at the tree from the outside to the
+        /// left of the patch. The order of the trees will be reversed
+        /// whether looking in or looking out. We include the `tree`
+        /// itself in the list if `include_tree` is `true`, otherwise it
+        /// is not included.
         fn trees_seen(
             &self,
             tree: &GridPoint,
@@ -152,10 +153,11 @@ mod solution {
             }
         }
 
-        /// Returns whether a particular `tree` is visible from outside the patch.
+        /// Returns whether a particular `tree` is visible from outside the
+        /// patch.
         ///
-        /// Refer to [`TreePatch::trees_seen`] for a discussion of the meaning of the
-        /// `dir`.
+        /// Refer to [`TreePatch::trees_seen`] for a discussion of the meaning
+        /// of the `dir`.
         fn visible(&self, dir: CardinalDirection, tree: &GridPoint) -> bool {
             let mut trees = self.trees_seen(tree, dir, LookDirection::In, true);
 
@@ -173,18 +175,19 @@ mod solution {
             visible
         }
 
-        /// Calculates the number of trees that are visible from outside the patch
-        /// from at least one direction.
+        /// Calculates the number of trees that are visible from outside the
+        /// patch from at least one direction.
         pub fn num_visible(&self) -> u64 {
             self.grid
                 .all_points()
                 .filter_count(|tree| CardinalDirection::iter().any(|dir| self.visible(dir, tree)))
         }
 
-        /// Returns how many other trees we can see from a potential tree house built
-        /// on a particular `tree`.
+        /// Returns how many other trees we can see from a potential tree house
+        /// built on a particular `tree`.
         ///
-        /// This is when looking out in a given `dir` from the potential tree house.
+        /// This is when looking out in a given `dir` from the potential tree
+        /// house.
         fn viewing_distance(&self, dir: CardinalDirection, tree: &GridPoint) -> u64 {
             let height = *self.grid.get(tree);
             let trees = self.trees_seen(tree, dir, LookDirection::Out, false);
@@ -207,8 +210,8 @@ mod solution {
                 .product()
         }
 
-        /// Calculates the best possible scenic score, which is where we would like
-        /// to build our tree house.
+        /// Calculates the best possible scenic score, which is where we would
+        /// like to build our tree house.
         pub fn best_scenic_score(&self) -> u64 {
             self.grid
                 .all_points()

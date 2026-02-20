@@ -49,7 +49,8 @@ mod solution {
     };
     use std::{collections::HashSet, convert::TryInto, str::FromStr};
 
-    /// The deck of space cards for a player, which can be parsed from text input.
+    /// The deck of space cards for a player, which can be parsed from text
+    /// input.
     #[derive(Debug, Clone, PartialEq, Eq, Hash)]
     pub struct Deck {
         /// Player number (1 or 2).
@@ -57,8 +58,8 @@ mod solution {
         /// Card values in order from bottom to top.
         cards: Vec<u8>,
     }
-    impl Parsable<'_> for Deck {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Deck {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 pair(
                     delimited(
@@ -82,7 +83,8 @@ mod solution {
             self.cards.pop()
         }
 
-        /// Returns whether the deck is exhausted, that is there are no cards left.
+        /// Returns whether the deck is exhausted, that is there are no cards
+        /// left.
         fn done(&self) -> bool {
             self.cards.is_empty()
         }
@@ -230,7 +232,8 @@ mod solution {
         }
     }
     impl Game {
-        /// Makes a new game from two fresh initial decks of cards for each player.
+        /// Makes a new game from two fresh initial decks of cards for each
+        /// player.
         fn make_new(&self, cards1: &[u8], cards2: &[u8]) -> Game {
             Game {
                 player1: self.player1.make_new(cards1),

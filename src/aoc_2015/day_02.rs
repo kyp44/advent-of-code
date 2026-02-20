@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -92,12 +91,14 @@ mod solution {
         }
     }
     impl Presents {
-        /// Calculates the total wrapping paper needed to wrap all the presents in square feet.
+        /// Calculates the total wrapping paper needed to wrap all the presents
+        /// in square feet.
         pub fn needed_paper(&self) -> u64 {
             self.presents.iter().map(|p| p.needed_paper()).sum()
         }
 
-        /// Calculates the total ribbon paper needed to wrap all the presents in feet.
+        /// Calculates the total ribbon paper needed to wrap all the presents in
+        /// feet.
         pub fn needed_ribbon(&self) -> u64 {
             self.presents.iter().map(|p| p.needed_ribbon()).sum()
         }

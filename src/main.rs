@@ -17,6 +17,10 @@
 #![feature(iter_array_chunks)]
 #![feature(iterator_try_collect)]
 #![feature(generic_const_exprs)]
+// We would like to use this in many [Instruction::Error] types but apparently the ? operator cannot
+// convert the ! error type into any other type. We keep this so that we will be notified when it is
+// stabilized.
+#![feature(never_type)]
 #![feature(bool_to_result)]
 #![feature(impl_trait_in_assoc_type)]
 #![feature(try_blocks)]

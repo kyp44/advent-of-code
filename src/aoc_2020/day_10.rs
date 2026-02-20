@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use aoc::prelude::*;
 
 #[cfg(test)]
@@ -161,12 +159,14 @@ mod solution {
         }
     }
     impl AdapterSet {
-        /// Returns an [`Iterator`] over the difference between the ordered adapters/joltages.
+        /// Returns an [`Iterator`] over the difference between the ordered
+        /// adapters/joltages.
         fn differences(&self) -> impl Iterator<Item = AdapterDifference> + '_ {
             self.adapters.windows(2).map(|w| w[1] - w[0])
         }
 
-        /// Counts the number of adapter transitions that have a particular joltage difference.
+        /// Counts the number of adapter transitions that have a particular
+        /// joltage difference.
         pub fn count_joltage_differences(&self, difference: u32) -> usize {
             // Verify that the sorted adapters are all compatible
             self.differences().filter_count(|diff| match diff {
@@ -177,9 +177,10 @@ mod solution {
 
         /// Counts the number of possible arrangements of the adapters.
         pub fn count_arrangements(&self) -> usize {
-            // NOTE: We could theoretically use aoc::tree_search::GlobalStateTreeNode along with
-            // the CountLeaves global state, but the tree is far too large so that the below special
-            // algorithm is needed to solve in a reasonable time.
+            // NOTE: We could theoretically use aoc::tree_search::GlobalStateTreeNode along
+            // with the CountLeaves global state, but the tree is far too large
+            // so that the below special algorithm is needed to solve in a
+            // reasonable time.
 
             // For each adapter we store the number of variations between it and the device
             // if we were to keep the adapter chain between it and the outlet.
@@ -188,8 +189,8 @@ mod solution {
             // The previous recent number of variations
             let mut last_var = 1;
 
-            // The algorithm here works work backwards just because it's more natural to take slices
-            // forward rather than backward.
+            // The algorithm here works work backwards just because it's more natural to
+            // take slices forward rather than backward.
             for (i, v) in self.adapters.iter().enumerate().rev() {
                 // Each new number of variations is then the sum of any potential number
                 // of variations if there are adapters with any of the next three consecutive

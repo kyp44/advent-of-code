@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -21,7 +20,8 @@ mod solution {
 
     /// Behavior specific to one particular part of the problem.
     pub trait Part {
-        /// Returns the amount of fuel used for a given horizontal distance traveled.
+        /// Returns the amount of fuel used for a given horizontal distance
+        /// traveled.
         fn fuel_used(dist: u64) -> u64;
     }
 

@@ -1,3 +1,4 @@
+use aoc::grid::{Digit, StdBool};
 use aoc::prelude::*;
 
 #[cfg(test)]
@@ -24,7 +25,7 @@ turn off 499,499 through 500,500";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::grid::{Digit, StdBool};
+    use aoc::program::Executed;
     use derive_more::{From, Into};
     use euclid::point2;
     use nom::{
@@ -34,6 +35,7 @@ mod solution {
         combinator::{map, map_opt, value},
         sequence::separated_pair,
     };
+    use std::marker::PhantomData;
 
     /// An action that can occur for a light.
     #[derive(Clone)]
@@ -45,8 +47,8 @@ mod solution {
         /// Turn the light off.
         TurnOff,
     }
-    impl Parsable<'_> for Action {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Action {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             use Action::*;
             alt((
                 value(TurnOn, tag("turn on")),
@@ -72,8 +74,8 @@ mod solution {
     /// A Rectangle of lights that can be parsed from text input.
     #[derive(Into)]
     pub struct ParseRect(GridBox);
-    impl Parsable<'_> for ParseRect {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for ParseRect {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map_opt(
                 separated_pair(point_parser, (space1, tag("through"), space1), point_parser),
                 |(ll, ur)| {
@@ -91,22 +93,41 @@ mod solution {
     /// Instruction to perform an action on a rectangle of lights.
     ///
     /// Can be parsed from text input.
-    pub struct Instruction {
+    pub struct GridInstruction<P> {
         /// Action to perform on all of the lights.
         pub action: Action,
         /// Rectangle of lights over which to perform the action.
         pub rect: GridBox,
+        /// Phantom data for the part type `T`.
+        _phant: PhantomData<P>,
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl<T> Parsable for GridInstruction<T> {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(Action::parser, space1, ParseRect::parser),
-                |(a, r)| Instruction {
+                |(a, r)| GridInstruction {
                     action: a,
                     rect: r.into(),
+                    _phant: Default::default(),
                 },
             )
             .parse(input.trim())
+        }
+    }
+    impl<P: Part> Instruction for GridInstruction<P> {
+        type Registers = LightGrid<P>;
+        type YieldItem = ();
+        type Error = AocError;
+
+        fn execute(
+            &self,
+            registers: &mut Self::Registers,
+        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+            for point in self.rect.all_points() {
+                registers.0.get_mut(&point).update(&self.action);
+            }
+
+            Ok(Executed::default())
         }
     }
 
@@ -140,20 +161,10 @@ mod solution {
     /// Grid of lights.
     #[derive(From)]
     pub struct LightGrid<T>(Grid<T>);
-    impl<T: Clone + Part + Default> LightGrid<T> {
+    impl<P: Clone + Part + Default> LightGrid<P> {
         /// Creates a new square grid of lights of the given size.
         pub fn new(size: usize) -> Self {
             LightGrid(Grid::default(GridSize::new(size, size)))
-        }
-    }
-    impl<T: Part> LightGrid<T> {
-        /// Executes a list of instructions on the given light grid.
-        pub fn execute_instruction(&mut self, instructions: &[Instruction]) {
-            for inst in instructions {
-                for point in inst.rect.all_points() {
-                    self.0.get_mut(&point).update(&inst.action);
-                }
-            }
         }
     }
 
@@ -182,30 +193,31 @@ use solution::*;
 pub const SOLUTION: Solution = Solution {
     day: 6,
     name: "Probably a Fire Hazard",
-    preprocessor: Some(|input| Ok(Box::new(Instruction::gather(input.lines())?).into())),
+    preprocessor: None,
     solvers: &[
         // Part one
         |input| {
             // Generation
-            let mut light_grid = LightGrid::new(1000);
-            light_grid.execute_instruction(input.expect_data::<Vec<Instruction>>()?);
+            let grid_program = Program::<GridInstruction<StdBool>>::parse(input.expect_text()?)?;
+
+            // Process
+            let grid = grid_program.execute(LightGrid::new(1000))?.into_registers();
 
             // Print the grid just to see what it is
             //println!("{:?}", light_grid);
 
-            // Process
-            Ok(Answer::Unsigned(
-                light_grid.number_lit().try_into().unwrap(),
-            ))
+            Ok(Answer::Unsigned(grid.number_lit().try_into().unwrap()))
         },
         // Part two
         |input| {
             // Generation
-            let mut light_grid = LightGrid::new(1000);
-            light_grid.execute_instruction(input.expect_data::<Vec<Instruction>>()?);
+            let grid_program = Program::<GridInstruction<Digit>>::parse(input.expect_text()?)?;
 
             // Process
-            Ok(light_grid.total_brightness().into())
+            let grid = grid_program.execute(LightGrid::new(1000))?.into_registers();
+
+            // Process
+            Ok(grid.total_brightness().into())
         },
     ],
 };

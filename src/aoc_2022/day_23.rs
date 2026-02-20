@@ -1,6 +1,5 @@
 use aoc::prelude::*;
 use gat_lending_iterator::LendingIterator;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -67,9 +66,9 @@ mod solution {
             }
         }
 
-        /// Returns a slice of displacement vectors for adjacent tiles that must be
-        /// checked for the absence of elves before an elf can propose to move in
-        /// this direction.
+        /// Returns a slice of displacement vectors for adjacent tiles that must
+        /// be checked for the absence of elves before an elf can
+        /// propose to move in this direction.
         pub fn checked_position_displacements(&self) -> &'static [ElfVector] {
             /// Displacement vectors for moving north.
             static NORTH_VECS: LazyLock<[ElfVector; 3]> = LazyLock::new(|| {
@@ -135,8 +134,9 @@ mod solution {
 
     /// The overall grove, which can be parsed from text.
     ///
-    /// This is a [`LendingIterator`] over the rounds of elf movement. The first item
-    /// yielded is the grove after the first round, not the initial state.
+    /// This is a [`LendingIterator`] over the rounds of elf movement. The first
+    /// item yielded is the grove after the first round, not the initial
+    /// state.
     #[derive(Clone)]
     pub struct Grove {
         /// The current order of directions to check for move proposal.
@@ -235,7 +235,8 @@ mod solution {
         }
     }
     impl LendingIterator for Grove {
-        type Item<'a> = &'a Self
+        type Item<'a>
+            = &'a Self
         where
             Self: 'a;
 

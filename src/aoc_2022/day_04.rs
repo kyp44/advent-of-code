@@ -34,8 +34,8 @@ mod solution {
         /// The section range for the second elf.
         elf_2: RangeInclusive<u8>,
     }
-    impl Parsable<'_> for Assignment {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Assignment {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
                     inclusive_range(nom::character::complete::u8),
@@ -48,7 +48,8 @@ mod solution {
         }
     }
     impl Assignment {
-        /// Returns whether either of the assignments totally contains the other.
+        /// Returns whether either of the assignments totally contains the
+        /// other.
         pub fn redundant(&self) -> bool {
             self.elf_1.contains_range(&self.elf_2) || self.elf_2.contains_range(&self.elf_1)
         }

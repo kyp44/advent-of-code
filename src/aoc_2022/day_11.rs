@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -64,8 +63,8 @@ mod solution {
         /// Multiplication.
         Multiply,
     }
-    impl Parsable<'_> for Operator {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Operator {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             trim(
                 false,
                 alt((
@@ -94,8 +93,8 @@ mod solution {
         /// A number literal.
         Number(u64),
     }
-    impl Parsable<'_> for Operand {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Operand {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(tag("old"), |_| Self::Old),
                 map(nom::character::complete::u64, Self::Number),
@@ -113,7 +112,8 @@ mod solution {
         }
     }
 
-    /// A binary arithmetic operation to apply during inspection to calculate a new worry level.
+    /// A binary arithmetic operation to apply during inspection to calculate a
+    /// new worry level.
     #[derive(Debug, Clone)]
     struct Operation {
         /// The two operands involved.
@@ -121,8 +121,8 @@ mod solution {
         /// The binary operator to combine the two operands.
         operation: Operator,
     }
-    impl Parsable<'_> for Operation {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Operation {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 preceded(
                     preceded(tag("new"), trim(false, tag("="))),
@@ -137,13 +137,15 @@ mod solution {
         }
     }
     impl Operation {
-        /// Evaluates the operation given the `old` worry level, returning the resulting new worry level.
+        /// Evaluates the operation given the `old` worry level, returning the
+        /// resulting new worry level.
         pub fn evaluate(&self, old: u64) -> u64 {
             self.operation.operator_fn()(self.operands[0].value(old), self.operands[1].value(old))
         }
     }
 
-    /// The test a monkey does in order to determine to which monkey to throw the item after inspection.
+    /// The test a monkey does in order to determine to which monkey to throw
+    /// the item after inspection.
     #[derive(Debug, Clone)]
     struct Test {
         /// Value by which the worry level must be divisible to pass the test.
@@ -153,8 +155,8 @@ mod solution {
         /// Monkey number to which to throw the item if the test fails.
         if_false: u8,
     }
-    impl Parsable<'_> for Test {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Test {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     trim(
@@ -186,7 +188,8 @@ mod solution {
         }
     }
     impl Test {
-        /// Evaluates the test given the `worry_level`, returning the monkey number to which to throw the item.
+        /// Evaluates the test given the `worry_level`, returning the monkey
+        /// number to which to throw the item.
         pub fn evaluate(&self, worry_level: u64) -> u8 {
             if worry_level.is_multiple_of(self.div_by) {
                 self.if_true
@@ -211,15 +214,17 @@ mod solution {
         number: u8,
         /// Item worry levels in the order in which to be inspected.
         item_worry_levels: Vec<u64>,
-        /// Operation to which to apply to the worry level during inspection to get a new worry level.
+        /// Operation to which to apply to the worry level during inspection to
+        /// get a new worry level.
         operation: Operation,
-        /// A test to determine to which other monkey to throw the item after inspection.
+        /// A test to determine to which other monkey to throw the item after
+        /// inspection.
         test: Test,
         /// The number of items inspected so far.
         inspected_items: u64,
     }
-    impl Parsable<'_> for Monkey {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Monkey {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     delimited(tag("Monkey "), nom::character::complete::u8, tag(":")),
@@ -249,11 +254,13 @@ mod solution {
     impl Monkey {
         /// Takes the next turn for this monkey.
         ///
-        /// If `modulo` is passed, the operation will be restricted to that modulo system (part two),
-        /// otherwise the new worry level will be divided by three before the test (part one).
-        /// Refer to the notes for more detail about this.
+        /// If `modulo` is passed, the operation will be restricted to that
+        /// modulo system (part two), otherwise the new worry level will
+        /// be divided by three before the test (part one). Refer to the
+        /// notes for more detail about this.
         ///
-        /// Returns [`Thrown`] objects, indicating to which monkey each item should be thrown.
+        /// Returns [`Thrown`] objects, indicating to which monkey each item
+        /// should be thrown.
         pub fn take_turn(&mut self, modulo: Option<u64>) -> Vec<Thrown> {
             self.item_worry_levels
                 .drain(..)
@@ -275,10 +282,12 @@ mod solution {
         }
     }
 
-    /// A band of monkeys playing Keep Away and throwing your items to each other.
+    /// A band of monkeys playing Keep Away and throwing your items to each
+    /// other.
     #[derive(Clone, Debug)]
     pub struct Monkeys {
-        /// Optional modulo system in which to perform the worry level arithmetic, see the notes.
+        /// Optional modulo system in which to perform the worry level
+        /// arithmetic, see the notes.
         modulo: Option<u64>,
         /// Map of the monkey numbers to the [`Monkey`] object.
         monkeys: IndexMap<u8, Monkey>,
@@ -319,8 +328,9 @@ mod solution {
             }
         }
 
-        /// Disables worry reduction for these monkeys and instead determines the correct
-        /// modulo system in which to do the worry level arithmetic.
+        /// Disables worry reduction for these monkeys and instead determines
+        /// the correct modulo system in which to do the worry level
+        /// arithmetic.
         ///
         /// Refer to the notes for more details about this.
         pub fn disable_worry_reduction(&mut self) {
@@ -332,8 +342,8 @@ mod solution {
             );
         }
 
-        /// Has the monkeys take turns for some number of `rounds` and returns the the level
-        /// of monkey business after the final turn.
+        /// Has the monkeys take turns for some number of `rounds` and returns
+        /// the the level of monkey business after the final turn.
         pub fn monkey_business(&mut self, rounds: usize) -> u64 {
             let _ = self.nth(rounds - 1).unwrap();
 

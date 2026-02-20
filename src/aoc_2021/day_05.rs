@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -44,10 +43,10 @@ mod solution {
         /// The other end of the segment.
         to: GridPoint,
     }
-    impl Parsable<'_> for Line {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
-            /// This is an internal function of [`Line::parser`], which is a [`nom`] parser for
-            /// a single point on the 2D grid.
+    impl Parsable for Line {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
+            /// This is an internal function of [`Line::parser`], which is a
+            /// [`nom`] parser for a single point on the 2D grid.
             fn point_parser(input: &str) -> NomParseResult<&str, GridPoint> {
                 map(
                     separated_pair(
@@ -69,8 +68,9 @@ mod solution {
     impl Line {
         /// Returns the type for this line.
         fn line_type(&self) -> LineType {
-            /// This is an internal function of [`Line::line_type`], that simply returns an inclusive
-            /// range from the smallest of two integers to the largest.
+            /// This is an internal function of [`Line::line_type`], that simply
+            /// returns an inclusive range from the smallest of two
+            /// integers to the largest.
             fn range(a: usize, b: usize) -> RangeInclusive<usize> {
                 a.min(b)..=a.max(b)
             }
@@ -114,14 +114,16 @@ mod solution {
         Horizontal(RangeInclusive<usize>, usize),
         /// A strictly vertical line segment with `x` and the range of `y`.
         Vertical(usize, RangeInclusive<usize>),
-        /// Diagonally down going from left to right with the ranges of `x` and `y`.
+        /// Diagonally down going from left to right with the ranges of `x` and
+        /// `y`.
         DiagonalDown(RangeInclusive<usize>, RangeInclusive<usize>),
-        /// Diagonally up going from left to right with the ranges of `x` and `y`.
+        /// Diagonally up going from left to right with the ranges of `x` and
+        /// `y`.
         DiagonalUp(RangeInclusive<usize>, Rev<RangeInclusive<usize>>),
     }
 
-    /// An [`Iterator`] over the integer points along a 2D line segment, including the
-    /// end points.
+    /// An [`Iterator`] over the integer points along a 2D line segment,
+    /// including the end points.
     #[derive(new)]
     struct LineIterator {
         /// The type of the line that includes the range iterators.
@@ -173,7 +175,8 @@ mod solution {
         fn line_filter(_line: &Line) -> bool;
     }
 
-    /// Behavior for part one, which includes only horizontal and vertical lines.
+    /// Behavior for part one, which includes only horizontal and vertical
+    /// lines.
     pub struct PartOne {}
     impl Part for PartOne {
         fn line_filter(line: &Line) -> bool {

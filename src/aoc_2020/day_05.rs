@@ -26,7 +26,8 @@ mod solution {
         sequence::pair,
     };
 
-    /// The coordinates of a set on the plane, which can be parsed from text input.
+    /// The coordinates of a set on the plane, which can be parsed from text
+    /// input.
     #[derive(Debug)]
     pub struct Seat {
         /// Seat row.
@@ -34,8 +35,8 @@ mod solution {
         /// Seat column.
         column: u32,
     }
-    impl Parsable<'_> for Seat {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Seat {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             /// This is an internal function of [`Seat::parser`].
             ///
             /// Creates a parser closure for a letter-coded binary value of a

@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -89,8 +88,8 @@ mod solution {
         Minimum,
         /// The maximum value of its sub-packets.
         Maximum,
-        /// 1 if the value of the first of its two sub-packets is greater than the
-        /// value of the second, and 0 otherwise.
+        /// 1 if the value of the first of its two sub-packets is greater than
+        /// the value of the second, and 0 otherwise.
         GreaterThan,
         /// 1 if the value of the first of its two sub-packets is less than the
         /// value of the second, and 0 otherwise.
@@ -215,7 +214,8 @@ mod solution {
             })
         }
 
-        /// Returns the sum of version numbers of the sub packets, or zero for literals.
+        /// Returns the sum of version numbers of the sub packets, or zero for
+        /// literals.
         fn version_sum(&self) -> u64 {
             match self {
                 PacketType::Literal(_) => 0,
@@ -229,7 +229,8 @@ mod solution {
             Ok(match self {
                 PacketType::Literal(v) => *v,
                 PacketType::Operator(operation, packets) => {
-                    /// This is an internal function of [`PacketType::evaluate`] that just creates an error
+                    /// This is an internal function of [`PacketType::evaluate`]
+                    /// that just creates an error
                     /// for an operation that is missing operands.
                     fn min_one_err(operation: &Operation) -> AocError {
                         AocError::Process(

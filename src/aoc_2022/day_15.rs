@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use aoc::prelude::*;
 
 #[cfg(test)]
@@ -51,8 +49,8 @@ mod solution {
     /// A 2D point that can be parsed from the input text.
     #[derive(Deref)]
     struct ParsePoint(AnyGridPoint);
-    impl Parsable<'_> for ParsePoint {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for ParsePoint {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
                     preceded(tag("x="), nom::character::complete::i32),
@@ -73,8 +71,8 @@ mod solution {
         /// The location of the nearest beacon.
         nearest_beacon: AnyGridPoint,
     }
-    impl Parsable<'_> for SensorReport {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for SensorReport {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
                     preceded(tag("Sensor at "), ParsePoint::parser),
@@ -90,9 +88,11 @@ mod solution {
         }
     }
     impl SensorReport {
-        /// Returns the interval that the sensor covers for a given row, which may be empty.
+        /// Returns the interval that the sensor covers for a given row, which
+        /// may be empty.
         ///
-        /// This is based on the (Manhattan) distance of the sensor to the nearest beacon.
+        /// This is based on the (Manhattan) distance of the sensor to the
+        /// nearest beacon.
         pub fn coverage_row(&self, row: isize) -> Interval<isize> {
             let distance = (self.nearest_beacon - self.sensor).manhattan_len();
 
@@ -111,10 +111,11 @@ mod solution {
     pub struct SensorReports {
         /// The sensor reports.
         reports: Vec<SensorReport>,
-        /// The row for which to determine the number of positions where a beacon
-        /// cannot be (part one).
+        /// The row for which to determine the number of positions where a
+        /// beacon cannot be (part one).
         row: isize,
-        /// The `x` and `y` limits when looking for the distress beacon (part two).
+        /// The `x` and `y` limits when looking for the distress beacon (part
+        /// two).
         limit: isize,
     }
     impl FromStr for SensorReports {
@@ -140,8 +141,8 @@ mod solution {
         }
     }
     impl SensorReports {
-        /// Returns an interval set that includes the coverage for all sensors for a
-        /// particular `row`, which could be empty.
+        /// Returns an interval set that includes the coverage for all sensors
+        /// for a particular `row`, which could be empty.
         fn row_coverage(&self, row: isize) -> IntervalSet<isize> {
             // Build the intervals on the row
             let mut row_ints = IntervalSet::empty();
@@ -153,8 +154,8 @@ mod solution {
             row_ints
         }
 
-        /// Returns the number of positions where the beacon cannot be in the row
-        /// provided as part of the input (part one).
+        /// Returns the number of positions where the beacon cannot be in the
+        /// row provided as part of the input (part one).
         pub fn row_no_beacon_positions(&self) -> u64 {
             let row_ints = self.row_coverage(self.row);
 
@@ -168,11 +169,11 @@ mod solution {
             (row_ints.size() - beacons.len()).try_into().unwrap()
         }
 
-        /// Locates the distress beacon position, searching within the limited space
-        /// provided as part of the input.
+        /// Locates the distress beacon position, searching within the limited
+        /// space provided as part of the input.
         ///
-        /// Returns the tuning frequency based on the distress beacon coordinates
-        /// (part two).
+        /// Returns the tuning frequency based on the distress beacon
+        /// coordinates (part two).
         pub fn distress_beacon_tuning_frequency(&self) -> AocResult<u64> {
             let mut whole_row = IntervalSet::empty();
             whole_row.extend_one(Interval::new(0, self.limit));

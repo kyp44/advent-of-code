@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -63,8 +62,8 @@ mod solution {
         /// Valid inclusive ranges of the field value.
         valid_ranges: Vec<RangeInclusive<u32>>,
     }
-    impl Parsable<'_> for Field {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Field {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             use nom::character::complete::u32 as cu32;
             map(
                 separated_pair(
@@ -97,14 +96,15 @@ mod solution {
         }
     }
 
-    /// A ticket with ordered but unknown fields, which can be parsed from text input.
+    /// A ticket with ordered but unknown fields, which can be parsed from text
+    /// input.
     #[derive(Debug)]
     struct Ticket {
         /// List of field values in order.
         field_values: Vec<u32>,
     }
-    impl Parsable<'_> for Ticket {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Ticket {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             Ok((
                 "",
                 Ticket {
@@ -184,8 +184,9 @@ mod solution {
         /// valid for any field.
         ///
         /// NOTE: Made [a post](https://users.rust-lang.org/t/returning-iterator-seemingly-requiring-multiple-liftetimes/62179/3)
-        /// about how to accomplish returning an Iterator here instead of a collected [`Vec`].
-        /// This was later simplified to use [`u32`] instead of `&u32` in the Iterator.
+        /// about how to accomplish returning an Iterator here instead of a
+        /// collected [`Vec`]. This was later simplified to use [`u32`]
+        /// instead of `&u32` in the Iterator.
         fn invalid_fields<'a>(&'a self, ticket: &'a Ticket) -> impl Iterator<Item = u32> + 'a {
             ticket
                 .field_values
@@ -193,8 +194,8 @@ mod solution {
                 .filter_map(move |v| if self.is_valid(v) { None } else { Some(*v) })
         }
 
-        /// Returns an [`Iterator`] over field values from all tickets that are not
-        /// valid for any field.
+        /// Returns an [`Iterator`] over field values from all tickets that are
+        /// not valid for any field.
         pub fn all_invalid_fields(&self) -> impl Iterator<Item = u32> + '_ {
             self.nearby_tickets
                 .iter()

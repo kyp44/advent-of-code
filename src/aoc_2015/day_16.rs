@@ -22,7 +22,8 @@ mod solution {
     };
     use std::collections::HashMap;
 
-    /// An Aunt Sue and what you remember about her, which can be read from text input.
+    /// An Aunt Sue and what you remember about her, which can be read from text
+    /// input.
     #[derive(Debug, new)]
     pub struct Sue<'a> {
         /// The number of this Aunt Sue.
@@ -31,8 +32,10 @@ mod solution {
         /// The values of the compounds that you remember for this Aunt Sue.
         compounds: HashMap<&'a str, u8>,
     }
-    impl<'a> Parsable<'a> for Sue<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for Sue<'_> {
+        type Parsed<'a> = Sue<'a>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
                     preceded(tag("Sue "), nom::character::complete::u16),
@@ -53,7 +56,8 @@ mod solution {
 
     /// Behavior specific to a particular part of the problem.
     pub trait Part {
-        /// Determines whether the known components of an Aunt sue match the MFCSAM output.
+        /// Determines whether the known components of an Aunt sue match the
+        /// MFCSAM output.
         fn matches(output: &Sue, memory: &Sue) -> bool;
     }
 
@@ -102,7 +106,8 @@ mod solution {
             })
         }
 
-        /// Returns an [`Iterator`] of Aunt Sues who match the readout from the MFCSAM.
+        /// Returns an [`Iterator`] of Aunt Sues who match the readout from the
+        /// MFCSAM.
         pub fn matches<P: Part>(&self) -> impl Iterator<Item = &Sue<'_>> {
             let output = Sue::new(hashmap! {
                 "children" => 3,

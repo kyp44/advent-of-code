@@ -756,7 +756,6 @@ impl<T: Default + Clone, U> Grid<T, U> {
     /// Basic usage:
     /// ```
     /// # use aoc::prelude::*;
-    /// # use std::str::FromStr;
     /// #[derive(Debug, Default, Clone, PartialEq, Eq)]
     /// enum Direction {
     ///     Up,
@@ -801,7 +800,6 @@ impl<T: Default + Clone, U> Grid<T, U> {
     /// # #![feature(assert_matches)]
     /// # use std::assert_matches;
     /// # use aoc::prelude::*;
-    /// # use std::str::FromStr;
     /// #[derive(Debug, PartialEq, Eq)]
     /// enum Correctness {
     ///     Wrong,
@@ -1082,7 +1080,6 @@ impl<T: Into<bool> + Clone, U> Grid<T, U> {
 /// Basic usage:
 /// ```
 /// # use aoc::prelude::*;
-/// # use std::str::FromStr;
 /// #[derive(Debug, PartialEq, Eq)]
 /// enum Direction {
 ///     Up,
@@ -1123,7 +1120,6 @@ impl<T: Into<bool> + Clone, U> Grid<T, U> {
 /// # #![feature(assert_matches)]
 /// # use std::assert_matches;
 /// # use aoc::prelude::*;
-/// # use std::str::FromStr;
 /// #[derive(Debug, PartialEq, Eq)]
 /// enum Correctness {
 ///     Wrong,
@@ -1226,7 +1222,6 @@ impl<T: TryFrom<char>, O: From<Grid<T>>> FromGridStr<T> for O {
 /// ```
 /// # use aoc::prelude::*;
 /// # use aoc::grid::StdBool;
-/// # use std::str::FromStr;
 /// let (t, f) = (true.into(), false.into());
 /// let string = ".#..
 /// #.##
@@ -1267,7 +1262,6 @@ impl fmt::Debug for StdBool {
 /// ```
 /// # use aoc::prelude::*;
 /// # use aoc::grid::Digit;
-/// # use std::str::FromStr;
 /// let string = "01
 /// 23
 /// 45

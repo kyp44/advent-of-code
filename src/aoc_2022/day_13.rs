@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -59,13 +58,14 @@ mod solution {
         List(Box<[Element]>),
     }
     impl Element {
-        /// Puts this element into a list element that contains only this element.
+        /// Puts this element into a list element that contains only this
+        /// element.
         pub fn put_in_list(self) -> Self {
             Self::List(Box::new([self]))
         }
     }
-    impl Parsable<'_> for Element {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Element {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(nom::character::complete::u8, Self::Integer),
                 map(
@@ -104,8 +104,8 @@ mod solution {
         /// The `right` packet.
         right: Element,
     }
-    impl Parsable<'_> for PacketPair {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for PacketPair {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
                     trim(false, Element::parser),
@@ -118,8 +118,8 @@ mod solution {
         }
     }
     impl PacketPair {
-        /// Returns a two-element [`Iterator`] that iterates over the `left` and then `right`
-        /// packets in succession.
+        /// Returns a two-element [`Iterator`] that iterates over the `left` and
+        /// then `right` packets in succession.
         pub fn iter(&self) -> impl Iterator<Item = &Element> {
             [&self.left, &self.right].into_iter()
         }
@@ -141,8 +141,8 @@ mod solution {
         }
     }
     impl PacketPairs {
-        /// Compares the packets of each pair, and adds the indices of those pairs that
-        /// are in the correct order (part one).
+        /// Compares the packets of each pair, and adds the indices of those
+        /// pairs that are in the correct order (part one).
         pub fn sum_of_correct_pair_indices(&self) -> u64 {
             self.packet_pairs
                 .iter()
@@ -152,8 +152,9 @@ mod solution {
                 .sum()
         }
 
-        /// Sorts all of the packets as well as the divider packets, and multiplies the
-        /// indices of the two divider packets in the sorted list (part two).
+        /// Sorts all of the packets as well as the divider packets, and
+        /// multiplies the indices of the two divider packets in the
+        /// sorted list (part two).
         pub fn decoder_key(&self) -> u64 {
             let divider_packets = [
                 Element::Integer(2).put_in_list().put_in_list(),
