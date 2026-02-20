@@ -50,8 +50,8 @@ mod solution {
         /// List of starting numbers.
         starting: Vec<u64>,
     }
-    impl Parsable<'_> for Game {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Game {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_list1((space0, tag(","), space0), nom::character::complete::u64),
                 |starting| Game { starting },
@@ -60,7 +60,8 @@ mod solution {
         }
     }
     impl Game {
-        /// Plays the game up to some number of turns, returning the number spoken at that turn.
+        /// Plays the game up to some number of turns, returning the number
+        /// spoken at that turn.
         pub fn play(&self, to_turn: usize) -> u64 {
             // Maps the spoken number to the last turn number
             // This had been implemented before as a HashMap but was

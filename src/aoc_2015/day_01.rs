@@ -66,8 +66,8 @@ mod solution {
         /// Down a floor.
         Down,
     }
-    impl Parsable<'_> for Direction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Direction {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(one_of("()"), |c| match c {
                 '(' => Direction::Up,
                 ')' => Direction::Down,
@@ -91,8 +91,8 @@ mod solution {
         /// The list of directions.
         directions: Box<[Direction]>,
     }
-    impl Parsable<'_> for Directions {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Directions {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(many1(Direction::parser), |v| Directions {
                 directions: v.into_boxed_slice(),
             })
@@ -100,8 +100,8 @@ mod solution {
         }
     }
     impl Directions {
-        /// Returns an [`Iterator`] of floor numbers when the directions are followed,
-        /// starting at floor 0.
+        /// Returns an [`Iterator`] of floor numbers when the directions are
+        /// followed, starting at floor 0.
         pub fn floors(&self) -> impl Iterator<Item = i64> + '_ {
             self.directions.iter().scan(0i64, |a, d| {
                 *a += d.floor_change();

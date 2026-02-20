@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use aoc::prelude::*;
 
 #[cfg(test)]
@@ -56,7 +54,8 @@ mod solution {
         Wall,
     }
     impl Space {
-        /// Returns whether the space is empty, that is a [`Void`](Self::Void) space.
+        /// Returns whether the space is empty, that is a [`Void`](Self::Void)
+        /// space.
         pub fn is_empty(&self) -> bool {
             self == &Self::Void
         }
@@ -98,7 +97,7 @@ mod solution {
         /// Turn right, remaining in the same space.
         TurnRight,
     }
-    impl Parsable<'_> for Step {
+    impl Parsable for Step {
         fn parser(input: &'_ str) -> NomParseResult<&str, Self> {
             alt((
                 map(nom::character::complete::u8, Self::WalkForward),
@@ -111,7 +110,7 @@ mod solution {
 
     /// A list of steps, which can be parsed from text input.
     struct ParsePath(Vec<Step>);
-    impl Parsable<'_> for ParsePath {
+    impl Parsable for ParsePath {
         fn parser(input: &'_ str) -> NomParseResult<&str, Self> {
             map(many1(Step::parser), ParsePath).parse(input)
         }
@@ -130,7 +129,8 @@ mod solution {
         Right,
     }
     impl Direction {
-        /// Returns the displacement vector to move a single space in this direction.
+        /// Returns the displacement vector to move a single space in this
+        /// direction.
         pub fn as_vector<U>(&self) -> Vector2D<isize, U> {
             match self {
                 Direction::Up => -Vector2D::<isize, U>::unit_y(),
@@ -140,7 +140,8 @@ mod solution {
             }
         }
 
-        /// Returns the direction you would face if turning left from this direction.
+        /// Returns the direction you would face if turning left from this
+        /// direction.
         pub fn turn_left(&self) -> Self {
             match self {
                 Direction::Up => Self::Left,
@@ -150,12 +151,14 @@ mod solution {
             }
         }
 
-        /// Returns the direction you would face if turning right from this direction.
+        /// Returns the direction you would face if turning right from this
+        /// direction.
         pub fn turn_right(&self) -> Self {
             -self.turn_left()
         }
 
-        /// Returns the value assigned to facing this direction for the password calculation.
+        /// Returns the value assigned to facing this direction for the password
+        /// calculation.
         pub fn facing_value(&self) -> u64 {
             match self {
                 Direction::Up => 3,
@@ -178,8 +181,8 @@ mod solution {
         }
     }
 
-    /// The map the monkeys give you, which represents how to determine the password
-    /// and can be parsed from text input.
+    /// The map the monkeys give you, which represents how to determine the
+    /// password and can be parsed from text input.
     pub struct MonkeyMap {
         /// The main grid for the map.
         grid: Grid<Space, MainGrid>,
@@ -199,8 +202,8 @@ mod solution {
         }
     }
     impl MonkeyMap {
-        /// Returns an iterator that traces key points on the correct path for a given
-        /// part `P` of the problem.
+        /// Returns an iterator that traces key points on the correct path for a
+        /// given part `P` of the problem.
         fn path_traversal<'a, P: Part<'a>>(&'a self) -> AocResult<PathTraversal<'a, P>> {
             let part = P::new(&self.grid)?;
             let position = part.next_space(&Position::default())?;
@@ -232,11 +235,13 @@ mod solution {
         /// Creates a new part object given the main grid.
         fn new(grid: &'a Grid<Space, MainGrid>) -> AocResult<Self>;
 
-        /// Returns the new position if we were to try to walk forward a single space,
-        /// moving ahead to the next tile for the part if necessary.
+        /// Returns the new position if we were to try to walk forward a single
+        /// space, moving ahead to the next tile for the part if
+        /// necessary.
         ///
-        /// This does not check the content of next space, only its [`Position`] is
-        /// returned. However, the space is guaranteed not to be a [`Space::Void`].
+        /// This does not check the content of next space, only its [`Position`]
+        /// is returned. However, the space is guaranteed not to be a
+        /// [`Space::Void`].
         fn next_space(&self, position: &Position) -> AocResult<Position>;
     }
 
@@ -265,7 +270,8 @@ mod solution {
         }
     }
 
-    /// The six surfaces of a cube, which is primarily just  a way to refer to them.
+    /// The six surfaces of a cube, which is primarily just  a way to refer to
+    /// them.
     #[derive(Debug, Clone, Copy, Display, PartialEq, Eq)]
     enum CubeSurface {
         /// The front surface.
@@ -354,11 +360,12 @@ mod solution {
             }
         }
 
-        /// Returns the direction of an original surface relative to the current front, if
-        /// it is in one of the cardinal direction from the current front.
+        /// Returns the direction of an original surface relative to the current
+        /// front, if it is in one of the cardinal direction from the
+        /// current front.
         ///
-        /// Therefore, [`None`] will be returned if the requested surface is currently in the
-        /// front or back position.
+        /// Therefore, [`None`] will be returned if the requested surface is
+        /// currently in the front or back position.
         pub fn direction_of(&self, seeking: CubeSurface) -> Option<Direction> {
             if seeking == self.top {
                 Some(Direction::Up)
@@ -396,8 +403,8 @@ mod solution {
             (point / self.0).cast_unit()
         }
 
-        /// Converts a `point` in the tile grid to the upper left coordinate of the tile
-        /// in the main grid.
+        /// Converts a `point` in the tile grid to the upper left coordinate of
+        /// the tile in the main grid.
         ///
         /// Note that this is a one-to-one function.
         pub fn tile_to_main(&self, point: GridPoint<TileGrid>) -> GridPoint<MainGrid> {
@@ -411,8 +418,8 @@ mod solution {
             point.rem_euclid(&Size2D::new(self.0, self.0)).cast_unit()
         }
 
-        /// Converts a `point` within a local tile to its point in the main grid given
-        /// the position of the `tile` in the tile grid.
+        /// Converts a `point` within a local tile to its point in the main grid
+        /// given the position of the `tile` in the tile grid.
         ///
         /// Note that this is a one-to-one function.
         pub fn local_to_main(
@@ -440,7 +447,8 @@ mod solution {
                 Direction::Up | Direction::Down => source_point_local.x,
                 Direction::Left | Direction::Right => source_point_local.y,
             };
-            // Inverse local distance along the edge of the source tile in the transverse coordinate
+            // Inverse local distance along the edge of the source tile in the transverse
+            // coordinate
             let transverse_local_inverse = self.0 - 1 - transverse_local;
 
             // The local position of the normal coordinate in the destination tile.
@@ -490,10 +498,11 @@ mod solution {
         /// Returns the destination tile and the direction we would move onto it
         /// if we were to move off of `source_tile` in its direction.
         ///
-        /// The directions are all relative to the overall tile grid as it is unfolded
-        /// flat.
+        /// The directions are all relative to the overall tile grid as it is
+        /// unfolded flat.
         pub fn lookup_destination_tile(&self, source_tile: &CubeTile) -> AocResult<CubeTile> {
-            /// Internal structure for [`UnfoldedCube::lookup_destination_tile`].
+            /// Internal structure for
+            /// [`UnfoldedCube::lookup_destination_tile`].
             ///
             /// Holds the state for the tree search.
             struct LookupState {
@@ -501,7 +510,8 @@ mod solution {
                 seeking: CubeSurface,
                 /// The cube tile, if the sought surface has been found.
                 found: Option<CubeTile>,
-                /// The set of cube tiles that have already been visited and checked.
+                /// The set of cube tiles that have already been visited and
+                /// checked.
                 visited: HashSet<AnyGridPoint<TileGrid>>,
             }
             impl LookupState {
@@ -515,7 +525,8 @@ mod solution {
                 }
             }
 
-            /// Internal structure for [`UnfoldedCube::lookup_destination_tile`].
+            /// Internal structure for
+            /// [`UnfoldedCube::lookup_destination_tile`].
             ///
             /// The tree node structure.
             struct LookupNode<'a> {
@@ -632,7 +643,8 @@ mod solution {
         }
 
         fn next_space(&self, position: &Position) -> AocResult<Position> {
-            // If we are in a void, then follow our facing direction until we reach a real tile
+            // If we are in a void, then follow our facing direction until we reach a real
+            // tile
             if self.grid.get(&position.point).is_empty() {
                 return PartOne::new(self.grid)?.next_space(position);
             }

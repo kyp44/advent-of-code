@@ -66,12 +66,14 @@ mod solution {
 
     /// Behavior specific to a particular part of the problem.
     pub trait Part {
-        /// Determines whether a JSON value is valid and should be included in the sum.
+        /// Determines whether a JSON value is valid and should be included in
+        /// the sum.
         fn valid_value(_value: &Value) -> bool {
             true
         }
 
-        /// Adds up all the numbers appearing in an iterator of JSON values, counting only those that valid.
+        /// Adds up all the numbers appearing in an iterator of JSON values,
+        /// counting only those that valid.
         fn value_sums<'a>(values: impl Iterator<Item = &'a Value>) -> i64
         where
             Self: Sized,
@@ -100,7 +102,8 @@ mod solution {
         }
     }
 
-    /// Capability to determine the sum of numbers contained in a particular JSON value.
+    /// Capability to determine the sum of numbers contained in a particular
+    /// JSON value.
     pub trait SumNumbers {
         /// Calculates the number sum of the JSON value recursively.
         fn sum_numbers<P: Part>(&self) -> i64;

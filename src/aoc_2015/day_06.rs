@@ -45,8 +45,8 @@ mod solution {
         /// Turn the light off.
         TurnOff,
     }
-    impl Parsable<'_> for Action {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Action {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             use Action::*;
             alt((
                 value(TurnOn, tag("turn on")),
@@ -72,8 +72,8 @@ mod solution {
     /// A Rectangle of lights that can be parsed from text input.
     #[derive(Into)]
     pub struct ParseRect(GridBox);
-    impl Parsable<'_> for ParseRect {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for ParseRect {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map_opt(
                 separated_pair(point_parser, (space1, tag("through"), space1), point_parser),
                 |(ll, ur)| {
@@ -97,8 +97,8 @@ mod solution {
         /// Rectangle of lights over which to perform the action.
         pub rect: GridBox,
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Instruction {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(Action::parser, space1, ParseRect::parser),
                 |(a, r)| Instruction {

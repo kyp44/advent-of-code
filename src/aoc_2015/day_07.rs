@@ -44,8 +44,10 @@ mod solution {
         /// A wire with a name.
         Wire(&'a str),
     }
-    impl<'a> Parsable<'a> for Input<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for Input<'_> {
+        type Parsed<'a> = Input<'a>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(nom::character::complete::u16, Input::Value),
                 map(alpha1, Input::Wire),
@@ -90,8 +92,10 @@ mod solution {
         /// Bitwise OR gate.
         Or(Binary<'a>),
     }
-    impl<'a> Parsable<'a> for Element<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for Element<'_> {
+        type Parsed<'a> = Element<'a>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             /// This is a [`nom`] parser for the input/output separator.
             fn io_sep<'a, E>(input: &'a str) -> IResult<&'a str, (), E>
             where
@@ -151,7 +155,8 @@ mod solution {
         }
     }
     impl Element<'_> {
-        /// Provides the output wire name for the component since all components have a single output.
+        /// Provides the output wire name for the component since all components
+        /// have a single output.
         fn output(&self) -> &str {
             use Element::*;
             match self {
@@ -198,10 +203,11 @@ mod solution {
             })
         }
 
-        /// Determines the resulting value on a wire when the circuit is connected.
+        /// Determines the resulting value on a wire when the circuit is
+        /// connected.
         pub fn determine_signal<'b>(&'b mut self, wire: &'a str) -> AocResult<u16> {
-            /// This is an internal function for [`Circuit::determine_signal`] to determine
-            /// the value on a wire.
+            /// This is an internal function for [`Circuit::determine_signal`]
+            /// to determine the value on a wire.
             fn det_sig<'a: 'b, 'b>(
                 wire_values: &'b mut HashMap<&'a str, u16>,
                 elements: &'b [Element<'a>],
@@ -241,7 +247,8 @@ mod solution {
             det_sig(&mut self.wire_values, &self.elements, wire)
         }
 
-        /// Generates an error indicating that a wire is not connected to an output.
+        /// Generates an error indicating that a wire is not connected to an
+        /// output.
         fn wire_error(wire: &str) -> AocError {
             AocError::Process(format!("Wire '{wire}' not connected to an output").into())
         }

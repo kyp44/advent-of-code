@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 use strum::IntoEnumIterator;
 
 #[cfg(test)]
@@ -331,8 +330,8 @@ mod solution {
             }
         }
 
-        /// Fins the sea monster in whatever orientation necessary and subtracts it,
-        /// returning the subtracted image.
+        /// Fins the sea monster in whatever orientation necessary and subtracts
+        /// it, returning the subtracted image.
         pub fn find_and_subtract_sea_monster(&self) -> AocResult<Self> {
             let sea_monster: Image = Image::from_grid_str(
                 "                  # 
@@ -368,7 +367,8 @@ mod solution {
         }
     }
 
-    /// A tile (an image from the satellite camera array), which can be parsed from text input.
+    /// A tile (an image from the satellite camera array), which can be parsed
+    /// from text input.
     #[derive(Debug)]
     struct Tile {
         /// Tile ID.
@@ -431,7 +431,8 @@ mod solution {
         }
     }
     impl Tile {
-        /// Gets an edge of this image if a transform were to be applied to the image.
+        /// Gets an edge of this image if a transform were to be applied to the
+        /// image.
         fn get_edge(&self, edge: Edge, transform: Transform) -> &[bool] {
             use Edge::*;
             use Transform::*;
@@ -502,7 +503,8 @@ mod solution {
     struct TileSet {
         /// List of tiles.
         tiles: Vec<Tile>,
-        /// The width and height in number of tiles if the tiles are arranged in a square.
+        /// The width and height in number of tiles if the tiles are arranged in
+        /// a square.
         size: usize,
     }
     impl FromStr for TileSet {
@@ -725,8 +727,8 @@ mod solution {
         }
     }
     impl Solver {
-        /// Solves the set by finding a filled tile map such that all the tile edges match
-        /// up correctly.
+        /// Solves the set by finding a filled tile map such that all the tile
+        /// edges match up correctly.
         ///
         /// Note that this is correct only up to rotations of the entire map.
         pub fn solve(self) -> AocResult<TileMap> {

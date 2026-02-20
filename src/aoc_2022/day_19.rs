@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -61,8 +60,8 @@ mod solution {
         /// A geode.
         Geode,
     }
-    impl Parsable<'_> for Material {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Material {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(tag("ore"), |_| Self::Ore),
                 map(tag("clay"), |_| Self::Clay),
@@ -82,8 +81,8 @@ mod solution {
         /// The number of the material required to build.
         cost: u8,
     }
-    impl Parsable<'_> for ParseCost {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for ParseCost {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(nom::character::complete::u8, space1, Material::parser),
                 |(cost, material)| Self { material, cost },
@@ -100,7 +99,7 @@ mod solution {
         /// The total cost of all materials to required to build the robot.
         cost: RobotCost,
     }
-    impl Parsable<'_> for ParseRobotCost {
+    impl Parsable for ParseRobotCost {
         fn parser(input: &'_ str) -> NomParseResult<&str, Self> {
             map(
                 pair(
@@ -134,8 +133,8 @@ mod solution {
         /// The costs to build each type of robot for this blueprint.
         robot_costs: RobotCosts,
     }
-    impl Parsable<'_> for Blueprint {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Blueprint {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 pair(
                     delimited(
@@ -363,7 +362,7 @@ mod solution {
             }
         }
     }
-    impl Parsable<'_> for RobotCost {
+    impl Parsable for RobotCost {
         fn parser(input: &'_ str) -> NomParseResult<&str, Self> {
             map(
                 separated_list1(trim(false, tag("and")), ParseCost::parser),

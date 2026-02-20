@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -62,14 +61,14 @@ mod solution {
         combinator::{map, opt},
         sequence::{pair, preceded},
     };
-    use std::str::FromStr;
 
     use super::*;
 
     /// Type to use for ALU numbers.
     pub type Number = i64;
 
-    /// Represents one of the ALU registers, which can be parsed from text input.
+    /// Represents one of the ALU registers, which can be parsed from text
+    /// input.
     #[derive(Debug, Enum, Clone, Copy)]
     pub enum Register {
         /// The `w` register.
@@ -81,11 +80,8 @@ mod solution {
         /// The `z` register.
         Z,
     }
-    impl<'a> Parsable<'a> for Register {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Register {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(one_of("wxyz"), |c| match c {
                 'w' => Self::W,
                 'x' => Self::X,
@@ -105,11 +101,8 @@ mod solution {
         /// A number literal.
         Number(Number),
     }
-    impl<'a> Parsable<'a> for Operand {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Operand {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(Register::parser, Self::Register),
                 map(nom::character::complete::i64, Self::Number),
@@ -134,14 +127,12 @@ mod solution {
         /// `equ` equality test instruction.
         Equal(Register, Operand),
     }
-    impl<'a> Parsable<'a> for Instruction {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Instruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             /// This is an internal function of [`Instruction::parser`].
             ///
-            /// [`nom`] parser to parse a pair of operands, or rather a [`Register`] then an [`Operand`].
+            /// [`nom`] parser to parse a pair of operands, or rather a
+            /// [`Register`] then an [`Operand`].
             fn operands_parser(input: &str) -> NomParseResult<&str, (Register, Option<Operand>)> {
                 preceded(
                     space1,
@@ -311,8 +302,8 @@ mod solution {
 
         /// This is an internal function of [`find_solution`].
         ///
-        /// Converts an array of digits into a number with the first digit being the
-        /// least significant.
+        /// Converts an array of digits into a number with the first digit being
+        /// the least significant.
         fn digits_to_number(digits: &[Number]) -> Number {
             digits
                 .iter()
@@ -322,7 +313,8 @@ mod solution {
                 .sum()
         }
 
-        // Look for all potentially valid model numbers from the analysis (see the notes)
+        // Look for all potentially valid model numbers from the analysis (see the
+        // notes)
         for digs in (0..7).map(|_| digit_iter.clone()).multi_cartesian_product() {
             // Extract the digits
             let d1 = digs[0];

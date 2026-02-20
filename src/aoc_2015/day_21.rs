@@ -112,11 +112,8 @@ mod solution {
         /// Starting stats.
         stats: Stats,
     }
-    impl Parsable<'_> for Character {
-        fn parser(input: &str) -> NomParseResult<&str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Character {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     field_line_parser("Hit Points:", nom::character::complete::u32),
@@ -129,14 +126,16 @@ mod solution {
         }
     }
     impl Character {
-        /// Holds a battle with another character until one runs out of hit points and dies.
+        /// Holds a battle with another character until one runs out of hit
+        /// points and dies.
         ///
         /// Returns whether this character won the battle.
         fn battle(&self, other: &Self) -> bool {
             let mut hp = self.hit_points;
             let mut hpo = other.hit_points;
 
-            /// Takes character `a`'s turn, attacking player `b`, who has a specified number of hit points.
+            /// Takes character `a`'s turn, attacking player `b`, who has a
+            /// specified number of hit points.
             ///
             /// Returns whether the attack killed player `b`.
             /// This is an internal function of [`Character::battle`].
@@ -210,8 +209,8 @@ mod solution {
         boss: Character,
     }
     impl Problem {
-        /// Solves a part of the problem by playing out the game for every combination
-        /// of the allowed load out bought from the shop.
+        /// Solves a part of the problem by playing out the game for every
+        /// combination of the allowed load out bought from the shop.
         pub fn solve<P: Part>(&self) -> AocResult<u64> {
             // Go through every combination of 1 weapon, 0-1 armor, and 0-2 rings
             match iproduct!(

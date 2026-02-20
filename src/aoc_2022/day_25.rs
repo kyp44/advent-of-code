@@ -55,7 +55,7 @@ mod solution {
         /// Minus (`-`).
         Minus,
     }
-    impl Parsable<'_> for SnafuDigit {
+    impl Parsable for SnafuDigit {
         fn parser(input: &'_ str) -> NomParseResult<&str, Self> {
             alt((
                 map(tag("0"), |_| Self::Zero),
@@ -99,10 +99,11 @@ mod solution {
         }
     }
     impl SnafuDigit {
-        /// Returns the value of the digit, given its `place` in the SNAFU number.
+        /// Returns the value of the digit, given its `place` in the SNAFU
+        /// number.
         ///
-        /// A `place` of `0` is the rightmost (ones) digit while a `place` of `n-1`
-        /// is the leftmost digit if the number has `n` digits.
+        /// A `place` of `0` is the rightmost (ones) digit while a `place` of
+        /// `n-1` is the leftmost digit if the number has `n` digits.
         pub fn value(&self, place: usize) -> i64 {
             5i64.pow(place.try_into().unwrap())
                 * match self {
@@ -114,8 +115,8 @@ mod solution {
                 }
         }
 
-        /// Returns whether the digit has a negative value, that is, whether it is
-        /// [`SnafuDigit::Minus`] or [`SnafuDigit::DoubleMinus`].
+        /// Returns whether the digit has a negative value, that is, whether it
+        /// is [`SnafuDigit::Minus`] or [`SnafuDigit::DoubleMinus`].
         pub fn is_negative_digit(&self) -> bool {
             matches!(self, Self::DoubleMinus | Self::Minus)
         }
@@ -124,7 +125,7 @@ mod solution {
     /// A single SNAFU number, which can be parsed from text input.
     #[derive(Debug, Add, Sub, From)]
     pub struct SnafuNumber(i64);
-    impl Parsable<'_> for SnafuNumber {
+    impl Parsable for SnafuNumber {
         fn parser(input: &'_ str) -> NomParseResult<&str, Self> {
             map(
                 trim(

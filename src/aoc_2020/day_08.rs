@@ -30,10 +30,10 @@ mod solution {
     };
     use std::iter::{Enumerate, Filter};
     use std::slice::Iter;
-    use std::str::FromStr;
     use std::{collections::HashSet, convert::TryInto};
 
-    /// A single program instruction with operand, which can be parsed from text input.
+    /// A single program instruction with operand, which can be parsed from text
+    /// input.
     #[derive(Debug, Clone)]
     enum Instruction {
         /// `nop` instruction, which does nothing.
@@ -43,8 +43,8 @@ mod solution {
         /// `jmp` instruction, which jumps to a relative instruction.
         Jmp(i32),
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Instruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             context(
                 "instruction",
                 map(
@@ -94,7 +94,8 @@ mod solution {
         }
     }
 
-    /// Possible ways for a program to end, with the value of the accumulator register at this point.
+    /// Possible ways for a program to end, with the value of the accumulator
+    /// register at this point.
     #[derive(Debug)]
     pub enum ProgramEndStatus {
         /// Jumped outside the bounds of the program instructions.
@@ -153,7 +154,8 @@ mod solution {
             }
         }
 
-        /// Returns a [`ProgramVariations`] iterator over variations on the program.
+        /// Returns a [`ProgramVariations`] iterator over variations on the
+        /// program.
         pub fn variations(&self) -> ProgramVariations<'_> {
             ProgramVariations {
                 original: self,
@@ -166,7 +168,8 @@ mod solution {
         }
     }
 
-    /// Type of the filter [`Iterator`] used by the [`ProgramVariations`] iterator.
+    /// Type of the filter [`Iterator`] used by the [`ProgramVariations`]
+    /// iterator.
     type VariationsIterator<'a> =
         Filter<Enumerate<Iter<'a, Instruction>>, fn(&(usize, &Instruction)) -> bool>;
 

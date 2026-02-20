@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -182,11 +181,12 @@ mod solution {
     enum Instruction {
         /// No operation, that is, do nothing for a single cycle.
         Noop,
-        /// Add something to the x register, takes two cycles before the number is actually added.
+        /// Add something to the x register, takes two cycles before the number
+        /// is actually added.
         Add(i64),
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Instruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(tag("noop"), |_| Self::Noop),
                 map(
@@ -228,7 +228,8 @@ mod solution {
     struct AddInstruction {
         /// The number to add when complete.
         to_add: i64,
-        /// The number of cycles left before the instruction is complete and the number is added.
+        /// The number of cycles left before the instruction is complete and the
+        /// number is added.
         cycles_left: usize,
     }
     impl AddInstruction {
@@ -269,22 +270,26 @@ mod solution {
             self.register_x += n;
         }
 
-        /// Calculates the signal strength for this CPU state, that is the cycle number times the x register.
+        /// Calculates the signal strength for this CPU state, that is the cycle
+        /// number times the x register.
         pub fn signal_strength(&self) -> i64 {
             i64::try_from(self.cycle).unwrap() * self.register_x
         }
     }
 
-    /// An [`Iterator`] over the CPU states after each cycle as a program is executed.
+    /// An [`Iterator`] over the CPU states after each cycle as a program is
+    /// executed.
     ///
     /// This should only be created using [`Program::execute`].
-    /// Note that the first state will be after the first cycle, not the initial state.
+    /// Note that the first state will be after the first cycle, not the initial
+    /// state.
     pub struct Executor<'a> {
         /// The list of instructions to execute.
         instructions: Iter<'a, Instruction>,
         /// The current CPU state.
         cpu_state: CpuState,
-        /// The current add instruction state if we are currently executing an add instruction.
+        /// The current add instruction state if we are currently executing an
+        /// add instruction.
         current_add: Option<AddInstruction>,
     }
     impl Iterator for Executor<'_> {

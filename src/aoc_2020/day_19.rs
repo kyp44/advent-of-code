@@ -97,11 +97,14 @@ mod solution {
     pub enum Rule<'a> {
         /// Rule in which the portion must match an explicit string.
         Match(&'a str),
-        /// Rule in which the portion must match one of a list sequences of other rules.
+        /// Rule in which the portion must match one of a list sequences of
+        /// other rules.
         Seq(Vec<Vec<usize>>),
     }
-    impl<'a> Parsable<'a> for Rule<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for Rule<'_> {
+        type Parsed<'a> = Rule<'a>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             let quote = "\"";
             alt((
                 map(
@@ -179,7 +182,8 @@ mod solution {
             Ok(RuleSet { rules })
         }
 
-        /// Determines whether an input string is valid according to a particular rule in the set.
+        /// Determines whether an input string is valid according to a
+        /// particular rule in the set.
         fn is_valid(&self, s: &str, rule_num: usize) -> AocResult<bool> {
             /// This is a recursive internal function of [`RuleSet::is_valid`].
             fn valid<'a>(

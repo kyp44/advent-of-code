@@ -40,8 +40,10 @@ mod solution {
         /// Distance between the two cities.
         distance: u64,
     }
-    impl<'a> Parsable<'a> for Distance<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for Distance<'_> {
+        type Parsed<'a> = Distance<'a>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
                     separated_pair(take_until(" "), separated(tag("to")), take_until(" ")),
@@ -63,13 +65,15 @@ mod solution {
     #[derive(Eq)]
     struct Transit<'a>(&'a str, &'a str);
     impl<'a> PartialEq for Transit<'a> {
-        /// Returns whether two transits are equal, which should not depend on the order.
+        /// Returns whether two transits are equal, which should not depend on
+        /// the order.
         fn eq(&self, other: &Self) -> bool {
             (self.0 == other.0 && self.1 == other.1) || (self.0 == other.1 && self.1 == other.0)
         }
     }
     impl<'a> hash::Hash for Transit<'a> {
-        /// Hashes a transit so that two transits in the opposite order produce the same hash.
+        /// Hashes a transit so that two transits in the opposite order produce
+        /// the same hash.
         fn hash<H: hash::Hasher>(&self, state: &mut H) {
             if self.0 <= self.1 {
                 self.0.hash(state);
@@ -104,7 +108,8 @@ mod solution {
             Ok(Problem { cities, distances })
         }
 
-        /// Calculates the distance along the route travel through a list of cities.
+        /// Calculates the distance along the route travel through a list of
+        /// cities.
         fn route_distance(&self, route: &[&str]) -> u64 {
             route
                 .windows(2)

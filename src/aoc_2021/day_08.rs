@@ -46,11 +46,12 @@ mod solution {
     /// be parsed from text input.
     #[derive(PartialEq, Eq)]
     struct Digit {
-        /// The set of signal names asserted to create this digit on the display.
+        /// The set of signal names asserted to create this digit on the
+        /// display.
         segments: HashSet<char>,
     }
-    impl Parsable<'_> for Digit {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Digit {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(many1(one_of("abcdefg")), |chars| Digit {
                 segments: chars.into_iter().collect(),
             })
@@ -65,8 +66,8 @@ mod solution {
         }
     }
     impl Digit {
-        /// Creates a new [`Digit`] based on a mapping from these signal names to
-        /// a new set of signal names.
+        /// Creates a new [`Digit`] based on a mapping from these signal names
+        /// to a new set of signal names.
         fn map(&self, map: &HashMap<char, char>) -> Self {
             Digit {
                 segments: self
@@ -123,8 +124,8 @@ mod solution {
         /// The four output display digits.
         output: Box<[Digit]>,
     }
-    impl Parsable<'_> for Entry {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Entry {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
                     separated_list1(space1, Digit::parser),
@@ -140,8 +141,8 @@ mod solution {
         }
     }
     impl Entry {
-        /// Solves this entry, returning the map of the mixed signal names to the corrected
-        /// signal names.
+        /// Solves this entry, returning the map of the mixed signal names to
+        /// the corrected signal names.
         fn solve(&self) -> AocResult<HashMap<char, char>> {
             // First verify the number of digits
             if self.digits.len() != 10 {
@@ -157,7 +158,8 @@ mod solution {
             // Map from the actual segment to the mixed up signal.
             let mut map = HashMap::new();
 
-            // This closure takes a number of signals and returns the first [`Digit`] with this number of signals.
+            // This closure takes a number of signals and returns the first [`Digit`] with
+            // this number of signals.
             let get_len = |len: usize| {
                 self.digits
                     .iter()
@@ -171,10 +173,12 @@ mod solution {
             let w7 = get_len(3)?;
             let w8 = get_len(7)?;
 
-            // This closure takes the actual segment `c` and a set of signals that only has a single element.
-            // This element is the signal to which the segment will be mapped, and the single element is returned.
+            // This closure takes the actual segment `c` and a set of signals that only has
+            // a single element. This element is the signal to which the segment
+            // will be mapped, and the single element is returned.
             let mut map_add = |c: char, set: HashSet<&char>| -> AocResult<char> {
-                /// This is an internal function of [`Entry::solve`] that creates an error given a signal name
+                /// This is an internal function of [`Entry::solve`] that
+                /// creates an error given a signal name
                 /// and message string.
                 fn err(c: char, msg: &str) -> AocError {
                     AocError::Process(format!("Problem deducing '{c}': {msg}!").into())
@@ -188,7 +192,8 @@ mod solution {
                     None => Ok(mc),
                 }
             };
-            // This closure returns the intersection of all the [`Digit`] sets with a particular length.
+            // This closure returns the intersection of all the [`Digit`] sets with a
+            // particular length.
             let length_intersection = |len: usize| -> HashSet<char> {
                 self.digits
                     .iter()

@@ -1,6 +1,5 @@
 use aoc::prelude::*;
 use gat_lending_iterator::LendingIterator;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -34,8 +33,8 @@ mod solution {
     /// A point that can be parsed from the rock line definition text.
     #[derive(Deref)]
     struct ParsePoint(AnyGridPoint);
-    impl Parsable<'_> for ParsePoint {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for ParsePoint {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
                     nom::character::complete::u16,
@@ -51,11 +50,12 @@ mod solution {
     /// A line of rocks.
     #[derive(new)]
     struct RockLine {
-        /// The points that define the horizontal and vertical segments of the line.
+        /// The points that define the horizontal and vertical segments of the
+        /// line.
         segment_points: Vec<AnyGridPoint>,
     }
-    impl Parsable<'_> for RockLine {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for RockLine {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 trim(
                     false,
@@ -164,8 +164,8 @@ mod solution {
     impl Cave {
         /// Begins the simulation of sand entering the chamber.
         ///
-        /// The simulation can be run with or without taking into account the cave
-        /// floor (part two) or not (part one).
+        /// The simulation can be run with or without taking into account the
+        /// cave floor (part two) or not (part one).
         pub fn simulate_sand(&self, use_floor: bool) -> AocResult<SimulationState> {
             let mut rock_points = HashSet::new();
 
@@ -190,7 +190,8 @@ mod solution {
             if use_floor {
                 let fy = rock_points.iter().map(|p| p.y).max().unwrap() + 2;
 
-                // Calculate floor x bounds based on diagonal projection down from every rock and the source.
+                // Calculate floor x bounds based on diagonal projection down from every rock
+                // and the source.
                 let fx1 = rock_points.iter().map(|p| p.x - (fy - p.y)).min().unwrap();
                 let fx2 = rock_points.iter().map(|p| p.x + (fy - p.y)).max().unwrap();
 
@@ -214,10 +215,11 @@ mod solution {
         }
     }
 
-    /// An [`LendingIterator`] over the states of the cave chamber as sand enters.
+    /// An [`LendingIterator`] over the states of the cave chamber as sand
+    /// enters.
     ///
-    /// Each element is a reference to the state after each additional grain of sand
-    /// enters at the source, falls, and comes to rest.
+    /// Each element is a reference to the state after each additional grain of
+    /// sand enters at the source, falls, and comes to rest.
     /// The iterator terminates once either sand is falling down into the void
     /// (part one) or the source is completely blocked with sand because of it
     /// piling up on the floor (part two).

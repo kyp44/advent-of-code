@@ -49,11 +49,11 @@ mod solution {
     /// Coordinates of a tile on the floor.
     ///
     /// Despite the [hexagonal tiling](https://en.wikipedia.org/wiki/Hexagonal_tiling),
-    /// every tile can be specified with a 2D vector where the tiling is oriented so
-    /// that horizontal lines are formed, along which the `x` coordinate varies.
-    /// For a given tile, increasing the `y` coordinate, on the other hand,
-    /// moves along a diagonal line to upper left so that decreasing the `y`
-    /// coordinates moves to the lower right.
+    /// every tile can be specified with a 2D vector where the tiling is
+    /// oriented so that horizontal lines are formed, along which the `x`
+    /// coordinate varies. For a given tile, increasing the `y` coordinate,
+    /// on the other hand, moves along a diagonal line to upper left so that
+    /// decreasing the `y` coordinates moves to the lower right.
     type Point = Point2D<i32>;
 
     /// Direction to go from a tile, which can be parsed from text input.
@@ -75,8 +75,8 @@ mod solution {
         /// The tile to the right and below.
         NorthWest,
     }
-    impl Parsable<'_> for Direction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Direction {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             use Direction::*;
             map(
                 alt((
@@ -120,8 +120,8 @@ mod solution {
         /// Ordered list of directions to take from some starting tile.
         directions: Box<[Direction]>,
     }
-    impl Parsable<'_> for Route {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Route {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(all_consuming(many1(Direction::parser)), |vec| Route {
                 directions: vec.into_boxed_slice(),
             })
@@ -140,8 +140,8 @@ mod solution {
 
     /// A tile floor, which can be parsed from text input.
     ///
-    /// The series of directions that are parsed are immediately followed to turn
-    /// the requisite tiles black.
+    /// The series of directions that are parsed are immediately followed to
+    /// turn the requisite tiles black.
     #[derive(Clone)]
     pub struct Floor {
         /// Set of tile [`Point`]s that have been flipped over to be black.

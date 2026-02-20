@@ -54,8 +54,8 @@ mod solution {
             num: usize,
         },
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for Instruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             trim(
                 true,
                 alt((
@@ -88,14 +88,16 @@ mod solution {
         }
     }
     impl Screen {
-        /// Creates a new, blank screen of a given `size` with all pixels turned off.
+        /// Creates a new, blank screen of a given `size` with all pixels turned
+        /// off.
         pub fn new(size: GridSize) -> Self {
             Self {
                 grid: Grid::default(size),
             }
         }
 
-        /// Applies an [`Instruction`] to the screen, potentially altering pixels.
+        /// Applies an [`Instruction`] to the screen, potentially altering
+        /// pixels.
         fn apply_instruction(&mut self, instruction: &Instruction) {
             match instruction {
                 Instruction::Rect { width, height } => {
@@ -137,8 +139,8 @@ mod solution {
         /// The instructions, in order.
         instructions: Vec<Instruction>,
     }
-    impl Parsable<'_> for InstructionSet {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for InstructionSet {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     (tag("size "), pusize, tag("x"), pusize),

@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use aoc::prelude::*;
 
 #[cfg(test)]
@@ -26,7 +24,6 @@ mod solution {
     use itertools::{Itertools, process_results};
     use std::ascii::Char as AsciiChar;
     use std::collections::HashSet;
-    use std::str::FromStr;
 
     /// An extension trait for characters as an item type.
     trait CharExt {

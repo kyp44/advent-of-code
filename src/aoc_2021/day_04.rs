@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -56,8 +55,8 @@ mod solution {
             BoardCell { number, hit: false }
         }
     }
-    impl Parsable<'_> for BoardCell {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for BoardCell {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(nom::character::complete::u8, Self::from).parse(input)
         }
     }
@@ -68,8 +67,8 @@ mod solution {
         /// The grid of board cells.
         grid: Grid<BoardCell>,
     }
-    impl Parsable<'_> for BingoBoard {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for BingoBoard {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             let (input, rows) = separated_list1(
                 line_ending,
                 trim(false, separated_list1(space1, BoardCell::parser)),
@@ -121,8 +120,8 @@ mod solution {
             false
         }
 
-        /// Calculates the score for this board, which is the sum of all cells that
-        /// have not been hit.
+        /// Calculates the score for this board, which is the sum of all cells
+        /// that have not been hit.
         fn score(&self, last_number: u8) -> u64 {
             self.grid
                 .all_values()

@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -54,8 +53,8 @@ mod solution {
         /// The ordered list of elements in the formula.
         elements: Vec<char>,
     }
-    impl Parsable<'_> for Formula {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Formula {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(alphanumeric1, |s: &str| Self {
                 elements: s.chars().collect(),
             })
@@ -68,7 +67,8 @@ mod solution {
         }
     }
     impl Formula {
-        /// Returns an ordered [`Iterator`] over adjacent pairs of elements in the formula.
+        /// Returns an ordered [`Iterator`] over adjacent pairs of elements in
+        /// the formula.
         fn pairs(&self) -> impl Iterator<Item = Pair> + '_ {
             self.elements.iter().copied().tuple_windows()
         }
@@ -77,7 +77,8 @@ mod solution {
     /// A pair of elements.
     type Pair = (char, char);
 
-    /// An insertion into a polymer formula, which can be parsed from text input.
+    /// An insertion into a polymer formula, which can be parsed from text
+    /// input.
     #[derive(Debug)]
     struct PairInsertion {
         /// The left element of the pair in which to insert.
@@ -87,8 +88,8 @@ mod solution {
         /// Element to insert between the pair.
         insert: char,
     }
-    impl Parsable<'_> for PairInsertion {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for PairInsertion {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
                     pair(single_alphanumeric, single_alphanumeric),
@@ -110,7 +111,8 @@ mod solution {
             (self.left, self.right)
         }
 
-        /// Returns an [`Iterator`] of the unique elements involved in the insertion.
+        /// Returns an [`Iterator`] of the unique elements involved in the
+        /// insertion.
         fn chars(&self) -> impl Iterator<Item = char> {
             hashset![self.left, self.right, self.insert].into_iter()
         }
@@ -119,11 +121,13 @@ mod solution {
     /// The number of occurrences of each element in a formula.
     #[derive(Debug, Clone)]
     pub struct Occurrences {
-        /// Map of element characters to the number of times it appears in the formula.
+        /// Map of element characters to the number of times it appears in the
+        /// formula.
         map: HashMap<char, u64>,
     }
     impl Occurrences {
-        /// Creates a new set of occurrences in which every element initially has zero occurrences.
+        /// Creates a new set of occurrences in which every element initially
+        /// has zero occurrences.
         fn new() -> Self {
             Self {
                 map: HashMap::new(),
@@ -210,7 +214,8 @@ mod solution {
             iproduct!(self.chars.iter().copied(), self.chars.iter().copied())
         }
 
-        /// Returns an [`Iterator`] over the element occurrences at each step as the polymer is built up.
+        /// Returns an [`Iterator`] over the element occurrences at each step as
+        /// the polymer is built up.
         pub fn builder(&self) -> PolymerBuilder<'_> {
             PolymerBuilder::new(self)
         }
@@ -221,9 +226,10 @@ mod solution {
     pub struct PolymerBuilder<'a> {
         /// The problem for which we are building the polymer.
         problem: &'a Problem,
-        /// Map from every possible initial pair of elements to the occurrences of each
-        /// element in the expansion of that initial pair at the current step, which
-        /// does not include the final element in the expansion.
+        /// Map from every possible initial pair of elements to the occurrences
+        /// of each element in the expansion of that initial pair at the
+        /// current step, which does not include the final element in
+        /// the expansion.
         occurrence_map: HashMap<Pair, Occurrences>,
     }
     impl<'a> PolymerBuilder<'a> {

@@ -37,7 +37,8 @@ mod solution {
     };
     use std::collections::HashSet;
 
-    /// A change in happiness for a holiday feast attendee that can be parsed from text input.
+    /// A change in happiness for a holiday feast attendee that can be parsed
+    /// from text input.
     #[derive(Debug)]
     struct SeatingPreference<'a> {
         /// Name of the person whose happiness is changed.
@@ -47,8 +48,10 @@ mod solution {
         /// Amount of happiness change.
         change: i64,
     }
-    impl<'a> Parsable<'a> for SeatingPreference<'a> {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for SeatingPreference<'_> {
+        type Parsed<'a> = SeatingPreference<'a>;
+
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     take_until(" "),
@@ -74,7 +77,8 @@ mod solution {
     pub struct Problem<'a> {
         /// List of all attendee names.
         attendees: Vec<&'a str>,
-        /// Change in happiness values caused by seating people next to each other.
+        /// Change in happiness values caused by seating people next to each
+        /// other.
         preferences: Vec<SeatingPreference<'a>>,
     }
     impl<'a> Problem<'a> {
@@ -107,7 +111,8 @@ mod solution {
                 })
         }
 
-        /// Calculates the total change in happiness for a particular arrangement.
+        /// Calculates the total change in happiness for a particular
+        /// arrangement.
         fn arrangement_happiness(&self, arrangement: &[&str]) -> AocResult<i64> {
             let lookup_change = |person: &str, other: &str| -> AocResult<i64> {
                 self.preferences
@@ -137,7 +142,8 @@ mod solution {
             )
         }
 
-        /// Determines the arrangement that maximizes the total change in happiness.
+        /// Determines the arrangement that maximizes the total change in
+        /// happiness.
         pub fn best_arrangement(&self) -> AocResult<i64> {
             process_results(
                 self.arrangements()
@@ -146,7 +152,8 @@ mod solution {
             )
         }
 
-        /// Adds an attendee who has completely neutral seating preferences as do others towards them.
+        /// Adds an attendee who has completely neutral seating preferences as
+        /// do others towards them.
         pub fn add_attendee(&mut self, name: &'a str) {
             // Add neutral seating preferences
             for att in self.attendees.iter() {

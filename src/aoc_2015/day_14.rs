@@ -25,7 +25,8 @@ mod solution {
     };
     use std::{cmp::min, collections::HashMap};
 
-    /// One of Santa's reindeer with its racing stats that can be parsed from text input.
+    /// One of Santa's reindeer with its racing stats that can be parsed from
+    /// text input.
     pub struct Reindeer {
         /// Name of the reindeer.
         name: String,
@@ -33,11 +34,12 @@ mod solution {
         fly_speed: u64,
         /// Time the reindeer can fly before resting in seconds.
         fly_time: u64,
-        /// Time for which the reindeer must rest after flying before flying again in seconds.
+        /// Time for which the reindeer must rest after flying before flying
+        /// again in seconds.
         rest_time: u64,
     }
-    impl Parsable<'_> for Reindeer {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Reindeer {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     take_until::<_, &str, _>(" "),
@@ -60,7 +62,8 @@ mod solution {
         }
     }
     impl Reindeer {
-        /// Calculates the distance the reindeer has traveled after some time in seconds.
+        /// Calculates the distance the reindeer has traveled after some time in
+        /// seconds.
         pub fn distance_at(&self, time: u64) -> u64 {
             let wrap_time = WrapCountNum::new(time, self.fly_time + self.rest_time);
             self.fly_speed * (wrap_time.wraps() * self.fly_time + min(self.fly_time, wrap_time.a()))

@@ -40,7 +40,8 @@ mod solution {
     /// Bit mask bit value, which can be parsed from a text character.
     #[derive(Debug)]
     pub enum MaskBit {
-        /// Leave value bit unchanged (V1) or address bit floating, which is all possible values (V2).
+        /// Leave value bit unchanged (V1) or address bit floating, which is all
+        /// possible values (V2).
         X,
         /// Reset value bit (V1) or leave address bit unchanged (V2).
         Zero,
@@ -71,8 +72,9 @@ mod solution {
         ///
         /// Panics if any values exceed the system bit depth.
         fn new(address: u64, value: u64) -> Assignment {
-            /// This is an internal of [`Assignment::new`] that panics if this is the
-            /// case or simply returns the same number otherwise.
+            /// This is an internal of [`Assignment::new`] that panics if this
+            /// is the case or simply returns the same number
+            /// otherwise.
             fn check(val: u64) -> u64 {
                 assert!(val < (1 << BITS), "Value of {val} exceeds {BITS} bits");
                 val
@@ -92,8 +94,8 @@ mod solution {
         /// Sets a memory location.
         SetMemory(Assignment),
     }
-    impl Parsable<'_> for Operation {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Operation {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             use nom::character::complete::u64 as cu64;
             alt((
                 map(
@@ -110,14 +112,17 @@ mod solution {
         }
     }
 
-    /// Mask with behavior specific to a particular decoder chip version (problem part).
+    /// Mask with behavior specific to a particular decoder chip version
+    /// (problem part).
     pub trait Mask: for<'a> From<&'a [MaskBit]> + Default {
-        /// Applies the mask to an assignment request according the rules for the version.
+        /// Applies the mask to an assignment request according the rules for
+        /// the version.
         ///
         /// Returns a list of hard assignments to make.
         fn apply_mask(&self, memory: &Assignment) -> Vec<Assignment>;
 
-        /// Converts a list of bit mask values to a real bit mask using a bit conversion function.
+        /// Converts a list of bit mask values to a real bit mask using a bit
+        /// conversion function.
         fn vec_to_mask(vec: &[MaskBit], mut conv: impl FnMut(&MaskBit) -> bool) -> u64 {
             let mut val = 0;
             for (bit, mb) in vec.iter().enumerate() {
@@ -131,9 +136,11 @@ mod solution {
 
     /// Mask for decoder chip version 1 (part one).
     pub struct MaskV1 {
-        /// Real bit mask used to reset all value bits that need set to 0 (via bitwise AND).
+        /// Real bit mask used to reset all value bits that need set to 0 (via
+        /// bitwise AND).
         reset_mask: u64,
-        /// Real bit mask used to set all value bits that need set to 1 (via bitwise OR).
+        /// Real bit mask used to set all value bits that need set to 1 (via
+        /// bitwise OR).
         set_mask: u64,
     }
     impl From<&[MaskBit]> for MaskV1 {
@@ -164,9 +171,11 @@ mod solution {
 
     /// Mask for decoder chip version 2 (part two).
     pub struct MaskV2 {
-        /// Real bit mask used to reset all address floating bits (via bitwise AND).
+        /// Real bit mask used to reset all address floating bits (via bitwise
+        /// AND).
         reset_mask: u64,
-        /// List of real bit masks to set the address floating bits for every combination (via bitwise OR).
+        /// List of real bit masks to set the address floating bits for every
+        /// combination (via bitwise OR).
         set_masks: Vec<u64>,
     }
     impl From<&[MaskBit]> for MaskV2 {
@@ -228,8 +237,8 @@ mod solution {
         }
     }
     impl Program {
-        /// Executes the program for a particular chip version and return the sum
-        /// of the memory values after completion.
+        /// Executes the program for a particular chip version and return the
+        /// sum of the memory values after completion.
         pub fn execute<M: Mask>(&self) -> u64 {
             // Current bit mask
             let mut mask = M::default();

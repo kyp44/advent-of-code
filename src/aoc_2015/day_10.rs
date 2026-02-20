@@ -25,13 +25,14 @@ mod solution {
 
     /// Number sequence that can be parsed from text input.
     ///
-    /// Also an [`Iterator`] to iterate over the look-and-say sequence of sequences.
+    /// Also an [`Iterator`] to iterate over the look-and-say sequence of
+    /// sequences.
     pub struct Sequence {
         /// Sequence for the next iteration.
         current: Takeable<String>,
     }
-    impl Parsable<'_> for Sequence {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Sequence {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(digit1, |ds: &str| Sequence {
                 current: ds.to_string().into(),
             })
@@ -65,7 +66,8 @@ pub const SOLUTION: Solution = Solution {
     solvers: &[
         // Part one
         |input| {
-            //println!("{}", Sequence::from_str(input.expect_text()?)?.nth(40).unwrap().len());
+            //println!("{}",
+            // Sequence::from_str(input.expect_text()?)?.nth(40).unwrap().len());
             Ok(Answer::Unsigned(
                 Sequence::from_str(input.expect_text()?)?
                     .nth(40)
@@ -77,7 +79,8 @@ pub const SOLUTION: Solution = Solution {
         },
         // Part two
         |input| {
-            //println!("{}", Sequence::from_str(input.expect_text()?)?.nth(50).unwrap().len());
+            //println!("{}",
+            // Sequence::from_str(input.expect_text()?)?.nth(50).unwrap().len());
             Ok(Answer::Unsigned(
                 Sequence::from_str(input.expect_text()?)?
                     .nth(50)

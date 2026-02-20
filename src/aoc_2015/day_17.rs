@@ -21,7 +21,6 @@ mod tests {
 mod solution {
     use super::*;
     use itertools::Itertools;
-    use std::str::FromStr;
 
     /// Definition of the problem that can be parsed from text input.
     pub struct Problem {
@@ -38,8 +37,8 @@ mod solution {
         }
     }
     impl Problem {
-        /// Returns an [`Iterator`] of all combinations of containers that hold a
-        /// particular amount of eggnog in liters.
+        /// Returns an [`Iterator`] of all combinations of containers that hold
+        /// a particular amount of eggnog in liters.
         pub fn combinations(&self, amount: u16) -> impl Iterator<Item = Vec<u16>> + '_ {
             (1..=self.containers.len())
                 .flat_map(move |k| {

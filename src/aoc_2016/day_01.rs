@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -35,7 +34,8 @@ mod solution {
 
     use super::*;
 
-    /// The vector type used for intersection positions between blocks where (0, 0) is the starting position.
+    /// The vector type used for intersection positions between blocks where (0,
+    /// 0) is the starting position.
     type Vector = euclid::default::Vector2D<i32>;
 
     /// A direction to turn.
@@ -48,8 +48,8 @@ mod solution {
         /// Turn to the right.
         Right,
     }
-    impl<'a> Parsable<'a> for TurnDirection {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for TurnDirection {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(tag("L"), |_| Self::Left),
                 map(tag("R"), |_| Self::Right),
@@ -67,8 +67,8 @@ mod solution {
         /// The distance to walk after turning.
         pub distance: u16,
     }
-    impl<'a> Parsable<'a> for Step {
-        fn parser(input: &'a str) -> NomParseResult<&'a str, Self> {
+    impl Parsable for Step {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 trim(
                     false,
@@ -127,7 +127,8 @@ mod solution {
             Self::from(dir)
         }
 
-        /// Returns a vector corresponding to walking one block in this direction.
+        /// Returns a vector corresponding to walking one block in this
+        /// direction.
         pub fn as_vector(&self) -> Vector {
             match self {
                 Direction::North => Vector::unit_y(),
@@ -137,11 +138,12 @@ mod solution {
             }
         }
 
-        /// Returns an [`Iterator`] over every intersection passed through when walking
-        /// this direction `distance` blocks from the `starting_position`.
+        /// Returns an [`Iterator`] over every intersection passed through when
+        /// walking this direction `distance` blocks from the
+        /// `starting_position`.
         ///
-        /// NOTE: The `starting_position` is not the first item, which is one block
-        /// in this direction.
+        /// NOTE: The `starting_position` is not the first item, which is one
+        /// block in this direction.
         pub fn every_block(
             &self,
             starting_position: Vector,
@@ -171,7 +173,8 @@ mod solution {
         }
     }
     impl Instructions {
-        /// Executes the instructions and return the final intersection at the end.
+        /// Executes the instructions and return the final intersection at the
+        /// end.
         pub fn final_position(&self) -> Vector {
             let mut position = Vector::zero();
             let mut direction = Direction::North;
@@ -187,8 +190,8 @@ mod solution {
         /// Executes the instructions and returns the first intersection that is
         /// visited twice, or `None` if no intersection is ever visited twice.
         ///
-        /// NOTE: This counts all intersections walked through, not just intersections
-        /// at the end of each step.
+        /// NOTE: This counts all intersections walked through, not just
+        /// intersections at the end of each step.
         pub fn first_visited_twice(&self) -> Option<Vector> {
             let mut position = Vector::zero();
             let mut visited = HashSet::<Vector>::new();

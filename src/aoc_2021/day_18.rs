@@ -56,8 +56,8 @@ mod solution {
         /// Ordered list of the elements of the number.
         stack: Vec<Element>,
     }
-    impl Parsable<'_> for SnailfishNumber {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for SnailfishNumber {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(nom::character::complete::u8, |n| SnailfishNumber {
                     stack: vec![Element::Num(n)],
@@ -110,7 +110,8 @@ mod solution {
             }
         }
 
-        /// Explodes the first applicable number and returns whether an explosion occurred.
+        /// Explodes the first applicable number and returns whether an
+        /// explosion occurred.
         fn explode(&mut self) -> bool {
             let pairs: Vec<(usize, u8, u8)> = self
                 .stack
@@ -161,7 +162,8 @@ mod solution {
             false
         }
 
-        /// Splits the first applicable number and returns whether a split occurred.
+        /// Splits the first applicable number and returns whether a split
+        /// occurred.
         fn split(&mut self) -> bool {
             // Look for the first candidate element
             if let Some((i, n)) = self.stack.iter().enumerate().find_map(|(i, e)| {

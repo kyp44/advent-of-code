@@ -19,17 +19,20 @@ mod solution {
 
     use super::*;
 
-    /// Represents the number of presents delivered to each house below some maximum house number.
+    /// Represents the number of presents delivered to each house below some
+    /// maximum house number.
     pub struct Delivery {
-        /// The houses of interest are those that get at least this number of presents.
+        /// The houses of interest are those that get at least this number of
+        /// presents.
         target: usize,
         /// The number of presents delivered to each house.
         presents: Vec<usize>,
     }
     impl Delivery {
-        /// Creates a delivery base on a target number, a present multiplier (which is the number of
-        /// presents each elf delivers divided by its elf number), and an optional maximum
-        /// number of houses to which each elf delivers.
+        /// Creates a delivery base on a target number, a present multiplier
+        /// (which is the number of presents each elf delivers divided
+        /// by its elf number), and an optional maximum number of houses
+        /// to which each elf delivers.
         pub fn new(target: usize, present_mult: usize, house_limit: Option<usize>) -> Self {
             // Maximum house for which we need to compute the number of presents
             // as this is guaranteed to be above the target.
@@ -64,7 +67,8 @@ mod solution {
             Delivery { target, presents }
         }
 
-        /// Returns the first house number who got at least as many presents as the target number.
+        /// Returns the first house number who got at least as many presents as
+        /// the target number.
         pub fn first_house(&self) -> AocResult<u64> {
             Ok((self
                 .presents
@@ -89,7 +93,11 @@ pub const SOLUTION: Solution = Solution {
         // Part one
         |input| {
             // Generation
-            let delivery = Delivery::new(usize::from_str(input.expect_text()?)?, 10, None);
+            let delivery = Delivery::new(
+                <usize as Parsable>::from_str(input.expect_text()?)?,
+                10,
+                None,
+            );
 
             // Process
             /*for h in 1..10 {
@@ -101,7 +109,11 @@ pub const SOLUTION: Solution = Solution {
         // Part two
         |input| {
             // Generation
-            let delivery = Delivery::new(usize::from_str(input.expect_text()?)?, 11, Some(50));
+            let delivery = Delivery::new(
+                <usize as Parsable>::from_str(input.expect_text()?)?,
+                11,
+                Some(50),
+            );
 
             // Process
             /*for h in 1..30 {

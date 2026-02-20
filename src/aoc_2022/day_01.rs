@@ -37,8 +37,8 @@ mod solution {
         /// The calories of the food items.
         items: Vec<u32>,
     }
-    impl Parsable<'_> for Elf {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Elf {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_list1(multispace1, nom::character::complete::u32),
                 |items| Self { items },

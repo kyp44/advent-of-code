@@ -41,11 +41,8 @@ mod solution {
         /// Register `b`.
         B,
     }
-    impl Parsable<'_> for Register {
-        fn parser(input: &str) -> NomParseResult<&str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Register {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(tag("a"), |_| Register::A),
                 map(tag("b"), |_| Register::B),
@@ -54,7 +51,8 @@ mod solution {
         }
     }
 
-    /// Possible instructions of the computer, which can be parsed from text input.
+    /// Possible instructions of the computer, which can be parsed from text
+    /// input.
     #[derive(Debug)]
     enum Instruction {
         /// The `hlf` instruction operating on register.
@@ -65,16 +63,15 @@ mod solution {
         Increment(Register),
         /// The `jmp`  instruction with the relative offset.
         Jump(i32),
-        /// The conditional `jie` instruction with the register to check and relative offset.
+        /// The conditional `jie` instruction with the register to check and
+        /// relative offset.
         JumpIfEven(Register, i32),
-        /// The conditional `jio` instruction with the register to check and relative offset.
+        /// The conditional `jio` instruction with the register to check and
+        /// relative offset.
         JumpIfOne(Register, i32),
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &str) -> NomParseResult<&str, Self>
-        where
-            Self: Sized,
-        {
+    impl Parsable for Instruction {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(preceded(tag("hlf "), trim(false, Register::parser)), |r| {
                     Instruction::Half(r)

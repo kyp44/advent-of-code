@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -176,11 +175,12 @@ mod solution {
     /// A 3D vector over the field of integers.
     type Vector = Vector3D<i32>;
 
-    /// A 3D point in our coordinate system, which can be parsed from text input.
+    /// A 3D point in our coordinate system, which can be parsed from text
+    /// input.
     #[derive(Deref, Debug, Clone, Copy, PartialEq, Eq, Hash, From)]
     pub struct Point(Point3D<i32>);
-    impl Parsable<'_> for Point {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Point {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_list1(tag(","), trim(false, nom::character::complete::i32)),
                 |v| Self(Point3D::new(v[0], v[1], v[2])),
@@ -220,11 +220,11 @@ mod solution {
         }
     }
 
-    /// Extension trait for [`Rotation3D`] that allow raw mathematical operations
-    /// on the quaternions.
+    /// Extension trait for [`Rotation3D`] that allow raw mathematical
+    /// operations on the quaternions.
     ///
-    /// Note that these could not have been implemented as the normal operator traits
-    /// due to the orphan rule.
+    /// Note that these could not have been implemented as the normal operator
+    /// traits due to the orphan rule.
     trait QuaternionExt {
         /// Creates a quaternion from the scalar and vector components.
         fn from_sv(s: i32, v: Vector3D<i32>) -> Self;
@@ -271,8 +271,8 @@ mod solution {
         Rot270,
     }
     impl RotationAngle {
-        /// Generates a rotation quaternion from the rotation angle about a particular
-        /// axis, which must be a unit vector.
+        /// Generates a rotation quaternion from the rotation angle about a
+        /// particular axis, which must be a unit vector.
         fn rotation_quaternion(&self, unit_axis: Vector) -> RotationQuaternion {
             match self {
                 RotationAngle::Rot0 => {
@@ -294,17 +294,19 @@ mod solution {
     /// A quaternion that performs a rotation about the origin.
     #[derive(new, Clone, Debug)]
     struct RotationQuaternion {
-        /// Divisor needed to account for the sine and cosine when using integers.
+        /// Divisor needed to account for the sine and cosine when using
+        /// integers.
         ///
-        /// This is the square of the divisor of the actual rotation quaternion so
-        /// that when rotation is applied we need only divide by this at the end
-        /// once.
+        /// This is the square of the divisor of the actual rotation quaternion
+        /// so that when rotation is applied we need only divide by this
+        /// at the end once.
         divisor: i32,
         /// The rotation quaternion without the divisor.
         quat: Rotation3D<i32>,
     }
     impl RotationQuaternion {
-        /// Returns the identity rotation quaternion that leaves points unchanged.
+        /// Returns the identity rotation quaternion that leaves points
+        /// unchanged.
         fn identity() -> Self {
             Self::new(1, Rotation3D::identity())
         }
@@ -318,7 +320,8 @@ mod solution {
                 .into()
         }
 
-        /// Generates a new rotation quaternion that is this one followed by another.
+        /// Generates a new rotation quaternion that is this one followed by
+        /// another.
         fn compose(self, other: Self) -> Self {
             Self {
                 divisor: self.divisor * other.divisor,
@@ -326,8 +329,8 @@ mod solution {
             }
         }
 
-        /// Iterates over the 24 possible rotation quaternions representing possible scanner
-        /// orientations.
+        /// Iterates over the 24 possible rotation quaternions representing
+        /// possible scanner orientations.
         fn orientations() -> impl Iterator<Item = Self> {
             let facing_rotations: [RotationQuaternion; 6] = [
                 RotationAngle::Rot0.rotation_quaternion(Vector::unit_z()),
@@ -479,10 +482,11 @@ mod solution {
         }
     }
     impl ScannerNetwork {
-        /// Correlates all the scanners together and return the correlated network.
+        /// Correlates all the scanners together and return the correlated
+        /// network.
         pub fn correlate(&self) -> CorrelatedScannerNetwork {
-            /// This is an internal function of [`ScannerNetwork::correlate`] that recursively correlates
-            /// scanners one by one.
+            /// This is an internal function of [`ScannerNetwork::correlate`]
+            /// that recursively correlates scanners one by one.
             fn correlate_rec(
                 from: Rc<Scanner>,
                 scanners: &[Rc<Scanner>],
@@ -500,8 +504,9 @@ mod solution {
                         // Add this to the list of correlated scanners
                         correlated.insert(to.clone());
 
-                        // Now recurse to get with which uncorrelated scanners this is also correlated
-                        // and map these additional sub-correlations back to the original scanner.
+                        // Now recurse to get with which uncorrelated scanners this is also
+                        // correlated and map these additional
+                        // sub-correlations back to the original scanner.
                         correlations.extend(
                             correlate_rec(to.clone(), scanners, correlated)
                                 .into_iter()

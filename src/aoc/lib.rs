@@ -38,6 +38,7 @@ pub mod prelude {
     };
     pub use bool_ext::BoolExt;
     pub use nom::Parser;
+    pub use std::str::FromStr;
 }
 
 /// Prelude for the tests, mainly when using [`solution_tests`].

@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -46,8 +45,8 @@ mod solution {
             self.bit_vec.iter().fold(0, |a, b| 2 * a + u64::from(*b))
         }
     }
-    impl Parsable<'_> for ReportLine {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for ReportLine {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(many1(one_of("01")), |v| Self {
                 bit_vec: v.into_iter().map(|b| b == '1').collect(),
             })
@@ -140,12 +139,12 @@ mod solution {
             Ok(gamma_val * epsilon_val)
         }
 
-        /// Calculates a rating by filtering the report lines according to the most
-        /// or least common value for each bit number.
+        /// Calculates a rating by filtering the report lines according to the
+        /// most or least common value for each bit number.
         ///
-        /// The `criteria` closure should take a [`MostCommon`] value for the bit
-        /// number and return what the bit value should be for that bit number in
-        /// the lines that are kept.
+        /// The `criteria` closure should take a [`MostCommon`] value for the
+        /// bit number and return what the bit value should be for that
+        /// bit number in the lines that are kept.
         fn calculate_rating(&self, criteria: impl Fn(MostCommon) -> bool) -> AocResult<u64> {
             let mut report = self.clone();
 
@@ -166,8 +165,8 @@ mod solution {
             }
         }
 
-        /// Determines the life support rating by first filtering the report lines
-        /// to find the oxygen generator and CO2 scrubber ratings.
+        /// Determines the life support rating by first filtering the report
+        /// lines to find the oxygen generator and CO2 scrubber ratings.
         pub fn life_support_rating(&self) -> AocResult<u64> {
             let oxygen_rating = self.calculate_rating(|com| !matches!(com, MostCommon::Zeros))?;
             let co2_rating = self.calculate_rating(|com| matches!(com, MostCommon::Zeros))?;

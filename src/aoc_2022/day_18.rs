@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -50,8 +49,8 @@ mod solution {
         /// The location of the cube.
         location: Point,
     }
-    impl Parsable<'_> for Cube {
-        fn parser(input: &'_ str) -> NomParseResult<&str, Self> {
+    impl Parsable for Cube {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 trim(
                     false,
@@ -86,7 +85,8 @@ mod solution {
 
     /// The global state when recursively determining 3D regions.
     ///
-    /// This also keeps track of the cubes in each region being determined so far.
+    /// This also keeps track of the cubes in each region being determined so
+    /// far.
     struct RegionSearchState<'a> {
         /// The set of cubes comprising the droplet itself.
         droplet_cubes: &'a HashSet<Cube>,
@@ -98,13 +98,15 @@ mod solution {
         pocket_cubes: HashSet<Cube>,
         /// The set of cubes comprising the current region thus far.
         current_region: HashSet<Cube>,
-        /// Whether the current region has been identified as being outside the droplet.
+        /// Whether the current region has been identified as being outside the
+        /// droplet.
         outside_region: bool,
     }
     impl<'a> RegionSearchState<'a> {
         /// Creates a new search state given the set of droplet cubes.
         ///
-        /// The new search state begins with no regions identified except the droplet.
+        /// The new search state begins with no regions identified except the
+        /// droplet.
         pub fn new(droplet: &'a HashSet<Cube>) -> AocResult<Self> {
             Ok(Self {
                 droplet_cubes: droplet,
@@ -122,13 +124,14 @@ mod solution {
             self.outside_region = false;
         }
 
-        /// Returns whether a given `cube` is within the bounds of the droplet/problem.
+        /// Returns whether a given `cube` is within the bounds of the
+        /// droplet/problem.
         fn in_bounds(&self, cube: &Cube) -> bool {
             self.bounds.contains(cube.location)
         }
 
-        /// Returns whether a `cube` is in one of the currently known regions, including
-        /// the current region.
+        /// Returns whether a `cube` is in one of the currently known regions,
+        /// including the current region.
         fn known_cube(&self, cube: &Cube) -> bool {
             self.current_region.contains(cube)
                 || self.droplet_cubes.contains(cube)
@@ -136,11 +139,11 @@ mod solution {
                 || self.pocket_cubes.contains(cube)
         }
 
-        /// Creates a new search node for the `cube` only if the cube is not currently
-        /// in a known region or out of bounds.
+        /// Creates a new search node for the `cube` only if the cube is not
+        /// currently in a known region or out of bounds.
         ///
-        /// If the cube is out of bounds, the current region is flagged as being outside
-        /// the droplet.
+        /// If the cube is out of bounds, the current region is flagged as being
+        /// outside the droplet.
         fn new_node(&mut self, cube: Cube) -> Option<RegionSearchNode<'a>> {
             let out_of_bounds = !self.in_bounds(&cube);
 
@@ -159,12 +162,12 @@ mod solution {
             self.bounds.all_points().map(|location| Cube { location })
         }
 
-        /// Iterates over every cube in the bounding box and classifies them as being
-        /// within an outside region, the droplet itself, or an internal air
-        /// pocket region.
+        /// Iterates over every cube in the bounding box and classifies them as
+        /// being within an outside region, the droplet itself, or an
+        /// internal air pocket region.
         ///
-        /// This is done by recursively building out a region for any yet unclassified
-        /// starting cubes.
+        /// This is done by recursively building out a region for any yet
+        /// unclassified starting cubes.
         /// Returns the set of cubes that are in any pocket region.
         pub fn pocket_cubes(mut self) -> HashSet<Cube> {
             for start_cube in self.all_cubes() {
@@ -191,8 +194,9 @@ mod solution {
     struct RegionSearchNode<'a> {
         /// The current cube being processed.
         cube: Cube,
-        /// Phantom data that allows this node to have a lifetime, which is needed because
-        /// the [`RegionSearchState`] requires a lifetime.
+        /// Phantom data that allows this node to have a lifetime, which is
+        /// needed because the [`RegionSearchState`] requires a
+        /// lifetime.
         #[new(default)]
         _phantom: PhantomData<&'a str>,
     }

@@ -3,7 +3,6 @@ use euclid::{
     default::{Point2D, Vector2D},
     point2, vec2,
 };
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -38,8 +37,8 @@ mod solution {
         /// Move forward in the currently facing direction or to the waypoint.
         Forward(i32),
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Instruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 pair(one_of("NSEWLRF"), nom::character::complete::i32),
                 |(c, n)| {
@@ -61,7 +60,8 @@ mod solution {
     }
 
     impl Instruction {
-        /// Gets the new facing direction given the current one and turn distance.
+        /// Gets the new facing direction given the current one and turn
+        /// distance.
         fn turn(facing: i32, turn: i32) -> i32 {
             (facing + turn).rem_euclid(4)
         }
@@ -108,8 +108,8 @@ mod solution {
         /// Follows the instructions to determine the ship's final position.
         ///
         /// Optionally pass an initial waypoint location relative to the ship.
-        /// If no initial waypoint is specified the commands always act on the ship,
-        /// otherwise most commands act on the waypoint.
+        /// If no initial waypoint is specified the commands always act on the
+        /// ship, otherwise most commands act on the waypoint.
         pub fn final_ship_position(&self, initial_waypoint: Option<&Point2D<i32>>) -> Point2D<i32> {
             let mut position = Point2D::zero();
             match initial_waypoint {
@@ -123,7 +123,8 @@ mod solution {
                                 position += Instruction::go_forward(facing, *d)
                             }
                         }
-                        //println!("Instruction: {:?}, Facing: {:?}, Position {:?}", inst, facing, position);
+                        //println!("Instruction: {:?}, Facing: {:?}, Position
+                        // {:?}", inst, facing, position);
                     }
                 }
                 Some(wp) => {
@@ -136,7 +137,8 @@ mod solution {
                             }
                             Instruction::Forward(d) => position += waypoint.to_vector() * *d,
                         }
-                        //println!("Instruction: {:?}, Waypoint: {:?}, Position {:?}", inst, waypoint, position);
+                        //println!("Instruction: {:?}, Waypoint: {:?}, Position
+                        // {:?}", inst, waypoint, position);
                     }
                 }
             }

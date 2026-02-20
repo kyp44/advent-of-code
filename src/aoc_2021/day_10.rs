@@ -84,8 +84,8 @@ mod solution {
         /// The parity of the symbol.
         parity: ChunkParity,
     }
-    impl Parsable<'_> for ChunkSymbol {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for ChunkSymbol {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(one_of("()[]{}<>"), |c| {
                 use ChunkParity::*;
                 use ChunkType::*;
@@ -135,8 +135,8 @@ mod solution {
         /// The ordered list of chunk symbols.
         chunks: Box<[ChunkSymbol]>,
     }
-    impl Parsable<'_> for Line {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Line {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 all_consuming(trim(false, many1(ChunkSymbol::parser))),
                 |chunks| Self {

@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -38,14 +37,15 @@ mod solution {
     /// The size of the image enhancement algorithm table.
     const ALG_SIZE: usize = 512;
 
-    /// The image enhancement algorithm table, which can be parsed from text input.
+    /// The image enhancement algorithm table, which can be parsed from text
+    /// input.
     #[derive(Clone, Debug)]
     struct Algorithm {
         /// The table of enhanced pixel values.
         table: [bool; ALG_SIZE],
     }
-    impl Parsable<'_> for Algorithm {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Algorithm {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 many_m_n(
                     ALG_SIZE,
@@ -92,7 +92,8 @@ mod solution {
         }
     }
     impl Image {
-        /// Returns the size of the next enhanced image, which will be a bit larger.
+        /// Returns the size of the next enhanced image, which will be a bit
+        /// larger.
         fn enhanced_size(&self) -> GridSize {
             self.grid.size() + GridSize::new(2, 2)
         }

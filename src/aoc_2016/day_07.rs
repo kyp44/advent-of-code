@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -136,7 +135,8 @@ mod solution {
         }
     }
 
-    /// An [`IpAddress`] that has been fully processed with the patterns pulled out.
+    /// An [`IpAddress`] that has been fully processed with the patterns pulled
+    /// out.
     #[derive(Debug)]
     pub struct Processed {
         /// The ABBA patterns for part one.
@@ -154,8 +154,8 @@ mod solution {
         /// The current status.
         status: S,
     }
-    impl Parsable<'_> for IpAddress<Raw> {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for IpAddress<Raw> {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 trim(
                     true,

@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -66,8 +65,8 @@ mod solution {
         /// Scissors.
         Scissors,
     }
-    impl Parsable<'_> for HandShape {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for HandShape {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             let (out, c) = anychar(input)?;
             Ok((
                 out,
@@ -116,7 +115,8 @@ mod solution {
             }
         }
 
-        /// Returns the shape by you for you to get the `outcome` against this shape.
+        /// Returns the shape by you for you to get the `outcome` against this
+        /// shape.
         pub fn needed(&self, outcome: Outcome) -> Self {
             match self {
                 HandShape::Rock => match outcome {
@@ -145,8 +145,8 @@ mod solution {
         /// Your shape (or the [`Outcome`] for part two).
         your_shape: HandShape,
     }
-    impl Parsable<'_> for Round {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Round {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(HandShape::parser, space1, HandShape::parser),
                 |pair| Self {

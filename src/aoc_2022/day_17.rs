@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -20,10 +19,10 @@ mod solution {
     use aoc::grid::StdBool;
     use circular_buffer::CircularBuffer;
     use derive_new::new;
-    use euclid::{point2, size2, vec2, Box2D, Length, Point2D, Size2D, Vector2D};
+    use euclid::{Box2D, Length, Point2D, Size2D, Vector2D, point2, size2, vec2};
     use gat_lending_iterator::LendingIterator;
     use itertools::Itertools;
-    use num::{integer::lcm, Integer};
+    use num::{Integer, integer::lcm};
     use std::collections::HashSet;
     use strum::{EnumCount, EnumIter, IntoEnumIterator};
 
@@ -60,8 +59,8 @@ mod solution {
 
     /// The coordinate space relative to the lower left corner of a rock.
     struct RockSpace;
-    /// The coordinate space relative to the lower left of the current chamber buffer,
-    /// where `y = 0` is the height of the current buffer floor.
+    /// The coordinate space relative to the lower left of the current chamber
+    /// buffer, where `y = 0` is the height of the current buffer floor.
     struct ChamberRelativeSpace;
     /// The coordinate space relative to the lower left of the overall chamber,
     /// where `y = 0` is absolute floor of the chamber.
@@ -73,7 +72,8 @@ mod solution {
     ///
     /// NOTE: 10 is not enough to yield the correct answer in all cases.
     const BUFFER_SIZE: usize = 20;
-    /// The `x` location to spawn new rocks in relative to the left of the chamber.
+    /// The `x` location to spawn new rocks in relative to the left of the
+    /// chamber.
     const ROCK_SPAWN_DX: isize = 2;
     /// The `y` location to spawn new rocks in relative to current height of the
     /// chamber tower.
@@ -103,13 +103,14 @@ mod solution {
                 _ => {
                     return Err(AocError::InvalidInput(
                         format!("'{value}' is not a valid jet direction").into(),
-                    ))
+                    ));
                 }
             })
         }
     }
     impl JetDirection {
-        /// Returns the displacement vector for this direction in coordinate space `U`.
+        /// Returns the displacement vector for this direction in coordinate
+        /// space `U`.
         pub fn direction_vector<U>(&self) -> Vector<U> {
             match self {
                 JetDirection::Left => vec2(-1, 0),
@@ -186,11 +187,13 @@ mod solution {
     struct Rock {
         /// The shape of the rock.
         rock_shape: RockShape,
-        /// The location of the lower left corner of the rock in the chamber buffer.
+        /// The location of the lower left corner of the rock in the chamber
+        /// buffer.
         lower_left: Point<ChamberRelativeSpace>,
     }
     impl Rock {
-        /// Returns the set of points that make up the rock in [`ChamberRelativeSpace`].
+        /// Returns the set of points that make up the rock in
+        /// [`ChamberRelativeSpace`].
         fn points(&self) -> HashSet<Point<ChamberRelativeSpace>> {
             self.rock_shape
                 .points()
@@ -265,7 +268,8 @@ mod solution {
         }
     }
     impl ChamberBuffer {
-        /// Returns the absolute height of the tower of rocks currently in the chamber.
+        /// Returns the absolute height of the tower of rocks currently in the
+        /// chamber.
         pub fn tower_height(&self) -> Length<u64, ChamberAbsoluteSpace> {
             self.floor_height + self.tower_height.cast_unit().try_cast().unwrap()
         }
@@ -294,8 +298,8 @@ mod solution {
             }
         }
 
-        /// Adds a rock to the chamber at its current location without performing
-        /// any verification checks.
+        /// Adds a rock to the chamber at its current location without
+        /// performing any verification checks.
         ///
         /// The oldest rock in the buffer is removed, and the absolute chamber
         /// floor and relative height are adjusted accordingly.
@@ -358,7 +362,8 @@ mod solution {
         }
     }
     impl LendingIterator for ChamberSimulation<'_> {
-        type Item<'a> = &'a ChamberBuffer
+        type Item<'a>
+            = &'a ChamberBuffer
         where
             Self: 'a;
 
@@ -391,8 +396,8 @@ mod solution {
                             self.chamber_rocks.add_rock(rock, jet_direction_idx);
                         }
 
-                        // If a rock falls out the bottom of our current shifted buffer then, oh well,
-                        // it contributes nothing.
+                        // If a rock falls out the bottom of our current shifted buffer then, oh
+                        // well, it contributes nothing.
 
                         break;
                     }
@@ -437,19 +442,23 @@ mod solution {
         /// Simulates rocks falling in the tower and returns the overall
         /// rock tower height after `num_rocks` have fallen.
         ///
-        /// If `num_rocks` is sufficiently large, a cycle in the chamber buffer is identified
-        /// and used to determine the tower height without having to directly simulate `num_rocks`.
-        /// This is an optimization necessary to compute part two in a reasonable amount of time.
+        /// If `num_rocks` is sufficiently large, a cycle in the chamber buffer
+        /// is identified and used to determine the tower height without
+        /// having to directly simulate `num_rocks`. This is an
+        /// optimization necessary to compute part two in a reasonable amount of
+        /// time.
         pub fn tower_height(&self, num_rocks: usize) -> u64 {
             let mut simulation = ChamberSimulation::new(&self.jet_directions);
             let lcm = lcm(RockShape::COUNT, self.jet_directions.len());
 
             if num_rocks > lcm {
-                // In this case we look for cycles to apply a remainder to reduce the compute time
+                // In this case we look for cycles to apply a remainder to reduce the compute
+                // time
                 let base_chamber_state = simulation.iterations(lcm).unwrap().clone();
                 let base_height = base_chamber_state.tower_height();
 
-                // We need to store the heights relative to the base height at each step in the cycle
+                // We need to store the heights relative to the base height at each step in the
+                // cycle
                 let mut relative_heights = Vec::new();
                 relative_heights.push(Length::new(0));
 

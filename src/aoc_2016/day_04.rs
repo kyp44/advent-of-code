@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -31,7 +30,8 @@ mod solution {
         sequence::delimited,
     };
 
-    /// A single character in the name or a room, with the frequency that it appears.
+    /// A single character in the name or a room, with the frequency that it
+    /// appears.
     ///
     /// These are comparable in descending order of frequency followed by normal
     /// alphabetical order.
@@ -75,8 +75,8 @@ mod solution {
         /// The checksum, guaranteed to have 5 characters.
         checksum: String,
     }
-    impl Parsable<'_> for Room {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for Room {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             const SEP: &str = "-";
             map(
                 trim(
@@ -114,7 +114,8 @@ mod solution {
                 .collect()
         }
 
-        /// Returns whether or not the room is a real room (`true`) or a decoy (`false`).
+        /// Returns whether or not the room is a real room (`true`) or a decoy
+        /// (`false`).
         pub fn is_real(&self) -> bool {
             // Sort in with higher frequency chars first then alphabetical
             let mut name_chars = self.build_name_chars();

@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use aoc::prelude::*;
 
 #[cfg(test)]
@@ -31,9 +29,10 @@ mod solution {
     pub struct Simulation {
         /// Array of the number of fish with a certain time left until spawn.
         ///
-        /// The index is the timer value and the array values are the number of fish
-        /// with that timer value. This is a much more memory efficient way of handling
-        /// the simulation that doesn't exhibit exponential memory growth.
+        /// The index is the timer value and the array values are the number of
+        /// fish with that timer value. This is a much more memory
+        /// efficient way of handling the simulation that doesn't
+        /// exhibit exponential memory growth.
         fish_with_time: [u64; MAX_TIME + 1],
     }
     impl FromStr for Simulation {

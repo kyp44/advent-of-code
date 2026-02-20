@@ -1,5 +1,4 @@
 use aoc::prelude::*;
-use std::str::FromStr;
 
 #[cfg(test)]
 mod tests {
@@ -74,8 +73,8 @@ mod solution {
         /// particular order.
         tunnels: Vec<String>,
     }
-    impl Parsable<'_> for ParseValve {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for ParseValve {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     preceded(tag("Valve"), trim(false, alphanumeric1::<&str, _>)),

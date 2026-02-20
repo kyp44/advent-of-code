@@ -65,11 +65,12 @@ mod solution {
     pub struct Schedule {
         /// The earliest time we can depart.
         earliest_time: u64,
-        /// List of bus IDs (`Some`), including buses that are not running (`None`).
+        /// List of bus IDs (`Some`), including buses that are not running
+        /// (`None`).
         bus_ids: Vec<Option<ModNum<u64>>>,
     }
-    impl Parsable<'_> for Schedule {
-        fn parser(input: &str) -> NomParseResult<&str, Self> {
+    impl Parsable for Schedule {
+            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
                     nom::character::complete::u64,
@@ -88,7 +89,8 @@ mod solution {
         }
     }
     impl Schedule {
-        /// Returns an [`Iterator`] of all bus IDs, ignoring those that are not running.
+        /// Returns an [`Iterator`] of all bus IDs, ignoring those that are not
+        /// running.
         fn valid_ids(&self) -> impl Iterator<Item = ModNum<u64>> + '_ {
             self.bus_ids.iter().filter_map(|id| *id)
         }
@@ -101,8 +103,8 @@ mod solution {
             EarliestBus::new(bus_id.m(), time_until(bus_id).a())
         }
 
-        /// Determines the earliest time at which buses depart in consecutive minutes, with gaps
-        /// for non-running buses.
+        /// Determines the earliest time at which buses depart in consecutive
+        /// minutes, with gaps for non-running buses.
         pub fn earliest_consecutive_departures_time(&self) -> AocResult<u64> {
             // This problem is effectively the Chinese Remainder Theorem to solve a system
             // of modulo congruences.

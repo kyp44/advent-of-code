@@ -47,8 +47,8 @@ mod solution {
         /// An output with its number.
         Output(Num),
     }
-    impl Parsable<'_> for Recipient {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for Recipient {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map((tag("bot "), pnum), |(_, n)| Self::Bot(n)),
                 map((tag("output "), pnum), |(_, n)| Self::Output(n)),
@@ -100,8 +100,8 @@ mod solution {
             high_to: Recipient,
         },
     }
-    impl Parsable<'_> for Instruction {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for Instruction {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             trim(
                 true,
                 alt((
@@ -358,8 +358,8 @@ mod solution {
         /// The set of instructions.
         set: Vec<Instruction>,
     }
-    impl Parsable<'_> for InstructionSet {
-        fn parser(input: &'_ str) -> NomParseResult<&'_ str, Self> {
+    impl Parsable for InstructionSet {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     trim(true, (tag("magic chips "), pnum, tag(" "), pnum)),

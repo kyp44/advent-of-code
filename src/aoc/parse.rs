@@ -10,9 +10,7 @@ use nom::{Finish, IResult, error::ErrorKind};
 use nom::{character::complete::digit1, combinator::map};
 use nom_language::error::{VerboseError, VerboseErrorKind};
 use num::Unsigned;
-use std::fmt;
-use std::ops::RangeInclusive;
-use std::str::FromStr;
+use std::{fmt, ops::RangeInclusive, str::FromStr};
 
 use crate::prelude::{AocError, AocResult};
 
@@ -115,11 +113,13 @@ impl<I, U, E> DiscardInput<U, E> for Result<(I, U), E> {
 }
 
 /// Trait for types that can be parsed from text with [`nom`].
-pub trait Parsable<'a> {
+pub trait Parsable: Sized {
+    /// The type being parsed with the option of a lifetime, which is usually
+    /// just `Self`
+    type Parsed<'a> = Self;
+
     /// Needs to parse the text using [`nom`] and return the parsed item.
-    fn parser(input: &'a str) -> NomParseResult<&'a str, Self>
-    where
-        Self: Sized;
+    fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>>;
 
     /// Runs the parser and gets the result, stripping out the input from the
     /// nom parser.
@@ -127,10 +127,7 @@ pub trait Parsable<'a> {
     /// Note that we cannot blanket implement [`FromStr`] for types that
     /// implement this trait because this potentially breaks the orphan
     /// rule. See [here](https://users.rust-lang.org/t/impl-foreign-trait-for-type-bound-by-local-trait/36299).
-    fn from_str(input: &'a str) -> Result<Self, NomParseError>
-    where
-        Self: Sized,
-    {
+    fn from_str<'a>(input: &'a str) -> Result<Self::Parsed<'a>, NomParseError> {
         Self::parser(input).finish().discard_input()
     }
 
@@ -152,10 +149,9 @@ pub trait Parsable<'a> {
     ///     Err(_)
     /// );
     /// ```
-    fn gather(strs: impl Iterator<Item = &'a str>) -> Result<Vec<Self>, NomParseError>
-    where
-        Self: Sized,
-    {
+    fn gather<'a>(
+        strs: impl Iterator<Item = &'a str>,
+    ) -> Result<Vec<Self::Parsed<'a>>, NomParseError> {
         strs.map(|l| Self::from_str(l)).collect()
     }
 
@@ -174,17 +170,14 @@ pub trait Parsable<'a> {
     /// assert_eq!(u8::from_csv("21,27,82,7"), Ok(vec![21, 27, 82, 7]));
     /// assert_matches!(u8::from_csv("21,-56,82,7"), Err(_));
     /// ```
-    fn from_csv(input: &'a str) -> Result<Vec<Self>, NomParseError>
-    where
-        Self: Sized,
-    {
+    fn from_csv<'a>(input: &'a str) -> Result<Vec<Self::Parsed<'a>>, NomParseError> {
         Self::gather(input.split(','))
     }
 }
 
 /// [`Parsable`] implementation for simple numbers.
-impl<T: Unsigned + FromStr> Parsable<'_> for T {
-    fn parser(input: &str) -> NomParseResult<&str, Self> {
+impl<T: Unsigned + FromStr> Parsable for T {
+    fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
         map(digit1, |ns: &str| match ns.parse() {
             Ok(v) => v,
             Err(_) => panic!("nom did not parse a numeric value correctly"),
