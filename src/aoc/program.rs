@@ -100,14 +100,14 @@ pub trait Instruction {
     /// An item yielded by the execution.
     type YieldItem;
     /// The error type if execution fails.
-    type Error;
+    type Err;
 
     /// Executes this instruction, operating on the `registers` and returning a
     /// yielded item and a possible [`Jump`].
     fn execute(
         &self,
         registers: &mut Self::Registers,
-    ) -> Result<Executed<Self::YieldItem>, Self::Error>;
+    ) -> Result<Executed<Self::YieldItem>, Self::Err>;
 }
 
 /// Possible ways for a program to end.
@@ -226,7 +226,7 @@ impl<I: Instruction> Program<I> {
     pub fn execute(
         &self,
         initial_registers: I::Registers,
-    ) -> Result<ProgramEnd<I::Registers, I::YieldItem>, I::Error> {
+    ) -> Result<ProgramEnd<I::Registers, I::YieldItem>, I::Err> {
         let mut executor = self.executor(initial_registers);
         let mut last_yielded = None;
 
@@ -259,7 +259,7 @@ where
     pub fn execute_monitored(
         &self,
         initial_registers: I::Registers,
-    ) -> Result<MonitoredProgramEnd<I::Registers, I::YieldItem>, I::Error> {
+    ) -> Result<MonitoredProgramEnd<I::Registers, I::YieldItem>, I::Err> {
         let mut visited_states = HashSet::new();
         let mut executor = self.executor(initial_registers);
         let mut last_yielded = None;
@@ -321,7 +321,7 @@ impl<'a, I: Instruction> ProgramExecutor<'a, I> {
     }
 }
 impl<'a, I: Instruction> Iterator for ProgramExecutor<'a, I> {
-    type Item = Result<I::YieldItem, I::Error>;
+    type Item = Result<I::YieldItem, I::Err>;
 
     fn next(&mut self) -> Option<Self::Item> {
         Some(

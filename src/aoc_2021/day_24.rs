@@ -224,12 +224,12 @@ mod solution {
     impl Instruction for AluInstruction {
         type Registers = Registers;
         type YieldItem = ();
-        type Error = AocError;
+        type Err = AocError;
 
         fn execute(
             &self,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
             match self {
                 AluInstruction::ReadInput(reg) => {
                     let next_input = registers

@@ -139,12 +139,12 @@ mod solution {
     impl Instruction for AsmInstruction {
         type Registers = Registers;
         type YieldItem = ();
-        type Error = AocError;
+        type Err = AocError;
 
         fn execute(
             &self,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
             Ok(Executed::only_jump(match self {
                 AsmInstruction::Half(r) => {
                     registers.modify(*r, |r| r / 2);

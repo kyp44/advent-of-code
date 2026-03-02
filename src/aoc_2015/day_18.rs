@@ -75,7 +75,7 @@ mod solution {
             }
             Ok(Self {
                 grid,
-                phant: PhantomData {},
+                phant: PhantomData,
             })
         }
     }
@@ -85,7 +85,7 @@ mod solution {
         fn next_default(other: &Self) -> Self {
             Self {
                 grid: Grid::default(other.grid.size()),
-                phant: PhantomData {},
+                phant: PhantomData,
             }
         }
 

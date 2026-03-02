@@ -198,7 +198,7 @@ mod solution {
         /// needed because the [`RegionSearchState`] requires a
         /// lifetime.
         #[new(default)]
-        _phantom: PhantomData<&'a str>,
+        _phant: PhantomData<&'a str>,
     }
     impl<'a> GlobalStateTreeNode for RegionSearchNode<'a> {
         type GlobalState = RegionSearchState<'a>;

@@ -175,12 +175,12 @@ mod solution {
     impl Instruction for FactoryInstruction {
         type Registers = Factory;
         type YieldItem = bool;
-        type Error = AocError;
+        type Err = AocError;
 
         fn execute(
             &self,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
             Ok(Executed::no_jump(match self {
                 FactoryInstruction::ChipToBot {
                     chip_value,

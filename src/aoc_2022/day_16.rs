@@ -266,7 +266,7 @@ mod solution {
         elephant: Option<Opener>,
         /// Phantom data to allow the struct to have a lifetime, which is needed
         /// because the [`SearchState`] needs one.
-        _phantom: PhantomData<&'a u8>,
+        _phant: PhantomData<&'a u8>,
     }
     impl SearchNode<'_> {
         /// Creates a new node for a set of `closed_valves`, starting at the
@@ -287,7 +287,7 @@ mod solution {
                 closed_valves,
                 you: Opener::new(minutes_allowed, starting_node),
                 elephant: teach_elephant.then(|| Opener::new(minutes_allowed, starting_node)),
-                _phantom: PhantomData,
+                _phant: PhantomData,
             }
         }
     }
@@ -382,7 +382,7 @@ mod solution {
                             closed_valves: self.closed_valves.clone(),
                             you,
                             elephant,
-                            _phantom: PhantomData,
+                            _phant: PhantomData,
                         }
                     })
                     .collect(),

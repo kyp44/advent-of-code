@@ -116,7 +116,7 @@ pub trait Evolver<T> {
     {
         EvolverIter {
             current: Rc::new(self.clone()),
-            _phant: PhantomData {},
+            _phant: PhantomData,
         }
     }
 }

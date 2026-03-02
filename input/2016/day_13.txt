@@ -1,0 +1,4 @@
+start: 1,1
+end: 31,39
+designer: 1362
+max steps: 50

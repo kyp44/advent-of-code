@@ -79,12 +79,12 @@ mod solution {
     impl Instruction for ScreenInstruction {
         type Registers = Screen;
         type YieldItem = ();
-        type Error = AocError;
+        type Err = AocError;
 
         fn execute(
             &self,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
             let grid = &mut registers.grid;
 
             match self {
@@ -165,7 +165,7 @@ mod solution {
     impl InstructionSet {
         /// Executes all the instructions starting from a blank screen,
         /// and returns the final state of the screen.
-        pub fn execute(&self) -> Result<Screen, <ScreenInstruction as Instruction>::Error> {
+        pub fn execute(&self) -> Result<Screen, <ScreenInstruction as Instruction>::Err> {
             self.program
                 .execute(Screen::new(self.size))
                 .map(|pe| pe.into_registers())

@@ -83,7 +83,7 @@ mod solution {
         /// The circular list of cups labels.
         cups: CircularList<SinglyLinked<Label>>,
         /// Needed to have the [`Part`] parameter `P`.
-        _phantom: PhantomData<P>,
+        _phant: PhantomData<P>,
     }
     impl<P: Part> Cups<P> {
         /// Parses the cups from text input.
@@ -122,22 +122,22 @@ mod solution {
 
             Ok(Cups {
                 cups,
-                _phantom: PhantomData,
+                _phant: PhantomData,
             })
         }
 
         /// Returns an [`Iterator`] over the moves of the game.
         ///
-        /// Note that the first element of the iterator is *after* the first move, not
-        /// the original state of the cups.
-        /// The iterator yields the *new* current cup selected at the end of each
-        /// move.
+        /// Note that the first element of the iterator is *after* the first
+        /// move, not the original state of the cups.
+        /// The iterator yields the *new* current cup selected at the end of
+        /// each move.
         pub fn start_game(&self) -> Game<'_, P> {
             Game {
                 list: &self.cups,
                 lookup: self.cups.iter_const().map(|nr| (*nr.value(), nr)).collect(),
                 current: self.cups.iter_const().next().unwrap(),
-                _phantom: PhantomData,
+                _phant: PhantomData,
             }
         }
     }
@@ -156,7 +156,7 @@ mod solution {
         /// Reference to the current cup in the game.
         current: NodeRef<'a, SinglyLinked<Label>>,
         /// Needed to have the [`Part`] parameter `P`.
-        _phantom: PhantomData<P>,
+        _phant: PhantomData<P>,
     }
     impl<'a, P: Part> Iterator for Game<'a, P> {
         type Item = NodeRef<'a, SinglyLinked<Label>>;

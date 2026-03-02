@@ -87,12 +87,12 @@ mod solution {
     impl Instruction for WalkingInstruction {
         type Registers = Location;
         type YieldItem = Vector;
-        type Error = AocError;
+        type Err = AocError;
 
         fn execute(
             &self,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
             registers.facing = registers.facing.turn(self.turn_direction);
             registers.position += registers.facing.as_vector() * i32::from(self.distance);
 

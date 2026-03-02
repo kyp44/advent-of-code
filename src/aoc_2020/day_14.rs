@@ -243,12 +243,12 @@ mod solution {
     impl<M: Mask> Instruction for Operation<M> {
         type Registers = Memory<M>;
         type YieldItem = ();
-        type Error = AocError;
+        type Err = AocError;
 
         fn execute(
             &self,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
             match self {
                 Self::SetMask(mv, _) => registers.mask = mv[..].into(),
                 Self::SetMemory(m) => {

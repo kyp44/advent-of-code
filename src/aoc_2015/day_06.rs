@@ -108,7 +108,7 @@ mod solution {
                 |(a, r)| GridInstruction {
                     action: a,
                     rect: r.into(),
-                    _phant: Default::default(),
+                    _phant: PhantomData,
                 },
             )
             .parse(input.trim())
@@ -117,12 +117,12 @@ mod solution {
     impl<P: Part> Instruction for GridInstruction<P> {
         type Registers = LightGrid<P>;
         type YieldItem = ();
-        type Error = AocError;
+        type Err = AocError;
 
         fn execute(
             &self,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
             for point in self.rect.all_points() {
                 registers.0.get_mut(&point).update(&self.action);
             }

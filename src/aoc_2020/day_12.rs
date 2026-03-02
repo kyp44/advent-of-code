@@ -137,12 +137,12 @@ mod solution {
     impl Instruction for NavInstruction {
         type Registers = ShipState;
         type YieldItem = ();
-        type Error = AocError;
+        type Err = AocError;
 
         fn execute(
             &self,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Error> {
+        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
             match registers {
                 ShipState::Basic { facing, position } => match self {
                     NavInstruction::Move(dv) => *position += *dv,

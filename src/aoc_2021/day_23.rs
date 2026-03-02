@@ -193,7 +193,7 @@ mod solution {
         /// Map from the amphipod type to their home room space graph nodes.
         room_spaces: EnumMap<Amphipod, Vec<NodeIndex>>,
         /// Phantom  data for the part of the problem.
-        _phantom: PhantomData<P>,
+        _phant: PhantomData<P>,
     }
     impl<P: Part> Board<P> {
         /// Creates a new board for the part of the problem.
@@ -240,7 +240,7 @@ mod solution {
                 graph,
                 hall_spaces,
                 room_spaces,
-                _phantom: PhantomData,
+                _phant: PhantomData,
             }
         }
     }
@@ -293,10 +293,10 @@ mod solution {
         /// The position map of the amphipods.
         positions: PositionMap,
         /// Phantom data for the part of the problem.
-        _phantom: PhantomData<P>,
+        _phant: PhantomData<P>,
     }
     impl<P: Part + 'static> Parsable for Position<P> {
-            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             let amphipod_line = move |input| -> NomParseResult<&str, Vec<Amphipod>> {
                 terminated(
                     trim(
@@ -343,7 +343,7 @@ mod solution {
 
                     Position {
                         positions: position_map,
-                        _phantom: PhantomData,
+                        _phant: PhantomData,
                     }
                 },
             )
