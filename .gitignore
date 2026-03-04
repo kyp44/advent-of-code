@@ -10,3 +10,6 @@ perf.data*
 /notes/*.log
 /notes/*.out
 /notes/*.pdf
+/notes/*.fdb_latexmk
+/notes/*.fls
+/notes/*.synctex.gz

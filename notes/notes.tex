@@ -75,6 +75,41 @@
     when $m = 1$ as we would like according to this convention.
 }
 
+\def\crt{Chinese Remainder Theorem}
+\notes{2016}{15}{https://adventofcode.com/2016/day/15}{
+    Rather than running some kind of simulation, this problem can be most efficiently solved as a system of modulo equations using the \crt{}.
+    Suppose that we have $N$ discs.
+    Then disc $n$ (where $n \in \braces{1, 2, \ldots, N}$) has $m_n$ positions and starts at position $s_n$, noting that of course $0 \leq s_n < m_n$.
+    The position of disc $n$ as a function of integer time $t$ is then clearly
+    \gath{
+        p_n(t) = s_n + t \pmod{m_n}.
+    }
+    Suppose then that the capsule drops at time $t = t_0$ so that the capsule hits disc $n$ at time $t = t_0 + n$, noting that the first/top disc is $n = 1$.
+    Since we would like this disc to be at position $0$ at this time we have
+    \gath{
+        p(t_0 + n) \equiv 0 \pmod{m_n} \non
+        s_n + t_0 + n \equiv 0 \pmod{m_n} \non
+        t_0 \equiv -(s_n + n) \pmod{m_n} \non
+        t_0 \equiv x_n \pmod{m_n}, \non
+    }
+    where we have let $x_n = -(s_n + n) \pmod{m_n}$.
+    This results in the following system of modulo equations:
+    \ali{
+        t_0 &\equiv x_1 \pmod{m_1} \non
+        t_0 &\equiv x_2 \pmod{m_2} \non
+        &\cdots \non
+        t_0 &\equiv x_N \pmod{m_N}
+    }
+    This can then be solved using the \crt{}, which is what the program does.
+    It is also worth nothing that both in the example and actual inputs, the set of $\braces{m_1, m_2, \ldots, m_n}$ are all prime, which means that a unique solution always exists.
+    This has an infinite number of solutions of the form
+    \gath{
+        t_k = t_0 + kM
+    }
+    for any integer $k \geq 0$, where $M = \prod_{n=1}^N m_n$.
+    The earliest time that we are interested in is of course then simply $t_0$.
+}
+
 \notes{2021}{8}{https://adventofcode.com/2021/day/8}{
     \def\WW{\mathbb{W}}
     \def\SS{\mathbb{S}}
@@ -413,6 +448,5 @@
     The difference, of course, is that doing arithmetic modulo $m$ keeps the worry levels bounded in the interval $[0, m-1]$ instead of becoming arbitrarily large and overflowing our variables.
     This of course will change the actual worry levels being thrown around, but our answer is invariant to this change.
 }
-
 
 \end{document}
