@@ -35,16 +35,12 @@ mod solution {
     use std::{collections::HashSet, str::FromStr};
 
     use super::*;
-    use aoc::parse::trim;
+    use aoc::parse::{field_line_parser, trim};
     use derive_more::Deref;
     use euclid::Point2D;
     use gcollections::ops::{Bounded, Cardinality, Difference, Empty, IsEmpty};
     use interval::{Interval, IntervalSet, ops::Range};
-    use nom::{
-        bytes::complete::tag,
-        combinator::map,
-        sequence::{preceded, separated_pair},
-    };
+    use nom::{bytes::complete::tag, combinator::map, sequence::separated_pair};
 
     /// A 2D point that can be parsed from the input text.
     #[derive(Deref)]
@@ -53,9 +49,9 @@ mod solution {
         fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
-                    preceded(tag("x="), nom::character::complete::i32),
+                    field_line_parser("x=", nom::character::complete::i32),
                     trim(false, tag(",")),
-                    preceded(tag("y="), nom::character::complete::i32),
+                    field_line_parser("y=", nom::character::complete::i32),
                 ),
                 |t| Self(Point2D::from(t).to_isize()),
             )
@@ -75,7 +71,7 @@ mod solution {
         fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(
-                    preceded(tag("Sensor at "), ParsePoint::parser),
+                    field_line_parser("Sensor at ", ParsePoint::parser),
                     tag(": closest beacon is at "),
                     ParsePoint::parser,
                 ),

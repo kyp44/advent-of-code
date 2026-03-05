@@ -29,12 +29,9 @@ mod solution {
     use std::collections::HashMap;
 
     use super::*;
-    use aoc::parse::trim;
+    use aoc::parse::{field_line_parser, trim};
     use maplit::hashmap;
-    use nom::{
-        branch::alt, bytes::tag, character::complete::isize as pisize, combinator::map,
-        sequence::preceded,
-    };
+    use nom::{branch::alt, bytes::tag, character::complete::isize as pisize, combinator::map};
 
     /// One of the computer registers.
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -136,23 +133,17 @@ mod solution {
         fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(
-                    preceded(
-                        tag("cpy"),
-                        (trim(false, Operand::parser), trim(false, Register::parser)),
-                    ),
+                    field_line_parser("cpy ", (Operand::parser, trim(false, Register::parser))),
                     |(opx, regy)| Self::Copy(opx, regy),
                 ),
-                map(preceded(tag("inc"), trim(false, Register::parser)), |reg| {
+                map(field_line_parser("inc ", Register::parser), |reg| {
                     Self::Increment(reg)
                 }),
-                map(preceded(tag("dec"), trim(false, Register::parser)), |reg| {
+                map(field_line_parser("dec ", Register::parser), |reg| {
                     Self::Decrement(reg)
                 }),
                 map(
-                    preceded(
-                        tag("jnz"),
-                        (trim(false, Operand::parser), trim(false, pisize)),
-                    ),
+                    field_line_parser("jnz ", (Operand::parser, trim(false, pisize))),
                     |(op, jmp)| Self::JumpNz(op, jmp),
                 ),
             ))

@@ -21,13 +21,9 @@ mod solution {
     use std::collections::HashMap;
 
     use super::*;
-    use aoc::parse::trim;
+    use aoc::parse::field_line_parser;
     use euclid::Rect;
-    use nom::{
-        bytes::complete::tag,
-        combinator::map,
-        sequence::{preceded, separated_pair},
-    };
+    use nom::{bytes::complete::tag, combinator::map, sequence::separated_pair};
     use petgraph::graph::{NodeIndex, UnGraph};
 
     /// The parameters that define the cubicle maze and our goals within it.
@@ -64,10 +60,10 @@ mod solution {
 
             map(
                 (
-                    trim(true, preceded(tag("start: "), grid_point_parser)),
-                    trim(true, preceded(tag("end: "), grid_point_parser)),
-                    trim(true, preceded(tag("designer: "), pusize)),
-                    trim(true, preceded(tag("max steps: "), pusize)),
+                    field_line_parser("start: ", grid_point_parser),
+                    field_line_parser("end: ", grid_point_parser),
+                    field_line_parser("designer: ", pusize),
+                    field_line_parser("max steps: ", pusize),
                 ),
                 |(start, end, designer, max_steps)| {
                     const END_MULTIPLE: usize = 3;

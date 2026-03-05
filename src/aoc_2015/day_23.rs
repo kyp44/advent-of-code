@@ -20,17 +20,12 @@ inc b";
 
 /// Contains solution implementation items.
 mod solution {
-    use aoc::parse::trim;
+    use aoc::parse::{field_line_parser, trim};
     use num::Integer;
 
     use super::*;
     use maplit::hashmap;
-    use nom::{
-        branch::alt,
-        bytes::complete::tag,
-        combinator::map,
-        sequence::{preceded, separated_pair},
-    };
+    use nom::{branch::alt, bytes::complete::tag, combinator::map, sequence::separated_pair};
     use std::collections::HashMap;
 
     /// One of the computer's registers, which can be parsed from text input.
@@ -97,22 +92,19 @@ mod solution {
             use nom::character::complete::isize as pisize;
 
             alt((
-                map(preceded(tag("hlf "), trim(false, Register::parser)), |r| {
+                map(field_line_parser("hlf ", Register::parser), |r| {
                     AsmInstruction::Half(r)
                 }),
-                map(preceded(tag("tpl "), trim(false, Register::parser)), |r| {
+                map(field_line_parser("tpl ", Register::parser), |r| {
                     AsmInstruction::Triple(r)
                 }),
-                map(preceded(tag("inc "), trim(false, Register::parser)), |r| {
+                map(field_line_parser("inc ", Register::parser), |r| {
                     AsmInstruction::Increment(r)
                 }),
+                map(field_line_parser("jmp ", pisize), AsmInstruction::Jump),
                 map(
-                    preceded(tag("jmp "), trim(false, pisize)),
-                    AsmInstruction::Jump,
-                ),
-                map(
-                    preceded(
-                        tag("jie "),
+                    field_line_parser(
+                        "jie ",
                         separated_pair(
                             trim(false, Register::parser),
                             tag(","),
@@ -122,8 +114,8 @@ mod solution {
                     |(r, o)| AsmInstruction::JumpIfEven(r, o),
                 ),
                 map(
-                    preceded(
-                        tag("jio "),
+                    field_line_parser(
+                        "jio ",
                         separated_pair(
                             trim(false, Register::parser),
                             tag(","),

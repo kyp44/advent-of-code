@@ -1,0 +1,2 @@
+disk size: 272
+initial state: 11110010111001001

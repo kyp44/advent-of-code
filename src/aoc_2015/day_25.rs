@@ -15,15 +15,11 @@ mod tests {
 
 /// Contains solution implementation items.
 mod solution {
-    use aoc::parse::trim;
+    use aoc::parse::field_line_parser;
     use bare_metal_modulo::{MNum, ModNumC};
 
     use super::*;
-    use nom::{
-        Finish,
-        bytes::complete::{tag, take_until},
-        sequence::preceded,
-    };
+    use nom::{Finish, bytes::complete::take_until, sequence::preceded};
 
     /// Defines the problem, which can be parsed from text input.
     pub struct Problem {
@@ -38,7 +34,7 @@ mod solution {
         fn from_str(s: &str) -> Result<Self, Self::Err> {
             let row = preceded::<_, _, NomParseError, _, _>(
                 take_until("row"),
-                preceded(tag("row"), trim(false, nom::character::complete::u64)),
+                field_line_parser("row", nom::character::complete::u64),
             )
             .parse(s)
             .finish()
@@ -46,7 +42,7 @@ mod solution {
 
             let col = preceded::<_, _, NomParseError, _, _>(
                 take_until("column"),
-                preceded(tag("column"), trim(false, nom::character::complete::u64)),
+                field_line_parser("column", nom::character::complete::u64),
             )
             .parse(s)
             .finish()

@@ -42,7 +42,7 @@ Monkey 3:
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::parse::trim;
+    use aoc::parse::{field_line_parser, trim};
     use gat_lending_iterator::LendingIterator;
     use indexmap::IndexMap;
     use itertools::Itertools;
@@ -159,24 +159,9 @@ mod solution {
         fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
-                    trim(
-                        true,
-                        preceded(tag("divisible by "), nom::character::complete::u64),
-                    ),
-                    trim(
-                        true,
-                        preceded(
-                            tag("If true: throw to monkey "),
-                            nom::character::complete::u8,
-                        ),
-                    ),
-                    trim(
-                        true,
-                        preceded(
-                            tag("If false: throw to monkey "),
-                            nom::character::complete::u8,
-                        ),
-                    ),
+                    field_line_parser("divisible by ", nom::character::complete::u64),
+                    field_line_parser("If true: throw to monkey ", nom::character::complete::u8),
+                    field_line_parser("If false: throw to monkey ", nom::character::complete::u8),
                 ),
                 |(div_by, if_true, if_false)| Self {
                     div_by,

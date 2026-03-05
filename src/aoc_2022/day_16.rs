@@ -26,7 +26,7 @@ Valve JJ has flow rate=21; tunnel leads to valve II";
 mod solution {
     use super::*;
     use aoc::{
-        parse::trim,
+        parse::{field_line_parser, trim},
         tree_search::{GlobalStateTreeNode, Metric, NodeAction},
     };
     use derive_more::From;
@@ -77,8 +77,8 @@ mod solution {
         fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
-                    preceded(tag("Valve"), trim(false, alphanumeric1::<&str, _>)),
-                    preceded(tag("has flow rate="), nom::character::complete::u8),
+                    field_line_parser("Valve", alphanumeric1::<&str, _>),
+                    field_line_parser("has flow rate=", nom::character::complete::u8),
                     preceded(
                         (
                             tag("; tunnel"),

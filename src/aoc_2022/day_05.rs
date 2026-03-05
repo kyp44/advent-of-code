@@ -24,15 +24,11 @@ move 1 from 1 to 2";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::parse::{separated, trim};
+    use aoc::parse::field_line_parser;
     use indexmap::IndexMap;
     use nom::{
-        Finish,
-        branch::alt,
-        bytes::complete::tag,
-        combinator::map,
-        multi::separated_list1,
-        sequence::{delimited, preceded},
+        Finish, branch::alt, bytes::complete::tag, combinator::map, multi::separated_list1,
+        sequence::delimited,
     };
 
     /// A cell when parsing the stack data as a grid.
@@ -150,9 +146,9 @@ mod solution {
         fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
-                    preceded(tag("move"), separated(nom::character::complete::u8)),
-                    preceded(tag("from"), separated(nom::character::complete::u8)),
-                    preceded(tag("to"), trim(false, nom::character::complete::u8)),
+                    field_line_parser("move", nom::character::complete::u8),
+                    field_line_parser("from", nom::character::complete::u8),
+                    field_line_parser("to", nom::character::complete::u8),
                 ),
                 |(n, from, to)| Self {
                     number: n.into(),

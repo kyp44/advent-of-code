@@ -27,10 +27,11 @@ mem[26] = 1";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
+    use aoc::parse::field_line_parser;
     use itertools::Itertools;
     use nom::{
         branch::alt, bytes::complete::tag, character::complete::one_of, combinator::map,
-        multi::many_m_n, sequence::preceded,
+        multi::many_m_n,
     };
     use std::{collections::HashMap, marker::PhantomData};
 
@@ -225,7 +226,7 @@ mod solution {
             use nom::character::complete::u64 as cu64;
             alt((
                 map(
-                    preceded(tag("mask = "), many_m_n(BITS, BITS, one_of("X01"))),
+                    field_line_parser("mask = ", many_m_n(BITS, BITS, one_of("X01"))),
                     |v: Vec<char>| {
                         Operation::SetMask(
                             v.into_iter().rev().map(MaskBit::from).collect(),

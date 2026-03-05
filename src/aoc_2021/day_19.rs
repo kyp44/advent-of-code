@@ -151,18 +151,14 @@ mod tests {
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::parse::trim;
+    use aoc::parse::{field_line_parser, trim};
     use derive_more::{Deref, From};
     use derive_new::new;
     use euclid::default::{Point3D, Rotation3D, Vector3D};
     use itertools::{Itertools, iproduct};
     use maplit::hashset;
     use nom::{
-        Finish,
-        bytes::complete::tag,
-        combinator::map,
-        multi::separated_list1,
-        sequence::{delimited, preceded},
+        Finish, bytes::complete::tag, combinator::map, multi::separated_list1, sequence::delimited,
     };
     use std::{
         collections::{HashMap, HashSet},
@@ -400,7 +396,7 @@ mod solution {
                 tag(sep),
                 trim(
                     false,
-                    preceded(tag("scanner "), nom::character::complete::u8),
+                    field_line_parser("scanner ", nom::character::complete::u8),
                 ),
                 tag(sep),
             )
