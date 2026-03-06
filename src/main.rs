@@ -9,20 +9,16 @@
 //! warranted further explanation. The document is in the `notes` directory and
 //! includes a `Makefile`.
 #![feature(hash_set_entry)]
-#![feature(type_alias_impl_trait)]
 #![feature(step_trait)]
 #![feature(ascii_char)]
 #![feature(ascii_char_variants)]
-#![feature(map_try_insert)]
 #![feature(iter_array_chunks)]
-#![feature(iterator_try_collect)]
 #![feature(generic_const_exprs)]
 // We would like to use this in many [Instruction::Error] types but apparently the ? operator cannot
 // convert the ! error type into any other type. We keep this so that we will be notified when it is
 // stabilized.
-#![feature(never_type)]
+//#![feature(never_type)]
 #![feature(bool_to_result)]
-#![feature(impl_trait_in_assoc_type)]
 #![feature(try_blocks)]
 #![feature(extend_one)]
 #![warn(missing_docs)]

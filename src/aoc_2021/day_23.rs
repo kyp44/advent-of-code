@@ -440,7 +440,7 @@ mod solution {
         /// to solve from this position, that is to return all amphipods to
         /// their home rooms.
         pub fn minimal_energy(self) -> AocResult<u64> {
-            self.traverse_tree().map(|c| c.0)
+            self.traverse_tree().map(|bc| bc.cost.0)
         }
     }
 
@@ -455,8 +455,9 @@ mod solution {
     }
     impl<P: Part + 'static> BestCostTreeNode for Position<P> {
         type Metric = Cost;
+        type NodeData = ();
 
-        fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>> {
+        fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>, Self::NodeData> {
             // NOTE: One principle we follow that is not a rule, we never move an amphipod
             // only partially into a room, we always go as deep as possible.
             // Likewise we never move an amphipod to a different space
@@ -467,7 +468,7 @@ mod solution {
                     .iter()
                     .all(|n| self.positions[a].contains(n))
             }) {
-                return ApplyNodeAction::Stop(true);
+                return ApplyNodeAction::Stop(Some(()));
             }
 
             let mut moves = Vec::new();
@@ -571,7 +572,7 @@ mod solution {
             }
 
             if moves.is_empty() {
-                ApplyNodeAction::Stop(false)
+                ApplyNodeAction::Stop(None)
             } else {
                 ApplyNodeAction::Continue(moves)
             }

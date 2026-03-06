@@ -290,7 +290,7 @@ mod solution {
         }
     }
     impl Parsable for Character {
-            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 (
                     field_line_parser("Hit Points:", nom::character::complete::u32),
@@ -318,7 +318,7 @@ mod solution {
         /// the player wins.
         pub fn minimal_mana_cost(mut self, hard_mode: bool) -> AocResult<u64> {
             self.hard_mode = hard_mode;
-            self.traverse_tree().map(|m| m.0.into())
+            self.traverse_tree().map(|bc| bc.cost.0.into())
         }
     }
 
@@ -333,11 +333,12 @@ mod solution {
 
     impl BestCostTreeNode for Characters {
         type Metric = Mana;
+        type NodeData = ();
 
-        fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>> {
+        fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>, Self::NodeData> {
             // Only count victory if the boss is dead
             if self.boss.dead() {
-                return ApplyNodeAction::Stop(true);
+                return ApplyNodeAction::Stop(Some(()));
             }
 
             let mut player = self.player.clone();
@@ -349,7 +350,7 @@ mod solution {
 
             // If the player is dead than we are done and we lost.
             if player.dead() {
-                return ApplyNodeAction::Stop(false);
+                return ApplyNodeAction::Stop(None);
             }
 
             let children = Spell::iter()
@@ -376,7 +377,7 @@ mod solution {
                 .collect_vec();
 
             if children.is_empty() {
-                ApplyNodeAction::Stop(false)
+                ApplyNodeAction::Stop(None)
             } else {
                 ApplyNodeAction::Continue(children)
             }

@@ -17,7 +17,7 @@ use derive_new::new;
 use std::{collections::HashMap, fmt::Debug};
 
 /// Action to take by a tree search algorithm after processing a particular
-/// node.
+/// [`GlobalStateTreeNode`].
 pub enum NodeAction<N> {
     /// This is a terminal node, so do not recurse.
     Stop,
@@ -102,6 +102,15 @@ pub trait Metric: Sized + Debug {
             *self = other;
         }
     }
+
+    /// Returns a successful variant of the metric if there is one.
+    ///
+    /// This is called on the metric when a successful node is reached, before
+    /// comparing with the global best cost. The default implementation simply
+    /// returns itself.
+    fn successful(self) -> Self {
+        self
+    }
 }
 impl<T: Metric> Metric for Option<T> {
     fn is_better(&self, other: &Self) -> bool {
@@ -116,14 +125,19 @@ impl<T: Metric> Metric for Option<T> {
 }
 
 /// Action to take by a tree search algorithm after processing a particular
-/// node.
-pub enum ApplyNodeAction<C> {
-    /// This is a terminal node, and whether this node/path should should count
-    /// or not.
-    Stop(bool),
-    /// This is a terminal node and the search should be immediately stopped,
-    /// and whether this node/path should should count or not.
-    Complete(bool),
+/// [`BestCostTreeNode`].
+///
+/// `C` is the child node type and `D` is the data type produced by nodes.
+pub enum ApplyNodeAction<C, D> {
+    /// This is a terminal node.
+    ///
+    /// The value should be `None` if this is not a good terminal node, and
+    /// should contain the terminal node's data if it _is_ a good terminal node.
+    Stop(Option<D>),
+    /// This is a terminal node and the search should be immediately stopped.
+    ///
+    /// The value is the same as for the [`ApplyNodeAction::Stop`] variant.
+    Complete(Option<D>),
     /// Recurse to one or more child nodes.
     Continue(Vec<C>),
 }
@@ -151,21 +165,44 @@ impl<T> BasicSolutionState<T> {
     }
 }
 
+/// A best cost used to keep track of the cost and node data for a
+/// successful terminal node.
+#[derive(new, Clone, Debug)]
+pub struct BestCost<N: BestCostTreeNode> {
+    /// The cost to get to the terminal node.
+    pub cost: N::Metric,
+    /// The arbitrary node data for the terminal node that had this cost.
+    pub node_data: N::NodeData,
+}
+impl<N: BestCostTreeNode> Metric for BestCost<N> {
+    fn is_better(&self, other: &Self) -> bool {
+        self.cost.is_better(&other.cost)
+    }
+
+    fn successful(self) -> Self {
+        Self {
+            cost: self.cost.successful(),
+            node_data: self.node_data,
+        }
+    }
+}
+
 /// The global state for a [`BestCostTreeNode`] search.
 struct BestCostState<N: BestCostTreeNode> {
     /// The overall best cost, if one has been set.
-    best_cost: Option<N::Metric>,
+    best_cost: Option<BestCost<N>>,
+
     /// Optimization table where the key is a node, and the value is the best
     /// cost of the node's sub-tree, that is, the best cost if starting at
     /// the node.
     ///
-    /// A value of `None` means that the goal state cannot be reached by the
-    /// node.
-    node_best_costs: HashMap<N, Option<N::Metric>>,
+    /// A value of `None` means that a good terminal node cannot be reached by
+    /// the node.
+    node_best_costs: HashMap<N, Option<BestCost<N>>>,
 }
 impl<N: BestCostTreeNode> BestCostState<N> {
     /// Updates the overall best cost if `other` is better.
-    pub fn update_if_better(&mut self, other: N::Metric) {
+    pub fn update_if_better(&mut self, other: BestCost<N>) {
         self.best_cost.update_if_better(Some(other));
     }
 }
@@ -201,12 +238,22 @@ struct BestCostNode<N: BestCostTreeNode> {
 /// problem](../../advent_of_code/aoc_2015/day_22/solution/index.html) or the
 /// [2021 day 23
 /// problem](../../advent_of_code/aoc_2021/day_23/solution/index.html).
+///
+/// For an example that uses some `NodeData` see the
+/// [2016 day 17
+/// problem](../../advent_of_code/aoc_2016/day_17/solution/index.html).
 pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + Debug {
     /// The cost type, the default value should be initial or zero cost.
     type Metric: Metric + Clone + Default + Copy + std::ops::Add<Output = Self::Metric>;
+    /// Arbitrary data associated with a node.
+    ///
+    /// The idea is that the terminal nodes can produce some data associated
+    /// with them that will be available to the user for the global best cost
+    /// node.
+    type NodeData: Clone + Debug;
 
     /// Determines the action to take by the algorithm from the current node.
-    fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>>;
+    fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>, Self::NodeData>;
 
     /// Searches the tree to find the optimal [`Metric`] cost, which is returned
     /// if one was found.
@@ -227,14 +274,14 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + D
     ///
     /// # Panics
     /// This will panic if any node returns an empty array of children.
-    fn traverse_tree(self) -> AocResult<Self::Metric> {
+    fn traverse_tree(self) -> AocResult<BestCost<Self>> {
         /// A return value from the the recursive tree search function.
         struct BestCostReturn<N: BestCostTreeNode> {
             /// Whether to immediately terminate the search.
             complete: bool,
             /// The best cost of the sub-tree below the current node, if there
             /// is a valid path to a successful terminal node.
-            best_cost: Option<N::Metric>,
+            best_cost: Option<BestCost<N>>,
         }
 
         /// This is an internal recursive function of
@@ -247,8 +294,8 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + D
         ) -> BestCostReturn<N> {
             // If our cumulative cost is already worse than the best cost, we need not
             // proceed further
-            if let Some(bc) = best_cost_state.best_cost
-                && bc.is_better(&current_node.cumulative_cost)
+            if let Some(bc) = best_cost_state.best_cost.as_ref()
+                && bc.cost.is_better(&current_node.cumulative_cost)
             {
                 return BestCostReturn {
                     complete: false,
@@ -261,10 +308,14 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + D
             if let Some(bc) = best_cost_state
                 .node_best_costs
                 .get(&current_node.node)
-                .copied()
+                .cloned()
             {
-                if let Some(best_cost) = bc {
-                    best_cost_state.update_if_better(current_node.cumulative_cost + best_cost);
+                if let Some(best_cost) = bc.as_ref() {
+                    let new_bc = BestCost::new(
+                        current_node.cumulative_cost + best_cost.cost,
+                        best_cost.node_data.clone(),
+                    );
+                    best_cost_state.update_if_better(new_bc);
                 }
                 return BestCostReturn {
                     complete: false,
@@ -273,24 +324,28 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + D
             }
 
             let bc_return = match current_node.node.recurse_action() {
-                ApplyNodeAction::Stop(apply) => {
-                    if apply {
-                        best_cost_state.update_if_better(current_node.cumulative_cost);
-                    }
-                    BestCostReturn {
-                        complete: false,
-                        best_cost: apply.then_some(N::Metric::default()),
-                    }
-                }
-                ApplyNodeAction::Complete(apply) => {
-                    if apply {
-                        best_cost_state.update_if_better(current_node.cumulative_cost);
-                    }
-                    BestCostReturn {
-                        complete: true,
-                        best_cost: apply.then_some(N::Metric::default()),
-                    }
-                }
+                ApplyNodeAction::Stop(apply_data) => BestCostReturn {
+                    complete: false,
+                    best_cost: apply_data.map(|node_data| {
+                        best_cost_state.update_if_better(BestCost::new(
+                            current_node.cumulative_cost.successful(),
+                            node_data.clone(),
+                        ));
+
+                        BestCost::new(N::Metric::default(), node_data)
+                    }),
+                },
+                ApplyNodeAction::Complete(apply_data) => BestCostReturn {
+                    complete: true,
+                    best_cost: apply_data.map(|node_data| {
+                        best_cost_state.update_if_better(BestCost::new(
+                            current_node.cumulative_cost.successful(),
+                            node_data.clone(),
+                        ));
+
+                        BestCost::new(N::Metric::default(), node_data)
+                    }),
+                },
                 ApplyNodeAction::Continue(children) => {
                     if children.is_empty() {
                         panic!("node returned an empty child list");
@@ -307,7 +362,9 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + D
                             },
                         );
 
-                        bc_return.best_cost = bc_return.best_cost.map(|c| c + child.cost);
+                        bc_return.best_cost = bc_return
+                            .best_cost
+                            .map(|bc| BestCost::new(bc.cost + child.cost, bc.node_data));
 
                         if bc_return.complete {
                             return bc_return;
@@ -326,7 +383,7 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + D
             // Update the best cost node optimization table
             best_cost_state
                 .node_best_costs
-                .insert(current_node.node.clone(), bc_return.best_cost);
+                .insert(current_node.node.clone(), bc_return.best_cost.clone());
             bc_return
         }
 
@@ -348,7 +405,7 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + D
 
 /// A [`Metric`] that counts steps between node.
 #[derive(Clone, Copy, Debug, Default, Add, From)]
-struct Steps(usize);
+pub struct Steps(usize);
 impl Metric for Steps {
     fn is_better(&self, other: &Self) -> bool {
         self.0 < other.0
@@ -360,8 +417,9 @@ impl Metric for Steps {
 struct LeastStepsNode<N: LeastStepsTreeNode>(N);
 impl<N: LeastStepsTreeNode> BestCostTreeNode for LeastStepsNode<N> {
     type Metric = Steps;
+    type NodeData = N::NodeData;
 
-    fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>> {
+    fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>, Self::NodeData> {
         match self.0.recurse_action() {
             ApplyNodeAction::Stop(a) => ApplyNodeAction::Stop(a),
             ApplyNodeAction::Complete(a) => ApplyNodeAction::Complete(a),
@@ -377,6 +435,15 @@ impl<N: LeastStepsTreeNode> BestCostTreeNode for LeastStepsNode<N> {
     }
 }
 
+/// The structure returned from [`LeastStepsTreeNode::traverse_tree`].
+pub struct LeastStepsBestCost<D> {
+    /// The least number of steps to get to a good terminal node.
+    pub cost: usize,
+    /// The node data produced by the good terminal node node using the path
+    /// taken in the least number of steps.
+    pub node_data: D,
+}
+
 /// Implemented by a tree node, for which the tree search finds the least number
 /// of steps to a successful terminal node.
 ///
@@ -385,21 +452,30 @@ impl<N: LeastStepsTreeNode> BestCostTreeNode for LeastStepsNode<N> {
 /// [2015 day 19
 /// problem](../../advent_of_code/aoc_2015/day_19/solution/index.html).
 pub trait LeastStepsTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + Debug {
+    /// Arbitrary data associated with a node, the same as the
+    /// [`BestCostTreeNode::NodeData`].
+    type NodeData: Clone + Debug;
+
     /// Determines the action to take by the search algorithm from the current
     /// node.
-    fn recurse_action(&mut self) -> ApplyNodeAction<Self>;
+    fn recurse_action(&mut self) -> ApplyNodeAction<Self, Self::NodeData>;
 
     /// Searches the tree until the whole tree is searched, or a node stops the
     /// search by returning [`ApplyNodeAction::Complete`].
     ///
-    /// Returns the least number of steps to a successful terminal node, or
+    /// Returns the [`LeastStepsBestCost`] to a successful terminal node, or
     /// [`AocError::NoSolution`] if no successful terminal nodes were
     /// encountered.
     ///
     /// The caveats that apply to [`BestCostTreeNode::traverse_tree`] apply here
     /// as well in terms of defining node equality and implementing
     /// premature tree branch trimming.
-    fn traverse_tree(self) -> AocResult<usize> {
-        LeastStepsNode(self).traverse_tree().map(|s| s.0)
+    fn traverse_tree(self) -> AocResult<LeastStepsBestCost<Self::NodeData>> {
+        LeastStepsNode(self)
+            .traverse_tree()
+            .map(|bc| LeastStepsBestCost {
+                cost: bc.cost.0,
+                node_data: bc.node_data,
+            })
     }
 }

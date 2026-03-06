@@ -275,7 +275,9 @@ mod solution {
             let mut total_time = 0;
 
             for goal in goals {
-                total_time += SearchNode::new(self, *goal, total_time).traverse_tree()?;
+                total_time += SearchNode::new(self, *goal, total_time)
+                    .traverse_tree()?
+                    .cost;
             }
 
             Ok(total_time.try_into().unwrap())
@@ -439,10 +441,12 @@ mod solution {
     impl Eq for SearchNode<'_> {}
 
     impl LeastStepsTreeNode for SearchNode<'_> {
-        fn recurse_action(&mut self) -> ApplyNodeAction<Self> {
+        type NodeData = ();
+
+        fn recurse_action(&mut self) -> ApplyNodeAction<Self, Self::NodeData> {
             // Are we are we at the exit?
             if self.data.expedition == self.data.goal_point() {
-                return ApplyNodeAction::Stop(true);
+                return ApplyNodeAction::Stop(Some(()));
             }
 
             // Set children for directions in which we can move
@@ -456,7 +460,7 @@ mod solution {
             }
 
             if children.is_empty() {
-                ApplyNodeAction::Stop(false)
+                ApplyNodeAction::Stop(None)
             } else {
                 ApplyNodeAction::Continue(children)
             }

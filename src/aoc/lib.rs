@@ -3,7 +3,6 @@
 //!
 //! Contains useful abstractions are that are used for one more than one
 //! solution.
-#![feature(slice_pattern)]
 #![warn(missing_docs)]
 #![feature(step_trait)]
 #![feature(associated_type_defaults)]

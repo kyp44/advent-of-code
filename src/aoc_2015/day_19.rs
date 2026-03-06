@@ -79,7 +79,7 @@ mod solution {
         to: String,
     }
     impl Parsable for Replacement {
-            fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
+        fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             map(
                 separated_pair(alpha1, trim(false, tag("=>")), alpha1),
                 |(f, t): (&str, &str)| Replacement {
@@ -143,14 +143,16 @@ mod solution {
         }
     }
     impl LeastStepsTreeNode for Molecule<'_> {
-        fn recurse_action(&mut self) -> ApplyNodeAction<Self> {
+        type NodeData = ();
+
+        fn recurse_action(&mut self) -> ApplyNodeAction<Self, Self::NodeData> {
             if self.current == self.target {
-                return ApplyNodeAction::Complete(true);
+                return ApplyNodeAction::Complete(Some(()));
             } else if self.current.contains(self.target) {
                 // An assumption here is that the target string is not a part
                 // of any replacement to string, i.e. it cannot be further transformed.
                 // Thus, if it is in any non-equal string, this branch can be abandoned.
-                return ApplyNodeAction::Complete(false);
+                return ApplyNodeAction::Complete(None);
             }
 
             // All replacements in the current string
@@ -247,7 +249,7 @@ mod solution {
         pub fn number_of_steps(&self, starting_molecule: &'static str) -> AocResult<u64> {
             Molecule::start(starting_molecule, self)
                 .traverse_tree()
-                .map(|s| s.try_into().unwrap())
+                .map(|bc| bc.cost.try_into().unwrap())
         }
     }
 }
