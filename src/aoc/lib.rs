@@ -7,6 +7,7 @@
 #![feature(step_trait)]
 #![feature(associated_type_defaults)]
 #![feature(impl_trait_in_assoc_type)]
+#![feature(trait_alias)]
 #![warn(clippy::missing_docs_in_private_items)]
 
 pub mod circular_list;
@@ -118,7 +119,26 @@ pub mod extension {
             num::{One, Zero},
         };
         use itertools::iproduct;
-        use num::{NumCast, Signed};
+        use num::NumCast;
+
+        /// Alias for traits for which the absolute value can be calculated.
+        trait HasAbs = Zero + Add<Output = Self> + Sub<Output = Self> + Ord + Copy;
+
+        /// An internal trait and blanket implementation for items for which an
+        /// absolute values can be calculated.
+        trait Abs {
+            /// Returns the absolute value.
+            fn abs(self) -> Self;
+        }
+        impl<T: HasAbs> Abs for T {
+            fn abs(self) -> Self {
+                if self < T::zero() {
+                    T::zero() - self
+                } else {
+                    self
+                }
+            }
+        }
 
         /// Extension trait for mathematical vectors from that calculates their
         /// [Manhattan length](https://en.wikipedia.org/wiki/Taxicab_geometry).
@@ -137,12 +157,12 @@ pub mod extension {
             /// ```
             fn manhattan_len(&self) -> T;
         }
-        impl<T: Signed, U> ManhattanLen<T, U> for Vector2D<T, U> {
+        impl<T: HasAbs, U> ManhattanLen<T, U> for Vector2D<T, U> {
             fn manhattan_len(&self) -> T {
                 self.x.abs() + self.y.abs()
             }
         }
-        impl<T: Signed, U> ManhattanLen<T, U> for Vector3D<T, U> {
+        impl<T: HasAbs, U> ManhattanLen<T, U> for Vector3D<T, U> {
             fn manhattan_len(&self) -> T {
                 self.x.abs() + self.y.abs() + self.z.abs()
             }

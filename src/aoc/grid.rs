@@ -8,7 +8,7 @@ use derive_more::{Add, AddAssign, Deref, From, Into, Not, Sub, SubAssign};
 use euclid::{Box2D, Point2D, Size2D, Vector2D};
 use itertools::iproduct;
 use num::FromPrimitive;
-use petgraph::{EdgeType, Graph, graph::NodeIndex, stable_graph::IndexType};
+use petgraph::{Graph, graph::NodeIndex};
 use std::{cmp::Eq, collections::HashSet, fmt, hash::Hash, marker::PhantomData, str::FromStr};
 
 /// A grid coordinate system in which the origin is the in upper left of the
@@ -461,7 +461,7 @@ impl<T, U> Grid<T, U> {
     ///     vec![1, 2, 3, 4, 5, 6]
     /// );
     /// ```
-    pub fn all_values(&self) -> impl Iterator<Item = &T> {
+    pub fn all_values(&self) -> impl Iterator<Item = &T> + Clone {
         self.0.iter()
     }
 
@@ -876,8 +876,7 @@ impl<T: Clone> Grid<T> {
     /// // 3 1→2
     /// // ↓  ⤡↑
     /// // 4→5 1
-    /// let (graph, node_grid) = grid
-    ///     .as_graph::<_, Directed, DefaultIx>(true, |p, n| (n == p || *n == *p + 1).then_some(()));
+    /// let (graph, node_grid) = grid.as_graph(true, |p, n| (n == p || *n == *p + 1).then_some(()));
     ///
     /// // Get all the node indices in row-major order.
     /// let nodes = node_grid.all_values().copied().collect_vec();
@@ -919,11 +918,11 @@ impl<T: Clone> Grid<T> {
     ///     assert!(graph.contains_edge(a, b) == expected_edges.contains(&(a, b)));
     /// }
     /// ```
-    pub fn as_graph<E, Ty: EdgeType, Ix: IndexType>(
+    pub fn as_graph<E>(
         &self,
         include_diagonals: bool,
         edge_creator: impl Fn(&T, &T) -> Option<E>,
-    ) -> (Graph<T, E, Ty, Ix>, Grid<NodeIndex<Ix>>) {
+    ) -> (Graph<T, E>, Grid<NodeIndex>) {
         let mut graph = Graph::default();
 
         // Create nodes
