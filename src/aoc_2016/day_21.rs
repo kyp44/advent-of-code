@@ -40,11 +40,12 @@ rotate based on position of letter d";
 
     #[test]
     fn rotate_on_letter_inversions() {
-        fn execute_inverse(mut pw: Password, idx: usize) -> AocResult<String> {
+        let mut program_counter = ProgramCounter::<InverseOperation>::from(Vec::new());
+
+        let mut execute_inverse = |mut pw: Password, idx: usize| -> AocResult<String> {
             InverseOperation::from(Operation::RotateRightOnLetter(pw[idx]))
-                .execute(&mut pw)
-                .map(|e| e.yielded_item)
-        }
+                .execute(Some(&mut program_counter), &mut pw)
+        };
 
         // Length 3: Fully reversible
         let pw = Password::from_str("abc").unwrap();
@@ -166,6 +167,11 @@ mod solution {
         /// index.
         MovePositions(usize, usize),
     }
+    impl Default for Operation {
+        fn default() -> Self {
+            Self::SwapPositions(0, 0)
+        }
+    }
     impl Parsable for Operation {
         type Parsed<'a> = Self;
 
@@ -214,8 +220,9 @@ mod solution {
 
         fn execute(
             &self,
+            program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
+        ) -> Result<Self::YieldItem, Self::Err> {
             match self {
                 Operation::SwapPositions(ix, iy) => registers.characters.swap(*ix, *iy),
                 Operation::SwapLetters(cx, cy) => {
@@ -237,12 +244,12 @@ mod solution {
                         .position(|c| c == cx)
                         .ok_or_else(|| {
                             AocError::Process(
-                        format!(
+                                format!(
                             "The character '{cx}' does not appear in the password string '{}'",
                             registers.as_string()
                         )
-                        .into(),
-                    )
+                                .into(),
+                            )
                         })?;
                     let nr =
                         Password::rotation_for_index(registers.characters.len(), ix).num_rotations;
@@ -258,7 +265,9 @@ mod solution {
                 }
             }
 
-            Ok(Executed::new(registers.as_string(), None))
+            program_counter.unwrap().increment();
+
+            Ok(registers.as_string())
         }
     }
 
@@ -270,7 +279,7 @@ mod solution {
     /// same index after the rotation. In practice, inverting this operation
     /// will fail only if the character is at one of these ambiguous
     /// indices.
-    #[derive(From)]
+    #[derive(Clone, From)]
     pub struct InverseOperation {
         /// The original operation.
         operation: Operation,
@@ -282,10 +291,14 @@ mod solution {
 
         fn execute(
             &self,
+            program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
-            match self.operation {
-                Operation::Rotate(dir, n) => Operation::Rotate(-dir, n).execute(registers),
+        ) -> Result<Self::YieldItem, Self::Err> {
+            program_counter.unwrap().with_dummy(|pc|
+             match self.operation {
+                Operation::Rotate(dir, n) => {
+                    Operation::Rotate(-dir, n).execute(Some(pc), registers)
+                }
                 Operation::RotateRightOnLetter(cx) => {
                     let ix = registers.characters.iter().position(|c| *c == cx).unwrap();
                     let nr = registers.reverse_letter_rotations.get(&ix).ok_or_else(|| {
@@ -301,16 +314,17 @@ mod solution {
                     })?;
 
                     registers.characters.rotate_left(*nr);
-                    Ok(Executed::new(registers.as_string(), None))
+                    pc.increment();
+                    Ok(registers.as_string())
                 }
                 Operation::MovePositions(ix, iy) => {
-                    Operation::MovePositions(iy, ix).execute(registers)
+                    Operation::MovePositions(iy, ix).execute(Some(pc), registers)
                 }
                 _ => {
                     // The rest of the operations are their own inverse
-                    self.operation.execute(registers)
+                    self.operation.execute(Some(pc), registers)
                 }
-            }
+            })
         }
     }
 

@@ -142,7 +142,7 @@ mod solution {
     }
 
     /// Represents an operand.
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     pub enum Operand {
         /// A register.
         Register(Register),
@@ -169,7 +169,7 @@ mod solution {
     }
 
     /// Represents a single ALU instruction.
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     pub enum AluInstruction {
         /// `inp` read input instruction.
         ReadInput(Register),
@@ -228,8 +228,9 @@ mod solution {
 
         fn execute(
             &self,
+            program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
+        ) -> Result<Self::YieldItem, Self::Err> {
             match self {
                 AluInstruction::ReadInput(reg) => {
                     let next_input = registers
@@ -247,7 +248,9 @@ mod solution {
                 }
             }
 
-            Ok(Executed::default())
+            program_counter.unwrap().increment();
+
+            Ok(())
         }
     }
 

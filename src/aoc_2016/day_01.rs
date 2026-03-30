@@ -62,7 +62,7 @@ mod solution {
     /// An instruction to turn and then walk some number of blocks.
     ///
     /// Can be parsed from text input.
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     pub struct WalkingInstruction {
         /// The direction to turn before walking.
         pub turn_direction: TurnDirection,
@@ -91,12 +91,15 @@ mod solution {
 
         fn execute(
             &self,
+            program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
+        ) -> Result<Self::YieldItem, Self::Err> {
             registers.facing = registers.facing.turn(self.turn_direction);
             registers.position += registers.facing.as_vector() * i32::from(self.distance);
 
-            Ok(Executed::no_jump(registers.position))
+            program_counter.unwrap().increment();
+
+            Ok(registers.position)
         }
     }
 

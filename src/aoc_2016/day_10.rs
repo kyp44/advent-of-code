@@ -23,7 +23,7 @@ value 2 goes to bot 2";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::{parse::trim, program::Executed};
+    use aoc::parse::trim;
     use itertools::process_results;
     use nom::{
         branch::alt,
@@ -40,7 +40,7 @@ mod solution {
     /// A recipient to whom a bot can give a chip.
     ///
     /// Can be parsed from text input.
-    #[derive(Debug, PartialEq, Eq, Hash)]
+    #[derive(Clone, Debug, PartialEq, Eq, Hash)]
     enum Recipient {
         /// Another bot with its number.
         Bot(Num),
@@ -79,7 +79,7 @@ mod solution {
     /// A single instruction for the [`Factory`].
     ///
     /// Can be parsed from text input.
-    #[derive(Debug, PartialEq, Eq, Hash)]
+    #[derive(Clone, Debug, PartialEq, Eq, Hash)]
     enum FactoryInstruction {
         /// A bot is to pick a chip.
         ChipToBot {
@@ -179,9 +179,10 @@ mod solution {
 
         fn execute(
             &self,
+            _program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
-            Ok(Executed::no_jump(match self {
+        ) -> Result<Self::YieldItem, Self::Err> {
+            Ok(match self {
                 FactoryInstruction::ChipToBot {
                     chip_value,
                     bot_num,
@@ -232,7 +233,7 @@ mod solution {
                         None => false,
                     }
                 }
-            }))
+            })
         }
     }
 
@@ -401,7 +402,7 @@ mod solution {
                 // Try to execute all instructions and remove those that executed
                 self.set.retain(|inst| {
                     try {
-                        let executed = inst.execute(&mut factory)?.yielded_item;
+                        let executed = inst.execute(None, &mut factory)?;
                         if executed {
                             inst_executed = true;
 

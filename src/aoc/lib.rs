@@ -36,8 +36,7 @@ pub mod prelude {
         iter::{IteratorExt, LendingIteratorExt, StrExt},
         parse::{BitInput, DiscardInput, NomParseError, NomParseResult, Parsable, Sections},
         program::{
-            Executed, Instruction, Jump, Program, ProgramEnd, ProgramEndStatus, ProgramState,
-            SimpleRegisters,
+            Instruction, Program, ProgramCounter, ProgramEnd, ProgramEndStatus, SimpleRegisters,
         },
         solution::{Answer, Solution, SolverInput, YearSolutions},
     };

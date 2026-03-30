@@ -71,16 +71,21 @@ mod solution {
 
         fn execute(
             &self,
+            program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
-            Ok(Executed::only_jump(match self {
-                AsmInstruction::Nop(_) => None,
-                AsmInstruction::Acc(n) => {
-                    registers.value += *n;
-                    None
-                }
-                AsmInstruction::Jmp(d) => Some(Jump::Relative(*d)),
-            }))
+        ) -> Result<Self::YieldItem, Self::Err> {
+            program_counter
+                .unwrap()
+                .jump_relative_or_increment(match self {
+                    AsmInstruction::Nop(_) => None,
+                    AsmInstruction::Acc(n) => {
+                        registers.value += *n;
+                        None
+                    }
+                    AsmInstruction::Jmp(o) => Some(*o),
+                });
+
+            Ok(())
         }
     }
 

@@ -47,41 +47,142 @@ pub trait SimpleRegisters {
     }
 }
 
-/// A jump in the program instructions.
-pub enum Jump {
-    /// An absolute jump with the index of the instruction to which to jump.
-    Absolute(usize),
-    /// The index of the instruction to which to jump relative to the current
-    /// instruction, with zero being the current instruction.
-    ///
-    /// A negative number jumps to a preceding instruction, while a positive
-    /// number jumps to a succeeding instruction.
-    Relative(isize),
-}
-
-/// The structure returned from the execution of a single [`Instruction`].
+/// A program counter along with the set of instructions to which the counter
+/// applies.
 ///
-/// This implements [`Default`], which returns the default `yielded_item` with
-/// no jump.
-#[derive(new, Default)]
-pub struct Executed<Y> {
-    /// The item yielded by the instruction execution.
-    pub yielded_item: Y,
-    /// How the program should jump, or `None` if execution should simply move
-    /// to the next [`Instruction`].
-    pub jump: Option<Jump>,
+/// The counter may be valid, pointing to an instruction, or can be invalid.
+/// The counter will become invalid if an instruction jumps outside the
+/// program, or if it is incremented past the last instruction.
+///
+/// Once invalid, the only way for it to become valid again is to call
+/// [`jump_absolute`](ProgramCounter::jump_absolute) with a valid `index`.
+pub struct ProgramCounter<I: Instruction> {
+    /// The list of program instructions, which could be mutated.
+    instructions: Vec<I>,
+    /// The index of the current instruction in `instructions`, or `None` if the
+    /// counter has been invalidated.
+    index: Option<usize>,
+    /// The last instruction jumped to another instruction.
+    jumped: bool,
 }
-impl<Y> Executed<Y> {
-    /// Creates a new structure with a `yielded` item and no jump.
-    pub fn no_jump(yielded: Y) -> Self {
-        Self::new(yielded, None)
+impl<I: Instruction> From<Vec<I>> for ProgramCounter<I> {
+    fn from(value: Vec<I>) -> Self {
+        Self {
+            instructions: value,
+            index: Some(0),
+            jumped: false,
+        }
     }
 }
-impl<Y: Default> Executed<Y> {
-    /// Creates a new structure with the default `yielded_item` and a possible
-    /// [`Jump`].
-    pub fn only_jump(jump: Option<Jump>) -> Self {
-        Self::new(Y::default(), jump)
+impl<I: Instruction> ProgramCounter<I> {
+    /// Returns a slice of the instruction list.
+    pub fn instructions(&self) -> &[I] {
+        &self.instructions
+    }
+
+    /// Sets the counter to a specific `index`, invaliding it if `index` is out
+    /// of range.
+    fn set(&mut self, index: usize) {
+        self.index = (index < self.instructions.len()).then_some(index);
+    }
+
+    /// Returns the current index if valid and `None` otherwise.
+    pub fn index(&self) -> Option<usize> {
+        self.index
+    }
+
+    /// Returns the current instruction, or `None` if the counter is
+    /// invalid.
+    pub fn current_instruction(&self) -> Option<&I> {
+        self.index.map(|idx| &self.instructions[idx])
+    }
+
+    /// Returns whether the last instruction caused teh counter to jump.
+    pub fn jumped(&self) -> bool {
+        self.jumped
+    }
+
+    /// Increments the counter, invalidating it if the current instruction is
+    /// the last one.
+    pub fn increment(&mut self) {
+        if let Some(idx) = self.index {
+            self.set(idx + 1);
+        }
+        self.jumped = false;
+    }
+
+    /// Returns the index of some instruction relative to the current
+    /// instruction.
+    ///
+    /// This will be `None` if the index is outside the valid range.
+    pub fn relative_index(&self, offset: isize) -> Option<usize> {
+        let curr_index = isize::try_from(self.index?).ok()?;
+        let index = usize::try_from(curr_index + offset).ok()?;
+
+        (index < self.instructions.len()).then_some(index)
+    }
+
+    /// Jumps to a specific instruction, invalidating the counter if it is
+    /// outside the valid range.
+    ///
+    /// This can revalidate the counter if it is invalid and a valid `index` is
+    /// passed.
+    pub fn jump_absolute(&mut self, index: usize) {
+        self.set(index);
+        self.jumped = true;
+    }
+
+    /// Jumps to an instruction relative to the current instruction,
+    /// invalidating the counter if this is out of the valid range.
+    pub fn jump_relative(&mut self, offset: isize) {
+        self.index = self.relative_index(offset);
+        self.jumped = true;
+    }
+
+    /// Jumps to a relative index or simply increments the program counter if
+    /// `jump` is `None`.
+    ///
+    /// This can of course invalidate the counter if the jump index is out of
+    /// range.
+    pub fn jump_relative_or_increment(&mut self, jump: Option<isize>) {
+        match jump {
+            Some(o) => self.jump_relative(o),
+            None => self.increment(),
+        }
+    }
+
+    /// Modifies the instruction using a closure.
+    ///
+    /// This does not change the current counter `index` even if the underlying
+    /// instructions change. This can invalidate the counter if enough
+    /// instructions are removed such that the current index becomes out of
+    /// range.
+    pub fn change_instructions(&mut self, f: impl FnOnce(&mut Vec<I>)) {
+        f(&mut self.instructions);
+
+        // Re-asses the current index in case the size of the instruction list changed
+        if let Some(idx) = self.index {
+            self.set(idx);
+        }
+    }
+
+    /// Allows execution of a different instruction type `O` by providing a
+    /// dummy program counter to a closure pass to
+    /// [`O::execute`](Instruction::execute).
+    ///
+    /// This allows the instruction to modify the dummy program counter, which
+    /// is then applied back to this counter.
+    pub fn with_dummy<O: Instruction + Default>(
+        &mut self,
+        f: impl FnOnce(&mut ProgramCounter<O>) -> Result<O::YieldItem, O::Err>,
+    ) -> Result<O::YieldItem, O::Err> {
+        let mut dummy_pc = ProgramCounter::from(vec![O::default(); self.instructions().len()]);
+        dummy_pc.index = self.index;
+
+        let res = f(&mut dummy_pc);
+
+        self.index = dummy_pc.index;
+        res
     }
 }
 
@@ -93,8 +194,11 @@ impl<Y: Default> Executed<Y> {
 /// problem](../../advent_of_code/aoc_2015/day_23/solution/index.html) or the
 /// [2020 day 12
 /// problem](../../advent_of_code/aoc_2020/day_12/solution/index.html) for
-/// examples of instruction sets.
-pub trait Instruction {
+/// examples of basic instruction sets.
+/// The [2016 day 23
+/// problem](../../advent_of_code/aoc_2016/day_23/solution/index.html) is an
+/// example of an instruction set that requires mutating the program.
+pub trait Instruction: Sized + Clone {
     /// The type that can be mutated during execution.
     type Registers;
     /// An item yielded by the execution.
@@ -103,11 +207,23 @@ pub trait Instruction {
     type Err;
 
     /// Executes this instruction, operating on the `registers` and returning a
-    /// yielded item and a possible [`Jump`].
+    /// yielded item.
+    ///
+    /// Most instructions will require a `program_counter`, and executing
+    /// a standard [`Program`] will always pass a `program_counter`. Custom
+    /// programs that execute their own instructions may not require one. For an
+    /// example of this, see the [2016 day 10
+    /// problem](../../advent_of_code/aoc_2016/day_10/solution/index.html).
+    ///
+    /// If a `program_counter` is passed, the execution is expected to modify it
+    /// to at least [`increment`](ProgramCounter::increment) it to the next
+    /// instruction. The instructions themselves may also be mutated by calling
+    /// [`ProgramCounter::change_instructions`].
     fn execute(
         &self,
+        program_counter: Option<&mut ProgramCounter<Self>>,
         registers: &mut Self::Registers,
-    ) -> Result<Executed<Self::YieldItem>, Self::Err>;
+    ) -> Result<Self::YieldItem, Self::Err>;
 }
 
 /// Possible ways for a program to end.
@@ -121,32 +237,23 @@ pub enum ProgramEndStatus {
     Infinite,
 }
 
-/// A program state.
-#[derive(new, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct ProgramState<R> {
-    /// The current program counter, that is the instruction index.
-    pub program_counter: usize,
-    /// The current state of the registers.
-    pub registers: R,
-}
-
 /// The results of a program after complete execution.
 #[derive(new, Debug)]
 pub struct ProgramEnd<R, Y> {
     /// The final state.
-    pub last_state: ProgramState<R>,
+    pub registers: R,
     /// The item yielded by the final instruction that was executed.
     pub last_yielded: Option<Y>,
 }
 impl<R, Y> ProgramEnd<R, Y> {
     /// Keeps only the final state of the registers.
     pub fn into_registers(self) -> R {
-        self.last_state.registers
+        self.registers
     }
 
     /// Accesses the final state of the registers.
     pub fn registers(&self) -> &R {
-        &self.last_state.registers
+        &self.registers
     }
 }
 
@@ -162,7 +269,7 @@ pub struct MonitoredProgramEnd<R, Y> {
 impl<R, Y> MonitoredProgramEnd<R, Y> {
     /// Accesses the final state of the registers.
     pub fn registers(&self) -> &R {
-        &self.program_end.last_state.registers
+        &self.program_end.registers
     }
 }
 
@@ -176,7 +283,7 @@ impl<R, Y> MonitoredProgramEnd<R, Y> {
 /// problem](../../advent_of_code/aoc_2015/day_23/solution/index.html) or the
 /// [2020 day 12
 /// problem](../../advent_of_code/aoc_2020/day_12/solution/index.html) for
-/// examples of programs.
+/// examples.
 #[derive(Clone, Debug)]
 pub struct Program<I> {
     /// The list of instructions.
@@ -211,12 +318,10 @@ impl<I: Parsable> Program<I> {
 impl<I: Instruction> Program<I> {
     /// Returns an executor for this program given an initial state of the
     /// registers.
-    pub fn executor(&self, initial_registers: I::Registers) -> ProgramExecutor<'_, I> {
+    pub fn executor(&self, initial_registers: I::Registers) -> ProgramExecutor<I> {
         ProgramExecutor {
-            program: self,
+            program_counter: ProgramCounter::from(self.instructions.clone()),
             registers: initial_registers,
-            program_counter: 0,
-            jumped: false,
         }
     }
 
@@ -231,15 +336,12 @@ impl<I: Instruction> Program<I> {
         let mut last_yielded = None;
 
         loop {
-            let last_pc = executor.program_counter;
-
             match executor.next() {
-                Some(y) => last_yielded = Some(y?),
+                Some(y) => {
+                    last_yielded = Some(y?);
+                }
                 None => {
-                    break Ok(ProgramEnd::new(
-                        ProgramState::new(last_pc, executor.registers),
-                        last_yielded,
-                    ));
+                    break Ok(ProgramEnd::new(executor.registers, last_yielded));
                 }
             }
         }
@@ -265,14 +367,13 @@ where
         let mut last_yielded = None;
 
         loop {
-            let current_state =
-                ProgramState::new(executor.program_counter, executor.registers.clone());
-
             // Add the current state
-            if !visited_states.insert(current_state.clone()) {
+            if !visited_states
+                .insert((executor.program_counter.index(), executor.registers.clone()))
+            {
                 // In an infinite loop
                 break Ok(MonitoredProgramEnd::new(
-                    ProgramEnd::new(current_state, last_yielded),
+                    ProgramEnd::new(executor.registers, last_yielded),
                     ProgramEndStatus::Infinite,
                 ));
             }
@@ -285,14 +386,14 @@ where
                 .is_none()
             {
                 // The program is complete, so did we jump out or finish normally?
-                break Ok(if executor.jumped {
+                break Ok(if executor.program_counter.jumped() {
                     MonitoredProgramEnd::new(
-                        ProgramEnd::new(current_state, last_yielded),
+                        ProgramEnd::new(executor.registers, last_yielded),
                         ProgramEndStatus::JumpedOut,
                     )
                 } else {
                     MonitoredProgramEnd::new(
-                        ProgramEnd::new(current_state, last_yielded),
+                        ProgramEnd::new(executor.registers, last_yielded),
                         ProgramEndStatus::Terminated,
                     )
                 });
@@ -302,53 +403,19 @@ where
 }
 
 /// An execution [`Iterator`] over the program instructions.
-pub struct ProgramExecutor<'a, I: Instruction> {
-    /// The program being executed.
-    program: &'a Program<I>,
-    /// The state of the registers after the most recent instruction was
-    /// executed.
-    pub registers: I::Registers,
-    /// Index of the _next_ instruction to be executed.
-    pub program_counter: usize,
-    /// Whether the most recent instruction caused a jump.
-    pub jumped: bool,
+pub struct ProgramExecutor<I: Instruction> {
+    /// The program counter.
+    program_counter: ProgramCounter<I>,
+    /// The registers on which the instructions act.
+    registers: I::Registers,
 }
-impl<'a, I: Instruction> ProgramExecutor<'a, I> {
-    /// Returns the next instruction that needs to be executed, if there is one.
-    pub fn next_instruction(&self) -> Option<&'a I> {
-        (self.program_counter < self.program.instructions.len())
-            .then(|| &self.program.instructions[self.program_counter])
-    }
-}
-impl<'a, I: Instruction> Iterator for ProgramExecutor<'a, I> {
+impl<I: Instruction> Iterator for ProgramExecutor<I> {
     type Item = Result<I::YieldItem, I::Err>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        Some(
-            self.next_instruction()
-                .map(|inst| inst.execute(&mut self.registers))?
-                .map(|exec| {
-                    self.program_counter = match exec.jump {
-                        Some(jump) => {
-                            self.jumped = true;
-                            match jump {
-                                Jump::Absolute(pc) => pc,
-                                Jump::Relative(delta) => {
-                                    let pc = isize::try_from(self.program_counter).unwrap() + delta;
+        let inst = self.program_counter.current_instruction().cloned()?;
 
-                                    if pc < 0 { 0 } else { pc.try_into().unwrap() }
-                                }
-                            }
-                        }
-                        None => {
-                            self.jumped = false;
-                            self.program_counter + 1
-                        }
-                    };
-
-                    exec.yielded_item
-                }),
-        )
+        Some(inst.execute(Some(&mut self.program_counter), &mut self.registers))
     }
 }
-impl<I: Instruction> FusedIterator for ProgramExecutor<'_, I> {}
+impl<I: Instruction> FusedIterator for ProgramExecutor<I> {}

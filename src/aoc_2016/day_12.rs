@@ -25,15 +25,16 @@ inc a";
 }
 
 /// Contains solution implementation items.
-mod solution {
-    use std::collections::HashMap;
-
+pub mod solution {
     use super::*;
     use aoc::parse::{field_line_parser, trim};
     use maplit::hashmap;
-    use nom::{branch::alt, bytes::tag, character::complete::isize as pisize, combinator::map};
+    use nom::{branch::alt, bytes::tag, combinator::map};
+    use std::collections::HashMap;
 
     /// One of the computer registers.
+    ///
+    /// Can be parsed from text input.
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
     pub enum Register {
         /// Register A.
@@ -90,17 +91,24 @@ mod solution {
     }
 
     /// An operand for some of the [`AsmInstruction`]s.
-    #[derive(Debug)]
+    ///
+    /// Can be parsed from text input.
+    #[derive(Clone, Copy, Debug)]
     pub enum Operand {
         /// The value in one of the registers.
         Register(Register),
         /// An explicit numeric value.
         Number(isize),
     }
+    impl Default for Operand {
+        fn default() -> Self {
+            Self::Number(0)
+        }
+    }
     impl Parsable for Operand {
         fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
-                map(pisize, Self::Number),
+                map(nom::character::complete::isize, Self::Number),
                 map(Register::parser, Self::Register),
             ))
             .parse(input)
@@ -118,23 +126,30 @@ mod solution {
     }
 
     /// An assembunny instruction.
-    #[derive(Debug)]
+    ///
+    /// Can be parsed from text input.
+    #[derive(Clone, Debug)]
     pub enum AsmInstruction {
         /// Copy a value into a register.
-        Copy(Operand, Register),
+        Copy(Operand, Operand),
         /// Increment the value in a register.
         Increment(Register),
         /// Decrement the value in a register.
         Decrement(Register),
         /// Jump if the value is nonzero.
-        JumpNz(Operand, isize),
+        JumpNz(Operand, Operand),
+    }
+    impl Default for AsmInstruction {
+        fn default() -> Self {
+            Self::Copy(Operand::default(), Operand::default())
+        }
     }
     impl Parsable for AsmInstruction {
         fn parser<'a>(input: &'a str) -> NomParseResult<&'a str, Self::Parsed<'a>> {
             alt((
                 map(
-                    field_line_parser("cpy ", (Operand::parser, trim(false, Register::parser))),
-                    |(opx, regy)| Self::Copy(opx, regy),
+                    field_line_parser("cpy ", (Operand::parser, trim(false, Operand::parser))),
+                    |(opx, opy)| Self::Copy(opx, opy),
                 ),
                 map(field_line_parser("inc ", Register::parser), |reg| {
                     Self::Increment(reg)
@@ -143,8 +158,8 @@ mod solution {
                     Self::Decrement(reg)
                 }),
                 map(
-                    field_line_parser("jnz ", (Operand::parser, trim(false, pisize))),
-                    |(op, jmp)| Self::JumpNz(op, jmp),
+                    field_line_parser("jnz ", (Operand::parser, trim(false, Operand::parser))),
+                    |(opx, opy)| Self::JumpNz(opx, opy),
                 ),
             ))
             .parse(input)
@@ -157,28 +172,36 @@ mod solution {
 
         fn execute(
             &self,
+            program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
-            Ok(Executed::only_jump(match self {
-                AsmInstruction::Copy(op, reg) => {
-                    *registers.get_mut(reg) = op.value(registers);
+        ) -> Result<Self::YieldItem, Self::Err> {
+            program_counter
+                .unwrap()
+                .jump_relative_or_increment(match self {
+                    AsmInstruction::Copy(from_op, to_op) => {
+                        // If the operand is a number this is invalid and does nothing
+                        if let Operand::Register(reg) = to_op {
+                            *registers.get_mut(reg) = from_op.value(registers);
+                        }
 
-                    None
-                }
-                AsmInstruction::Increment(reg) => {
-                    *registers.get_mut(reg) += 1;
+                        None
+                    }
+                    AsmInstruction::Increment(reg) => {
+                        *registers.get_mut(reg) += 1;
 
-                    None
-                }
-                AsmInstruction::Decrement(reg) => {
-                    *registers.get_mut(reg) -= 1;
+                        None
+                    }
+                    AsmInstruction::Decrement(reg) => {
+                        *registers.get_mut(reg) -= 1;
 
-                    None
-                }
-                AsmInstruction::JumpNz(op, d) => {
-                    (op.value(registers) != 0).then_some(Jump::Relative(*d))
-                }
-            }))
+                        None
+                    }
+                    AsmInstruction::JumpNz(test_op, offset_op) => {
+                        (test_op.value(registers) != 0).then_some(offset_op.value(registers))
+                    }
+                });
+
+            Ok(())
         }
     }
 }

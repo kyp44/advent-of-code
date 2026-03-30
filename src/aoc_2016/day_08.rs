@@ -30,7 +30,7 @@ mod solution {
     /// A single instruction for a [`Screen`].
     ///
     /// Can be parsed from text input.
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     pub enum ScreenInstruction {
         /// Draws a rectangle.
         Rect {
@@ -83,8 +83,9 @@ mod solution {
 
         fn execute(
             &self,
+            program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
+        ) -> Result<Self::YieldItem, Self::Err> {
             let grid = &mut registers.grid;
 
             match self {
@@ -109,7 +110,9 @@ mod solution {
                 }
             }
 
-            Ok(Executed::default())
+            program_counter.unwrap().increment();
+
+            Ok(())
         }
     }
 

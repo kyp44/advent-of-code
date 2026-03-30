@@ -90,7 +90,7 @@ mod solution {
     }
 
     /// A single navigation instruction, which can be parsed from text input.
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     pub enum NavInstruction {
         /// Move the ship or waypoint by some relative displacement.
         Move(Vector),
@@ -141,8 +141,9 @@ mod solution {
 
         fn execute(
             &self,
+            program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
+        ) -> Result<Self::YieldItem, Self::Err> {
             match registers {
                 ShipState::Basic { facing, position } => match self {
                     NavInstruction::Move(dv) => *position += *dv,
@@ -158,7 +159,8 @@ mod solution {
                     NavInstruction::Forward(d) => *position += waypoint.to_vector() * *d,
                 },
             }
-            Ok(Executed::default())
+            program_counter.unwrap().increment();
+            Ok(())
         }
     }
 

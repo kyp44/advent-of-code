@@ -21,6 +21,7 @@ mod tests {
 mod solution {
     use super::*;
     use bare_metal_modulo::{MNum, ModNum};
+    use num::Integer;
 
     /// A single elf that is participating in the gift game.
     #[derive(Clone, Debug)]
@@ -159,7 +160,7 @@ mod solution {
             let victim_idx = match self.across_idx.as_ref() {
                 Some(across_idx) => circle.index_offset(
                     *across_idx,
-                    if circle.num_elves_left.is_multiple_of(2) {
+                    if circle.num_elves_left.is_even() {
                         2
                     } else {
                         1

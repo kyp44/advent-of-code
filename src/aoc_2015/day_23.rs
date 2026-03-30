@@ -70,7 +70,7 @@ mod solution {
 
     /// Possible instructions of the computer, which can be parsed from text
     /// input.
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     pub enum AsmInstruction {
         /// The `hlf` instruction operating on register.
         Half(Register),
@@ -135,30 +135,31 @@ mod solution {
 
         fn execute(
             &self,
+            program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
-            Ok(Executed::only_jump(match self {
-                AsmInstruction::Half(r) => {
-                    registers.modify(*r, |r| r / 2);
-                    None
-                }
-                AsmInstruction::Triple(r) => {
-                    registers.modify(*r, |r| 3 * r);
-                    None
-                }
-                AsmInstruction::Increment(r) => {
-                    *registers.get_mut(r) += 1;
-                    None
-                }
-                AsmInstruction::Jump(o) => Some(Jump::Relative(*o)),
-                AsmInstruction::JumpIfEven(r, o) => {
-                    registers.get(r).is_even().then_some(Jump::Relative(*o))
-                }
+        ) -> Result<Self::YieldItem, Self::Err> {
+            program_counter
+                .unwrap()
+                .jump_relative_or_increment(match self {
+                    AsmInstruction::Half(r) => {
+                        registers.modify(*r, |r| r / 2);
+                        None
+                    }
+                    AsmInstruction::Triple(r) => {
+                        registers.modify(*r, |r| 3 * r);
+                        None
+                    }
+                    AsmInstruction::Increment(r) => {
+                        *registers.get_mut(r) += 1;
+                        None
+                    }
+                    AsmInstruction::Jump(o) => Some(*o),
+                    AsmInstruction::JumpIfEven(r, o) => registers.get(r).is_even().then_some(*o),
 
-                AsmInstruction::JumpIfOne(r, o) => {
-                    (*registers.get(r) == 1).then_some(Jump::Relative(*o))
-                }
-            }))
+                    AsmInstruction::JumpIfOne(r, o) => (*registers.get(r) == 1).then_some(*o),
+                });
+
+            Ok(())
         }
     }
 }

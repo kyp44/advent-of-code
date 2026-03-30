@@ -150,7 +150,7 @@ mod solution {
     }
 
     /// Bit mask bit value, which can be parsed from a text character.
-    #[derive(Debug)]
+    #[derive(Clone, Copy, Debug)]
     pub enum MaskBit {
         /// Leave value bit unchanged (V1) or address bit floating, which is all
         /// possible values (V2).
@@ -172,7 +172,7 @@ mod solution {
     }
 
     /// Information needed to assign value to a memory location.
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     pub struct Assignment {
         /// Memory address to set.
         address: u64,
@@ -214,7 +214,7 @@ mod solution {
     }
 
     /// A memory operation, which can be parsed from text input.
-    #[derive(Debug)]
+    #[derive(Clone, Debug)]
     pub enum Operation<M> {
         /// Set the bit mask.
         SetMask(Vec<MaskBit>, PhantomData<M>),
@@ -248,8 +248,9 @@ mod solution {
 
         fn execute(
             &self,
+            program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
+        ) -> Result<Self::YieldItem, Self::Err> {
             match self {
                 Self::SetMask(mv, _) => registers.mask = mv[..].into(),
                 Self::SetMemory(m) => {
@@ -258,8 +259,9 @@ mod solution {
                     }
                 }
             }
+            program_counter.unwrap().increment();
 
-            Ok(Executed::default())
+            Ok(())
         }
     }
 }

@@ -25,7 +25,6 @@ turn off 499,499 through 500,500";
 /// Contains solution implementation items.
 mod solution {
     use super::*;
-    use aoc::program::Executed;
     use derive_more::{From, Into};
     use euclid::point2;
     use nom::{
@@ -93,6 +92,7 @@ mod solution {
     /// Instruction to perform an action on a rectangle of lights.
     ///
     /// Can be parsed from text input.
+    #[derive(Clone)]
     pub struct GridInstruction<P> {
         /// Action to perform on all of the lights.
         pub action: Action,
@@ -114,20 +114,22 @@ mod solution {
             .parse(input.trim())
         }
     }
-    impl<P: Part> Instruction for GridInstruction<P> {
+    impl<P: Part + Clone> Instruction for GridInstruction<P> {
         type Registers = LightGrid<P>;
         type YieldItem = ();
         type Err = AocError;
 
         fn execute(
             &self,
+            program_counter: Option<&mut ProgramCounter<Self>>,
             registers: &mut Self::Registers,
-        ) -> Result<Executed<Self::YieldItem>, Self::Err> {
+        ) -> Result<Self::YieldItem, Self::Err> {
             for point in self.rect.all_points() {
                 registers.0.get_mut(&point).update(&self.action);
             }
 
-            Ok(Executed::default())
+            program_counter.unwrap().increment();
+            Ok(())
         }
     }
 
