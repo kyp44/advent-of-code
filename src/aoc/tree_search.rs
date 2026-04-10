@@ -92,7 +92,7 @@ pub trait GlobalStateTreeNode: Sized {
 /// be used more generally.
 ///
 /// Typically metrics are numeric, representing a cost to be minimized.
-pub trait Metric: Sized + Debug {
+pub trait Metric: Sized {
     /// Returns whether this metric is better than some `other` metric.
     fn is_better(&self, other: &Self) -> bool;
 
@@ -167,7 +167,7 @@ impl<T> BasicSolutionState<T> {
 
 /// A best cost used to keep track of the cost and node data for a
 /// successful terminal node.
-#[derive(new, Clone, Debug)]
+#[derive(new, Clone)]
 pub struct BestCost<N: BestCostTreeNode> {
     /// The cost to get to the terminal node.
     pub cost: N::Metric,
@@ -242,7 +242,7 @@ struct BestCostNode<N: BestCostTreeNode> {
 /// For an example that uses some `NodeData` see the
 /// [2016 day 17
 /// problem](../../advent_of_code/aoc_2016/day_17/solution/index.html).
-pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + Debug {
+pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash {
     /// The cost type, the default value should be initial or zero cost.
     type Metric: Metric + Clone + Default + Copy + std::ops::Add<Output = Self::Metric>;
     /// Arbitrary data associated with a node.
@@ -250,7 +250,7 @@ pub trait BestCostTreeNode: Sized + Clone + Eq + PartialEq + std::hash::Hash + D
     /// The idea is that the terminal nodes can produce some data associated
     /// with them that will be available to the user for the global best cost
     /// node.
-    type NodeData: Clone + Debug;
+    type NodeData: Clone;
 
     /// Determines the action to take by the algorithm from the current node.
     fn recurse_action(&mut self) -> ApplyNodeAction<BestCostChild<Self>, Self::NodeData>;
@@ -409,6 +409,11 @@ pub struct Steps(usize);
 impl Metric for Steps {
     fn is_better(&self, other: &Self) -> bool {
         self.0 < other.0
+    }
+}
+impl From<Steps> for usize {
+    fn from(value: Steps) -> Self {
+        value.0
     }
 }
 
