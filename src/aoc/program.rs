@@ -351,6 +351,18 @@ impl<I: Instruction> Program<I>
 where
     I::Registers: Clone + std::fmt::Debug + Eq + Hash,
 {
+    /// Returns a monitored executor for this program given an initial state of
+    /// the registers.
+    pub fn monitored_executor(
+        &self,
+        initial_registers: I::Registers,
+    ) -> MonitoredProgramExecutor<I> {
+        MonitoredProgramExecutor {
+            executor: self.executor(initial_registers),
+            visited_states: HashSet::new(),
+        }
+    }
+
     /// Executes a program to completion, monitoring the way that the program
     /// terminates.
     ///
@@ -358,45 +370,38 @@ where
     /// same instruction in the program while the registers are identical.
     ///
     /// This fails as soon as any of the instruction executions fail.
-    pub fn execute_monitored(
+    pub fn monitored_execute(
         &self,
         initial_registers: I::Registers,
     ) -> Result<MonitoredProgramEnd<I::Registers, I::YieldItem>, I::Err> {
-        let mut visited_states = HashSet::new();
-        let mut executor = self.executor(initial_registers);
+        let mut mon_executor = self.monitored_executor(initial_registers);
         let mut last_yielded = None;
 
         loop {
-            // Add the current state
-            if !visited_states
-                .insert((executor.program_counter.index(), executor.registers.clone()))
-            {
-                // In an infinite loop
-                break Ok(MonitoredProgramEnd::new(
-                    ProgramEnd::new(executor.registers, last_yielded),
-                    ProgramEndStatus::Infinite,
-                ));
-            }
-
             // Execute the next instruction
-            if executor
-                .next()
-                .transpose()?
-                .map(|yi| last_yielded = Some(yi))
-                .is_none()
-            {
-                // The program is complete, so did we jump out or finish normally?
-                break Ok(if executor.program_counter.jumped() {
-                    MonitoredProgramEnd::new(
-                        ProgramEnd::new(executor.registers, last_yielded),
-                        ProgramEndStatus::JumpedOut,
-                    )
-                } else {
-                    MonitoredProgramEnd::new(
-                        ProgramEnd::new(executor.registers, last_yielded),
-                        ProgramEndStatus::Terminated,
-                    )
-                });
+            match mon_executor.next().transpose()? {
+                Some(inst_end) => {
+                    last_yielded = Some(inst_end.yielded_item);
+
+                    // Are we in an infinite loop?
+                    if inst_end.repeated_state {
+                        break Ok(MonitoredProgramEnd::new(
+                            ProgramEnd::new(mon_executor.executor.registers, last_yielded),
+                            ProgramEndStatus::Infinite,
+                        ));
+                    }
+                }
+                None => {
+                    // The program is complete, so did we jump out or finish normally?
+                    let program_end =
+                        ProgramEnd::new(mon_executor.executor.registers, last_yielded);
+
+                    break Ok(if mon_executor.executor.program_counter.jumped() {
+                        MonitoredProgramEnd::new(program_end, ProgramEndStatus::JumpedOut)
+                    } else {
+                        MonitoredProgramEnd::new(program_end, ProgramEndStatus::Terminated)
+                    });
+                }
             }
         }
     }
@@ -419,3 +424,51 @@ impl<I: Instruction> Iterator for ProgramExecutor<I> {
     }
 }
 impl<I: Instruction> FusedIterator for ProgramExecutor<I> {}
+
+/// Returned at each step when executing a [`MonitoredProgramExecutor`].
+pub struct MonitoredInstructionEnd<Y> {
+    /// The item yielded from the instruction just executed.
+    pub yielded_item: Y,
+    /// Whether or not the program is in a state that it has been in before
+    /// after the last instruction executed.
+    ///
+    /// This means that the program will never terminate and will loop
+    /// infinitely.
+    pub repeated_state: bool,
+}
+
+/// An execution [`Iterator`] over the program instructions that also monitors
+/// for repeated states.
+///
+/// This involves some memory and execution time overhead so that
+/// [`ProgramExecutor`] should be used instead if possible.
+pub struct MonitoredProgramExecutor<I: Instruction> {
+    /// The underlying standard executor.
+    executor: ProgramExecutor<I>,
+    /// The set of program states that have already been visited.
+    ///
+    /// In the tuple, the first element is the program counter, while the second
+    /// is obviously the registers.
+    visited_states: HashSet<(Option<usize>, I::Registers)>,
+}
+impl<I: Instruction> Iterator for MonitoredProgramExecutor<I>
+where
+    I::Registers: Clone + std::fmt::Debug + Eq + Hash,
+{
+    type Item = Result<MonitoredInstructionEnd<I::YieldItem>, I::Err>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let exec_result = self.executor.next()?;
+
+        // Add the current state and check whether we have already been here
+        let repeated_state = !self.visited_states.insert((
+            self.executor.program_counter.index(),
+            self.executor.registers.clone(),
+        ));
+
+        Some(exec_result.map(|yielded_item| MonitoredInstructionEnd {
+            yielded_item,
+            repeated_state,
+        }))
+    }
+}

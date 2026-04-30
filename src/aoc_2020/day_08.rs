@@ -188,7 +188,7 @@ pub const SOLUTION: Solution = Solution {
             // Processing
             let end = input
                 .expect_data::<Program<AsmInstruction>>()?
-                .execute_monitored(AccumulatorRegister::default())?;
+                .monitored_execute(AccumulatorRegister::default())?;
 
             Ok(Answer::Unsigned(
                 match end.end_status {
@@ -207,7 +207,7 @@ pub const SOLUTION: Solution = Solution {
             // Processing
             let mut terminated_acc = None;
             for prog in variations(input.expect_data::<Program<AsmInstruction>>()?) {
-                let end = prog.execute_monitored(AccumulatorRegister::default())?;
+                let end = prog.monitored_execute(AccumulatorRegister::default())?;
 
                 if !matches!(end.end_status, ProgramEndStatus::Infinite) {
                     terminated_acc = Some(end.registers().verify_positive()?);

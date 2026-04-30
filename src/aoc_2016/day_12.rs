@@ -31,11 +31,12 @@ pub mod solution {
     use maplit::hashmap;
     use nom::{branch::alt, bytes::tag, combinator::map};
     use std::collections::HashMap;
+    use strum::{EnumIter, IntoEnumIterator};
 
     /// One of the computer registers.
     ///
     /// Can be parsed from text input.
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, EnumIter)]
     pub enum Register {
         /// Register A.
         A,
@@ -59,7 +60,7 @@ pub mod solution {
     }
 
     /// The computer registers.
-    #[derive(Clone, Debug)]
+    #[derive(Clone, Debug, PartialEq, Eq)]
     pub struct Registers(HashMap<Register, isize>);
     impl Registers {
         /// Creates the registers directly from the values.
@@ -75,6 +76,13 @@ pub mod solution {
     impl Default for Registers {
         fn default() -> Self {
             Self::new(0, 0, 0, 0)
+        }
+    }
+    impl std::hash::Hash for Registers {
+        fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+            for reg in Register::iter() {
+                self.get(&reg).hash(state);
+            }
         }
     }
     impl SimpleRegisters for Registers {
